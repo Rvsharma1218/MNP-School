@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "767112171518",
+    "project_id": "mnpschool-bb50b",
+    "storage_bucket": "mnpschool-bb50b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:767112171518:android:8cbc165d9d0a8d18b5faaf",
+        "android_client_info": {
+          "package_name": "com.mnpschool.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD51G45rkF9PDm6vFWd8ASSYF33NYyY20k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
