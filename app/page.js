@@ -18,6 +18,7 @@ import ReportsView from '../components/ReportsView';
 import QrScannerView from '../components/QrScannerView';
 import SettingsView from '../components/SettingsView';
 import TeacherPermissionsModal from '../components/TeacherPermissionsModal';
+import SubscriptionView from '../components/SubscriptionView';
 import PrintReceiptModal from '../components/PrintReceiptModal';
 import PrintResultModal from '../components/PrintResultModal';
 import PrintIdCardsModal from '../components/PrintIdCardsModal';
@@ -46,6 +47,8 @@ import AccessDeniedView from '../components/AccessDeniedView';
 import UserManagementView from '../components/UserManagementView';
 import ProfileView from '../components/ProfileView';
 import ParentPortalView from '../components/ParentPortalView';
+import ParentComplaintsView from '../components/ParentComplaintsView';
+import ConnectedDevicesView from '../components/ConnectedDevicesView';
 
 function AppContent() {
   const {
@@ -376,8 +379,11 @@ function AppContent() {
             {currentPath === '/import-export' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
             {currentPath === '/qrscanner' && <QrScannerView />}
             {currentPath === '/settings' && <SettingsView />}
+            {currentPath === '/subscription' && <SubscriptionView />}
             {currentPath === '/users' && <UserManagementView />}
             {currentPath === '/profile' && <ProfileView />}
+            {currentPath === '/complaints' && <ParentComplaintsView />}
+            {currentPath === '/devices' && <ConnectedDevicesView />}
             {currentPath === '/access-denied' && <AccessDeniedView />}
           </div>
         </main>

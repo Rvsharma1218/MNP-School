@@ -10,7 +10,7 @@ import {
   ShieldCheck, UserCheck, School, Sun, Moon, Zap,
   ChevronRight, ChevronLeft, Plus, FileText, Megaphone, X,
   Building2, Calendar, Sparkles,
-  HelpCircle
+  HelpCircle, MessageSquare, Smartphone
 } from 'lucide-react';
 
 function NavBtn({ icon: Icon, label, badge, active, onClick, iconColor, collapsed }) {
@@ -85,12 +85,16 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
 
         {/* ── Brand Header ── */}
         <div className={`flex items-center border-b border-[#c8c4d5]/40 flex-shrink-0 ${collapsed ? 'p-3 justify-center flex-col gap-2' : 'p-4 gap-3'}`}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1f108e] to-[#0f0069] flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden bg-white/90">
-            {settings.logoUrl || settings.logoPath || settings.logo ? (
-              <img src={settings.logoUrl || settings.logoPath || settings.logo} alt="Logo" className="w-full h-full object-contain p-1 rounded-xl" />
-            ) : (
-              <School className="w-5 h-5 text-white" />
-            )}
+          <div className="w-10 h-10 rounded-xl bg-white border border-[#c8c4d5]/40 flex items-center justify-center flex-shrink-0 shadow-xs overflow-hidden p-1">
+            <img
+              src={settings.logoUrl || settings.logoPath || settings.logo || '/logo.png'}
+              alt="Logo"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = '/logo.png';
+              }}
+            />
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
@@ -179,8 +183,11 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
                     <NavBtn icon={FileSpreadsheet} label={t('reports', lang)} active={currentPath === '/reports'} onClick={() => nav('reports')} collapsed={collapsed} />
                     <NavBtn icon={QrCode} label="QR Scanner" active={currentPath === '/qrscanner'} onClick={() => nav('qrscanner')} collapsed={collapsed} />
                     <NavBtn icon={UserCheck} label="User Management" active={currentPath === '/users'} onClick={() => nav('users')} collapsed={collapsed} />
+                    <NavBtn icon={MessageSquare} label={lang === 'hi' ? 'अभिभावक शिकायतें' : 'Parent Complaints'} badge="Desk" active={currentPath === '/complaints'} onClick={() => nav('complaints')} collapsed={collapsed} />
+                    <NavBtn icon={Smartphone} label={lang === 'hi' ? 'कनेक्टेड डिवाइसेज व GPS' : 'Connected Devices & GPS'} badge="Live" active={currentPath === '/devices'} onClick={() => nav('devices')} collapsed={collapsed} />
                     <NavBtn icon={Settings} label={t('settings', lang)} active={currentPath === '/settings'} onClick={() => nav('settings')} collapsed={collapsed} />
                     <NavBtn icon={HelpCircle} label={t('helpSupport', lang)} active={isHelpFeedbackOpen} onClick={() => { setIsHelpFeedbackOpen(true); if (onClose) onClose(); }} collapsed={collapsed} />
+                    <NavBtn icon={Sparkles} label={t('subscription', lang)} badge="All Access" active={currentPath === '/subscription'} onClick={() => nav('subscription')} collapsed={collapsed} />
                   </>
                 )}
 

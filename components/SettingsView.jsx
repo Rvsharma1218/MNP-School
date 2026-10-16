@@ -7,10 +7,12 @@ import {
   Plus, Trash2, CheckCircle, School, ArrowRight,
   Info, Sparkles, Check, UploadCloud, Image as ImageIcon, Camera, X, FileSignature, Crop,
   Shield, Languages, HelpCircle, Headphones, MessageCircle, PhoneCall, Mail,
-  ExternalLink, GraduationCap, Lock, CheckCircle2, AlertCircle, ChevronRight, Stamp, Link2
+  ExternalLink, GraduationCap, Lock, CheckCircle2, AlertCircle, ChevronRight, Stamp, Link2,
+  Smartphone
 } from 'lucide-react';
 import { removeSignatureBackground } from '../lib/exportUtils';
 import ImageCropperModal from './ImageCropperModal';
+import ConnectedDevicesView from './ConnectedDevicesView';
 
 export default function SettingsView() {
   const {
@@ -330,8 +332,9 @@ export default function SettingsView() {
       ]
     },
     {
-      group: 'BILLING & CLOUD',
+      group: 'SECURITY & HARDWARE',
       items: [
+        { id: 'devices', label: 'Connected Devices & GPS', icon: Smartphone, desc: 'Real-time GPS tracking & hardware' },
         { id: 'backup', label: 'Data Backup', icon: RefreshCw, desc: 'Export & Import database' },
       ]
     },
@@ -1396,6 +1399,11 @@ export default function SettingsView() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* === SECTION: CONNECTED DEVICES & GPS === */}
+          {activeSection === 'devices' && (
+            <ConnectedDevicesView />
           )}
 
           {/* === SECTION 7: SETUP WIZARD === */}
