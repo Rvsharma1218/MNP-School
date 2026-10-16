@@ -8,6 +8,7 @@ import '../../data/services/session_service.dart';
 import '../../core/localization/app_translations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/constants/app_colors.dart';
@@ -335,6 +336,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: const Text('Export SQLite database & remote sync snapshots', style: TextStyle(fontSize: 11.5)),
                   trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
                   onTap: () => Navigator.pushNamed(context, AppRoutes.backup),
+                ),
+                const Divider(height: 1, indent: 64),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFF0FDF4),
+                    child: Icon(Icons.share_rounded, color: Color(0xFF16A34A), size: 20),
+                  ),
+                  title: const Text('1-Click Share DB Backup', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  subtitle: const Text('Directly export & share SQLite .db on WhatsApp/Drive', style: TextStyle(fontSize: 11.5)),
+                  trailing: const Icon(Icons.send_rounded, color: Color(0xFF16A34A), size: 18),
+                  onTap: () async {
+                    try {
+                      final path = await DatabaseService.instance.exportDatabase();
+                      await Share.shareXFiles(
+                        [XFile(path)],
+                        subject: 'School Database SQLite Backup',
+                        text: 'School Management Database Backup (.db)',
+                      );
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Backup export error: $e')),
+                        );
+                      }
+                    }
+                  },
                 ),
                 ListTile(
                   leading: const CircleAvatar(
