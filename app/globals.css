@@ -1,0 +1,217 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1f108e;
+  --color-primary-dark: #0f0069;
+  --color-primary-light: #316bf3;
+  --color-secondary: #0051d5;
+  --color-secondary-container: #316bf3;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-card: var(--card);
+  --color-border: var(--border);
+
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* ─── Light Mode ──────────────────────────────────────────── */
+:root {
+  --bg: #f8f9ff;
+  --surface: #ffffff;
+  --surface2: #eff4ff;
+  --card: #ffffff;
+  --border: #c8c4d5;
+
+  --text: #0b1c30;
+  --text-secondary: #464553;
+  --text-muted: #777584;
+
+  --primary: #1f108e;
+  --primary-dark: #0f0069;
+  --primary-light: #316bf3;
+  --secondary: #0051d5;
+  --accent-gold: #fe9562;
+
+  --sidebar-bg: #eff4ff;
+  --sidebar-active-bg: #316bf3;
+  --sidebar-active-text: #ffffff;
+  --sidebar-hover-bg: #dce9ff;
+  --sidebar-text: #464553;
+
+  --shadow-sm: 0 1px 3px rgba(31, 16, 142, 0.06), 0 1px 2px rgba(31, 16, 142, 0.04);
+  --shadow-md: 0 4px 16px rgba(31, 16, 142, 0.08), 0 2px 6px rgba(31, 16, 142, 0.04);
+  --shadow-lg: 0 10px 30px rgba(31, 16, 142, 0.10), 0 4px 10px rgba(31, 16, 142, 0.06);
+}
+
+/* ─── Dark Mode ───────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg: #070c18;
+  --surface: #0e172a;
+  --surface2: #162238;
+  --card: #0e172a;
+  --border: #1e2e4a;
+
+  --text: #f0f4ff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --primary: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --primary-light: #60a5fa;
+  --secondary: #3b82f6;
+  --accent-gold: #fbbf24;
+
+  --sidebar-bg: #0b1325;
+  --sidebar-active-bg: #3b82f6;
+  --sidebar-active-text: #ffffff;
+  --sidebar-hover-bg: #162238;
+  --sidebar-text: #94a3b8;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* ─── Reset & Base ─────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Custom Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ─── Smooth Animations ─────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Print Optimizations ───────────────────────────────────── */
+/*  Print Optimizations & Multi-Page Fix  */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 8mm 10mm 8mm;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html, body {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Reset all scrolling & flex containers so browser prints ALL pages */
+  #__next, main, div, section, article {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    position: static !important;
+  }
+
+  /* Remove flex constraints on print */
+  .min-h-screen, .flex, .flex-1, .flex-col {
+    display: block !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  /* Hide app chrome, headers, sidebars */
+  header, aside, nav, [aria-hidden="true"], .print\:hidden, .no-print {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Admit Card multi-page printing */
+  .admit-cards-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .admit-card-item {
+    display: block !important;
+    width: 100% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    margin-bottom: 25mm !important;
+    border: 2px solid #0A1128 !important;
+    background: #ffffff !important;
+  }
+
+  .admit-card-item:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+    margin-bottom: 0 !important;
+  }
+}
