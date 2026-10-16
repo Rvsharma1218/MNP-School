@@ -30,8 +30,17 @@ import {
   School,
   Share2,
   CheckCircle2,
-  CalendarCheck2
+  CalendarCheck2,
+  Download,
+  Eye,
+  X,
+  MessageSquare,
+  Send,
+  Inbox
 } from 'lucide-react';
+import { exportSingleAdmitCardPDF } from '../lib/exportUtils';
+import { db } from '../lib/firebase';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 
 export default function ParentPortalView() {
   const {
@@ -50,8 +59,27 @@ export default function ParentPortalView() {
     themeMode
   } = useSchoolStore();
 
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'attendance' | 'fees' | 'results' | 'notices'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'attendance' | 'fees' | 'results' | 'admitcard' | 'complaints' | 'notices'
   const [selectedExamId, setSelectedExamId] = useState('all');
+  const [previewAadhaarModal, setPreviewAadhaarModal] = useState(false);
+  const [downloadingAdmitCard, setDownloadingAdmitCard] = useState(false);
+
+  // Complaints / Message to Principal State
+  const [complaintCategory, setComplaintCategory] = useState('Academic & Studies (पढ़ाई संबंधी)');
+  const [complaintSubject, setComplaintSubject] = useState('');
+  const [complaintMessage, setComplaintMessage] = useState('');
+  const [isUrgentComplaint, setIsUrgentComplaint] = useState(false);
+  const [submittingComplaint, setSubmittingComplaint] = useState(false);
+  const [complaintsFilter, setComplaintsFilter] = useState('all');
+  const [complaintsList, setComplaintsList] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`parent_complaints_${currentUser?.studentId || 'default'}`);
+        if (raw) return JSON.parse(raw);
+      } catch (_) {}
+    }
+    return [];
+  });
 
   // Find target student
   const student =
@@ -127,12 +155,92 @@ export default function ParentPortalView() {
   const schoolPhone = settings?.phone || settings?.mobile || '9876543210';
   const schoolName = settings?.instituteName || settings?.schoolName || currentUser?.instituteName || 'Smart School System';
 
+  // Dynamic Exam Timetable for Admit Card
+  const classKey = student?.className ? `school_admit_schedule_${student.className}` : 'school_admit_schedule_default';
+  let studentTimetable = [
+    { day: '15/03/2026', subject: 'Mathematics', timing: '09:30 AM - 12:30 PM' },
+    { day: '17/03/2026', subject: 'Science', timing: '09:30 AM - 12:30 PM' },
+    { day: '19/03/2026', subject: 'Social Studies', timing: '09:30 AM - 12:30 PM' },
+    { day: '21/03/2026', subject: 'English', timing: '09:30 AM - 12:30 PM' },
+    { day: '23/03/2026', subject: 'Hindi', timing: '09:30 AM - 12:30 PM' },
+    { day: '25/03/2026', subject: 'Computer', timing: '09:30 AM - 12:30 PM' },
+  ];
+
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem(classKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) studentTimetable = parsed;
+      } catch (e) {}
+    }
+  }
+
   const handleOpenWhatsApp = () => {
     const cleanPhone = schoolPhone.replace(/[^0-9]/g, '');
     const msg = encodeURIComponent(
       `Hello ${schoolName} Administration,\n\nI am the parent of ${student?.name || 'my child'} (Class ${student?.className || ''} - Sec ${student?.section || 'A'}, Admission No: ${student?.admissionNo || student?.admissionNumber || 'N/A'}).\n\nI would like to inquire about: `
     );
     window.open(`https://wa.me/91${cleanPhone}?text=${msg}`, '_blank');
+  };
+
+  const handleSendComplaint = async (e) => {
+    e?.preventDefault();
+    if (!complaintSubject.trim() || !complaintMessage.trim()) {
+      showToast('Please fill out both subject and message', 'error');
+      return;
+    }
+    setSubmittingComplaint(true);
+    try {
+      const now = new Date();
+      const docId = `complaint_${Date.now()}_${student.admissionNo || student.admissionNumber || 'ADM'}`;
+      const payload = {
+        docId,
+        id: docId,
+        category: complaintCategory,
+        subject: complaintSubject.trim(),
+        message: complaintMessage.trim(),
+        urgent: isUrgentComplaint,
+        priority: isUrgentComplaint ? 'urgent' : 'normal',
+        status: 'new',
+        type: 'parent_complaint',
+        device: 'web',
+        studentId: student.id || currentUser?.studentId || '',
+        studentName: student.name || 'Student',
+        className: student.className || '',
+        section: student.section || 'A',
+        admissionNo: student.admissionNo || student.admissionNumber || '',
+        senderName: `${student.fatherName || 'Parent'} (Parent of ${student.name || 'Student'})`,
+        senderPhone: student.mobile || student.parentMobile || currentUser?.mobile || '',
+        senderEmail: currentUser?.email || 'parent@school.local',
+        schoolId: settings?.schoolId || currentUser?.schoolId || 'SCHOOL_001',
+        schoolName: schoolName,
+        date: now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+        createdAt: now.toISOString()
+      };
+
+      try {
+        await addDoc(collection(db, 'feedbacks'), payload);
+        await setDoc(doc(db, 'schoolDirectory', 'system_feedbacks', 'items', docId), payload);
+      } catch (err) {
+        console.warn('Firestore complaints write note:', err);
+      }
+
+      const updated = [payload, ...complaintsList];
+      setComplaintsList(updated);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`parent_complaints_${student.id || currentUser?.studentId || 'default'}`, JSON.stringify(updated));
+      }
+
+      setComplaintSubject('');
+      setComplaintMessage('');
+      setIsUrgentComplaint(false);
+      showToast('Message sent to Principal successfully!', 'success');
+    } catch (e) {
+      showToast('Failed to send complaint: ' + e.message, 'error');
+    } finally {
+      setSubmittingComplaint(false);
+    }
   };
 
   return (
@@ -329,6 +437,30 @@ export default function ParentPortalView() {
           </button>
 
           <button
+            onClick={() => setActiveTab('admitcard')}
+            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activeTab === 'admitcard'
+                ? 'bg-[#1f108e] text-white shadow-md shadow-indigo-500/20'
+                : 'bg-white dark:bg-[#111c38] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
+            }`}
+          >
+            <FileText className="w-4 h-4 text-purple-400" />
+            <span>Admit Card</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('complaints')}
+            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activeTab === 'complaints'
+                ? 'bg-[#1f108e] text-white shadow-md shadow-indigo-500/20'
+                : 'bg-white dark:bg-[#111c38] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-400" />
+            <span>Message Principal</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('notices')}
             className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'notices'
@@ -410,6 +542,42 @@ export default function ParentPortalView() {
                       <MapPin className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0 mt-0.5" />
                       <span>{student?.address || 'Near Main Bazar, School Road, City Center'}</span>
                     </p>
+                  </div>
+
+                  {/* Student Aadhaar Verification & Document Preview */}
+                  <div className="sm:col-span-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <p className="text-slate-400 font-semibold mb-1">Aadhaar Card (Official ID)</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                        <span className="font-mono tracking-wider">{student?.aadhaarNumber || student?.aadharNumber || student?.aadhaar || 'NOT-LINKED'}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200">Verified</span>
+                      </p>
+                    </div>
+                    {(student?.aadhaarDocUrl || student?.aadhaarDocPath || student?.aadhaarCardUrl) && (
+                      <div className="flex items-center gap-2">
+                        <div 
+                          onClick={() => setPreviewAadhaarModal(true)}
+                          className="w-14 h-10 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700 cursor-pointer shadow-sm relative group"
+                        >
+                          <img 
+                            src={student.aadhaarDocUrl || student.aadhaarDocPath || student.aadhaarCardUrl} 
+                            alt="Aadhaar Card" 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Eye className="w-3.5 h-3.5 text-white" />
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setPreviewAadhaarModal(true)}
+                          className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View Aadhaar Photo</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -524,6 +692,52 @@ export default function ParentPortalView() {
                 >
                   <Phone className="w-4 h-4" />
                   <span>Contact Accounts Office</span>
+                </button>
+              </div>
+
+              {/* Admit Card Quick Access Card */}
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-[#1e1b4b] dark:to-[#0f172a] rounded-3xl p-6 border border-purple-100 dark:border-purple-900/50 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <span>Exam Admit Card</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                    Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Annual examination admit card is available for Class {student?.className || '10th'}. Download official PDF with QR verification.
+                </p>
+                <button
+                  onClick={() => setActiveTab('admitcard')}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>View & Download Admit Card</span>
+                </button>
+              </div>
+
+              {/* Message to Principal Action Card */}
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-[#064e3b]/30 dark:to-[#0f172a] rounded-3xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Principal Direct Desk</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    Active Desk
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Have any concern, feedback or inquiry? Send a confidential direct message or complaint to the Principal.
+                </p>
+                <button
+                  onClick={() => setActiveTab('complaints')}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Send Message to Principal</span>
                 </button>
               </div>
 
@@ -711,6 +925,63 @@ export default function ParentPortalView() {
                 </p>
               </div>
 
+            </div>
+
+            {/* Fee Breakdown / Monthly Particulars */}
+            <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>Fee Structure & Monthly Dues Breakdown</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Official itemized ledger of tuition, development and ancillary fee heads.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                  Current Session
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-400 block font-semibold">Tuition Fee</span>
+                  <span className="text-base font-black text-slate-900 dark:text-white mt-1 block">
+                    ₹{(student?.monthlyParticulars?.tuitionFee ?? 1500).toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-[10px] text-slate-500">Per Month</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-400 block font-semibold">Tie / Belt / Bag</span>
+                  <span className="text-base font-black text-slate-900 dark:text-white mt-1 block">
+                    ₹{(student?.monthlyParticulars?.tieBagBelt ?? 600).toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-[10px] text-slate-500">Kit Charges</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-400 block font-semibold">Development Charges</span>
+                  <span className="text-base font-black text-slate-900 dark:text-white mt-1 block">
+                    ₹{(student?.monthlyParticulars?.developmentCharges ?? 1000).toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-[10px] text-slate-500">Facility & Lab</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-400 block font-semibold">Monthly Total Expected</span>
+                  <span className="text-base font-black text-indigo-600 dark:text-indigo-400 mt-1 block">
+                    ₹{(
+                      (student?.monthlyParticulars?.tuitionFee ?? 1500) +
+                      (student?.monthlyParticulars?.tieBagBelt ?? 600) +
+                      (student?.monthlyParticulars?.developmentCharges ?? 1000) +
+                      (student?.monthlyParticulars?.otherCharges ?? 0)
+                    ).toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-[10px] text-emerald-600 font-bold">Standard Term Rate</span>
+                </div>
+              </div>
             </div>
 
             {/* Fee Receipts List with Download */}
@@ -910,7 +1181,350 @@ export default function ParentPortalView() {
           </div>
         )}
 
-        {/* ── TAB 5: NOTICES & CIRCULARS ── */}
+        {/* ── TAB 5: ADMIT CARD & HALL TICKET ── */}
+        {activeTab === 'admitcard' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-purple-600" />
+                  <span>Official Examination Admit Card</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Verified hall ticket for {settings.currentSession || '2026-2027'} examination session.
+                </p>
+              </div>
+
+              <button
+                onClick={async () => {
+                  try {
+                    setDownloadingAdmitCard(true);
+                    await exportSingleAdmitCardPDF(student, settings, studentTimetable, 'ANNUAL EXAMINATION 2026');
+                    showToast('Admit Card downloaded successfully!', 'success');
+                  } catch (e) {
+                    showToast('Failed to download Admit Card', 'error');
+                  } finally {
+                    setDownloadingAdmitCard(false);
+                  }
+                }}
+                disabled={downloadingAdmitCard}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#1f108e] hover:bg-[#150b69] text-white font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                <span>{downloadingAdmitCard ? 'Generating PDF...' : 'Download Official Admit Card (A4 PDF)'}</span>
+              </button>
+            </div>
+
+            {/* Admit Card Visual Preview Card */}
+            <div className="max-w-2xl mx-auto bg-white dark:bg-[#111c38] rounded-3xl p-6 sm:p-8 border-2 border-indigo-200 dark:border-indigo-900 shadow-xl space-y-6">
+              
+              {/* Institution Header */}
+              <div className="text-center pb-4 border-b border-slate-200 dark:border-slate-800 space-y-1">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mb-2">
+                  <School className="w-6 h-6" />
+                </div>
+                <h4 className="font-black text-base sm:text-lg text-slate-900 dark:text-white uppercase tracking-wider">
+                  {schoolName}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {settings.address || 'Senior Secondary Academic Institution'}
+                </p>
+                <div className="pt-1">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    ANNUAL EXAMINATION ADMIT CARD • {settings.currentSession || '2026-27'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Student Metadata & QR */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="grid grid-cols-2 gap-3 text-xs w-full">
+                  <div>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Student Name</span>
+                    <strong className="text-slate-900 dark:text-white uppercase">{student?.name || 'Student'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Roll Number</span>
+                    <strong className="text-indigo-600 dark:text-indigo-400">{student?.rollNumber || student?.rollNo || '1'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Class & Section</span>
+                    <strong className="text-slate-900 dark:text-white">{student?.className || '10th'} - {student?.section || 'A'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Admission No</span>
+                    <strong className="text-slate-900 dark:text-white font-mono">{student?.admissionNo || student?.admissionNumber || 'N/A'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Father's Name</span>
+                    <strong className="text-slate-900 dark:text-white">{student?.fatherName || 'N/A'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Aadhaar No</span>
+                    <strong className="text-slate-900 dark:text-white font-mono">{student?.aadhaarNumber || student?.aadharNumber || student?.aadhaar || 'NOT-LINKED'}</strong>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center flex-shrink-0 bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`STUDENT ADMIT CARD | Name: ${student.name} | Roll: ${student.rollNumber || 'N/A'} | Class: ${student.className || ''} | Aadhaar: ${student.aadhaarNumber || 'N/A'}`)}`}
+                    alt="Admit Card QR"
+                    className="w-16 h-16 object-contain"
+                  />
+                  <span className="text-[8px] font-black text-emerald-600 mt-1 uppercase">VERIFIED ENTRY</span>
+                </div>
+              </div>
+
+              {/* Exam Schedule */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Examination Timetable</span>
+                  <span className="text-[11px] text-indigo-600 font-bold">{studentTimetable.length} Subjects</span>
+                </div>
+                <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50 dark:bg-slate-900/60 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 dark:border-slate-800">
+                      <tr>
+                        <th className="py-2.5 px-3">Date</th>
+                        <th className="py-2.5 px-3">Subject</th>
+                        <th className="py-2.5 px-3">Timing</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {studentTimetable.map((t, idx) => (
+                        <tr key={idx} className={idx % 2 === 1 ? 'bg-slate-50/50 dark:bg-slate-900/30' : ''}>
+                          <td className="py-2.5 px-3 font-bold text-indigo-600 dark:text-indigo-400">{t.day || t.date}</td>
+                          <td className="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-200">{t.subject}</td>
+                          <td className="py-2.5 px-3 text-slate-500">{t.timing}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 text-[11px] text-amber-900 dark:text-amber-300 space-y-1">
+                <p className="font-bold">Instructions for Candidate:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-[10px] text-slate-600 dark:text-slate-400">
+                  <li>Please bring this printed Admit Card and School ID to every examination.</li>
+                  <li>Students must report to the examination hall 15 minutes before scheduled start time.</li>
+                  <li>Electronic devices and mobile phones are strictly prohibited inside the hall.</li>
+                </ul>
+              </div>
+
+              {/* Signatures */}
+              <div className="pt-4 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-end justify-between text-[11px] text-slate-400">
+                <div className="text-center">
+                  <div className="w-24 border-b border-slate-300 dark:border-slate-700 mb-1"></div>
+                  <span>Student Sign</span>
+                </div>
+                <div className="text-center">
+                  <div className="w-24 border-b border-slate-300 dark:border-slate-700 mb-1"></div>
+                  <span>Class Teacher</span>
+                </div>
+                <div className="text-center">
+                  <div className="w-24 border-b border-slate-300 dark:border-slate-700 mb-1"></div>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">Principal / Director</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 6: COMPLAINTS & MESSAGE TO PRINCIPAL ── */}
+        {activeTab === 'complaints' && (
+          <div className="space-y-6">
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-emerald-600" />
+                  <span>Message & Complaint to Principal Desk</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Direct official communication with School Administration. Private, secure, and reviewed directly by the Principal.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* Left Column: Compose Complaint Form */}
+              <div className="lg:col-span-5 bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <Send className="w-4 h-4 text-indigo-600" />
+                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">Compose Message / Complaint</h4>
+                </div>
+
+                <form onSubmit={handleSendComplaint} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1.5 uppercase text-[10px]">
+                      Topic / Category
+                    </label>
+                    <select
+                      value={complaintCategory}
+                      onChange={(e) => setComplaintCategory(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="Academic & Studies (पढ़ाई संबंधी)">Academic & Studies (पढ़ाई संबंधी)</option>
+                      <option value="Fees & Accounts (फीस व रसीद संबंधी)">Fees & Accounts (फीस व रसीद संबंधी)</option>
+                      <option value="Bus & Transport (बस व वाहन संबंधी)">Bus & Transport (बस व वाहन संबंधी)</option>
+                      <option value="Discipline & Behavior (अनुशासन संबंधी)">Discipline & Behavior (अनुशासन संबंधी)</option>
+                      <option value="School Facilities (व्यवस्था व स्वच्छता)">School Facilities (व्यवस्था व स्वच्छता)</option>
+                      <option value="Direct Message to Principal (प्रधानाचार्य को सीधा संदेश)">Direct Message to Principal (प्रधानाचार्य को सीधा संदेश)</option>
+                      <option value="Other Concern (अन्य शिकायत या सुझाव)">Other Concern (अन्य शिकायत या सुझाव)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1.5 uppercase text-[10px]">
+                      Subject / विषय
+                    </label>
+                    <input
+                      type="text"
+                      value={complaintSubject}
+                      onChange={(e) => setComplaintSubject(e.target.value)}
+                      placeholder="e.g. Issue regarding transport timing / Homework clarification"
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1.5 uppercase text-[10px]">
+                      Detailed Message / Complaint
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={complaintMessage}
+                      onChange={(e) => setComplaintMessage(e.target.value)}
+                      placeholder="Type details of your complaint or query here. The Principal will review and take necessary action."
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+                    <span className="font-bold text-slate-700 dark:text-slate-300">Mark as Urgent Priority</span>
+                    <input
+                      type="checkbox"
+                      checked={isUrgentComplaint}
+                      onChange={(e) => setIsUrgentComplaint(e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submittingComplaint}
+                    className="w-full py-3 px-4 rounded-xl bg-[#1f108e] hover:bg-[#150b69] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{submittingComplaint ? 'Sending...' : 'Send Message to Principal'}</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Right Column: List of Sent Messages & Replies */}
+              <div className="lg:col-span-7 bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Inbox className="w-4 h-4 text-emerald-600" />
+                    <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      Sent Messages ({complaintsList.length})
+                    </h4>
+                  </div>
+
+                  {/* Filter Tabs */}
+                  <div className="flex items-center gap-1">
+                    {['all', 'pending', 'resolved'].map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setComplaintsFilter(f)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize transition-colors cursor-pointer ${
+                          complaintsFilter === f
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {complaintsList.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs space-y-2">
+                    <MessageSquare className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+                    <p>No messages or complaints submitted yet.</p>
+                    <p className="text-[10px]">Use the form on the left to send your first message to the Principal.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {complaintsList
+                      .filter((c) => {
+                        const st = (c.status || 'new').toLowerCase();
+                        if (complaintsFilter === 'pending') return st !== 'resolved';
+                        if (complaintsFilter === 'resolved') return st === 'resolved';
+                        return true;
+                      })
+                      .map((c) => {
+                        const isResolved = (c.status || '').toLowerCase() === 'resolved';
+                        return (
+                          <div
+                            key={c.docId || c.id || Math.random()}
+                            className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-2"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60">
+                                {c.category || 'Complaint'}
+                              </span>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  isResolved
+                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                                }`}
+                              >
+                                {isResolved ? '✓ Resolved' : '● Under Review'}
+                              </span>
+                            </div>
+
+                            <h5 className="font-bold text-xs text-slate-900 dark:text-white">{c.subject}</h5>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+                              {c.message}
+                            </p>
+
+                            <p className="text-[10px] text-slate-400">Date: {c.date || c.createdAt || 'Recent'}</p>
+
+                            {/* Principal Reply Box */}
+                            {(c.reply || c.adminReply) && (
+                              <div className="mt-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40">
+                                <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300 font-bold text-[11px]">
+                                  <ShieldCheck className="w-3.5 h-3.5" />
+                                  <span>Principal Office Reply:</span>
+                                </div>
+                                <p className="text-[11px] text-slate-700 dark:text-slate-200 mt-1">
+                                  {c.reply || c.adminReply}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ── TAB 7: NOTICES & CIRCULARS ── */}
         {activeTab === 'notices' && (
           <div className="space-y-6">
             
@@ -973,6 +1587,48 @@ export default function ParentPortalView() {
         )}
 
       </main>
+
+      {/* ── Aadhaar Card Zoom Modal ── */}
+      {previewAadhaarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative max-w-lg w-full bg-white dark:bg-[#111c38] rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h4 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  <span>Student Aadhaar Card Preview</span>
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  {student?.name} • No: {student?.aadhaarNumber || student?.aadharNumber || student?.aadhaar || 'Verified'}
+                </p>
+              </div>
+              <button
+                onClick={() => setPreviewAadhaarModal(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-h-[70vh] flex items-center justify-center">
+              <img
+                src={student?.aadhaarDocUrl || student?.aadhaarDocPath || student?.aadhaarCardUrl}
+                alt="Aadhaar Card"
+                className="w-full h-auto object-contain max-h-[65vh]"
+              />
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setPreviewAadhaarModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -7,7 +7,8 @@ import {
   Menu, Search, Plus, CreditCard, Clock, Calendar, ShieldCheck,
   UserCheck, Bell, ChevronDown, User, Settings, Key, LogOut, X, ShieldAlert,
   Wifi, WifiOff, RefreshCw, CheckCircle2, AlertCircle, ArrowLeft,
-  Receipt, Eye, GraduationCap, ArrowRight, HelpCircle, Languages
+  Receipt, Eye, GraduationCap, ArrowRight, HelpCircle, Languages,
+  Sun, Moon, MessageSquare
 } from 'lucide-react';
 
 export default function Header({ onMenuClick }) {
@@ -789,6 +790,30 @@ export default function Header({ onMenuClick }) {
           title="Help and feedback (FAQs, Support, Reports)"
         >
           <HelpCircle className="w-4.5 h-4.5 text-[#1f108e]" />
+        </button>
+
+        {/* Dark / Light Mode Theme Toggle */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
+          title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {themeMode === 'dark' ? (
+            <Sun className="w-4.5 h-4.5 text-amber-500" />
+          ) : (
+            <Moon className="w-4.5 h-4.5 text-[#1f108e]" />
+          )}
+        </button>
+
+        {/* Quick Parent Complaints Desk Shortcut */}
+        <button
+          type="button"
+          onClick={() => navigate('/complaints')}
+          className="p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors relative cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
+          title="Parent Complaints & Messages Desk"
+        >
+          <MessageSquare className="w-4.5 h-4.5 text-[#1f108e]" />
         </button>
 
         {/* User Info Profile Dropdown */}

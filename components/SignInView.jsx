@@ -96,11 +96,13 @@ export default function SignInView() {
           <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-[#316bf3]/20 rounded-full blur-3xl pointer-events-none" />
 
           {/* Top Brand Logo */}
-          <div className="relative z-10 flex items-center gap-3.5">
-            <img src="/logo.png" alt="Mission Navodaya Public School" className="w-14 h-14 rounded-full border-2 border-amber-400 shadow-xl object-cover bg-white" />
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center shadow-lg">
+              <School className="w-6 h-6 text-white" />
+            </div>
             <div>
-              <h2 className="text-xl font-black tracking-tight text-white">{settings.instituteName || 'Mission Navodaya Public School'}</h2>
-              <p className="text-xs text-amber-300 font-bold tracking-wider">MORA, BIHAR</p>
+              <h2 className="text-xl font-black tracking-tight text-white">{settings.instituteName || 'Smart School'}</h2>
+              <p className="text-xs text-white/75 font-medium">SaaS Management Platform</p>
             </div>
           </div>
 
@@ -148,10 +150,12 @@ export default function SignInView() {
             
             {/* Mobile-Only Header Brand Logo */}
             <div className="flex lg:hidden items-center gap-3 pb-2 border-b border-[#c8c4d5]/40">
-              <img src="/logo.png" alt="Mission Navodaya Public School" className="w-11 h-11 rounded-full border-2 border-amber-400 shadow-sm object-cover bg-white flex-shrink-0" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1f108e] to-[#0f0069] flex items-center justify-center text-white shadow-sm flex-shrink-0">
+                <School className="w-5 h-5" />
+              </div>
               <div>
-                <h2 className="font-black text-sm text-[#0D2C54] leading-tight">{settings.instituteName || 'Mission Navodaya Public School'}</h2>
-                <p className="text-[10px] text-amber-600 font-bold tracking-wider">MORA, BIHAR</p>
+                <h2 className="font-black text-sm text-[#1f108e] leading-tight">{settings.instituteName || 'Smart School'}</h2>
+                <p className="text-[10px] text-slate-500 font-medium">SaaS Management Platform</p>
               </div>
             </div>
 
