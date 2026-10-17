@@ -21,10 +21,12 @@ export default function SettingsView() {
     importAllDataJson,
     showToast,
     teacherPermissions,
-    setIsHelpFeedbackOpen
+    setIsHelpFeedbackOpen,
+    settingsActiveSection,
+    setSettingsActiveSection
   } = useSchoolStore();
 
-  const [activeSection, setActiveSection] = useState('branding'); // 'branding' | 'academic' | 'language' | 'subscription' | 'support' | 'backup' | 'wizard'
+  const [activeSection, setActiveSection] = useState(settingsActiveSection || 'branding'); // 'branding' | 'academic' | 'language' | 'subscription' | 'support' | 'backup' | 'wizard'
   const [wizardStep, setWizardStep] = useState(1); // 1 | 2 | 3
   const [isDraggingLogo, setIsDraggingLogo] = useState(false);
   const [isLogoCropperOpen, setIsLogoCropperOpen] = useState(false);
@@ -78,12 +80,21 @@ export default function SettingsView() {
   const [distanceTestResult, setDistanceTestResult] = useState(null);
 
   useEffect(() => {
+    if (settingsActiveSection) {
+      setActiveSection(settingsActiveSection);
+    }
+  }, [settingsActiveSection]);
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get('section') || params.get('tab');
-      if (tab) setActiveSection(tab);
+      if (tab) {
+        setActiveSection(tab);
+        if (setSettingsActiveSection) setSettingsActiveSection(tab);
+      }
     }
-  }, []);
+  }, [setSettingsActiveSection]);
 
   // Synchronize formData with settings whenever settings updates
   useEffect(() => {
@@ -422,7 +433,10 @@ export default function SettingsView() {
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => setActiveSection(item.id)}
+                        onClick={() => {
+                          setActiveSection(item.id);
+                          if (setSettingsActiveSection) setSettingsActiveSection(item.id);
+                        }}
                         className={`w-full text-left p-2.5 rounded-2xl transition-all cursor-pointer flex items-center gap-3 group relative border ${
                           isActive
                             ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'

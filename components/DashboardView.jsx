@@ -48,7 +48,7 @@ export default function DashboardView() {
     setSelectedStudentId, setIsAddStudentOpen, currentUser, navigate,
     setFeeDetailStudent, setIsFeeDetailSelectorOpen, setWhatsAppReminderData,
     notices, setIsAddNoticeOpen, setViewingNotice, unreadNoticeCount,
-    teacherPermissions
+    teacherPermissions, openSettings
   } = useSchoolStore();
 
   const isPrincipal = currentUser?.role === 'principal';
@@ -179,7 +179,7 @@ export default function DashboardView() {
               sub={settings.campusLatitude ? (settings.geofenceEnabled !== false ? 'GPS Boundary Enforced' : 'Perimeter Set (Disabled)') : 'Tap to Configure GPS'}
               badge={settings.campusLatitude ? 'GPS Active' : 'Setup'}
               badgeColor="bg-indigo-50 text-indigo-700 border border-indigo-200/80"
-              onClick={() => navigate('/settings?section=geofence')}
+              onClick={() => openSettings('geofence')}
             />
           </div>
 
@@ -218,7 +218,7 @@ export default function DashboardView() {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/settings?section=geofence')}
+                onClick={() => openSettings('geofence')}
                 className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
                 <MapPin className="w-3.5 h-3.5" />

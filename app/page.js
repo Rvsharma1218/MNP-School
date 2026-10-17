@@ -371,7 +371,7 @@ function AppContent() {
             {currentPath === '/documents' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
             {currentPath === '/import-export' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
             {currentPath === '/qrscanner' && <QrScannerView />}
-            {currentPath === '/settings' && <SettingsView />}
+            {currentPath.startsWith('/settings') && <SettingsView />}
             {currentPath === '/subscription' && <SubscriptionView />}
             {currentPath === '/users' && <UserManagementView />}
             {currentPath === '/profile' && <ProfileView />}
