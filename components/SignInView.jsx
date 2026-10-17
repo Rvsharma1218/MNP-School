@@ -213,64 +213,6 @@ export default function SignInView() {
               </button>
             </div>
 
-                        {/* Quick 1-Click Instant Demo Access (Guaranteed to open on Vercel & localhost) */}
-            <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-black uppercase text-indigo-950 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  Instant 1-Click Demo Login:
-                </span>
-                <span className="text-[10px] text-indigo-600 font-semibold bg-white px-2 py-0.5 rounded-full border border-indigo-100">
-                  No Password Needed
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (demoSignIn) demoSignIn('principal');
-                    else {
-                      setEmail('admin@example.com');
-                      setPassword('123456');
-                    }
-                  }}
-                  className="py-2 px-2 rounded-xl bg-[#1f108e] hover:bg-[#150b69] text-white text-[10px] font-bold shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95"
-                >
-                  <ShieldCheck className="w-3 h-3" />
-                  <span>Principal</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (demoSignIn) demoSignIn('teacher');
-                    else {
-                      setRole('teacher');
-                      setEmail('admin@example.com');
-                      setPassword('123456');
-                    }
-                  }}
-                  className="py-2 px-2 rounded-xl bg-white hover:bg-slate-100 text-[#1f108e] border border-[#1f108e]/30 text-[10px] font-bold shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95"
-                >
-                  <UserCheck className="w-3 h-3" />
-                  <span>Teacher</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (demoSignIn) demoSignIn('parent');
-                    else {
-                      setRole('parent');
-                      setParentAdmissionNo('ADM-2026-001');
-                      setParentMobile('9876543210');
-                    }
-                  }}
-                  className="py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95"
-                >
-                  <GraduationCap className="w-3 h-3" />
-                  <span>Parent</span>
-                </button>
-              </div>
-            </div>
 
             {/* Error Message Box */}
             {error && (
