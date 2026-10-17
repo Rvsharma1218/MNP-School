@@ -190,12 +190,10 @@ export default function Header({ onMenuClick }) {
         <button
           type="button"
           onClick={() => setIsGlobalSearchOpen(true)}
-          className="p-2 sm:px-3 sm:py-2 rounded-xl bg-surface2 hover:bg-border text-text hover:text-primary transition-all cursor-pointer border border-border shadow-2xs flex items-center gap-2 group"
+          className="p-2.5 rounded-xl bg-surface2 hover:bg-border text-text-secondary hover:text-primary transition-all cursor-pointer border border-border shadow-2xs flex items-center justify-center group"
           title="Search (Ctrl+K)"
         >
-          <Search className="w-4.5 h-4.5 text-text-secondary group-hover:text-primary group-hover:scale-105 transition-all" />
-          <span className="hidden xl:inline text-xs font-semibold text-text-secondary group-hover:text-primary">Search</span>
-          <kbd className="hidden xl:inline text-[10px] bg-white border border-border rounded px-1.5 py-0.5 font-mono text-text-muted font-bold shadow-2xs">Ctrl K</kbd>
+          <Search className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
         </button>
         {/* Date & Time */}
         {mounted && (

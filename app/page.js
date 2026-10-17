@@ -33,8 +33,6 @@ import NoticeBoardView from '../components/NoticeBoardView';
 import AddEditNoticeModal from '../components/AddEditNoticeModal';
 import NoticeDetailModal from '../components/NoticeDetailModal';
 import { ToastContainer, ConfirmDialog } from '../components/ToastNotification';
-import SecurityPermissionModal from '../components/SecurityPermissionModal';
-import NotificationHistoryModal from '../components/NotificationHistoryModal';
 import AudioVoiceNoteModal from '../components/AudioVoiceNoteModal';
 import HelpAndFeedbackModal from '../components/HelpAndFeedbackModal';
 
@@ -80,18 +78,14 @@ function AppContent() {
 
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isNotifHistoryOpen, setIsNotifHistoryOpen] = useState(false);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
 
   useEffect(() => {
-    const handleOpenNotifHistory = () => setIsNotifHistoryOpen(true);
     const handleOpenAudioModal = () => setIsAudioModalOpen(true);
     const handleOpenHelpFeedback = () => setIsHelpFeedbackOpen(true);
-    window.addEventListener('school_open_notification_history', handleOpenNotifHistory);
     window.addEventListener('school_open_audio_modal', handleOpenAudioModal);
     window.addEventListener('school_open_help_feedback', handleOpenHelpFeedback);
     return () => {
-      window.removeEventListener('school_open_notification_history', handleOpenNotifHistory);
       window.removeEventListener('school_open_audio_modal', handleOpenAudioModal);
       window.removeEventListener('school_open_help_feedback', handleOpenHelpFeedback);
     };
@@ -459,21 +453,6 @@ function AppContent() {
         />
       )}
 
-      {/* Super Admin Controlled Security & Device Telemetry Modal */}
-      <SecurityPermissionModal
-        securityConfig={securityConfig}
-        schoolId={settings?.schoolId || currentUser?.schoolId || 'SCHOOL_001'}
-        schoolName={settings?.schoolName || settings?.instituteName || 'School Management'}
-        currentUser={currentUser}
-        showToast={showToast}
-        onAutoLogout={logout}
-      />
-
-      {/* Device Notifications History Modal */}
-      <NotificationHistoryModal
-        isOpen={isNotifHistoryOpen}
-        onClose={() => setIsNotifHistoryOpen(false)}
-      />
 
       {/* Oral Voice Note & Viva Recording Modal */}
       <AudioVoiceNoteModal

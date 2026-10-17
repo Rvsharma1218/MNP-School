@@ -353,17 +353,17 @@ export default function ParentPortalView() {
                   <span>Enrolled Student</span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                  {student?.name || 'Aarav Sharma'}
+                  {student?.name || 'Student'}
                 </h2>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-white/80 font-medium pt-0.5">
                   <span className="bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/15">
-                    Class: <strong className="text-white">{student?.className || '10th'} - {student?.section || 'A'}</strong>
+                    Class: <strong className="text-white">{student?.className || '-'} - {student?.section || 'A'}</strong>
                   </span>
                   <span className="bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/15">
-                    Roll No: <strong className="text-white">{student?.rollNumber || student?.rollNo || '1'}</strong>
+                    Roll No: <strong className="text-white">{student?.rollNumber || student?.rollNo || '-'}</strong>
                   </span>
                   <span className="bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/15">
-                    Adm No: <strong className="text-white">{student?.admissionNo || student?.admissionNumber || 'ADM-2026-001'}</strong>
+                    Adm No: <strong className="text-white">{student?.admissionNo || student?.admissionNumber || '-'}</strong>
                   </span>
                 </div>
               </div>
@@ -509,28 +509,28 @@ export default function ParentPortalView() {
                   <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
                     <p className="text-slate-400 font-semibold mb-1">Father's Name</p>
                     <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                      {student?.fatherName || 'Mr. Rajesh Sharma'}
+                      {student?.fatherName || '-'}
                     </p>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
                     <p className="text-slate-400 font-semibold mb-1">Mother's Name</p>
                     <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                      {student?.motherName || 'Mrs. Sunita Sharma'}
+                      {student?.motherName || '-'}
                     </p>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
                     <p className="text-slate-400 font-semibold mb-1">Date of Birth</p>
                     <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                      {student?.dob || student?.dateOfBirth || '15 May 2010'}
+                      {student?.dob || student?.dateOfBirth || '-'}
                     </p>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
                     <p className="text-slate-400 font-semibold mb-1">Gender / Blood Group</p>
                     <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                      {student?.gender || 'Male'} • {student?.bloodGroup || 'B+'}
+                      {student?.gender || '-'} • {student?.bloodGroup || '-'}
                     </p>
                   </div>
 
@@ -538,7 +538,7 @@ export default function ParentPortalView() {
                     <p className="text-slate-400 font-semibold mb-1">Primary Registered Mobile</p>
                     <p className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>{student?.mobile || student?.parentMobile || '9876543210'}</span>
+                      <span>{student?.mobile || student?.parentMobile || '-'}</span>
                     </p>
                   </div>
 
@@ -546,7 +546,7 @@ export default function ParentPortalView() {
                     <p className="text-slate-400 font-semibold mb-1">Admission Date</p>
                     <p className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>{student?.admissionDate || '01 Apr 2024'}</span>
+                      <span>{student?.admissionDate || '-'}</span>
                     </p>
                   </div>
 
@@ -554,7 +554,7 @@ export default function ParentPortalView() {
                     <p className="text-slate-400 font-semibold mb-1">Permanent Residential Address</p>
                     <p className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-start gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0 mt-0.5" />
-                      <span>{student?.address || 'Near Main Bazar, School Road, City Center'}</span>
+                      <span>{student?.address || '-'}</span>
                     </p>
                   </div>
 
