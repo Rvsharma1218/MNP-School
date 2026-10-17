@@ -36,11 +36,20 @@ import {
   X,
   MessageSquare,
   Send,
-  Inbox
+  Inbox,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { exportSingleAdmitCardPDF } from '../lib/exportUtils';
 import { db } from '../lib/firebase';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import {
+  speakHindi,
+  stopSpeech,
+  generateComplaintHindiSpeech,
+  generateResultHindiSpeech,
+  generateNoticeHindiSpeech
+} from '../lib/speechUtils';
 
 export default function ParentPortalView() {
   const {
@@ -80,6 +89,18 @@ export default function ParentPortalView() {
     }
     return [];
   });
+
+  const [speakingId, setSpeakingId] = useState(null);
+
+  const toggleSpeech = (id, text) => {
+    if (speakingId === id) {
+      stopSpeech();
+      setSpeakingId(null);
+    } else {
+      setSpeakingId(id);
+      speakHindi(text, id, () => setSpeakingId(null));
+    }
+  };
 
   // Find target student
   const student =
@@ -1111,13 +1132,59 @@ export default function ParentPortalView() {
                           </p>
                         </div>
 
-                        <button
-                          onClick={() => setPrintResultData({ result: r, student })}
-                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#1f108e] hover:bg-[#150b69] text-white font-bold text-xs shadow-md transition-all cursor-pointer self-start sm:self-auto"
-                        >
-                          <Printer className="w-4 h-4" />
-                          <span>Download Marksheet PDF</span>
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                          {/* Audio Listen in Hindi */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const speech = generateResultHindiSpeech({
+                                examName: r.examName || r.exam || 'Terminal Examination',
+                                studentName: student?.name || '',
+                                obtainedMarks: obt,
+                                totalMarks: total,
+                                percentage: pct,
+                                grade,
+                                isPass: Number(pct) >= 33,
+                              });
+                              toggleSpeech(`res_${r.id}`, speech);
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                              speakingId === `res_${r.id}`
+                                ? 'bg-rose-600 text-white shadow-md animate-pulse'
+                                : 'bg-amber-100 hover:bg-amber-200 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/50'
+                            }`}
+                          >
+                            {speakingId === `res_${r.id}` ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                            <span>{speakingId === `res_${r.id}` ? 'रोकें (Stop)' : '🔊 बोलकर सुनें'}</span>
+                          </button>
+
+                          {/* WhatsApp Share */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const sName = student?.name || 'Student';
+                              const schName = settings?.instituteName || settings?.schoolName || 'School';
+                              const isPass = Number(pct) >= 33;
+                              const msg = `📢 *परीक्षा परिणाम (Exam Result)*\n━━━━━━━━━━━━━━━━━━━\n👤 *छात्र:* ${sName}\n🏫 *स्कूल:* ${schName}\n📝 *परीक्षा:* ${r.examName || r.exam || 'Exam'}\n📊 *प्राप्तांक:* ${obt} / ${total}\n📈 *प्रतिशत:* ${pct}%\n🎯 *ग्रेड:* ${grade}\n🏆 *स्थिति:* ${isPass ? '✅ उत्तीर्ण (PASSED)' : '❌ अनुत्तीर्ण (FAILED)'}\n━━━━━━━━━━━━━━━━━━━\nधन्यवाद!`;
+                              const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                              window.open(url, '_blank');
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                            <span>WhatsApp शेयर</span>
+                          </button>
+
+                          {/* PDF Download */}
+                          <button
+                            type="button"
+                            onClick={() => setPrintResultData({ result: r, student })}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#1f108e] hover:bg-[#150b69] text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>Download PDF</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Subjects Table */}
@@ -1512,6 +1579,39 @@ export default function ParentPortalView() {
                                 </p>
                               </div>
                             )}
+
+                            {/* Listen in Hindi Button */}
+                            <div className="pt-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const speech = generateComplaintHindiSpeech({
+                                    subject: c.subject,
+                                    message: c.message,
+                                    reply: c.reply || c.adminReply,
+                                    status: c.status,
+                                    studentName: student?.name,
+                                  });
+                                  toggleSpeech(`comp_${c.docId || c.id || Math.random()}`, speech);
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                                  speakingId === `comp_${c.docId || c.id || Math.random()}`
+                                    ? 'bg-rose-600 text-white shadow-sm animate-pulse'
+                                    : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-900/50'
+                                }`}
+                              >
+                                {speakingId === `comp_${c.docId || c.id || Math.random()}` ? (
+                                  <VolumeX className="w-3.5 h-3.5" />
+                                ) : (
+                                  <Volume2 className="w-3.5 h-3.5" />
+                                )}
+                                <span>
+                                  {speakingId === `comp_${c.docId || c.id || Math.random()}`
+                                    ? 'ऑडियो रोकें (Stop)'
+                                    : '🔊 बोलकर सुनें (हिंदी में)'}
+                                </span>
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -1575,7 +1675,35 @@ export default function ParentPortalView() {
                     </div>
 
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                      <span>Issued by: {n.author || 'School Administration'}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const speech = generateNoticeHindiSpeech({
+                              title: n.title,
+                              content: n.content || n.description,
+                            });
+                            toggleSpeech(`not_${n.id || Math.random()}`, speech);
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
+                            speakingId === `not_${n.id || Math.random()}`
+                              ? 'bg-rose-600 text-white shadow-sm animate-pulse'
+                              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+                          }`}
+                        >
+                          {speakingId === `not_${n.id || Math.random()}` ? (
+                            <VolumeX className="w-3.5 h-3.5" />
+                          ) : (
+                            <Volume2 className="w-3.5 h-3.5" />
+                          )}
+                          <span>
+                            {speakingId === `not_${n.id || Math.random()}`
+                              ? 'रोकें (Stop)'
+                              : '🔊 नोटिस बोलकर सुनें'}
+                          </span>
+                        </button>
+                        <span className="hidden sm:inline">Issued by: {n.author || 'School Administration'}</span>
+                      </div>
                       <span className="font-bold text-emerald-600">Verified</span>
                     </div>
                   </div>
