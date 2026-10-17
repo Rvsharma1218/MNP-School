@@ -178,14 +178,7 @@ export default function ParentPortalView() {
 
   // Dynamic Exam Timetable for Admit Card
   const classKey = student?.className ? `school_admit_schedule_${student.className}` : 'school_admit_schedule_default';
-  let studentTimetable = [
-    { day: '15/03/2026', subject: 'Mathematics', timing: '09:30 AM - 12:30 PM' },
-    { day: '17/03/2026', subject: 'Science', timing: '09:30 AM - 12:30 PM' },
-    { day: '19/03/2026', subject: 'Social Studies', timing: '09:30 AM - 12:30 PM' },
-    { day: '21/03/2026', subject: 'English', timing: '09:30 AM - 12:30 PM' },
-    { day: '23/03/2026', subject: 'Hindi', timing: '09:30 AM - 12:30 PM' },
-    { day: '25/03/2026', subject: 'Computer', timing: '09:30 AM - 12:30 PM' },
-  ];
+  let studentTimetable = settings?.examTimetable || [];
 
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem(classKey);
@@ -1359,13 +1352,21 @@ export default function ParentPortalView() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {studentTimetable.map((t, idx) => (
-                        <tr key={idx} className={idx % 2 === 1 ? 'bg-slate-50/50 dark:bg-slate-900/30' : ''}>
-                          <td className="py-2.5 px-3 font-bold text-indigo-600 dark:text-indigo-400">{t.day || t.date}</td>
-                          <td className="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-200">{t.subject}</td>
-                          <td className="py-2.5 px-3 text-slate-500">{t.timing}</td>
+                      {studentTimetable.length > 0 ? (
+                        studentTimetable.map((t, idx) => (
+                          <tr key={idx} className={idx % 2 === 1 ? 'bg-slate-50/50 dark:bg-slate-900/30' : ''}>
+                            <td className="py-2.5 px-3 font-bold text-indigo-600 dark:text-indigo-400">{t.day || t.date}</td>
+                            <td className="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-200">{t.subject}</td>
+                            <td className="py-2.5 px-3 text-slate-500">{t.timing}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={3} className="py-4 px-3 text-center text-slate-400 italic">
+                            Exam schedule will be updated once issued by the school administration.
+                          </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>

@@ -4,11 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSchoolStore } from '../lib/store';
 import { t } from '../lib/translations';
 import {
-  Menu, Search, Plus, CreditCard, Clock, Calendar, ShieldCheck,
-  UserCheck, Bell, ChevronDown, User, Settings, Key, LogOut, X, ShieldAlert,
-  Wifi, WifiOff, RefreshCw, CheckCircle2, AlertCircle, ArrowLeft,
-  Receipt, Eye, GraduationCap, ArrowRight, HelpCircle, Languages,
-  Sun, Moon, MessageSquare
+  Menu, Search, Plus, Clock, Calendar, Bell, ChevronDown, User, Settings,
+  Key, LogOut, ShieldAlert, Wifi, WifiOff, RefreshCw, CheckCircle2,
+  AlertCircle, ArrowLeft, HelpCircle, Languages, Sun, Moon, MessageSquare
 } from 'lucide-react';
 
 export default function Header({ onMenuClick }) {
@@ -17,17 +15,8 @@ export default function Header({ onMenuClick }) {
     stats,
     themeMode,
     toggleTheme,
-    students,
-    teachers,
-    payments,
     setIsAddStudentOpen,
     setIsGlobalSearchOpen,
-    setSelectedStudentId,
-    setViewingStudentProfile,
-    setFeeDetailStudent,
-    setIsFeeDetailSelectorOpen,
-    setPrintReceiptData,
-    calculateStudentFeeMetrics,
     currentUser,
     logout,
     currentPath,
@@ -53,12 +42,6 @@ export default function Header({ onMenuClick }) {
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
 
-  // Universal Header Search State
-  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
-  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
-  const searchContainerRef = useRef(null);
-  const searchInputRef = useRef(null);
-
   useEffect(() => {
     setMounted(true);
     const t = setInterval(() => setTime(new Date()), 1000);
@@ -83,9 +66,6 @@ export default function Header({ onMenuClick }) {
   // Close dropdowns on click outside
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
-        setIsSearchDropdownOpen(false);
-      }
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
       }
@@ -102,15 +82,7 @@ export default function Header({ onMenuClick }) {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        if (searchInputRef.current && window.innerWidth >= 768) {
-          searchInputRef.current.focus();
-          setIsSearchDropdownOpen(true);
-        } else {
-          setIsGlobalSearchOpen(prev => !prev);
-        }
-      }
-      if (e.key === 'Escape') {
-        setIsSearchDropdownOpen(false);
+        setIsGlobalSearchOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -177,71 +149,6 @@ export default function Header({ onMenuClick }) {
     logout();
   };
 
-  const searchQ = headerSearchQuery.trim().toLowerCase();
-
-  const matchedStudents = searchQ
-    ? (students || []).filter(s => {
-        return (
-          String(s.name || '').toLowerCase().includes(searchQ) ||
-          String(s.studentId || '').toLowerCase().includes(searchQ) ||
-          String(s.admissionNumber || s.admissionNo || '').toLowerCase().includes(searchQ) ||
-          String(s.rollNumber || '').toLowerCase().includes(searchQ) ||
-          String(s.mobile || '').includes(searchQ) ||
-          String(s.fatherName || '').toLowerCase().includes(searchQ) ||
-          String(s.motherName || '').toLowerCase().includes(searchQ) ||
-          String(s.className || '').toLowerCase().includes(searchQ) ||
-          String(s.section || '').toLowerCase().includes(searchQ) ||
-          String(s.course || '').toLowerCase().includes(searchQ) ||
-          String(s.batch || '').toLowerCase().includes(searchQ)
-        );
-      }).slice(0, 5)
-    : [];
-
-  const matchedTeachers = searchQ
-    ? (teachers || []).filter(t => {
-        return (
-          String(t.name || '').toLowerCase().includes(searchQ) ||
-          String(t.teacherId || '').toLowerCase().includes(searchQ) ||
-          String(t.mobile || '').includes(searchQ) ||
-          String(t.subject || '').toLowerCase().includes(searchQ) ||
-          String(t.designation || '').toLowerCase().includes(searchQ)
-        );
-      }).slice(0, 3)
-    : [];
-
-  const matchedPayments = searchQ
-    ? (payments || []).filter(p => {
-        return (
-          String(p.receiptNumber || '').toLowerCase().includes(searchQ) ||
-          String(p.studentName || '').toLowerCase().includes(searchQ) ||
-          String(p.studentId || '').toLowerCase().includes(searchQ) ||
-          String(p.amount || '').includes(searchQ) ||
-          String(p.paymentMode || '').toLowerCase().includes(searchQ)
-        );
-      }).slice(0, 3)
-    : [];
-
-  const navShortcuts = [
-    { title: 'Student Directory', path: '/students', tag: 'Directory' },
-    { title: 'Fee Structure & Collections', path: '/fees', tag: 'Billing' },
-    { title: 'Daily Attendance Register', path: '/attendance', tag: 'Attendance' },
-    { title: 'Exam Results & Marksheets', path: '/results', tag: 'Academic' },
-    { title: 'ID Cards Studio', path: '/idcards', tag: 'Printing' },
-    { title: 'Faculty & Teachers', path: '/teachers', tag: 'Staff' },
-    { title: 'Notice Board & Circulars', path: '/notices', tag: 'Notices' },
-    { title: 'System Settings', path: '/settings', tag: 'System' },
-  ];
-
-  const matchedPages = searchQ
-    ? navShortcuts.filter(p =>
-        p.title.toLowerCase().includes(searchQ) ||
-        p.path.toLowerCase().includes(searchQ) ||
-        p.tag.toLowerCase().includes(searchQ)
-      ).slice(0, 3)
-    : [];
-
-  const hasAnyResults = matchedStudents.length > 0 || matchedTeachers.length > 0 || matchedPayments.length > 0 || matchedPages.length > 0;
-
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between px-5 lg:px-8 h-16 w-full bg-white/90 backdrop-blur-md border-b border-border shadow-sm">
       
@@ -277,321 +184,18 @@ export default function Header({ onMenuClick }) {
         </div>
       </div>
 
-      {/* Center — Universal Search Bar (Desktop / Tablet) */}
-      <div ref={searchContainerRef} className="relative flex-1 max-w-md mx-2 sm:mx-4 hidden md:block">
-        <div className={`relative flex items-center h-10 w-full rounded-xl border transition-all ${
-          isSearchDropdownOpen
-            ? 'bg-white border-primary shadow-md ring-2 ring-primary/20'
-            : 'bg-surface2 hover:bg-white border-border hover:border-border-focus'
-        }`}>
-          <Search className={`w-4 h-4 ml-3.5 flex-shrink-0 transition-colors ${
-            isSearchDropdownOpen ? 'text-primary' : 'text-text-muted'
-          }`} />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={headerSearchQuery}
-            onChange={(e) => {
-              setHeaderSearchQuery(e.target.value);
-              if (!isSearchDropdownOpen) setIsSearchDropdownOpen(true);
-            }}
-            onFocus={() => setIsSearchDropdownOpen(true)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setIsSearchDropdownOpen(false);
-                setIsGlobalSearchOpen(true);
-              }
-            }}
-            placeholder="Universal search: student, roll, fee, teacher..."
-            className="flex-1 bg-transparent px-3 text-xs text-text placeholder-text-muted focus:outline-none font-medium truncate"
-          />
-          {headerSearchQuery ? (
-            <button
-              type="button"
-              onClick={() => {
-                setHeaderSearchQuery('');
-                searchInputRef.current?.focus();
-              }}
-              className="p-1 mr-2 rounded-md hover:bg-surface2 text-text-muted hover:text-text cursor-pointer transition-colors"
-              title="Clear search"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsGlobalSearchOpen(true)}
-              className="mr-2 text-[10px] bg-white border border-border rounded px-1.5 py-0.5 font-mono text-text-muted font-bold shadow-2xs hover:border-primary/50 cursor-pointer"
-              title="Click or press Ctrl+K for full search"
-            >
-              Ctrl K
-            </button>
-          )}
-        </div>
-
-        {/* Live Search Floating Dropdown */}
-        {isSearchDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-            <div className="max-h-[420px] overflow-y-auto p-3 space-y-3 custom-scrollbar text-xs">
-              
-              {/* When query is empty -> Quick Suggestions */}
-              {!searchQ && (
-                <div>
-                  <div className="text-[10px] font-bold text-text-secondary uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
-                    <span>Quick Navigation</span>
-                    <span className="text-[9px] text-text-muted font-normal">Type to search anything</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {navShortcuts.slice(0, 4).map((item, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          navigate(item.path);
-                          setIsSearchDropdownOpen(false);
-                        }}
-                        className="p-2 rounded-xl bg-surface2/60 hover:bg-surface2 border border-border/40 hover:border-primary/30 flex items-center justify-between text-left transition-all cursor-pointer group"
-                      >
-                        <span className="font-semibold text-text group-hover:text-primary transition-colors truncate">{item.title}</span>
-                        <ArrowRight className="w-3 h-3 text-text-muted group-hover:text-primary group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Matched Students */}
-              {matchedStudents.length > 0 && (
-                <div>
-                  <div className="text-[10px] font-bold text-text-secondary uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
-                    <span>Students ({matchedStudents.length})</span>
-                    <span className="text-[9px] text-text-muted font-normal">Profile & Fee Actions</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {matchedStudents.map(s => {
-                      const metrics = calculateStudentFeeMetrics ? calculateStudentFeeMetrics(s, payments) : null;
-                      const sDue = metrics ? metrics.currentDue : Math.max(0, (Number(s.totalFees) || 0) - (Number(s.paidFees) || 0));
-
-                      return (
-                        <div
-                          key={s.id}
-                          className="p-2 rounded-xl bg-surface2/40 hover:bg-surface2 border border-border/50 hover:border-primary/40 flex items-center justify-between gap-2 transition-all group"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedStudentId(s.id);
-                              setViewingStudentProfile(s);
-                              setIsSearchDropdownOpen(false);
-                            }}
-                            className="flex items-center gap-2.5 flex-1 text-left min-w-0 cursor-pointer"
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 overflow-hidden">
-                              {s.photoPath || s.photoUrl ? (
-                                <img src={s.photoPath || s.photoUrl} alt={s.name} className="w-full h-full object-cover" />
-                              ) : (
-                                s.name?.charAt(0) || 'S'
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="font-bold text-text group-hover:text-primary transition-colors flex items-center gap-1.5 truncate">
-                                <span>{s.name}</span>
-                                <span className="text-[9px] px-1 rounded bg-surface border border-border text-text-secondary font-mono">
-                                  Roll: {s.rollNumber || '-'}
-                                </span>
-                              </div>
-                              <div className="text-[10px] text-text-secondary truncate">
-                                {s.studentType === 'school' ? `Class ${s.className || ''} (${s.section || 'A'})` : s.course} • ID: {s.studentId}
-                              </div>
-                            </div>
-                          </button>
-
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${
-                              sDue <= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'
-                            }`}>
-                              {sDue <= 0 ? 'Paid' : `₹${sDue.toLocaleString('en-IN')} Due`}
-                            </span>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsFeeDetailSelectorOpen(false);
-                                setFeeDetailStudent(s);
-                                setIsSearchDropdownOpen(false);
-                              }}
-                              className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                              title="Open Fee Structure & Collect Payment"
-                            >
-                              <CreditCard className="w-3 h-3" />
-                              <span>Pay</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedStudentId(s.id);
-                                setViewingStudentProfile(s);
-                                setIsSearchDropdownOpen(false);
-                              }}
-                              className="p-1 rounded-lg text-text-muted hover:text-text hover:bg-card cursor-pointer transition-colors"
-                              title="View Full Profile"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Matched Teachers */}
-              {matchedTeachers.length > 0 && (
-                <div>
-                  <div className="text-[10px] font-bold text-text-secondary uppercase tracking-wider px-1 mb-1.5">
-                    Faculty & Teachers ({matchedTeachers.length})
-                  </div>
-                  <div className="space-y-1.5">
-                    {matchedTeachers.map(t => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => {
-                          navigate('/teachers');
-                          setIsSearchDropdownOpen(false);
-                        }}
-                        className="w-full p-2 rounded-xl bg-surface2/40 hover:bg-surface2 border border-border/50 hover:border-primary/40 flex items-center justify-between text-left transition-colors cursor-pointer group"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-bold text-[11px] flex-shrink-0">
-                            <GraduationCap className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="truncate">
-                            <span className="font-bold text-text group-hover:text-primary transition-colors">{t.name}</span>
-                            <span className="text-[10px] text-text-secondary ml-1.5">({t.teacherId || 'Teacher'}) • {t.subject || t.designation || 'Faculty'}</span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] text-primary font-bold">View Staff →</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Matched Receipts */}
-              {matchedPayments.length > 0 && (
-                <div>
-                  <div className="text-[10px] font-bold text-text-secondary uppercase tracking-wider px-1 mb-1.5">
-                    Matching Fee Receipts ({matchedPayments.length})
-                  </div>
-                  <div className="space-y-1.5">
-                    {matchedPayments.map(p => {
-                      const matchedStudent = students.find(st => st.id === p.studentId || (st.studentId && st.studentId === p.studentId));
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => {
-                            setPrintReceiptData({
-                              payment: p,
-                              student: matchedStudent || { name: p.studentName, studentId: p.studentId, session: settings.currentSession },
-                              settings
-                            });
-                            setIsSearchDropdownOpen(false);
-                          }}
-                          className="w-full p-2 rounded-xl bg-surface2/40 hover:bg-surface2 border border-border/50 hover:border-emerald-500/40 flex items-center justify-between text-left transition-colors cursor-pointer group"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-[11px] flex-shrink-0">
-                              <Receipt className="w-3.5 h-3.5" />
-                            </div>
-                            <div className="truncate">
-                              <span className="font-mono font-bold text-text group-hover:text-emerald-600 transition-colors">{p.receiptNumber}</span>
-                              <span className="text-[10px] text-text-secondary ml-1.5">₹{Number(p.amount).toLocaleString('en-IN')} • {p.studentName}</span>
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-emerald-600 font-bold">Print Slip →</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Matched Pages */}
-              {matchedPages.length > 0 && (
-                <div>
-                  <div className="text-[10px] font-bold text-text-secondary uppercase tracking-wider px-1 mb-1.5">
-                    Navigation Pages
-                  </div>
-                  <div className="space-y-1">
-                    {matchedPages.map((pg, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          navigate(pg.path);
-                          setIsSearchDropdownOpen(false);
-                        }}
-                        className="w-full p-2 rounded-xl hover:bg-surface2 flex items-center justify-between text-left cursor-pointer group"
-                      >
-                        <span className="font-semibold text-text group-hover:text-primary transition-colors">{pg.title}</span>
-                        <span className="text-[10px] text-text-muted">{pg.path}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* No Results Message */}
-              {searchQ && !hasAnyResults && (
-                <div className="py-6 text-center text-text-muted">
-                  <p className="text-xs">No matching student, roll number, teacher, or receipt found.</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSearchDropdownOpen(false);
-                      setIsGlobalSearchOpen(true);
-                    }}
-                    className="mt-2 text-[11px] text-primary font-bold hover:underline cursor-pointer"
-                  >
-                    Open Universal Command Search →
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Dropdown Bottom Bar */}
-            <div className="p-2.5 px-3 border-t border-border bg-surface2/60 flex items-center justify-between text-[10px] text-text-muted">
-              <span>Press <kbd className="px-1 py-0.5 rounded bg-card border border-border font-mono text-[9px]">Enter</kbd> or click button for full modal</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSearchDropdownOpen(false);
-                  setIsGlobalSearchOpen(true);
-                }}
-                className="font-bold text-primary hover:underline cursor-pointer flex items-center gap-1"
-              >
-                <span>Full Search Modal</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Right */}
-      <div className="flex items-center gap-2 sm:gap-3.5 flex-shrink-0">
-        {/* Mobile Search Icon Button */}
+      {/* Right Action Cluster */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        {/* Universal Search Icon Button */}
         <button
           type="button"
           onClick={() => setIsGlobalSearchOpen(true)}
-          className="md:hidden p-2 rounded-xl bg-surface2 hover:bg-border text-text transition-colors cursor-pointer border border-border shadow-2xs"
-          title="Search"
+          className="p-2 sm:px-3 sm:py-2 rounded-xl bg-surface2 hover:bg-border text-text hover:text-primary transition-all cursor-pointer border border-border shadow-2xs flex items-center gap-2 group"
+          title="Search (Ctrl+K)"
         >
-          <Search className="w-4.5 h-4.5" />
+          <Search className="w-4.5 h-4.5 text-text-secondary group-hover:text-primary group-hover:scale-105 transition-all" />
+          <span className="hidden xl:inline text-xs font-semibold text-text-secondary group-hover:text-primary">Search</span>
+          <kbd className="hidden xl:inline text-[10px] bg-white border border-border rounded px-1.5 py-0.5 font-mono text-text-muted font-bold shadow-2xs">Ctrl K</kbd>
         </button>
         {/* Date & Time */}
         {mounted && (

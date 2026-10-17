@@ -10,7 +10,7 @@ import {
   ShieldCheck, UserCheck, School, Sun, Moon, Zap,
   ChevronRight, ChevronLeft, Plus, FileText, Megaphone, X,
   Building2, Calendar, Sparkles,
-  HelpCircle, MessageSquare, Smartphone
+  HelpCircle, MessageSquare
 } from 'lucide-react';
 
 function NavBtn({ icon: Icon, label, badge, active, onClick, iconColor, collapsed }) {
@@ -184,7 +184,6 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
                     <NavBtn icon={QrCode} label="QR Scanner" active={currentPath === '/qrscanner'} onClick={() => nav('qrscanner')} collapsed={collapsed} />
                     <NavBtn icon={UserCheck} label="User Management" active={currentPath === '/users'} onClick={() => nav('users')} collapsed={collapsed} />
                     <NavBtn icon={MessageSquare} label={lang === 'hi' ? 'अभिभावक शिकायतें' : 'Parent Complaints'} badge="Desk" active={currentPath === '/complaints'} onClick={() => nav('complaints')} collapsed={collapsed} />
-                    <NavBtn icon={Smartphone} label={lang === 'hi' ? 'कनेक्टेड डिवाइसेज व GPS' : 'Connected Devices & GPS'} badge="Live" active={currentPath === '/devices'} onClick={() => nav('devices')} collapsed={collapsed} />
                     <NavBtn icon={Settings} label={t('settings', lang)} active={currentPath === '/settings'} onClick={() => nav('settings')} collapsed={collapsed} />
                     <NavBtn icon={HelpCircle} label={t('helpSupport', lang)} active={isHelpFeedbackOpen} onClick={() => { setIsHelpFeedbackOpen(true); if (onClose) onClose(); }} collapsed={collapsed} />
                     <NavBtn icon={Sparkles} label={t('subscription', lang)} badge="All Access" active={currentPath === '/subscription'} onClick={() => nav('subscription')} collapsed={collapsed} />

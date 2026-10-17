@@ -11,30 +11,26 @@ import {
 } from 'lucide-react';
 import { openWhatsAppFeeReminder } from '../lib/exportUtils';
 
-function KpiCard({ icon: Icon, iconBg, label, value, sub, trend, onClick, trendColor, isPrimary }) {
+function KpiCard({ icon: Icon, iconBg, label, value, sub, trend, onClick, trendColor }) {
   return (
     <div
       onClick={onClick}
-      className={`rounded-xl p-3.5 sm:p-4 shadow-2xs border transition-all duration-200 cursor-pointer group flex flex-col justify-between min-h-[115px] ${
-        isPrimary
-          ? 'bg-gradient-to-br from-[#1f108e] to-[#0f0069] text-white border-transparent shadow-md hover:shadow-lg'
-          : 'bg-white border-[#c8c4d5]/50 hover:border-[#1f108e]/40 hover:shadow-xs'
-      }`}
+      className="bg-white rounded-2xl p-3.5 sm:p-4 border border-[#c8c4d5]/60 hover:border-[#1f108e]/40 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer group flex items-center gap-3.5"
     >
-      <div className="flex justify-between items-start mb-2">
-        <div className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-2xs`}>
-          <Icon className={`w-4.5 h-4.5 ${isPrimary ? 'text-white' : ''}`} />
-        </div>
-        {trend && (
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${trendColor}`}>
-            {trend}
-          </span>
-        )}
+      <div className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-2xs`}>
+        <Icon className="w-5 h-5" />
       </div>
-      <div>
-        <p className={`text-[11px] font-bold mb-0.5 ${isPrimary ? 'text-white/80' : 'text-[#464553]'}`}>{label}</p>
-        <h3 className={`text-xl sm:text-2xl font-black leading-tight ${isPrimary ? 'text-white' : 'text-[#0b1c30]'}`}>{value}</h3>
-        <p className={`text-[10px] mt-1 font-medium ${isPrimary ? 'text-white/70' : 'text-[#777584]'}`}>{sub}</p>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-1 mb-0.5">
+          <span className="text-[11px] font-bold text-[#464553] uppercase tracking-wider truncate">{label}</span>
+          {trend && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${trendColor} flex-shrink-0`}>
+              {trend}
+            </span>
+          )}
+        </div>
+        <div className="text-xl sm:text-2xl font-black text-[#0b1c30] tracking-tight truncate leading-tight">{value}</div>
+        <p className="text-[10px] font-medium text-[#777584] truncate mt-0.5">{sub}</p>
       </div>
     </div>
   );
@@ -124,24 +120,23 @@ export default function DashboardView() {
         {isPrincipal ? (
           <>
             <KpiCard
-              iconBg="bg-white/20 text-white"
+              iconBg="bg-blue-50 text-blue-600"
               icon={GraduationCap}
               label="School Students"
               value={stats.schoolCount}
               sub="K-12 Active Enrollment"
               trend="+4.2% Growth"
-              trendColor="bg-white/20 text-white"
-              isPrimary={true}
+              trendColor="bg-blue-50 text-blue-700"
               onClick={() => navigate('/students')}
             />
             <KpiCard
-              iconBg="bg-[#dce9ff] text-[#0051d5]"
+              iconBg="bg-indigo-50 text-indigo-600"
               icon={Monitor}
               label="Computer Students"
               value={stats.computerCount}
               sub="ADCA · DCA · Tally · Web"
               trend="Active Courses"
-              trendColor="bg-[#dce9ff] text-[#0051d5]"
+              trendColor="bg-indigo-50 text-indigo-700"
               onClick={() => navigate('/students')}
             />
             <KpiCard
@@ -168,14 +163,13 @@ export default function DashboardView() {
         ) : (
           <>
             <KpiCard
-              iconBg="bg-white/20 text-white"
+              iconBg="bg-blue-50 text-blue-600"
               icon={Users}
               label="Assigned Students"
               value={teacherStudents.length}
               sub={`Class ${assignedClass} Register`}
               trend="Assigned"
-              trendColor="bg-white/20 text-white"
-              isPrimary={true}
+              trendColor="bg-blue-50 text-blue-700"
               onClick={() => navigate('/students')}
             />
             <KpiCard
@@ -189,13 +183,13 @@ export default function DashboardView() {
               onClick={() => navigate('/attendance')}
             />
             <KpiCard
-              iconBg="bg-[#dce9ff] text-[#0051d5]"
+              iconBg="bg-indigo-50 text-indigo-600"
               icon={CheckCircle2}
               label="Present in Class"
               value={stats.todayPresent}
               sub="Attended today"
               trend="Logged"
-              trendColor="bg-[#dce9ff] text-[#0051d5]"
+              trendColor="bg-indigo-50 text-indigo-700"
               onClick={() => navigate('/attendance')}
             />
             <KpiCard

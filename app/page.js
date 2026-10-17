@@ -48,7 +48,6 @@ import UserManagementView from '../components/UserManagementView';
 import ProfileView from '../components/ProfileView';
 import ParentPortalView from '../components/ParentPortalView';
 import ParentComplaintsView from '../components/ParentComplaintsView';
-import ConnectedDevicesView from '../components/ConnectedDevicesView';
 
 function AppContent() {
   const {
@@ -383,7 +382,6 @@ function AppContent() {
             {currentPath === '/users' && <UserManagementView />}
             {currentPath === '/profile' && <ProfileView />}
             {currentPath === '/complaints' && <ParentComplaintsView />}
-            {currentPath === '/devices' && <ConnectedDevicesView />}
             {currentPath === '/access-denied' && <AccessDeniedView />}
           </div>
         </main>
