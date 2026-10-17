@@ -7,7 +7,8 @@ import {
   Plus, Trash2, CheckCircle, School, ArrowRight,
   Info, Sparkles, Check, UploadCloud, Image as ImageIcon, Camera, X, FileSignature, Crop,
   Shield, Languages, HelpCircle, Headphones, MessageCircle, PhoneCall, Mail,
-  ExternalLink, GraduationCap, Lock, CheckCircle2, AlertCircle, ChevronRight, Stamp, Link2
+  ExternalLink, GraduationCap, Lock, CheckCircle2, AlertCircle, ChevronRight, Stamp, Link2,
+  MapPin, Navigation
 } from 'lucide-react';
 import { removeSignatureBackground } from '../lib/exportUtils';
 import ImageCropperModal from './ImageCropperModal';
@@ -61,12 +62,28 @@ export default function SettingsView() {
     computerCourses: settings.computerCourses || settings.courses || [],
     sections: settings.sections || ['A', 'B', 'C'],
     batches: settings.batches || [],
+    campusLatitude: settings.campusLatitude !== undefined && settings.campusLatitude !== null ? settings.campusLatitude : (settings.latitude || ''),
+    campusLongitude: settings.campusLongitude !== undefined && settings.campusLongitude !== null ? settings.campusLongitude : (settings.longitude || ''),
+    geofenceRadiusMeters: settings.geofenceRadiusMeters !== undefined ? settings.geofenceRadiusMeters : 300,
+    geofenceEnabled: settings.geofenceEnabled !== undefined ? settings.geofenceEnabled : true,
     ...settings
   });
 
   const [newClassName, setNewClassName] = useState('');
   const [newCourseName, setNewCourseName] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const [isDetectingGps, setIsDetectingGps] = useState(false);
+  const [combinedCoordsInput, setCombinedCoordsInput] = useState('');
+  const [isTestingDistance, setIsTestingDistance] = useState(false);
+  const [distanceTestResult, setDistanceTestResult] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('section') || params.get('tab');
+      if (tab) setActiveSection(tab);
+    }
+  }, []);
 
   // Synchronize formData with settings whenever settings updates
   useEffect(() => {
@@ -101,7 +118,11 @@ export default function SettingsView() {
         courses: (settings.courses && settings.courses.length > 0) ? settings.courses : (settings.computerCourses || prev.courses || []),
         computerCourses: (settings.computerCourses && settings.computerCourses.length > 0) ? settings.computerCourses : (settings.courses || prev.computerCourses || []),
         sections: settings.sections || prev.sections || ['A', 'B', 'C'],
-        batches: settings.batches || prev.batches || []
+        batches: settings.batches || prev.batches || [],
+        campusLatitude: settings.campusLatitude !== undefined && settings.campusLatitude !== null ? settings.campusLatitude : (settings.latitude || prev.campusLatitude || ''),
+        campusLongitude: settings.campusLongitude !== undefined && settings.campusLongitude !== null ? settings.campusLongitude : (settings.longitude || prev.campusLongitude || ''),
+        geofenceRadiusMeters: settings.geofenceRadiusMeters !== undefined ? settings.geofenceRadiusMeters : (prev.geofenceRadiusMeters || 300),
+        geofenceEnabled: settings.geofenceEnabled !== undefined ? settings.geofenceEnabled : (prev.geofenceEnabled !== undefined ? prev.geofenceEnabled : true)
       }));
     }
   }, [settings]);
@@ -325,6 +346,7 @@ export default function SettingsView() {
       items: [
         { id: 'branding', label: 'School Profile', icon: Building2, desc: 'Name, Logo & Contact Info' },
         { id: 'signatures', label: 'Official Signatures & School Seal', icon: FileSignature, desc: 'Principal Sign & School Stamp' },
+        { id: 'geofence', label: 'Campus GPS & Geofence', icon: MapPin, desc: 'Perimeter GPS & Attendance' },
         { id: 'academic', label: 'Academic & Classes', icon: GraduationCap, desc: 'Classes, Sessions & Batches' },
         { id: 'language', label: 'Portal Language', icon: Languages, desc: 'Portal Display Language' },
       ]
@@ -998,6 +1020,460 @@ export default function SettingsView() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* === SECTION: SCHOOL CAMPUS GPS & GEOFENCE === */}
+          {activeSection === 'geofence' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
+                
+                {/* Section Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-text flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-indigo-600" />
+                      <span>School Campus GPS &amp; Geofence Boundary</span>
+                    </h2>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      Set campus GPS coordinates and allowed perimeter radius. Restricts teacher attendance to within school grounds.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {formData.campusLatitude && formData.campusLongitude ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>GPS Active ({formData.geofenceRadiusMeters || 300}m)</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>Coordinates Not Set</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Live Campus Coordinates & Google Maps Link Preview */}
+                <div className="bg-gradient-to-br from-indigo-50/60 via-slate-50 to-blue-50/40 p-5 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-indigo-600/20">
+                      <Navigation className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Configured Campus Location</div>
+                      <div className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
+                        {formData.campusLatitude && formData.campusLongitude
+                          ? `${Number(formData.campusLatitude).toFixed(6)}° N, ${Number(formData.campusLongitude).toFixed(6)}° E`
+                          : 'Campus GPS Coordinates Not Configured'}
+                      </div>
+                      <div className="text-xs text-slate-500 font-medium mt-0.5">
+                        Perimeter Boundary: <strong className="text-slate-800">{formData.geofenceRadiusMeters || 300} Meters</strong> from campus center
+                      </div>
+                    </div>
+                  </div>
+
+                  {formData.campusLatitude && formData.campusLongitude && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${formData.campusLatitude},${formData.campusLongitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span>Open in Google Maps</span>
+                    </a>
+                  )}
+                </div>
+
+                {/* 1-Click Auto Detect & Paste Coords Tools */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Option A: Auto-Detect GPS */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-white border border-border space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">
+                        1
+                      </div>
+                      <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                        Auto-Detect via Device GPS
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Stand inside your school campus and tap below to fetch exact GPS satellite coordinates with 1 click.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={isDetectingGps}
+                      onClick={() => {
+                        if (typeof window === 'undefined' || !navigator.geolocation) {
+                          showToast('Geolocation is not supported by your browser.', 'error');
+                          return;
+                        }
+                        setIsDetectingGps(true);
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            const lat = parseFloat(pos.coords.latitude.toFixed(6));
+                            const lng = parseFloat(pos.coords.longitude.toFixed(6));
+                            const accuracy = Math.round(pos.coords.accuracy || 0);
+
+                            setFormData(prev => ({
+                              ...prev,
+                              campusLatitude: lat,
+                              campusLongitude: lng,
+                              latitude: lat,
+                              longitude: lng
+                            }));
+                            setCombinedCoordsInput(`${lat}, ${lng}`);
+                            setIsDetectingGps(false);
+                            showToast(`GPS Location Detected! Lat: ${lat}, Lng: ${lng} (±${accuracy}m)`, 'success');
+                          },
+                          (err) => {
+                            setIsDetectingGps(false);
+                            showToast('Could not fetch GPS location: ' + err.message, 'error');
+                          },
+                          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+                        );
+                      }}
+                      className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                    >
+                      {isDetectingGps ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Acquiring High-Accuracy GPS...</span>
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="w-4 h-4" />
+                          <span>Detect &amp; Set Campus GPS Location</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Option B: Paste Google Maps Link or Decimals */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-white border border-border space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-black">
+                        2
+                      </div>
+                      <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                        Paste Coordinates or Maps URL
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Paste a Google Maps share link, or comma-separated decimals (e.g. <code>26.065489, 84.371769</code>).
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={combinedCoordsInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCombinedCoordsInput(val);
+                          const text = String(val || '').trim();
+                          let parsed = null;
+                          const urlMatch = text.match(/[@?&]q?=([+-]?\d+\.?\d*),([+-]?\d+\.?\d*)/);
+                          if (urlMatch) {
+                            const lat = parseFloat(urlMatch[1]);
+                            const lng = parseFloat(urlMatch[2]);
+                            if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                              parsed = { lat, lng };
+                            }
+                          }
+                          if (!parsed) {
+                            const decMatch = text.match(/([+-]?\d+\.?\d*)\s*[,;\s]\s*([+-]?\d+\.?\d*)/);
+                            if (decMatch) {
+                              const lat = parseFloat(decMatch[1]);
+                              const lng = parseFloat(decMatch[2]);
+                              if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                                parsed = { lat, lng };
+                              }
+                            }
+                          }
+                          if (parsed) {
+                            setFormData(prev => ({
+                              ...prev,
+                              campusLatitude: parsed.lat,
+                              campusLongitude: parsed.lng,
+                              latitude: parsed.lat,
+                              longitude: parsed.lng
+                            }));
+                            showToast(`Extracted: Lat ${parsed.lat.toFixed(6)}, Lng ${parsed.lng.toFixed(6)}`, 'info');
+                          }
+                        }}
+                        placeholder="Paste Google Maps URL or 26.065, 84.371..."
+                        className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-border text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (navigator.clipboard) {
+                            navigator.clipboard.readText().then(text => {
+                              if (text) {
+                                setCombinedCoordsInput(text);
+                                const trimmed = String(text || '').trim();
+                                let parsed = null;
+                                const urlMatch = trimmed.match(/[@?&]q?=([+-]?\d+\.?\d*),([+-]?\d+\.?\d*)/);
+                                if (urlMatch) {
+                                  const lat = parseFloat(urlMatch[1]);
+                                  const lng = parseFloat(urlMatch[2]);
+                                  if (!isNaN(lat) && !isNaN(lng)) parsed = { lat, lng };
+                                }
+                                if (!parsed) {
+                                  const decMatch = trimmed.match(/([+-]?\d+\.?\d*)\s*[,;\s]\s*([+-]?\d+\.?\d*)/);
+                                  if (decMatch) {
+                                    const lat = parseFloat(decMatch[1]);
+                                    const lng = parseFloat(decMatch[2]);
+                                    if (!isNaN(lat) && !isNaN(lng)) parsed = { lat, lng };
+                                  }
+                                }
+                                if (parsed) {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    campusLatitude: parsed.lat,
+                                    campusLongitude: parsed.lng,
+                                    latitude: parsed.lat,
+                                    longitude: parsed.lng
+                                  }));
+                                  showToast(`Pasted Coordinates: ${parsed.lat.toFixed(6)}, ${parsed.lng.toFixed(6)}`, 'success');
+                                } else {
+                                  showToast('Clipboard does not contain valid GPS coordinates or Maps link.', 'warning');
+                                }
+                              }
+                            });
+                          }
+                        }}
+                        className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-border cursor-pointer transition-all"
+                      >
+                        Paste
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Fields: Latitude, Longitude */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">
+                      Campus Latitude (अक्षांश) *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={formData.campusLatitude}
+                      onChange={(e) => setFormData(prev => ({ ...prev, campusLatitude: e.target.value, latitude: e.target.value }))}
+                      placeholder="e.g. 26.065489"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-border text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-2xs font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">
+                      Campus Longitude (देशांतर) *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={formData.campusLongitude}
+                      onChange={(e) => setFormData(prev => ({ ...prev, campusLongitude: e.target.value, longitude: e.target.value }))}
+                      placeholder="e.g. 84.371769"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-border text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-2xs font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Perimeter Radius Selector */}
+                <div className="space-y-3 pt-3 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-xs font-bold text-slate-900">
+                        Allowed Perimeter Radius (परिधि सीमा)
+                      </label>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Maximum distance allowed from campus center for teachers to punch in.
+                      </p>
+                    </div>
+                    <span className="px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-black">
+                      {formData.geofenceRadiusMeters || 300} Meters
+                    </span>
+                  </div>
+
+                  {/* Radius Preset Pills */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {[
+                      { r: 50, label: '50m (Single Building)' },
+                      { r: 100, label: '100m (Compact)' },
+                      { r: 200, label: '200m (Standard)' },
+                      { r: 300, label: '300m (Recommended)' },
+                      { r: 500, label: '500m (Large Campus)' },
+                      { r: 1000, label: '1000m (Rural Boundary)' }
+                    ].map(p => {
+                      const isSelected = Number(formData.geofenceRadiusMeters || 300) === p.r;
+                      return (
+                        <button
+                          key={p.r}
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, geofenceRadiusMeters: p.r }))}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-border'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Range Slider */}
+                  <input
+                    type="range"
+                    min="50"
+                    max="1500"
+                    step="25"
+                    value={formData.geofenceRadiusMeters || 300}
+                    onChange={(e) => setFormData(prev => ({ ...prev, geofenceRadiusMeters: Number(e.target.value) }))}
+                    className="w-full accent-indigo-600 cursor-pointer"
+                  />
+                </div>
+
+                {/* Geofence Enforcement Switch */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-border flex items-center justify-between gap-4">
+                  <div>
+                    <label className="text-xs font-extrabold text-slate-900 block">
+                      Enforce Geofence Verification for Teacher Attendance
+                    </label>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      When enabled, faculty members can only punch in when their live device GPS is physically within the {formData.geofenceRadiusMeters || 300}m campus radius.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={formData.geofenceEnabled !== false}
+                      onChange={(e) => setFormData(prev => ({ ...prev, geofenceEnabled: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+
+                {/* Live Distance Testing Sandbox */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white space-y-3 shadow-md">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                        <Navigation className="w-3.5 h-3.5" />
+                        <span>Interactive Distance Sandbox</span>
+                      </h4>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        Test your current physical distance from school center to preview geofence validation.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isTestingDistance}
+                      onClick={() => {
+                        const targetLat = parseFloat(formData.campusLatitude);
+                        const targetLng = parseFloat(formData.campusLongitude);
+                        if (isNaN(targetLat) || isNaN(targetLng)) {
+                          showToast('Please set campus latitude & longitude first.', 'warning');
+                          return;
+                        }
+                        if (typeof window === 'undefined' || !navigator.geolocation) {
+                          showToast('Geolocation is not supported by your browser.', 'error');
+                          return;
+                        }
+                        setIsTestingDistance(true);
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            const userLat = pos.coords.latitude;
+                            const userLng = pos.coords.longitude;
+                            const R = 6371000;
+                            const dLat = (targetLat - userLat) * (Math.PI / 180);
+                            const dLon = (targetLng - userLng) * (Math.PI / 180);
+                            const a =
+                              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                              Math.cos(userLat * (Math.PI / 180)) * Math.cos(targetLat * (Math.PI / 180)) *
+                              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                            const distance = Math.round(R * c);
+                            const radius = Number(formData.geofenceRadiusMeters || 300);
+                            const isInside = distance <= radius;
+
+                            setDistanceTestResult({
+                              distance,
+                              radius,
+                              isInside,
+                              userLat: userLat.toFixed(6),
+                              userLng: userLng.toFixed(6)
+                            });
+                            setIsTestingDistance(false);
+                          },
+                          (err) => {
+                            setIsTestingDistance(false);
+                            showToast('Distance test failed: ' + err.message, 'error');
+                          },
+                          { enableHighAccuracy: true, timeout: 10000 }
+                        );
+                      }}
+                      className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto disabled:opacity-50"
+                    >
+                      {isTestingDistance ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Testing GPS...</span>
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>Test My Current Distance</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {distanceTestResult && (
+                    <div className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-between gap-3 ${
+                      distanceTestResult.isInside
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
+                        : 'bg-rose-500/20 border-rose-400 text-rose-200'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        {distanceTestResult.isInside ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                        )}
+                        <span>
+                          {distanceTestResult.isInside
+                            ? `✓ Inside Perimeter! You are ${distanceTestResult.distance}m away (Allowed: ${distanceTestResult.radius}m). Attendance verification will PASS.`
+                            : `⚠️ Outside Perimeter! You are ${distanceTestResult.distance}m away from school. Attendance must be marked within ${distanceTestResult.radius}m.`}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono opacity-80 flex-shrink-0 hidden sm:inline">
+                        {distanceTestResult.userLat}, {distanceTestResult.userLng}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Save CTA */}
+                <div className="flex justify-end pt-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleSubmit();
+                      showToast('School Campus GPS &amp; Geofence saved successfully!', 'success');
+                    }}
+                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Save Geofence Settings</span>
+                  </button>
+                </div>
+
               </div>
             </div>
           )}

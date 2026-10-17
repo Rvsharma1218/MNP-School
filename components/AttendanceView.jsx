@@ -5,7 +5,8 @@ import { useSchoolStore } from '../lib/store';
 import {
   CalendarCheck, CheckCircle2, XCircle, Clock, MessageSquare,
   FileSpreadsheet, Users, GraduationCap, Monitor, ChevronLeft,
-  ChevronRight, Filter, Check, X, AlertTriangle, Share2, Printer, ArrowRight, Search, Download, FileText, Calendar
+  ChevronRight, Filter, Check, X, AlertTriangle, Share2, Printer, ArrowRight, Search, Download, FileText, Calendar,
+  MapPin, Navigation
 } from 'lucide-react';
 import {
   exportAttendanceToExcel,
@@ -25,10 +26,11 @@ export default function AttendanceView() {
     currentUser,
     markStudentAttendance,
     bulkMarkAttendance,
-    teachers,
     teacherAttendance,
     bulkMarkTeacherAttendance,
     teacherPermissions,
+    teacherPunchIns,
+    punchInTeacherGeofence,
     showToast
   } = useSchoolStore();
 
@@ -37,6 +39,8 @@ export default function AttendanceView() {
   const [selectedTeacherDate, setSelectedTeacherDate] = useState(new Date().toISOString().split('T')[0]);
   const [localTeacherStatus, setLocalTeacherStatus] = useState({});
   const [isSavingTeacherAtt, setIsSavingTeacherAtt] = useState(false);
+  const [isPunchingIn, setIsPunchingIn] = useState(false);
+  const [punchModalResult, setPunchModalResult] = useState(null);
 
   useEffect(() => {
     const saved = (teacherAttendance && teacherAttendance[selectedTeacherDate]) || {};
@@ -271,6 +275,84 @@ export default function AttendanceView() {
           </button>
         </div>
       </div>
+
+      {/* ── Faculty GPS Geofence Punch-In Bar ── */}
+      {(() => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentTeacherId = currentUser?.teacherId || currentUser?.uid || currentUser?.id || '';
+        const currentTeacherName = currentUser?.name || currentUser?.displayName || 'Faculty Member';
+        const myPunch = teacherPunchIns?.[todayStr]?.[currentTeacherId];
+        const isConfigured = Boolean(settings.campusLatitude && settings.campusLongitude);
+
+        return (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/70 to-slate-50 border border-blue-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-600/20">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                    Campus GPS Geofence Attendance
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                    isConfigured
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}>
+                    {isConfigured ? `${settings.geofenceRadiusMeters || 300}m Active` : 'GPS Not Set'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  {myPunch
+                    ? `✓ Verified inside school perimeter at ${myPunch.timeStr} (${myPunch.distanceMeters}m from center)`
+                    : isConfigured
+                    ? `Mark faculty attendance verified by live GPS within ${settings.geofenceRadiusMeters || 300}m of school grounds.`
+                    : 'School campus coordinates not set. Configure in Settings → Campus GPS & Geofence.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+              {myPunch ? (
+                <div className="px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Punched In Today ({myPunch.timeStr})</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isPunchingIn}
+                  onClick={async () => {
+                    setIsPunchingIn(true);
+                    try {
+                      const res = await punchInTeacherGeofence(currentTeacherId, currentTeacherName);
+                      setPunchModalResult(res);
+                    } catch (err) {
+                      showToast(err.message, 'error');
+                    } finally {
+                      setIsPunchingIn(false);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                >
+                  {isPunchingIn ? (
+                    <>
+                      <Clock className="w-4 h-4 animate-spin" />
+                      <span>Verifying GPS...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Navigation className="w-4 h-4" />
+                      <span>Punch In (GPS Verified)</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Date Range Selector Box */}
       {isDateRangeOpen && (
@@ -558,6 +640,22 @@ export default function AttendanceView() {
                             <div>
                               <div className="font-extrabold text-text">{t.name}</div>
                               <div className="text-[10px] text-text-secondary">{t.authEmail || t.email || ''}</div>
+                              {(() => {
+                                const punchRecord = teacherPunchIns?.[selectedTeacherDate]?.[tKey] ||
+                                  teacherPunchIns?.[selectedTeacherDate]?.[t.id] ||
+                                  teacherPunchIns?.[selectedTeacherDate]?.[t.teacherId] ||
+                                  teacherPunchIns?.[selectedTeacherDate]?.[t.authUid];
+                                if (!punchRecord) return null;
+                                return (
+                                  <div
+                                    className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold"
+                                    title={`GPS: ${punchRecord.latitude}, ${punchRecord.longitude}`}
+                                  >
+                                    <MapPin className="w-2.5 h-2.5 text-emerald-600" />
+                                    <span>{punchRecord.timeStr} • {punchRecord.distanceMeters}m</span>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </td>
                           <td className="py-3 px-4 font-mono font-bold text-slate-700">
@@ -798,6 +896,59 @@ export default function AttendanceView() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Geofence Punch-In Result Modal */}
+      {punchModalResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 border border-border shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                punchModalResult.success
+                  ? 'bg-emerald-100 text-emerald-600'
+                  : 'bg-rose-100 text-rose-600'
+              }`}>
+                {punchModalResult.success ? (
+                  <CheckCircle2 className="w-6 h-6" />
+                ) : (
+                  <AlertTriangle className="w-6 h-6" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  {punchModalResult.success ? 'GPS Attendance Verified' : 'Attendance Verification Failed'}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {punchModalResult.success ? 'Campus geofence perimeter matched' : 'Outside permissible campus radius'}
+                </p>
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-2xl text-xs font-medium space-y-2 ${
+              punchModalResult.success
+                ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                : 'bg-rose-50 text-rose-900 border border-rose-200'
+            }`}>
+              <p className="font-bold leading-relaxed">{punchModalResult.message}</p>
+              <div className="pt-2 border-t border-current/20 flex items-center justify-between text-[11px]">
+                <span>Distance from School:</span>
+                <strong>{punchModalResult.distanceMeters} Meters</strong>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span>Allowed Perimeter:</span>
+                <strong>{punchModalResult.allowedRadius} Meters</strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPunchModalResult(null)}
+              className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+            >
+              Close Window
+            </button>
           </div>
         </div>
       )}

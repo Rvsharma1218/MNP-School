@@ -7,58 +7,37 @@ import {
   Plus, Receipt, MessageSquare, ChevronRight, Award, Contact,
   FileSpreadsheet, Search, CheckCircle2, XCircle, Eye, BarChart3,
   TrendingUp, ArrowUpRight, Sparkles, UserCheck, Phone, ArrowRight,
-  Megaphone, Pin, Calendar, Image as ImageIcon, FileText
+  Megaphone, Pin, Calendar, Image as ImageIcon, FileText, MapPin
 } from 'lucide-react';
 import { openWhatsAppFeeReminder } from '../lib/exportUtils';
 
-function HeroFeatureCard({ icon: Icon, tag, value, title, sub, gradient, shadow, onClick }) {
+function CompactKpiCard({ icon: Icon, iconColor, iconBg, label, value, sub, badge, badgeColor, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl p-5 ${gradient} ${shadow} text-white transition-all duration-200 cursor-pointer group flex flex-col justify-between relative overflow-hidden`}
+      className="bg-white rounded-2xl p-4 border border-[#c8c4d5]/60 hover:border-[#1f108e]/40 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer group flex flex-col justify-between min-h-[105px]"
     >
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-          <Icon className="w-5 h-5 text-white" />
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className={`w-9 h-9 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-2xs`}>
+          <Icon className="w-4.5 h-4.5" />
         </div>
-        {tag && (
-          <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-extrabold uppercase tracking-wider text-white">
-            {tag}
+        {badge && (
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${badgeColor}`}>
+            {badge}
           </span>
         )}
       </div>
       <div>
-        <div className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">{value}</div>
-        <div className="text-xs sm:text-sm font-bold text-white/95 mt-0.5">{title}</div>
-        <div className="text-[11px] text-white/75 font-medium mt-1.5 inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-          <span>{sub}</span>
+        <div className="text-xl sm:text-2xl font-black text-[#0b1c30] tracking-tight leading-tight truncate">
+          {value}
+        </div>
+        <div className="text-[11px] font-bold text-[#464553] uppercase tracking-wider truncate mt-0.5">
+          {label}
+        </div>
+        <div className="text-[10px] font-medium text-[#777584] truncate mt-1">
+          {sub}
         </div>
       </div>
-    </div>
-  );
-}
-
-function FinancialSummaryCard({ icon: Icon, iconBg, label, value, sub, badge, badgeColor, bgColor, borderColor, textColor, onClick }) {
-  return (
-    <div
-      onClick={onClick}
-      className={`rounded-2xl p-4 sm:p-5 ${bgColor} ${borderColor} border transition-all duration-200 cursor-pointer group flex items-center justify-between shadow-2xs hover:shadow-xs`}
-    >
-      <div className="flex items-center gap-3.5 min-w-0">
-        <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-2xs`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div className="min-w-0">
-          <span className={`text-[11px] font-bold uppercase tracking-wider block ${textColor} opacity-80`}>{label}</span>
-          <div className={`text-xl sm:text-2xl font-black tracking-tight leading-tight ${textColor}`}>{value}</div>
-          <p className={`text-[10px] font-medium truncate mt-0.5 ${textColor} opacity-70`}>{sub}</p>
-        </div>
-      </div>
-      {badge && (
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${badgeColor} flex-shrink-0 border hidden sm:inline-block`}>
-          {badge}
-        </span>
-      )}
     </div>
   );
 }
@@ -142,161 +121,168 @@ export default function DashboardView() {
         </div>
       </div>
 
-      {/* ── KPI Metric Cards (Matching Mobile App Layout) ── */}
+      {/* ── Compact Web-First KPI Metric Cards with Geofence Integration ── */}
       {isPrincipal ? (
         <div className="space-y-3.5">
-          {/* Row 1: Big Hero Feature Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <HeroFeatureCard
+          {/* Top 5 Sleek Web KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+            <CompactKpiCard
               icon={GraduationCap}
-              tag="REGULAR"
+              iconBg="bg-blue-50"
+              iconColor="text-blue-600"
+              label="School Students"
               value={stats.schoolCount}
-              title="School Students"
-              sub="Tap to view all classes →"
-              gradient="bg-gradient-to-br from-[#1e3a8a] to-[#2563eb]"
-              shadow="shadow-md shadow-blue-900/20"
+              sub="K-12 Active Roll"
+              badge="Regular"
+              badgeColor="bg-blue-50 text-blue-700 border border-blue-200/80"
               onClick={() => navigate('/students')}
             />
-            <HeroFeatureCard
+            <CompactKpiCard
               icon={Monitor}
-              tag="VOCATIONAL"
+              iconBg="bg-teal-50"
+              iconColor="text-teal-600"
+              label="Computer Institute"
               value={stats.computerCount}
-              title="Computer Institute"
-              sub="DCA, ADCA, Tally Courses →"
-              gradient="bg-gradient-to-br from-[#0f766e] to-[#0d9488]"
-              shadow="shadow-md shadow-teal-900/20"
+              sub="DCA · ADCA · Tally"
+              badge="Vocational"
+              badgeColor="bg-teal-50 text-teal-700 border border-teal-200/80"
               onClick={() => navigate('/students')}
             />
-          </div>
-
-          {/* Row 2: Sleek Financial Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <FinancialSummaryCard
+            <CompactKpiCard
               icon={CreditCard}
-              iconBg="bg-[#f59e0b]/20 text-[#d97706]"
+              iconBg="bg-amber-50"
+              iconColor="text-amber-600"
               label="Fees Collected"
               value={`₹${stats.totalFeesCollected.toLocaleString('en-IN')}`}
-              sub="Total fee collection across all courses"
-              badge={`${collectionPercent}% Recovered`}
-              badgeColor="bg-[#fef3c7] text-[#92400e] border-[#fde68a]"
-              bgColor="bg-[#fffbeb] hover:bg-[#fef3c7]/60"
-              borderColor="border-[#fde68a]"
-              textColor="text-[#78350f]"
+              sub={`${collectionPercent}% of total recovered`}
+              badge="Revenue"
+              badgeColor="bg-amber-50 text-amber-700 border border-amber-200/80"
               onClick={() => navigate('/fees')}
             />
-            <FinancialSummaryCard
+            <CompactKpiCard
               icon={AlertCircle}
-              iconBg="bg-[#ef4444]/20 text-[#dc2626]"
+              iconBg="bg-rose-50"
+              iconColor="text-rose-600"
               label="Pending Defaulters"
               value={`₹${stats.totalPendingFees.toLocaleString('en-IN')}`}
-              sub={stats.defaultersCount > 0 ? `${stats.defaultersCount} students overdue` : 'All cleared'}
-              badge={stats.totalPendingFees > 0 ? 'Action Needed' : 'Zero Dues'}
-              badgeColor="bg-[#fee2e2] text-[#b91c1c] border-[#fecaca]"
-              bgColor="bg-[#fef2f2] hover:bg-[#fee2e2]/60"
-              borderColor="border-[#fecaca]"
-              textColor="text-[#991b1b]"
+              sub={stats.defaultersCount > 0 ? `${stats.defaultersCount} Students Overdue` : 'Zero pending dues'}
+              badge={stats.totalPendingFees > 0 ? 'Action Needed' : 'Cleared'}
+              badgeColor="bg-rose-50 text-rose-700 border border-rose-200/80"
               onClick={() => navigate('/fees')}
+            />
+            <CompactKpiCard
+              icon={MapPin}
+              iconBg="bg-indigo-50"
+              iconColor="text-indigo-600"
+              label="Campus Geofence"
+              value={settings.campusLatitude ? `${settings.geofenceRadiusMeters || 300}m Radius` : 'Not Configured'}
+              sub={settings.campusLatitude ? (settings.geofenceEnabled !== false ? 'GPS Boundary Enforced' : 'Perimeter Set (Disabled)') : 'Tap to Configure GPS'}
+              badge={settings.campusLatitude ? 'GPS Active' : 'Setup'}
+              badgeColor="bg-indigo-50 text-indigo-700 border border-indigo-200/80"
+              onClick={() => navigate('/settings?section=geofence')}
             />
           </div>
 
-          {/* Row 3: Live Parent Complaints & Desk Card (Matching App) */}
-          <div
-            onClick={() => navigate('/complaints')}
-            className="rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-[#0f172a] to-[#1e293b] border border-slate-700/60 text-white shadow-md hover:shadow-lg transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                <MessageSquare className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-extrabold text-sm sm:text-base text-white">Parent Complaints & Messages Desk</h3>
-                  <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-300 text-[10px] font-extrabold uppercase tracking-wide">
-                    Official Desk
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300 mt-0.5">
-                  Direct official communication with School Administration • Private, secure, and reviewed directly by the Principal.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
-              <span className="text-xs font-bold text-blue-400 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                <span>Open Desk</span>
-                <ChevronRight className="w-4 h-4" />
-              </span>
-            </div>
-          </div>
-
-          {/* Row 4: School Daily Status • Real-Time Health Banner (Matching App) */}
-          <div
-            onClick={() => navigate('/reports')}
-            className="p-3.5 sm:px-4 rounded-xl bg-emerald-50/90 hover:bg-emerald-50 border border-emerald-200/90 flex items-center justify-between gap-3 cursor-pointer transition-all group shadow-2xs"
-          >
+          {/* Compact Live Pulse & Quick Action Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:px-4 bg-white rounded-2xl border border-[#c8c4d5]/50 shadow-2xs">
             <div className="flex items-center gap-2.5">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
-              <span className="text-xs font-bold text-emerald-900">
-                School Daily Status • Real-Time Health & Operational Status Logs
+              <span className="text-xs font-bold text-[#0b1c30]">
+                Live Cloud Synchronized
+              </span>
+              <span className="text-slate-300 hidden sm:inline">·</span>
+              <span className="text-xs text-[#777584] font-medium hidden sm:inline">
+                Session {settings.currentSession || '2026-27'}
               </span>
             </div>
-            <span className="text-xs font-bold text-emerald-700 group-hover:translate-x-1 transition-transform flex items-center gap-1">
-              <span>View Status</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </span>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => navigate('/complaints')}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                <span>Parent Desk</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/attendance')}
+                className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <CalendarCheck className="w-3.5 h-3.5" />
+                <span>Attendance</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/settings?section=geofence')}
+                className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>Campus GPS</span>
+              </button>
+            </div>
           </div>
         </div>
       ) : (
         <div className="space-y-3.5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <HeroFeatureCard
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+            <CompactKpiCard
               icon={Users}
-              tag="ASSIGNED"
+              iconBg="bg-blue-50"
+              iconColor="text-blue-600"
+              label="Assigned Students"
               value={teacherStudents.length}
-              title="Assigned Students"
-              sub={`Class ${assignedClass} Register →`}
-              gradient="bg-gradient-to-br from-[#1e3a8a] to-[#2563eb]"
-              shadow="shadow-md shadow-blue-900/20"
+              sub={`Class ${assignedClass} Register`}
+              badge="Assigned"
+              badgeColor="bg-blue-50 text-blue-700 border border-blue-200/80"
               onClick={() => navigate('/students')}
             />
-            <HeroFeatureCard
+            <CompactKpiCard
               icon={CalendarCheck}
-              tag="ACTIVE"
+              iconBg="bg-teal-50"
+              iconColor="text-teal-600"
+              label="Attendance Rate"
               value={`${stats.attendanceRate}%`}
-              title="Attendance Rate"
-              sub="Today's Classroom Log →"
-              gradient="bg-gradient-to-br from-[#047857] to-[#059669]"
-              shadow="shadow-md shadow-emerald-900/20"
+              sub="Today's Classroom Log"
+              badge="Active"
+              badgeColor="bg-teal-50 text-teal-700 border border-teal-200/80"
               onClick={() => navigate('/attendance')}
             />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <FinancialSummaryCard
+            <CompactKpiCard
               icon={CheckCircle2}
-              iconBg="bg-indigo-100 text-indigo-700"
+              iconBg="bg-emerald-50"
+              iconColor="text-emerald-600"
               label="Present in Class"
               value={stats.todayPresent}
               sub="Attended today"
               badge="Logged"
-              badgeColor="bg-indigo-50 text-indigo-700 border-indigo-200"
-              bgColor="bg-[#eff4ff] hover:bg-[#dce9ff]/60"
-              borderColor="border-[#dce9ff]"
-              textColor="text-[#1f108e]"
+              badgeColor="bg-emerald-50 text-emerald-700 border border-emerald-200/80"
               onClick={() => navigate('/attendance')}
             />
-            <FinancialSummaryCard
+            <CompactKpiCard
               icon={XCircle}
-              iconBg="bg-rose-100 text-rose-700"
+              iconBg="bg-rose-50"
+              iconColor="text-rose-600"
               label="Absent Students"
               value={stats.todayAbsent}
-              sub="Requires verification"
+              sub="Requires follow-up"
               badge="Follow-up"
-              badgeColor="bg-rose-50 text-rose-700 border-rose-200"
-              bgColor="bg-[#fef2f2] hover:bg-[#fee2e2]/60"
-              borderColor="border-[#fecaca]"
-              textColor="text-[#991b1b]"
+              badgeColor="bg-rose-50 text-rose-700 border border-rose-200/80"
+              onClick={() => navigate('/attendance')}
+            />
+            <CompactKpiCard
+              icon={MapPin}
+              iconBg="bg-indigo-50"
+              iconColor="text-indigo-600"
+              label="My GPS Attendance"
+              value="Geofence"
+              sub="Tap to Punch In"
+              badge="Punch-In"
+              badgeColor="bg-indigo-50 text-indigo-700 border border-indigo-200/80"
               onClick={() => navigate('/attendance')}
             />
           </div>
