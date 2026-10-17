@@ -15,26 +15,26 @@ function KpiCard({ icon: Icon, iconBg, label, value, sub, trend, onClick, trendC
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl p-6 shadow-sm border transition-all duration-200 cursor-pointer group flex flex-col justify-between min-h-[160px] ${
+      className={`rounded-xl p-3.5 sm:p-4 shadow-2xs border transition-all duration-200 cursor-pointer group flex flex-col justify-between min-h-[115px] ${
         isPrimary
           ? 'bg-gradient-to-br from-[#1f108e] to-[#0f0069] text-white border-transparent shadow-md hover:shadow-lg'
-          : 'bg-white border-[#c8c4d5]/50 hover:border-[#1f108e]/40 hover:shadow-md'
+          : 'bg-white border-[#c8c4d5]/50 hover:border-[#1f108e]/40 hover:shadow-xs'
       }`}
     >
-      <div className="flex justify-between items-start mb-3">
-        <div className={`w-12 h-12 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-sm`}>
-          <Icon className={`w-6 h-6 ${isPrimary ? 'text-white' : ''}`} />
+      <div className="flex justify-between items-start mb-2">
+        <div className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-2xs`}>
+          <Icon className={`w-4.5 h-4.5 ${isPrimary ? 'text-white' : ''}`} />
         </div>
         {trend && (
-          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${trendColor}`}>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${trendColor}`}>
             {trend}
           </span>
         )}
       </div>
       <div>
-        <p className={`text-xs font-bold mb-1 ${isPrimary ? 'text-white/80' : 'text-[#464553]'}`}>{label}</p>
-        <h3 className={`text-3xl font-black leading-none ${isPrimary ? 'text-white' : 'text-[#0b1c30]'}`}>{value}</h3>
-        <p className={`text-[11px] mt-2 font-medium ${isPrimary ? 'text-white/70' : 'text-[#777584]'}`}>{sub}</p>
+        <p className={`text-[11px] font-bold mb-0.5 ${isPrimary ? 'text-white/80' : 'text-[#464553]'}`}>{label}</p>
+        <h3 className={`text-xl sm:text-2xl font-black leading-tight ${isPrimary ? 'text-white' : 'text-[#0b1c30]'}`}>{value}</h3>
+        <p className={`text-[10px] mt-1 font-medium ${isPrimary ? 'text-white/70' : 'text-[#777584]'}`}>{sub}</p>
       </div>
     </div>
   );
@@ -85,13 +85,13 @@ export default function DashboardView() {
     <div className="space-y-6 pb-16 w-full animate-in fade-in duration-300 font-sans">
 
       {/* ── Top Header Banner ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#eff4ff] via-[#dce9ff] to-[#eff4ff] p-6 rounded-3xl border border-[#c8c4d5]/40 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-[#eff4ff] via-[#dce9ff] to-[#eff4ff] p-4 sm:p-5 rounded-2xl border border-[#c8c4d5]/40 shadow-xs">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 text-[11px] font-bold text-[#1f108e] mb-2 shadow-2xs">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/80 text-[11px] font-bold text-[#1f108e] mb-1.5 shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Welcome back, {currentUser?.name || 'Administrator'}</span>
           </div>
-          <h2 className="text-2xl font-black text-[#0b1c30] tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-black text-[#0b1c30] tracking-tight">
             {isPrincipal ? `${settings.instituteName || 'Smart School'} Executive Overview` : `Class ${assignedClass} Faculty Desk`}
           </h2>
           <p className="text-xs text-[#464553] font-medium mt-0.5">
@@ -103,7 +103,7 @@ export default function DashboardView() {
           {isPrincipal && (
             <button
               onClick={() => setIsAddStudentOpen(true)}
-              className="px-4 py-2.5 bg-[#1f108e] hover:bg-[#0f0069] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+              className="px-3.5 py-2 bg-[#1f108e] hover:bg-[#0f0069] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Enroll Student</span>
@@ -111,7 +111,7 @@ export default function DashboardView() {
           )}
           <button
             onClick={() => navigate('/reports')}
-            className="px-4 py-2.5 bg-white hover:bg-white/80 text-[#0b1c30] font-bold text-xs rounded-xl shadow-xs border border-[#c8c4d5]/50 transition-all flex items-center gap-2 cursor-pointer"
+            className="px-3.5 py-2 bg-white hover:bg-white/80 text-[#0b1c30] font-bold text-xs rounded-xl shadow-xs border border-[#c8c4d5]/50 transition-all flex items-center gap-2 cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-[#0051d5]" />
             <span>Generate Report</span>
@@ -120,7 +120,7 @@ export default function DashboardView() {
       </div>
 
       {/* ── KPI Metric Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {isPrincipal ? (
           <>
             <KpiCard
