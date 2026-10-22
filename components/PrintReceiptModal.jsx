@@ -54,20 +54,34 @@ function numberToWords(amount) {
 }
 
 export default function PrintReceiptModal({ payment, student, onClose }) {
-  const { settings, payments } = useSchoolStore();
+  const { students, settings, payments } = useSchoolStore();
 
-  if (!payment || !student) return null;
+  // Fully resolve student to guarantee registered mobile number is present (especially for newly admitted students)
+  const resolvedStudent = React.useMemo(() => {
+    if (student?.mobile || student?.alternateMobile) return student;
+    const match = (students || []).find(s =>
+      (student?.id && s.id === student.id) ||
+      (student?.studentId && (s.studentId === student.studentId || s.id === student.studentId)) ||
+      (payment?.studentId && (s.id === payment.studentId || s.studentId === payment.studentId)) ||
+      (student?.admissionNumber && (s.admissionNumber === student.admissionNumber || s.admissionNo === student.admissionNumber)) ||
+      (student?.name && s.name && s.name.trim().toLowerCase() === student.name.trim().toLowerCase()) ||
+      (payment?.studentName && s.name && s.name.trim().toLowerCase() === payment.studentName.trim().toLowerCase())
+    );
+    return match ? { ...match, ...student, mobile: match.mobile || student?.mobile || '', alternateMobile: match.alternateMobile || student?.alternateMobile || '' } : student;
+  }, [student, payment, students]);
+
+  if (!payment || !resolvedStudent) return null;
 
   const handlePrint = () => {
     window.print();
   };
 
   const handleDownloadPDF = async () => {
-    await exportReceiptPDF(payment, student, settings, payments);
+    await exportReceiptPDF(payment, resolvedStudent, settings, payments);
   };
 
   const handleWhatsApp = async () => {
-    await openWhatsAppReceiptShare(payment, student, settings, payments);
+    await openWhatsAppReceiptShare(payment, resolvedStudent, settings, payments);
   };
 
   // Safe date parsing

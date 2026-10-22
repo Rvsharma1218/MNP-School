@@ -386,6 +386,9 @@ export default function StudentFeeDetailModal({ student, isOpen, onClose }) {
     const newPayment = await addPayment({
       studentId: currentStudent.id,
       studentName: currentStudent.name,
+      mobile: currentStudent.mobile || '',
+      alternateMobile: currentStudent.alternateMobile || '',
+      admissionNumber: currentStudent.admissionNumber || '',
       amount: amt,
       paymentMode,
       feeMonth: monthYearLabel,

@@ -991,7 +991,7 @@ export default function FeesView() {
                                             type="button"
                                             onClick={() => setPrintReceiptData({
                                               payment: p,
-                                              student: s || { name: p.studentName, studentId: p.studentId, session: settings.currentSession },
+                                              student: s || { name: p.studentName, studentId: p.studentId, mobile: p.mobile, alternateMobile: p.alternateMobile, session: settings.currentSession },
                                               settings
                                             })}
                                             className="p-1.5 rounded-lg bg-surface2 hover:bg-primary/10 text-primary border border-border cursor-pointer transition-colors"
@@ -1048,7 +1048,11 @@ export default function FeesView() {
                       </tr>
                     ) : (
                       filteredPayments.map((p, idx) => {
-                        const student = students.find(s => s.id === p.studentId);
+                        const student = students.find(s =>
+                          (p.studentId && (s.id === p.studentId || (s.studentId && s.studentId === p.studentId))) ||
+                          ((p.admissionNumber || p.admissionNo) && ((s.admissionNumber && String(s.admissionNumber).trim() === String(p.admissionNumber || p.admissionNo).trim()) || (s.admissionNo && String(s.admissionNo).trim() === String(p.admissionNumber || p.admissionNo).trim()))) ||
+                          (p.studentName && s.name && s.name.trim().toLowerCase() === p.studentName.trim().toLowerCase())
+                        );
                         return (
                           <tr key={p.id ? `${p.id}_${idx}` : `ledger_${idx}`} className="hover:bg-surface2/30 transition-colors">
                             <td className="py-3.5 px-4 font-mono font-bold text-primary">{p.receiptNumber}</td>
@@ -1093,7 +1097,7 @@ export default function FeesView() {
                                 <button
                                   onClick={() => setPrintReceiptData({
                                     payment: p,
-                                    student: student || { name: p.studentName, studentId: p.studentId, session: settings.currentSession },
+                                    student: student || { name: p.studentName, studentId: p.studentId, mobile: p.mobile, alternateMobile: p.alternateMobile, session: settings.currentSession },
                                     settings
                                   })}
                                   className="p-1.5 rounded-lg bg-surface2 hover:bg-primary/10 text-primary border border-border cursor-pointer transition-colors"

@@ -142,6 +142,9 @@ export default function CollectFeeModal({ student, isOpen, onClose }) {
     const newPayment = await addPayment({
       studentId: currentStudent.id,
       studentName: currentStudent.name,
+      mobile: currentStudent.mobile || '',
+      alternateMobile: currentStudent.alternateMobile || '',
+      admissionNumber: currentStudent.admissionNumber || '',
       amount: Number(amount),
       paymentMode,
       feeMonth: finalFeeMonth,
