@@ -7,7 +7,7 @@ import {
   Plus, Receipt, MessageSquare, ChevronRight, Award, Contact,
   FileSpreadsheet, Search, CheckCircle2, XCircle, Eye, BarChart3,
   TrendingUp, ArrowUpRight, Sparkles, UserCheck, Phone, ArrowRight,
-  Megaphone, Pin, Calendar, Image as ImageIcon, FileText, MapPin
+  Calendar, MapPin
 } from 'lucide-react';
 import { openWhatsAppFeeReminder } from '../lib/exportUtils';
 
@@ -47,7 +47,6 @@ export default function DashboardView() {
     students, payments, attendance, results, settings, stats,
     setSelectedStudentId, setIsAddStudentOpen, currentUser, navigate,
     setFeeDetailStudent, setIsFeeDetailSelectorOpen, setWhatsAppReminderData,
-    notices, setIsAddNoticeOpen, setViewingNotice, unreadNoticeCount,
     teacherPermissions, openSettings
   } = useSchoolStore();
 
@@ -326,129 +325,6 @@ export default function DashboardView() {
         </div>
       )}
 
-      {/* ── Notice Board & Circulars Live Widget ── */}
-      <div className="rounded-2xl bg-white border border-[#c8c4d5]/50 p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#c8c4d5]/40">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#eff4ff] text-[#1f108e] flex items-center justify-center flex-shrink-0">
-              <Megaphone className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm text-[#0b1c30]">School Notice Board & Circulars</h3>
-                {unreadNoticeCount > 0 && (
-                  <span className="px-2 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-extrabold animate-pulse">
-                    {unreadNoticeCount} new
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-[#777584]">Official circulars, staff meeting agendas, holiday notices & updates</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {(isPrincipal || teacherPermissions?.canPostNotices !== false) && (
-              <button
-                onClick={() => setIsAddNoticeOpen(true)}
-                className="px-3.5 py-2 rounded-xl bg-[#1f108e] hover:bg-[#0f0069] text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Publish Notice</span>
-              </button>
-            )}
-            <button
-              onClick={() => navigate('/notices')}
-              className="px-3.5 py-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] text-xs font-bold border border-[#c8c4d5]/40 transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <span>View Board ({notices.length})</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Notices Preview Grid */}
-        {notices.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-            {notices.slice(0, 3).map((n) => {
-              const currentUserId = currentUser?.uid || currentUser?.teacherId || currentUser?.id || '';
-              const isRead = currentUserId ? (n.readBy || []).includes(currentUserId) : true;
-              const date = n.createdAt ? new Date(n.createdAt) : new Date();
-              const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-
-              const categoryBadge = {
-                Urgent: 'bg-rose-50 text-rose-700 border-rose-200',
-                Meeting: 'bg-blue-50 text-blue-700 border-blue-200',
-                Holiday: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                Academic: 'bg-purple-50 text-purple-700 border-purple-200',
-                Event: 'bg-amber-50 text-amber-700 border-amber-200',
-                General: 'bg-slate-100 text-slate-700 border-slate-200'
-              }[n.category] || 'bg-slate-100 text-slate-700 border-slate-200';
-
-              return (
-                <div
-                  key={n.id}
-                  onClick={() => setViewingNotice(n)}
-                  className={`p-3.5 rounded-xl border transition-all duration-200 hover:shadow-sm cursor-pointer flex flex-col justify-between group ${
-                    n.isPinned
-                      ? 'bg-amber-50/30 border-amber-300'
-                      : (!isRead ? 'bg-[#eff4ff]/30 border-[#1f108e]/40' : 'bg-[#eff4ff]/20 border-[#c8c4d5]/50 hover:bg-[#eff4ff]/50')
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-1 mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${categoryBadge}`}>
-                          {n.category || 'General'}
-                        </span>
-                        {n.isPinned && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 flex items-center gap-0.5">
-                            <Pin className="w-2.5 h-2.5 fill-amber-600" />
-                            Pinned
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-[#777584] font-medium">{dateStr}</span>
-                    </div>
-
-                    <h4 className="font-bold text-xs text-[#0b1c30] group-hover:text-[#1f108e] transition-colors line-clamp-1 leading-snug">
-                      {n.title}
-                    </h4>
-
-                    {n.content && (
-                      <p className="text-[11px] text-[#464553] line-clamp-2 mt-1 leading-relaxed">
-                        {n.content}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between gap-1 pt-2.5 mt-2 border-t border-[#c8c4d5]/30 text-[10px]">
-                    <span className="text-[#777584] truncate">By {n.authorName || 'Principal'}</span>
-                    {n.imageUrl ? (
-                      n.fileType === 'pdf' || n.imageUrl?.startsWith('data:application/pdf') || n.fileName?.toLowerCase().endsWith('.pdf') ? (
-                        <span className="text-rose-600 font-bold flex items-center gap-1 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200">
-                          <FileText className="w-3 h-3" />
-                          <span>PDF ({n.fileSize || '≤50KB'})</span>
-                        </span>
-                      ) : (
-                        <span className="text-[#1f108e] font-bold flex items-center gap-1 bg-[#eff4ff] px-1.5 py-0.2 rounded border border-[#c8c4d5]/40">
-                          <ImageIcon className="w-3 h-3" />
-                          <span>Photo ({n.fileSize || '≤50KB'})</span>
-                        </span>
-                      )
-                    ) : (
-                      <span className="text-[#1f108e] font-bold group-hover:underline">Read →</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="p-5 text-center bg-[#eff4ff]/30 rounded-xl border border-dashed border-[#c8c4d5]/60">
-            <p className="text-xs text-[#777584]">No notices published yet.</p>
-          </div>
-        )}
-      </div>
 
       {/* ── Search & Filter Tool Bar ── */}
       <div className="bg-white rounded-2xl border border-[#c8c4d5]/50 p-4 shadow-xs flex flex-col md:flex-row items-center gap-3">

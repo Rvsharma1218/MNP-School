@@ -58,6 +58,7 @@ export default function StudentsView() {
 
   // Right side panel states: 'quickview' | 'edit' | 'add'
   const [panelMode, setPanelMode] = useState('quickview'); 
+  const [showQuickView, setShowQuickView] = useState(false);
 
   // Form State for Profile Edit / Admission
   const [profileForm, setProfileForm] = useState({
@@ -203,7 +204,25 @@ export default function StudentsView() {
           <p className="text-xs text-text-secondary mt-0.5 font-medium">Manage enrollments, track performance, and monitor administrative status.</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              if (!showQuickView && !selectedStudentId && filteredStudents.length > 0) {
+                setSelectedStudentId(filteredStudents[0].id);
+              }
+              setShowQuickView(prev => !prev);
+            }}
+            className={`px-3.5 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+              showQuickView
+                ? 'bg-primary text-white shadow-primary/20'
+                : 'bg-white border border-border hover:bg-surface2 text-text'
+            }`}
+            title={showQuickView ? "Hide Quick View panel" : "Show Quick View panel"}
+          >
+            <Eye className="w-4 h-4" />
+            <span>{showQuickView ? 'Hide Quick View' : 'Quick View'}</span>
+          </button>
           {isPrincipal && (
             <button
               onClick={() => setIsPromoteModalOpen(true)}
@@ -242,9 +261,9 @@ export default function StudentsView() {
       </div>
 
       {/* Main Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className={`grid grid-cols-1 ${showQuickView ? 'lg:grid-cols-12' : ''} gap-6 items-start`}>
         {/* Left Side: Student Directory scroll list in a table format */}
-        <div className="lg:col-span-8 bg-white border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col">
+        <div className={`${showQuickView ? 'lg:col-span-8' : 'w-full'} bg-white border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col`}>
           {/* Filters Bar */}
           <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-surface2/30">
             <div className="relative flex-1">
@@ -319,6 +338,7 @@ export default function StudentsView() {
                       onClick={() => {
                         setPanelMode('quickview');
                         setSelectedStudentId(s.id);
+                        setShowQuickView(true);
                       }}
                       className={`cursor-pointer transition-colors ${
                         isSelected ? 'bg-primary/5 font-semibold' : 'hover:bg-surface2/30'
@@ -416,33 +436,36 @@ export default function StudentsView() {
         </div>
 
         {/* Right Side: Dual-mode panel (Quick View / Profile Edit) */}
-        <div className="lg:col-span-4 bg-white border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col">
-          {panelMode === 'quickview' && activeStudent ? (
-            /* ─── STATE 1: STUDENT QUICK VIEW PANEL ─── */
-            <div className="p-6 space-y-6 animate-in fade-in duration-200">
-              {/* Header */}
-              <div className="flex justify-between items-center">
-                <h3 className="font-bold text-base text-text">Quick View</h3>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => {
-                      setEditingStudent(activeStudent);
-                      setIsAddStudentOpen(true);
-                    }}
-                    className="p-1.5 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 transition-all cursor-pointer flex items-center gap-1 text-xs font-semibold"
-                    title="Edit Profile"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={() => setSelectedStudentId(null)}
-                    className="p-1 rounded-lg text-text-muted hover:text-text hover:bg-surface2 transition-all cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+        {showQuickView && (
+          <div className="lg:col-span-4 bg-white border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col animate-in fade-in duration-200">
+            {panelMode === 'quickview' ? (
+              activeStudent ? (
+                /* ─── STATE 1: STUDENT QUICK VIEW PANEL ─── */
+                <div className="p-6 space-y-6 animate-in fade-in duration-200">
+                  {/* Header */}
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-base text-text">Quick View</h3>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setEditingStudent(activeStudent);
+                          setIsAddStudentOpen(true);
+                        }}
+                        className="p-1.5 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 transition-all cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                        title="Edit Profile"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => setShowQuickView(false)}
+                        className="p-1 rounded-lg text-text-muted hover:text-text hover:bg-surface2 transition-all cursor-pointer"
+                        title="Hide Quick View"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
 
               {/* Avatar and name details */}
               <div className="flex flex-col items-center text-center space-y-2 py-2">
@@ -549,8 +572,33 @@ export default function StudentsView() {
               </div>
             </div>
           ) : (
-            /* ─── STATE 2 & 3: ADMISSION FORM & PROFILE EDITOR ─── */
-            <form onSubmit={handleSaveProfile} className="animate-in fade-in duration-200">
+            <div className="p-6 space-y-4 my-auto">
+              <div className="flex justify-between items-center pb-3 border-b border-border">
+                <h3 className="font-bold text-base text-text">Quick View</h3>
+                <button
+                  onClick={() => setShowQuickView(false)}
+                  className="p-1 rounded-lg text-text-muted hover:text-text hover:bg-surface2 transition-all cursor-pointer"
+                  title="Hide Quick View"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="py-12 text-center space-y-3">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto shadow-2xs">
+                  <User className="w-7 h-7" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-text">No Student Selected</h4>
+                  <p className="text-xs text-text-secondary mt-1 max-w-[220px] mx-auto">
+                    Click on any student row in the directory table to inspect their quick profile and fee summary.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )
+        ) : (
+          /* ─── STATE 2 & 3: ADMISSION FORM & PROFILE EDITOR ─── */
+          <form onSubmit={handleSaveProfile} className="animate-in fade-in duration-200">
               <div className="px-5 py-4 border-b border-border bg-surface2/25 flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-xs uppercase text-text tracking-wider">
@@ -827,7 +875,8 @@ export default function StudentsView() {
             </form>
           )}
         </div>
-      </div>
+      )}
+    </div>
       {/* Interactive Photo Cropper Modal */}
       <ImageCropperModal
         isOpen={isCropperOpen}

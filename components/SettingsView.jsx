@@ -6,7 +6,7 @@ import {
   Settings, Building2, Save, Download, Upload, RefreshCw,
   Plus, Trash2, CheckCircle, School, ArrowRight,
   Info, Sparkles, Check, UploadCloud, Image as ImageIcon, Camera, X, FileSignature, Crop,
-  Shield, Languages, HelpCircle, Headphones, MessageCircle, PhoneCall, Mail,
+  Shield, Languages, HelpCircle, Mail,
   ExternalLink, GraduationCap, Lock, CheckCircle2, AlertCircle, ChevronRight, Stamp, Link2,
   MapPin, Navigation
 } from 'lucide-react';
@@ -26,8 +26,7 @@ export default function SettingsView() {
     setSettingsActiveSection
   } = useSchoolStore();
 
-  const [activeSection, setActiveSection] = useState(settingsActiveSection || 'branding'); // 'branding' | 'academic' | 'language' | 'subscription' | 'support' | 'backup' | 'wizard'
-  const [wizardStep, setWizardStep] = useState(1); // 1 | 2 | 3
+  const [activeSection, setActiveSection] = useState(settingsActiveSection || 'branding'); // 'branding' | 'signatures' | 'geofence' | 'academic' | 'language' | 'backup'
   const [isDraggingLogo, setIsDraggingLogo] = useState(false);
   const [isLogoCropperOpen, setIsLogoCropperOpen] = useState(false);
   const [logoToCrop, setLogoToCrop] = useState(null);
@@ -350,7 +349,7 @@ export default function SettingsView() {
     e.target.value = '';
   };
 
-  // Modern Split-Layout Categories (Teacher Access moved to Sidebar, Dark Mode removed)
+  // Modern Streamlined Categories (Distinct, Non-overlapping Settings)
   const navCategories = [
     {
       group: 'INSTITUTION',
@@ -366,13 +365,6 @@ export default function SettingsView() {
       group: 'DATA & SYSTEM',
       items: [
         { id: 'backup', label: 'Data Backup', icon: RefreshCw, desc: 'Export & Import database' },
-      ]
-    },
-    {
-      group: 'HELP & SETUP',
-      items: [
-        { id: 'support', label: 'Help & Support', icon: Headphones, desc: 'WhatsApp & 24/7 Helpline' },
-        { id: 'wizard', label: 'Setup Wizard', icon: School, desc: 'Quick Onboarding assistant' },
       ]
     }
   ];
@@ -481,7 +473,7 @@ export default function SettingsView() {
                   <div>
                     <h2 className="text-base font-bold text-text flex items-center gap-2">
                       <Building2 className="w-5 h-5 text-primary" />
-                      <span>Institute Identity, Logo, Seal & Signature</span>
+                      <span>Institute Identity & School Profile</span>
                     </h2>
                     <p className="text-xs text-text-secondary mt-0.5">
                       This information appears on fee receipts, student admit cards, ID cards and report sheets.
@@ -1696,140 +1688,6 @@ export default function SettingsView() {
             </div>
           )}
 
-          {/* === SECTION 4: SUBSCRIPTION & PLANS === */}
-          {activeSection === 'subscription' && (
-            <div className="bg-white dark:bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-border pb-4">
-                <div>
-                  <h2 className="text-base font-bold text-text flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    <span>School Cloud Subscription & Plans</span>
-                  </h2>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    Har subscription plan me 100% full access shamil hai. Koi feature locked nahi hai.
-                  </p>
-                </div>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300">
-                  Active (All Access)
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                  { name: 'Free Trial', price: '₹0', dur: 'Trial', note: 'Max 10 Students', badge: 'Test Drive' },
-                  { name: 'Starter Plan', price: '₹199', dur: '/ mo', note: 'Up to 50 Students', badge: 'Affordable' },
-                  { name: 'Standard School', price: '₹399', dur: '/ mo', note: 'Up to 200 Students', badge: 'Most Popular', highlight: true },
-                  { name: 'Pro Unlimited', price: '₹699', dur: '/ mo', note: 'Unlimited Students', badge: 'Unlimited' },
-                ].map((plan) => (
-                  <div
-                    key={plan.name}
-                    className={`p-4 rounded-2xl border flex flex-col justify-between transition-all relative ${
-                      plan.highlight
-                        ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md'
-                        : 'border-border bg-surface2/30'
-                    }`}
-                  >
-                    {plan.badge && (
-                      <span className={`absolute -top-3 left-4 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                        plan.highlight ? 'bg-primary text-white' : 'bg-surface2 text-text-secondary border border-border'
-                      }`}>
-                        {plan.badge}
-                      </span>
-                    )}
-                    <div className="space-y-1.5 mt-1">
-                      <div className="text-xs font-bold text-text">{plan.name}</div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-xl font-black text-text">{plan.price}</span>
-                        <span className="text-[10px] text-text-secondary">{plan.dur}</span>
-                      </div>
-                      <p className="text-[11px] font-semibold text-emerald-600">{plan.note}</p>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-border/80 space-y-1 text-xs text-text-secondary">
-                      <div className="flex items-center gap-1.5 font-bold text-text text-[10px]">
-                        <Check className="w-3 h-3 text-emerald-600" />
-                        <span>All 15+ Modules Unlocked</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[10px]">
-                        <Check className="w-3 h-3 text-emerald-600" />
-                        <span>Receipts & Marksheets PDF</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* === SECTION 5: HELP & SUPPORT === */}
-          {activeSection === 'support' && (
-            <div className="bg-white dark:bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-border pb-4">
-                <div>
-                  <h2 className="text-base font-bold text-text flex items-center gap-2">
-                    <Headphones className="w-5 h-5 text-primary" />
-                    <span>Customer Support & Helpline</span>
-                  </h2>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    Need assistance? Connect with our dedicated support executive instantly.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsHelpFeedbackOpen(true)}
-                  className="px-4 py-2 rounded-2xl bg-[#121212] hover:bg-[#1f1f1f] text-white border border-[#333333] text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-all"
-                >
-                  <HelpCircle className="w-4 h-4 text-teal-400" />
-                  <span>Help & Feedback Suite</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <a
-                  href="https://wa.me/918603481865?text=Hello%20School%20Support%20Team%2C%20I%20need%20assistance%20with%20my%20school%20management%20portal."
-                  target="_blank"
-                  rel="noreferrer"
-                  className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 transition-all flex items-start gap-4 group"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold flex-shrink-0 shadow-md">
-                    <MessageCircle className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-text group-hover:text-emerald-700 transition-colors">
-                      WhatsApp Live Support
-                    </div>
-                    <p className="text-xs text-text-secondary mt-1">
-                      Direct chat for quick setup questions, receipt printing issues and feature guidance.
-                    </p>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 mt-2">
-                      <span>Chat on WhatsApp</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                </a>
-
-                <a
-                  href="tel:+918603481865"
-                  className="p-5 rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all flex items-start gap-4 group"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-primary text-white flex items-center justify-center font-bold flex-shrink-0 shadow-md">
-                    <PhoneCall className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-text group-hover:text-primary transition-colors">
-                      Direct Voice Helpline
-                    </div>
-                    <p className="text-xs text-text-secondary mt-1">
-                      Talk directly with our support specialist Monday - Saturday 9:00 AM to 7:00 PM.
-                    </p>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-primary mt-2">
-                      <span>Call +91 86034 81865</span>
-                    </span>
-                  </div>
-                </a>
-              </div>
-            </div>
-          )}
 
           {/* === SECTION 6: DATA BACKUP & RESTORE === */}
           {activeSection === 'backup' && (
@@ -1890,138 +1748,6 @@ export default function SettingsView() {
 
 
 
-          {/* === SECTION 7: SETUP WIZARD === */}
-          {activeSection === 'wizard' && (
-            <div className="bg-white dark:bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-border pb-4">
-                <div>
-                  <h2 className="text-base font-bold text-text flex items-center gap-2">
-                    <School className="w-5 h-5 text-primary" />
-                    <span>Interactive School Setup Wizard</span>
-                  </h2>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    Follow these 3 easy steps to configure your school management workspace.
-                  </p>
-                </div>
-              </div>
-
-              {/* Progress Stepper */}
-              <div className="flex items-center justify-between max-w-md mx-auto py-2">
-                {[
-                  { step: 1, label: 'School Particulars' },
-                  { step: 2, label: 'Classes & Sections' },
-                  { step: 3, label: 'Logo & Sign' },
-                ].map((s) => (
-                  <div key={s.step} className="flex flex-col items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setWizardStep(s.step)}
-                      className={`w-9 h-9 rounded-2xl flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${
-                        wizardStep === s.step
-                          ? 'bg-primary text-white shadow-md shadow-primary/20 scale-105'
-                          : wizardStep > s.step
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-surface2 text-text-secondary border border-border'
-                      }`}
-                    >
-                      {wizardStep > s.step ? <Check className="w-4 h-4" /> : s.step}
-                    </button>
-                    <span className="text-[10px] font-bold text-text-secondary">{s.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Wizard Body */}
-              <div className="p-5 rounded-2xl bg-surface2/40 border border-border space-y-4">
-                {wizardStep === 1 && (
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-text">Step 1: Confirm School Particulars</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <span className="text-text-secondary block text-[10px]">School Name:</span>
-                        <span className="font-bold text-text">{formData.instituteName || 'Not Set'}</span>
-                      </div>
-                      <div>
-                        <span className="text-text-secondary block text-[10px]">Contact Mobile:</span>
-                        <span className="font-bold text-text">{formData.mobile || 'Not Set'}</span>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <span className="text-text-secondary block text-[10px]">Campus Address:</span>
-                        <span className="font-bold text-text">{formData.address || 'Not Set'}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {wizardStep === 2 && (
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-text">Step 2: Configured Academic Standards</h3>
-                    <p className="text-xs text-text-secondary">
-                      You currently have {(formData.classes || formData.schoolClasses || []).length} active classes configured for student admissions.
-                    </p>
-                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-                      {(formData.classes || formData.schoolClasses || []).map(c => (
-                        <span key={c} className="px-2.5 py-1 rounded-lg bg-surface border border-border text-[11px] font-bold text-text">
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {wizardStep === 3 && (
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-text">Step 3: Identity & Printing Assets</h3>
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-xl border border-border bg-white dark:bg-surface p-1 flex items-center justify-center">
-                        {formData.logoUrl ? (
-                          <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-                        ) : (
-                          <School className="w-6 h-6 text-text-secondary opacity-40" />
-                        )}
-                      </div>
-                      <div className="text-xs space-y-1">
-                        <p className="font-bold text-text">{formData.logoUrl ? '✓ Logo configured' : '⚠ Logo pending'}</p>
-                        <p className="text-text-secondary">{formData.principalSignature ? '✓ Signature configured' : '⚠ Signature pending'}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between pt-3 border-t border-border">
-                  <button
-                    type="button"
-                    disabled={wizardStep === 1}
-                    onClick={() => setWizardStep(prev => Math.max(1, prev - 1))}
-                    className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-text disabled:opacity-40 cursor-pointer"
-                  >
-                    Previous
-                  </button>
-                  {wizardStep < 3 ? (
-                    <button
-                      type="button"
-                      onClick={() => setWizardStep(prev => Math.min(3, prev + 1))}
-                      className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold cursor-pointer"
-                    >
-                      Next Step
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleSubmit();
-                        setActiveSection('branding');
-                        showToast('Setup wizard finished! All settings configured.', 'success');
-                      }}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold cursor-pointer"
-                    >
-                      Complete & Save
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
         </div>
       </div>
