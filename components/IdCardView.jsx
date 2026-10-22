@@ -394,32 +394,34 @@ export default function IdCardView() {
                       <span className="text-slate-400 font-semibold uppercase truncate max-w-[220px]">
                         PROPERTY OF {settings.instituteName || "MISSION NAVODAYA PUBLIC SCHOOL"}
                       </span>
-                      <div className="relative flex items-center justify-end">
-                        {settings.schoolStamp || settings.stampUrl || settings.sealUrl ? (
-                          <img
-                            src={settings.schoolStamp || settings.stampUrl || settings.sealUrl}
-                            alt="Stamp"
-                            className="absolute -top-7 right-16 object-contain pointer-events-none opacity-85"
-                            style={{
-                              width: `${Math.round(36 * (Number(settings.stampScale) || 1.0))}px`,
-                              height: `${Math.round(36 * (Number(settings.stampScale) || 1.0))}px`,
-                              mixBlendMode: 'multiply'
-                            }}
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
-                        ) : null}
-                        {settings.principalSignature || settings.signatureUrl ? (
-                          <img
-                            src={settings.principalSignature || settings.signatureUrl}
-                            alt="Sign"
-                            className="absolute -top-7 right-0 object-contain pointer-events-none"
-                            style={{
-                              height: `${Math.round(36 * (Number(settings.signatureScale) || 1.0))}px`,
-                              maxWidth: `${Math.round(100 * (Number(settings.signatureScale) || 1.0))}px`
-                            }}
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
-                        ) : null}
+                      <div className="relative flex flex-col items-center justify-end">
+                        <div className="relative flex items-center justify-center min-w-[80px] h-[32px] -mt-6 mb-0.5">
+                          {settings.schoolStamp || settings.stampUrl || settings.sealUrl ? (
+                            <img
+                              src={settings.schoolStamp || settings.stampUrl || settings.sealUrl}
+                              alt="Stamp"
+                              className="absolute inset-0 m-auto object-contain pointer-events-none opacity-85"
+                              style={{
+                                width: `${Math.round(32 * (Number(settings.stampScale) || 1.0))}px`,
+                                height: `${Math.round(32 * (Number(settings.stampScale) || 1.0))}px`,
+                                mixBlendMode: 'multiply'
+                              }}
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          ) : null}
+                          {settings.principalSignature || settings.signatureUrl ? (
+                            <img
+                              src={settings.principalSignature || settings.signatureUrl}
+                              alt="Sign"
+                              className="relative z-10 object-contain pointer-events-none"
+                              style={{
+                                height: `${Math.round(30 * (Number(settings.signatureScale) || 1.0))}px`,
+                                maxWidth: `${Math.round(90 * (Number(settings.signatureScale) || 1.0))}px`
+                              }}
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          ) : null}
+                        </div>
                         <span className="text-[#FFD700] font-black uppercase tracking-wider text-[7.5px]">
                           AUTH SIGNATURE
                         </span>

@@ -370,18 +370,25 @@ export default function AdmitCardView() {
         doc.setFontSize(8.5);
         doc.text('Candidate Signature', M + 37, sigLineY + 5, { align: 'center' });
 
-        // Right: Principal / Controller of Exam with Guaranteed Signature Image
+        // Right: Director Sign with Unified Stamp & Signature Overlay (matching app admit_card_screen.dart:755)
         const rightSigX = M + cardW - 70;
+        const rightCenterX = rightSigX + 27.5;
+        const stampScale = Number(settings.stampScale) || 1.0;
+        const sigScale = Number(settings.signatureScale) || 1.0;
+        const stampSize = 22 * stampScale;
+        const sigW = 44 * sigScale;
+        const sigH = 14 * sigScale;
+
+        // Stamp sits centered above the line
         if (stampData) {
-            try {
-              // Stamp / Mohar placed near Principal Signature
-              doc.addImage(stampData, 'PNG', rightSigX - 18, sigLineY - 21, 20, 20);
-            } catch (e) { }
-          }
-          if (sigData) {
           try {
-            // Principal Signature (+30% larger, prominent hand-signed look)
-          doc.addImage(sigData, 'PNG', rightSigX + 2, sigLineY - 20, 50, 18);
+            doc.addImage(stampData, 'PNG', rightCenterX - stampSize / 2, sigLineY - stampSize - 0.5, stampSize, stampSize);
+          } catch (e) { }
+        }
+        // Signature layered naturally inside / over the stamp above line
+        if (sigData) {
+          try {
+            doc.addImage(sigData, 'PNG', rightCenterX - sigW / 2, sigLineY - sigH - 0.5, sigW, sigH);
           } catch (e) { }
         }
 
@@ -392,7 +399,7 @@ export default function AdmitCardView() {
         doc.setTextColor(30, 58, 138);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
-        doc.text('Principal / Controller of Exam', rightSigX + 27, sigLineY + 5, { align: 'center' });
+        doc.text('Director Sign', rightCenterX, sigLineY + 5, { align: 'center' });
       }
 
       const filename = singleStudent
@@ -897,39 +904,40 @@ export default function AdmitCardView() {
                         <div className="w-28 border-b border-gray-400 mb-1" />
                         <span className="text-gray-700">Candidate Signature</span>
                       </div>
-                      <div className="flex items-end gap-3">
-                        {(settings.schoolStamp || settings.stampUrl || settings.sealUrl) && (
-                          <img
-                            src={settings.schoolStamp || settings.stampUrl || settings.sealUrl}
-                            alt="Stamp"
-                            className="object-contain mb-1"
-                            style={{
-                              width: `${Math.round(40 * (Number(settings.stampScale) || 1.0))}px`,
-                              height: `${Math.round(40 * (Number(settings.stampScale) || 1.0))}px`,
-                              mixBlendMode: 'multiply'
-                            }}
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
-                        )}
-                        <div className="text-center flex flex-col items-center">
+                      {/* Right: Unified Stamp & Director Signature Stack (matching Flutter app) */}
+                      <div className="text-center flex flex-col items-center">
+                        <div className="relative flex items-center justify-center min-w-[130px] min-h-[44px] mb-1">
+                          {(settings.schoolStamp || settings.stampUrl || settings.sealUrl) && (
+                            <img
+                              src={settings.schoolStamp || settings.stampUrl || settings.sealUrl}
+                              alt="Official Stamp"
+                              className="absolute inset-0 m-auto object-contain pointer-events-none opacity-88"
+                              style={{
+                                width: `${Math.round(42 * (Number(settings.stampScale) || 1.0))}px`,
+                                height: `${Math.round(42 * (Number(settings.stampScale) || 1.0))}px`,
+                                mixBlendMode: 'multiply'
+                              }}
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          )}
                           {sigSrc ? (
                             <img
                               src={sigSrc}
                               alt="Signature"
-                              className="object-contain mb-1"
+                              className="relative z-10 w-auto object-contain"
                               style={{
-                                height: `${Math.round(32 * (Number(settings.signatureScale) || 1.0))}px`,
-                                maxWidth: `${Math.round(130 * (Number(settings.signatureScale) || 1.0))}px`
+                                height: `${Math.round(34 * (Number(settings.signatureScale) || 1.0))}px`,
+                                maxWidth: `${Math.round(120 * (Number(settings.signatureScale) || 1.0))}px`
                               }}
                             />
                           ) : (
                             <div className="h-8" />
                           )}
-                          <div className="w-36 border-b-2 border-[#1E3A8A] mb-1" />
-                          <span className="text-[#1E3A8A] font-black uppercase tracking-wider text-[8.5px]">
-                            Principal / Controller of Exam
-                          </span>
                         </div>
+                        <div className="w-36 border-b-2 border-[#1E3A8A] mb-1" />
+                        <span className="text-[#1E3A8A] font-black uppercase tracking-wider text-[8.5px]">
+                          Director Sign
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1077,31 +1085,32 @@ export default function AdmitCardView() {
                         <div className="w-36 border-b border-gray-400 mb-1.5" />
                         <span className="text-gray-700">Candidate Signature</span>
                       </div>
-                      <div className="flex items-end gap-3.5">
-                        {(settings.schoolStamp || settings.stampUrl || settings.sealUrl) && (
-                          <img
-                            src={settings.schoolStamp || settings.stampUrl || settings.sealUrl}
-                            alt="Stamp"
-                            className="h-11 w-11 object-contain mb-1"
-                            style={{ mixBlendMode: 'multiply' }}
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
-                        )}
-                        <div className="text-center flex flex-col items-center">
+                      {/* Right: Unified Stamp & Director Signature Stack for Print */}
+                      <div className="text-center flex flex-col items-center">
+                        <div className="relative flex items-center justify-center min-w-[140px] min-h-[48px] mb-1">
+                          {(settings.schoolStamp || settings.stampUrl || settings.sealUrl) && (
+                            <img
+                              src={settings.schoolStamp || settings.stampUrl || settings.sealUrl}
+                              alt="Stamp"
+                              className="absolute inset-0 m-auto h-11 w-11 object-contain pointer-events-none opacity-88"
+                              style={{ mixBlendMode: 'multiply' }}
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          )}
                           {sigSrc ? (
                             <img
                               src={sigSrc}
                               alt="Signature"
-                              className="h-9 object-contain mb-1"
+                              className="relative z-10 h-10 w-auto object-contain"
                             />
                           ) : (
-                            <div className="h-9" />
+                            <div className="h-10" />
                           )}
-                          <div className="w-44 border-b-2 border-[#1E3A8A] mb-1.5" />
-                          <span className="text-[#1E3A8A] font-black uppercase tracking-wider">
-                            Principal / Controller of Exam
-                          </span>
                         </div>
+                        <div className="w-44 border-b-2 border-[#1E3A8A] mb-1.5" />
+                        <span className="text-[#1E3A8A] font-black uppercase tracking-wider">
+                          Director Sign
+                        </span>
                       </div>
                     </div>
                   </div>

@@ -21,6 +21,7 @@ import {
 export default function AttendanceView() {
   const {
     students,
+    teachers = [],
     attendance,
     settings,
     currentUser,
@@ -584,7 +585,7 @@ export default function AttendanceView() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3.5 bg-white rounded-2xl border border-border shadow-2xs">
               <div className="text-[11px] font-bold text-slate-500 uppercase">Total Faculty</div>
-              <div className="text-xl font-extrabold text-text mt-0.5">{teachers.length}</div>
+              <div className="text-xl font-extrabold text-text mt-0.5">{(teachers || []).length}</div>
             </div>
             <div className="p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-200 shadow-2xs">
               <div className="text-[11px] font-bold text-emerald-700 uppercase">Present</div>
@@ -620,14 +621,14 @@ export default function AttendanceView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {teachers.length === 0 ? (
+                  {(teachers || []).length === 0 ? (
                     <tr>
                       <td colSpan="5" className="py-12 text-center text-text-secondary font-medium">
                         No faculty members added yet. Add teachers in Faculty & Teachers section.
                       </td>
                     </tr>
                   ) : (
-                    teachers.map(t => {
+                    (teachers || []).map(t => {
                       const tKey = t.id || t.teacherId;
                       const status = localTeacherStatus[tKey] || 'present';
 

@@ -250,27 +250,21 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className={`rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200 font-sans border transition-colors ${
-        isDark ? 'bg-[#121212] text-white border-[#262626]' : 'bg-white text-slate-900 border-slate-200'
-      }`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200 font-sans border bg-white text-slate-900 border-slate-200">
         
         {/* --- Top App Bar --- */}
-        <div className={`flex items-center justify-between px-4 py-3.5 border-b select-none flex-shrink-0 transition-colors ${
-          isDark ? 'border-[#262626] bg-[#121212]' : 'border-slate-200 bg-slate-50/80'
-        }`}>
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200 bg-slate-50/90 select-none flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleBack}
-              className={`p-1.5 -ml-1 rounded-full transition-colors cursor-pointer ${
-                isDark ? 'text-white hover:text-white/80 hover:bg-white/10' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'
-              }`}
+              className="p-1.5 -ml-1 rounded-full text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
               title={activeView === 'main' ? 'Close' : 'Back'}
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h2 className={`font-semibold text-base sm:text-lg tracking-wide ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <h2 className="font-semibold text-base sm:text-lg tracking-wide text-slate-900">
               {activeView === 'main' && 'Help and feedback'}
               {activeView === 'help' && 'Help Centre'}
               {activeView === 'contact' && 'Contact us'}
@@ -283,9 +277,7 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
           <button
             type="button"
             onClick={handleClose}
-            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
-              isDark ? 'text-[#8E8E8E] hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200'
-            }`}
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
             title="Close"
           >
             <X className="w-4 h-4" />
@@ -293,29 +285,27 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
         </div>
 
         {/* --- Dynamic Content Body --- */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-white">
 
           {/* ========================================================================= */}
           {/* MAIN MENU */}
           {/* ========================================================================= */}
           {activeView === 'main' && (
-            <div className={`py-2 divide-y ${isDark ? 'divide-[#1e1e1e]/60' : 'divide-slate-100'}`}>
+            <div className="py-2 divide-y divide-slate-100">
               {/* 1. Help Centre */}
               <button
                 type="button"
                 onClick={() => setActiveView('help')}
-                className={`w-full px-5 py-3.5 flex items-start gap-4 text-left transition-colors cursor-pointer group ${
-                  isDark ? 'hover:bg-[#1a1a1a]' : 'hover:bg-slate-50'
-                }`}
+                className="w-full px-5 py-3.5 flex items-start gap-4 text-left hover:bg-slate-50 transition-colors cursor-pointer group"
               >
-                <div className={`mt-0.5 transition-colors flex-shrink-0 ${isDark ? 'text-[#B0B0B0] group-hover:text-white' : 'text-slate-500 group-hover:text-slate-800'}`}>
+                <div className="mt-0.5 text-slate-500 group-hover:text-slate-800 transition-colors flex-shrink-0">
                   <HelpCircle className="w-6 h-6 stroke-[1.8]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-[15px] font-medium leading-snug ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  <div className="text-[15px] font-medium leading-snug text-slate-800">
                     Help Centre
                   </div>
-                  <div className={`text-[12.5px] mt-0.5 leading-tight ${isDark ? 'text-[#8E8E8E]' : 'text-slate-500'}`}>
+                  <div className="text-[12.5px] mt-0.5 leading-tight text-slate-500">
                     Frequently asked questions
                   </div>
                 </div>
@@ -325,23 +315,19 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setActiveView('contact')}
-                className={`w-full px-5 py-3.5 flex items-start gap-4 text-left transition-colors cursor-pointer group ${
-                  isDark ? 'hover:bg-[#1a1a1a]' : 'hover:bg-slate-50'
-                }`}
+                className="w-full px-5 py-3.5 flex items-start gap-4 text-left hover:bg-slate-50 transition-colors cursor-pointer group"
               >
-                <div className={`mt-0.5 transition-colors flex-shrink-0 ${isDark ? 'text-[#B0B0B0] group-hover:text-white' : 'text-slate-500 group-hover:text-slate-800'}`}>
+                <div className="mt-0.5 text-slate-500 group-hover:text-slate-800 transition-colors flex-shrink-0">
                   <div className="relative">
                     <MessageCircle className="w-6 h-6 stroke-[1.8]" />
-                    <span className={`absolute -top-0.5 -right-0.5 text-[9px] font-bold px-0.5 rounded-full ${
-                      isDark ? 'text-white bg-[#121212]' : 'text-slate-800 bg-white shadow-xs'
-                    }`}>?</span>
+                    <span className="absolute -top-0.5 -right-0.5 text-[9px] font-bold px-0.5 rounded-full text-slate-800 bg-white shadow-xs">?</span>
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-[15px] font-medium leading-snug ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  <div className="text-[15px] font-medium leading-snug text-slate-800">
                     Contact us
                   </div>
-                  <div className={`text-[12.5px] mt-0.5 leading-tight ${isDark ? 'text-[#8E8E8E]' : 'text-slate-500'}`}>
+                  <div className="text-[12.5px] mt-0.5 leading-tight text-slate-500">
                     Chat with support to get answers
                   </div>
                 </div>
@@ -351,18 +337,16 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setActiveView('feedback')}
-                className={`w-full px-5 py-3.5 flex items-start gap-4 text-left transition-colors cursor-pointer group ${
-                  isDark ? 'hover:bg-[#1a1a1a]' : 'hover:bg-slate-50'
-                }`}
+                className="w-full px-5 py-3.5 flex items-start gap-4 text-left hover:bg-slate-50 transition-colors cursor-pointer group"
               >
-                <div className={`mt-0.5 transition-colors flex-shrink-0 ${isDark ? 'text-[#B0B0B0] group-hover:text-white' : 'text-slate-500 group-hover:text-slate-800'}`}>
+                <div className="mt-0.5 text-slate-500 group-hover:text-slate-800 transition-colors flex-shrink-0">
                   <Bug className="w-6 h-6 stroke-[1.8]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-[15px] font-medium leading-snug ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  <div className="text-[15px] font-medium leading-snug text-slate-800">
                     Send feedback
                   </div>
-                  <div className={`text-[12.5px] mt-0.5 leading-tight ${isDark ? 'text-[#8E8E8E]' : 'text-slate-500'}`}>
+                  <div className="text-[12.5px] mt-0.5 leading-tight text-slate-500">
                     Technical issues, suggestions
                   </div>
                 </div>
@@ -372,17 +356,15 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setActiveView('rate')}
-                className={`w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors cursor-pointer group ${
-                  isDark ? 'hover:bg-[#1a1a1a]' : 'hover:bg-slate-50'
-                }`}
+                className="w-full px-5 py-3.5 flex items-center gap-4 text-left hover:bg-slate-50 transition-colors cursor-pointer group"
               >
-                <div className={`transition-colors flex-shrink-0 ${isDark ? 'text-[#B0B0B0] group-hover:text-white' : 'text-slate-500 group-hover:text-slate-800'}`}>
+                <div className="text-slate-500 group-hover:text-slate-800 transition-colors flex-shrink-0">
                   <div className="w-6 h-6 border-2 border-current rounded-md flex items-center justify-center p-0.5">
                     <Star className="w-3.5 h-3.5 fill-current" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-[15px] font-medium leading-snug ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  <div className="text-[15px] font-medium leading-snug text-slate-800">
                     Rate the app
                   </div>
                 </div>
@@ -392,15 +374,13 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setActiveView('terms')}
-                className={`w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors cursor-pointer group ${
-                  isDark ? 'hover:bg-[#1a1a1a]' : 'hover:bg-slate-50'
-                }`}
+                className="w-full px-5 py-3.5 flex items-center gap-4 text-left hover:bg-slate-50 transition-colors cursor-pointer group"
               >
-                <div className={`transition-colors flex-shrink-0 ${isDark ? 'text-[#B0B0B0] group-hover:text-white' : 'text-slate-500 group-hover:text-slate-800'}`}>
+                <div className="text-slate-500 group-hover:text-slate-800 transition-colors flex-shrink-0">
                   <FileText className="w-6 h-6 stroke-[1.8]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-[15px] font-medium leading-snug ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  <div className="text-[15px] font-medium leading-snug text-slate-800">
                     Terms and Privacy Policy
                   </div>
                 </div>
@@ -410,15 +390,13 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setActiveView('channels')}
-                className={`w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors cursor-pointer group ${
-                  isDark ? 'hover:bg-[#1a1a1a]' : 'hover:bg-slate-50'
-                }`}
+                className="w-full px-5 py-3.5 flex items-center gap-4 text-left hover:bg-slate-50 transition-colors cursor-pointer group"
               >
-                <div className={`transition-colors flex-shrink-0 ${isDark ? 'text-[#B0B0B0] group-hover:text-white' : 'text-slate-500 group-hover:text-slate-800'}`}>
+                <div className="text-slate-500 group-hover:text-slate-800 transition-colors flex-shrink-0">
                   <AlertCircle className="w-6 h-6 stroke-[1.8]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-[15px] font-medium leading-snug ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  <div className="text-[15px] font-medium leading-snug text-slate-800">
                     Channels reports
                   </div>
                 </div>
@@ -432,15 +410,13 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
           {activeView === 'help' && (
             <div className="p-4 space-y-3.5">
               <div className="relative">
-                <Search className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-[#8E8E8E]' : 'text-slate-400'}`} />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={faqSearch}
                   onChange={(e) => setFaqSearch(e.target.value)}
                   placeholder="Search questions or topics..."
-                  className={`w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border focus:outline-hidden focus:border-teal-400 transition-colors ${
-                    isDark ? 'bg-[#1E1E1E] text-white border-[#2E2E2E] placeholder-[#6E6E6E]' : 'bg-slate-100 text-slate-900 border-slate-200 placeholder-slate-400'
-                  }`}
+                  className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-100 text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-teal-500 transition-colors"
                 />
               </div>
 
@@ -451,26 +427,18 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                     return (
                       <div
                         key={idx}
-                        className={`border rounded-xl overflow-hidden transition-all ${
-                          isDark ? 'bg-[#1E1E1E] border-[#2A2A2A]' : 'bg-slate-50 border-slate-200'
-                        }`}
+                        className="border border-slate-200 bg-slate-50 rounded-xl overflow-hidden transition-all shadow-2xs hover:border-slate-300"
                       >
                         <button
                           type="button"
                           onClick={() => setExpandedFaq(isExp ? null : idx)}
-                          className={`w-full p-3.5 text-left flex items-center justify-between gap-3 text-xs font-semibold transition-colors cursor-pointer ${
-                            isDark ? 'text-white hover:text-teal-300' : 'text-slate-800 hover:text-teal-600'
-                          }`}
+                          className="w-full p-3.5 text-left flex items-center justify-between gap-3 text-xs font-semibold text-slate-800 hover:text-teal-600 transition-colors cursor-pointer"
                         >
                           <span className="leading-snug">{faq.q}</span>
-                          <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${
-                            isDark ? 'text-[#8E8E8E]' : 'text-slate-400'
-                          } ${isExp ? 'rotate-180 text-teal-500' : ''}`} />
+                          <ChevronDown className={`w-4 h-4 flex-shrink-0 text-slate-400 transition-transform ${isExp ? 'rotate-180 text-teal-600' : ''}`} />
                         </button>
                         {isExp && (
-                          <div className={`px-3.5 pb-3.5 text-[12px] leading-relaxed border-t pt-2.5 ${
-                            isDark ? 'text-[#A0A0A0] border-[#262626]' : 'text-slate-600 border-slate-200'
-                          }`}>
+                          <div className="px-3.5 pb-3.5 text-[12px] leading-relaxed border-t border-slate-200 pt-2.5 text-slate-600 bg-white">
                             {faq.a}
                           </div>
                         )}
@@ -478,7 +446,7 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                     );
                   })
                 ) : (
-                  <div className={`text-center py-8 text-xs ${isDark ? 'text-[#8E8E8E]' : 'text-slate-400'}`}>
+                  <div className="text-center py-8 text-xs text-slate-400">
                     No questions found matching &quot;{faqSearch}&quot;.
                   </div>
                 )}
@@ -492,17 +460,15 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
           {activeView === 'contact' && (
             <div className="p-4 space-y-3.5">
               {/* Working Hours Support Schedule */}
-              <div className={`p-3.5 rounded-2xl border flex items-center gap-3.5 ${
-                isDark ? 'bg-[#1A1A1A] border-[#2A2A2A]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-              }`}>
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-500 flex items-center justify-center font-bold flex-shrink-0">
+              <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex items-center gap-3.5 shadow-2xs">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 flex items-center justify-center font-bold flex-shrink-0">
                   <Clock className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  <div className="text-xs font-bold text-slate-900">
                     Active Support Schedule
                   </div>
-                  <div className={`text-[11px] mt-0.5 ${isDark ? 'text-[#8E8E8E]' : 'text-slate-500'}`}>
+                  <div className="text-[11px] mt-0.5 text-slate-500">
                     {workingHours}
                   </div>
                 </div>
@@ -513,72 +479,60 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                 href={`https://wa.me/${whatsappNumber}?text=Hello%2C%20I%20need%20assistance%20with%20school%20management.`}
                 target="_blank"
                 rel="noreferrer"
-                className={`p-3.5 rounded-2xl border flex items-center gap-3.5 group transition-all cursor-pointer block ${
-                  isDark ? 'bg-[#1E1E1E] border-[#2A2A2A] hover:border-emerald-500/50' : 'bg-slate-50 border-slate-200 hover:border-emerald-500/50 shadow-2xs'
-                }`}
+                className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 hover:border-emerald-500 hover:bg-emerald-50/30 flex items-center gap-3.5 group transition-all cursor-pointer block shadow-2xs"
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
                   <MessageCircle className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-xs font-bold transition-colors flex items-center justify-between ${
-                    isDark ? 'text-white group-hover:text-emerald-300' : 'text-slate-900 group-hover:text-emerald-600'
-                  }`}>
+                  <div className="text-xs font-bold transition-colors flex items-center justify-between text-slate-900 group-hover:text-emerald-700">
                     <span>WhatsApp Support</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-normal">Instant Chat</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 font-semibold">Instant Chat</span>
                   </div>
-                  <div className={`text-[11px] mt-0.5 ${isDark ? 'text-[#8E8E8E]' : 'text-slate-500'}`}>
+                  <div className="text-[11px] mt-0.5 text-slate-500">
                     {supportWhatsapp}
                   </div>
                 </div>
-                <ExternalLink className={`w-4 h-4 ${isDark ? 'text-[#8E8E8E] group-hover:text-white' : 'text-slate-400 group-hover:text-slate-700'}`} />
+                <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-slate-700" />
               </a>
 
               {/* Direct Helpline */}
               <a
                 href={`tel:${cleanPhone || '8568643490'}`}
-                className={`p-3.5 rounded-2xl border flex items-center gap-3.5 group transition-all cursor-pointer block ${
-                  isDark ? 'bg-[#1E1E1E] border-[#2A2A2A] hover:border-blue-500/50' : 'bg-slate-50 border-slate-200 hover:border-blue-500/50 shadow-2xs'
-                }`}
+                className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 hover:border-blue-500 hover:bg-blue-50/30 flex items-center gap-3.5 group transition-all cursor-pointer block shadow-2xs"
               >
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 flex items-center justify-center font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
                   <Phone className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-xs font-bold transition-colors flex items-center justify-between ${
-                    isDark ? 'text-white group-hover:text-blue-300' : 'text-slate-900 group-hover:text-blue-600'
-                  }`}>
+                  <div className="text-xs font-bold transition-colors flex items-center justify-between text-slate-900 group-hover:text-blue-700">
                     <span>Helpline Voice Call</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-600 dark:text-blue-400 font-normal">Direct</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-700 font-semibold">Direct</span>
                   </div>
-                  <div className={`text-[11px] mt-0.5 ${isDark ? 'text-[#8E8E8E]' : 'text-slate-500'}`}>
+                  <div className="text-[11px] mt-0.5 text-slate-500">
                     {supportPhone}
                   </div>
                 </div>
-                <ExternalLink className={`w-4 h-4 ${isDark ? 'text-[#8E8E8E] group-hover:text-white' : 'text-slate-400 group-hover:text-slate-700'}`} />
+                <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-slate-700" />
               </a>
 
               {/* Email Support */}
               <a
                 href={`mailto:${supportEmail}?subject=Support%20Inquiry%20-%20${encodeURIComponent(schoolName)}`}
-                className={`p-3.5 rounded-2xl border flex items-center gap-3.5 group transition-all cursor-pointer block ${
-                  isDark ? 'bg-[#1E1E1E] border-[#2A2A2A] hover:border-amber-500/50' : 'bg-slate-50 border-slate-200 hover:border-amber-500/50 shadow-2xs'
-                }`}
+                className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 hover:border-amber-500 hover:bg-amber-50/30 flex items-center gap-3.5 group transition-all cursor-pointer block shadow-2xs"
               >
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-xs font-bold transition-colors ${
-                    isDark ? 'text-white group-hover:text-amber-300' : 'text-slate-900 group-hover:text-amber-600'
-                  }`}>
+                  <div className="text-xs font-bold transition-colors text-slate-900 group-hover:text-amber-700">
                     Official Email Desk
                   </div>
-                  <div className={`text-[11px] mt-0.5 truncate ${isDark ? 'text-[#8E8E8E]' : 'text-slate-500'}`}>
+                  <div className="text-[11px] mt-0.5 truncate text-slate-500">
                     {supportEmail}
                   </div>
                 </div>
-                <ExternalLink className={`w-4 h-4 ${isDark ? 'text-[#8E8E8E] group-hover:text-white' : 'text-slate-400 group-hover:text-slate-700'}`} />
+                <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-slate-700" />
               </a>
             </div>
           )}
@@ -589,15 +543,13 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
           {activeView === 'feedback' && (
             <form onSubmit={handleSubmitFeedback} className="p-4 space-y-3.5">
               <div>
-                <label className={`text-[11px] font-semibold block mb-1 ${isDark ? 'text-[#8E8E8E]' : 'text-slate-600'}`}>
+                <label className="text-[11px] font-semibold block mb-1 text-slate-600">
                   Category
                 </label>
                 <select
                   value={feedbackCategory}
                   onChange={(e) => setFeedbackCategory(e.target.value)}
-                  className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-hidden focus:border-teal-400 cursor-pointer ${
-                    isDark ? 'bg-[#1E1E1E] text-white border-[#2E2E2E]' : 'bg-slate-100 text-slate-900 border-slate-200'
-                  }`}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-hidden focus:border-teal-500 cursor-pointer"
                 >
                   <option value="Technical Issue">Technical Issue / Bug</option>
                   <option value="Feature Suggestion">Feature Suggestion</option>
@@ -607,7 +559,7 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
               </div>
 
               <div>
-                <label className={`text-[11px] font-semibold block mb-1 ${isDark ? 'text-[#8E8E8E]' : 'text-slate-600'}`}>
+                <label className="text-[11px] font-semibold block mb-1 text-slate-600">
                   Description
                 </label>
                 <textarea
@@ -615,9 +567,7 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                   placeholder="Describe the issue you encountered or suggestions to improve..."
-                  className={`w-full p-3 text-xs rounded-xl border focus:outline-hidden focus:border-teal-400 resize-none ${
-                    isDark ? 'bg-[#1E1E1E] text-white border-[#2E2E2E] placeholder-[#6E6E6E]' : 'bg-slate-100 text-slate-900 border-slate-200 placeholder-slate-400'
-                  }`}
+                  className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-teal-500 resize-none"
                 />
               </div>
 
@@ -625,16 +575,14 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                 <button
                   type="button"
                   onClick={() => setActiveView('main')}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                    isDark ? 'text-[#8E8E8E] hover:text-white' : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingFeedback}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{isSubmittingFeedback ? 'Submitting...' : 'Submit Feedback'}</span>
@@ -648,7 +596,7 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
           {/* ========================================================================= */}
           {activeView === 'rate' && (
             <div className="p-6 text-center space-y-4">
-              <p className={`text-xs ${isDark ? 'text-[#8E8E8E]' : 'text-slate-500'}`}>
+              <p className="text-xs text-slate-500">
                 How would you rate your overall experience with School Management Portal?
               </p>
 
@@ -670,7 +618,7 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                         className={`w-8 h-8 transition-colors ${
                           isActive
                             ? 'text-amber-400 fill-amber-400'
-                            : isDark ? 'text-[#3E3E3E] hover:text-[#6E6E6E]' : 'text-slate-300 hover:text-slate-400'
+                            : 'text-slate-300 hover:text-slate-400'
                         }`}
                       />
                     </button>
@@ -678,7 +626,7 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                 })}
               </div>
 
-              <div className="text-sm font-bold text-amber-500">
+              <div className="text-sm font-bold text-amber-600">
                 {rating === 5 && '5 / 5 Stars — Excellent!'}
                 {rating === 4 && '4 / 5 Stars — Very Good'}
                 {rating === 3 && '3 / 5 Stars — Good'}
@@ -690,9 +638,7 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                 <button
                   type="button"
                   onClick={() => setActiveView('main')}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                    isDark ? 'text-[#8E8E8E] hover:text-white' : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 >
                   Later
                 </button>
@@ -713,10 +659,10 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
           {activeView === 'terms' && (
             <div className="p-4 space-y-3 max-h-[62vh] overflow-y-auto pr-1 text-xs">
               <div className="p-3 bg-teal-500/10 border border-teal-500/20 rounded-2xl mb-1">
-                <p className="text-[11px] font-bold text-teal-600 dark:text-teal-300">
+                <p className="text-[11px] font-bold text-teal-700">
                   School Cloud • Institutional Terms of Service & Privacy Policy
                 </p>
-                <p className={`text-[10px] mt-0.5 ${isDark ? 'text-[#A0A0A0]' : 'text-slate-500'}`}>
+                <p className="text-[10px] text-slate-500 mt-0.5">
                   Effective Session 2026-27 • Governs all authorized school tenants, administrators, and staff.
                 </p>
               </div>
@@ -727,9 +673,7 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                 return (
                   <div
                     key={idx}
-                    className={`border rounded-2xl overflow-hidden transition-all ${
-                      isDark ? 'bg-[#1E1E1E] border-[#2A2A2A]' : 'bg-slate-50 border-slate-200'
-                    }`}
+                    className="border border-slate-200 bg-slate-50 rounded-2xl overflow-hidden transition-all shadow-2xs hover:border-slate-300"
                   >
                     <button
                       type="button"
@@ -737,21 +681,15 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
                       className="w-full p-3.5 text-left flex items-start justify-between gap-3 cursor-pointer group"
                     >
                       <div className="flex items-start gap-2.5 min-w-0">
-                        <IconComponent className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                        <span className={`font-bold text-xs leading-snug transition-colors ${
-                          isDark ? 'text-white group-hover:text-teal-300' : 'text-slate-900 group-hover:text-teal-600'
-                        }`}>
+                        <IconComponent className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-xs leading-snug text-slate-900 group-hover:text-teal-700 transition-colors">
                           {policy.title}
                         </span>
                       </div>
-                      <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${
-                        isDark ? 'text-[#8E8E8E]' : 'text-slate-400'
-                      } ${isExp ? 'rotate-180 text-teal-500' : ''}`} />
+                      <ChevronDown className={`w-4 h-4 flex-shrink-0 text-slate-400 transition-transform ${isExp ? 'rotate-180 text-teal-600' : ''}`} />
                     </button>
                     {isExp && (
-                      <div className={`px-3.5 pb-3.5 text-[11.5px] leading-relaxed border-t pt-2.5 ${
-                        isDark ? 'text-[#A8A8A8] border-[#262626]' : 'text-slate-600 border-slate-200'
-                      }`}>
+                      <div className="px-3.5 pb-3.5 text-[11.5px] leading-relaxed border-t border-slate-200 pt-2.5 text-slate-600 bg-white">
                         {policy.content}
                       </div>
                     )}
@@ -767,20 +705,18 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
           {activeView === 'channels' && (
             <div className="p-4 space-y-2.5">
               {[
-                { name: 'System Services', status: '100% Operational', color: 'text-emerald-500', dot: 'bg-emerald-500' },
-                { name: 'Database Sync', status: 'Realtime Connected', color: 'text-emerald-500', dot: 'bg-emerald-500' },
-                { name: 'Broadcast Channel', status: 'Active (0 incidents)', color: 'text-emerald-500', dot: 'bg-emerald-500' },
-                { name: 'Encryption Engine', status: 'TLS 1.3 / AES-256', color: 'text-cyan-500', dot: 'bg-cyan-500' },
-                { name: 'Cloud Gateway', status: 'Active (< 90ms latency)', color: 'text-emerald-500', dot: 'bg-emerald-500' },
-                { name: 'Security Telemetry', status: 'Guarded & Secure', color: 'text-teal-500', dot: 'bg-teal-500' },
+                { name: 'System Services', status: '100% Operational', color: 'text-emerald-600', dot: 'bg-emerald-500' },
+                { name: 'Database Sync', status: 'Realtime Connected', color: 'text-emerald-600', dot: 'bg-emerald-500' },
+                { name: 'Broadcast Channel', status: 'Active (0 incidents)', color: 'text-emerald-600', dot: 'bg-emerald-500' },
+                { name: 'Encryption Engine', status: 'TLS 1.3 / AES-256', color: 'text-teal-600', dot: 'bg-teal-500' },
+                { name: 'Cloud Gateway', status: 'Active (< 90ms latency)', color: 'text-emerald-600', dot: 'bg-emerald-500' },
+                { name: 'Security Telemetry', status: 'Guarded & Secure', color: 'text-teal-600', dot: 'bg-teal-500' },
               ].map((c, idx) => (
                 <div
                   key={idx}
-                  className={`p-3 border rounded-xl flex items-center justify-between text-xs ${
-                    isDark ? 'bg-[#1E1E1E] border-[#2A2A2A]' : 'bg-slate-50 border-slate-200'
-                  }`}
+                  className="p-3 border border-slate-200 bg-slate-50 rounded-xl flex items-center justify-between text-xs shadow-2xs"
                 >
-                  <span className={`font-medium ${isDark ? 'text-[#C0C0C0]' : 'text-slate-700'}`}>{c.name}</span>
+                  <span className="font-medium text-slate-700">{c.name}</span>
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${c.dot} animate-pulse`} />
                     <span className={`font-bold ${c.color}`}>{c.status}</span>
@@ -793,15 +729,11 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
         </div>
 
         {/* --- Divider --- */}
-        <div className={`border-t ${isDark ? 'border-[#262626]' : 'border-slate-200'}`} />
+        <div className="border-t border-slate-200" />
 
         {/* --- Footer Version Text (Version 1.0.0) --- */}
-        <div className={`py-4 px-4 text-center select-none flex-shrink-0 ${
-          isDark ? 'bg-[#121212]' : 'bg-slate-50/80'
-        }`}>
-          <p className={`text-[13px] font-medium tracking-tight ${
-            isDark ? 'text-[#888888]' : 'text-slate-500'
-          }`}>
+        <div className="py-4 px-4 text-center select-none bg-slate-50/80 flex-shrink-0">
+          <p className="text-[13px] font-medium tracking-tight text-slate-500">
             {APP_VERSION}
           </p>
         </div>
