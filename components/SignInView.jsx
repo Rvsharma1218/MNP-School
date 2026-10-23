@@ -214,39 +214,21 @@ export default function SignInView() {
               <div className="pt-2 flex flex-wrap items-center justify-center gap-3.5">
                 <button
                   type="button"
-                  onClick={() => openPortalLogin('parent')}
-                  className="px-6 py-3.5 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+                  onClick={() => navigate('/signup')}
+                  className="px-6 py-3.5 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2.5 cursor-pointer"
                 >
-                  <Users className="w-4 h-4 text-amber-300" />
-                  <span>{t.parentPortalBtn}</span>
+                  <FileText className="w-4 h-4 text-amber-300" />
+                  <span>{t.admissionDeskBtn}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => navigate('/signup')}
-                  className="px-5 py-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-300 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  <FileText className="w-4 h-4 text-amber-700" />
-                  <span>{t.admissionDeskBtn}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => navigate('/signup')}
-                  className="px-5 py-3.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold text-xs border border-indigo-200 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-[#0c2340] font-bold text-xs border border-slate-300 shadow-2xs transition-all flex items-center gap-2.5 cursor-pointer"
                 >
                   <Briefcase className="w-4 h-4 text-indigo-700" />
                   <span>{t.teacherApplicationBtn}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => openPortalLogin('teacher')}
-                  className="px-5 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-[#0c2340] font-bold text-xs border border-slate-300 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  <GraduationCap className="w-4 h-4 text-[#0c2340]" />
-                  <span>{t.teacherDeskBtn}</span>
                 </button>
               </div>
 
@@ -490,33 +472,33 @@ export default function SignInView() {
               </div>
             </section>
 
-            {/* 5. Bottom Access Banner */}
+            {/* 5. Bottom Admission & Enquiry Banner */}
             <section className="max-w-6xl mx-auto px-6">
               <div className="rounded-3xl bg-gradient-to-r from-[#0c2340] to-[#153459] text-white p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md">
                 <div className="space-y-1 text-center sm:text-left">
                   <h4 className="text-xl font-bold">
-                    {language === 'hi' ? 'डिजिटल परिसर में आपका स्वागत है' : 'Ready to access your digital campus?'}
+                    {language === 'hi' ? 'सत्र 2026-27 के लिए नए नामांकन प्रारंभ हैं' : 'Admissions Open for Session 2026-27'}
                   </h4>
                   <p className="text-xs text-slate-300">
                     {language === 'hi'
-                      ? 'अभिभावक, शिक्षक और प्रशासन अपने संबंधित पोर्टल में लॉगिन कर सकते हैं।'
-                      : 'Parents, teachers, and administration can log in to view records, fee status, and attendance.'}
+                      ? 'अपने बच्चे के उज्ज्वल भविष्य के लिए आज ही ऑनलाइन प्रवेश पूछताछ फॉर्म भरें।'
+                      : 'Register your interest today to secure admission for your child at Mission Navodaya Public School.'}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
+                  <a
+                    href={`tel:${phone}`}
+                    className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all flex items-center gap-2 cursor-pointer flex-shrink-0"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>{t.callOfficeBtn}</span>
+                  </a>
                   <button
                     type="button"
                     onClick={() => navigate('/signup')}
-                    className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all flex items-center gap-2 cursor-pointer flex-shrink-0"
-                  >
-                    <span>{t.admissionEnquiry}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openPortalLogin('parent')}
                     className="px-6 py-3 rounded-xl bg-white text-[#0c2340] font-black text-xs hover:bg-slate-100 transition-all flex items-center gap-2 cursor-pointer shadow-sm flex-shrink-0"
                   >
-                    <span>{t.portalLogin}</span>
+                    <span>{t.admissionDeskBtn}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
