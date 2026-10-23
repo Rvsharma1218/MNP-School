@@ -1,3 +1,4 @@
+import 'online_enquiries_screen.dart';
 import '../../core/localization/app_translations.dart';
 import '../security/security_verification_dialog.dart';
 import '../security/device_security_service.dart';
@@ -609,6 +610,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 if (isPrincipal)
                   IconButton(
+                    icon: const Icon(Icons.assignment_ind_outlined, color: Colors.white),
+                    tooltip: 'Online Enquiries & Admissions Desk',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const OnlineEnquiriesScreen()),
+                    ),
+                  ),
+                if (isPrincipal)
+                  IconButton(
                     icon: const Icon(Icons.mark_chat_unread_outlined, color: Colors.white),
                     tooltip: 'Parent Complaints',
                     onPressed: () => Navigator.push(
@@ -1105,6 +1115,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                         const SizedBox(height: 14),
 
+                        // ─── Online Admission & Recruitment Desk Card (Principal Only) ───
+                        _buildOnlineEnquiriesCard(context, isPrincipal),
+                        const SizedBox(height: 14),
                         // ─── Live Parent Complaints & Desk Card (Principal Only) ───
                         _buildParentComplaintsCard(context, isPrincipal),
                         const SizedBox(height: 14),
@@ -1496,6 +1509,130 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.7), fontSize: 10)),
       ],
+    );
+  }
+
+  Widget _buildOnlineEnquiriesCard(BuildContext context, bool isPrincipal) {
+    if (!isPrincipal) return const SizedBox.shrink();
+
+    final admStream = FirestoreService.instance.watchAdmissionEnquiries();
+    final teachStream = FirestoreService.instance.watchTeacherApplications();
+
+    if (admStream == null && teachStream == null) return const SizedBox.shrink();
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: admStream,
+      builder: (context, admSnap) {
+        final admissions = admSnap.data ?? [];
+        final pendingAdm = admissions.where((i) => (i['status'] ?? 'pending').toString().toLowerCase() == 'pending').length;
+
+        return StreamBuilder<List<Map<String, dynamic>>>(
+          stream: teachStream,
+          builder: (context, teachSnap) {
+            final teachers = teachSnap.data ?? [];
+            final pendingTeach = teachers.where((i) => (i['status'] ?? 'pending').toString().toLowerCase() == 'pending').length;
+            final totalPending = pendingAdm + pendingTeach;
+            final totalAll = admissions.length + teachers.length;
+
+            return InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OnlineEnquiriesScreen()),
+              ),
+              borderRadius: BorderRadius.circular(18),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E3A8A), Color(0xFF0F172A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: totalPending > 0 ? const Color(0xFF38BDF8).withValues(alpha: 0.6) : const Color(0xFF1E293B),
+                    width: totalPending > 0 ? 1.5 : 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (totalPending > 0 ? const Color(0xFF0284C7) : Colors.black).withValues(alpha: 0.22),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(11),
+                      decoration: BoxDecoration(
+                        color: (totalPending > 0 ? const Color(0xFF38BDF8) : const Color(0xFF64748B)).withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.assignment_ind_rounded,
+                        color: totalPending > 0 ? const Color(0xFF38BDF8) : const Color(0xFF94A3B8),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'Online Enquiries Desk',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14.5,
+                                  ),
+                                ),
+                              ),
+                              if (totalPending > 0)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amberAccent.shade700,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    '$totalPending NEW',
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            totalPending > 0
+                                ? '$pendingAdm Pending Admissions · $pendingTeach Faculty Applications'
+                                : (totalAll > 0 ? '$totalAll Applications received from website' : 'View online admissions & teacher applications'),
+                            style: TextStyle(
+                              color: totalPending > 0 ? const Color(0xFFBAE6FD) : Colors.white60,
+                              fontSize: 12,
+                              fontWeight: totalPending > 0 ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 14),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

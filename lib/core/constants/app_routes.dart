@@ -19,4 +19,5 @@ class AppRoutes {
   static const feesPending = '/fees-pending';
   static const promoteStudents = '/promote-students';
   static const parentDashboard = '/parent-dashboard';
+  static const onlineEnquiries = '/online-enquiries';
 }

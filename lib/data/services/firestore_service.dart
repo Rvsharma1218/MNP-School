@@ -157,6 +157,148 @@ class FirestoreService {
         .toList());
   }
 
+  // ─── Online Admission Enquiries & Teacher Applications ─────────────────
+
+  Stream<List<Map<String, dynamic>>>? watchAdmissionEnquiries() {
+    if (!_enabled || _db == null) return null;
+    return _db!
+        .collection('schoolDirectory')
+        .doc(_schoolId)
+        .collection('admissionEnquiries')
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs.map((d) {
+        final data = Map<String, dynamic>.from(d.data());
+        data['refNo'] = d.id;
+        return data;
+      }).toList();
+      list.sort((a, b) {
+        final tA = a['submittedAt']?.toString() ?? '';
+        final tB = b['submittedAt']?.toString() ?? '';
+        return tB.compareTo(tA);
+      });
+      return list;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>>? watchTeacherApplications() {
+    if (!_enabled || _db == null) return null;
+    return _db!
+        .collection('schoolDirectory')
+        .doc(_schoolId)
+        .collection('teacherApplications')
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs.map((d) {
+        final data = Map<String, dynamic>.from(d.data());
+        data['refNo'] = d.id;
+        return data;
+      }).toList();
+      list.sort((a, b) {
+        final tA = a['submittedAt']?.toString() ?? '';
+        final tB = b['submittedAt']?.toString() ?? '';
+        return tB.compareTo(tA);
+      });
+      return list;
+    });
+  }
+
+  Future<void> updateAdmissionEnquiryStatus(String refNo, String status) async {
+    if (!_enabled || _db == null) return;
+    try {
+      await _db!
+          .collection('schoolDirectory')
+          .doc(_schoolId)
+          .collection('admissionEnquiries')
+          .doc(refNo)
+          .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()});
+      if (_schoolId != 'SCHOOL_007') {
+        try {
+          await _db!
+              .collection('schoolDirectory')
+              .doc('SCHOOL_007')
+              .collection('admissionEnquiries')
+              .doc(refNo)
+              .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()});
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('[Firestore] updateAdmissionEnquiryStatus error: $e');
+    }
+  }
+
+  Future<void> deleteAdmissionEnquiry(String refNo) async {
+    if (!_enabled || _db == null) return;
+    try {
+      await _db!
+          .collection('schoolDirectory')
+          .doc(_schoolId)
+          .collection('admissionEnquiries')
+          .doc(refNo)
+          .delete();
+      if (_schoolId != 'SCHOOL_007') {
+        try {
+          await _db!
+              .collection('schoolDirectory')
+              .doc('SCHOOL_007')
+              .collection('admissionEnquiries')
+              .doc(refNo)
+              .delete();
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('[Firestore] deleteAdmissionEnquiry error: $e');
+    }
+  }
+
+  Future<void> updateTeacherApplicationStatus(String refNo, String status) async {
+    if (!_enabled || _db == null) return;
+    try {
+      await _db!
+          .collection('schoolDirectory')
+          .doc(_schoolId)
+          .collection('teacherApplications')
+          .doc(refNo)
+          .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()});
+      if (_schoolId != 'SCHOOL_007') {
+        try {
+          await _db!
+              .collection('schoolDirectory')
+              .doc('SCHOOL_007')
+              .collection('teacherApplications')
+              .doc(refNo)
+              .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()});
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('[Firestore] updateTeacherApplicationStatus error: $e');
+    }
+  }
+
+  Future<void> deleteTeacherApplication(String refNo) async {
+    if (!_enabled || _db == null) return;
+    try {
+      await _db!
+          .collection('schoolDirectory')
+          .doc(_schoolId)
+          .collection('teacherApplications')
+          .doc(refNo)
+          .delete();
+      if (_schoolId != 'SCHOOL_007') {
+        try {
+          await _db!
+              .collection('schoolDirectory')
+              .doc('SCHOOL_007')
+              .collection('teacherApplications')
+              .doc(refNo)
+              .delete();
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('[Firestore] deleteTeacherApplication error: $e');
+    }
+  }
+
   // ─── Student Sync (schools/{schoolId}/students) ─────────────────────────
 
   Future<void> syncStudent(StudentModel student) async {

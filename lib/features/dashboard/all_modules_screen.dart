@@ -119,6 +119,20 @@ class AllModulesScreen extends StatelessWidget {
  shrinkWrap: true,
  physics: const NeverScrollableScrollPhysics(),
  children: [
+ // 0. Online Enquiries
+ if (isPrincipal)
+ _buildModuleCard(
+ context: context,
+ title: 'Online Desk',
+ icon: Icons.assignment_ind_rounded,
+ iconColor: const Color(0xFF0284C7),
+ iconBg: const Color(0xFFE0F2FE),
+ isLocked: false,
+ onTap: () {
+ Navigator.pushNamed(context, AppRoutes.onlineEnquiries);
+ },
+ ),
+
  // 1. Students
  _buildModuleCard(
  context: context,

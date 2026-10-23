@@ -1,3 +1,4 @@
+import 'features/dashboard/online_enquiries_screen.dart';
 import 'dart:async';
 import 'features/notice/notice_screen.dart';
 import 'features/admit_card/admit_card_screen.dart';
@@ -120,6 +121,7 @@ class SchoolApp extends ConsumerWidget {
         AppRoutes.feesPending: (_) => const FeesPendingScreen(),
         AppRoutes.promoteStudents: (_) => const PromoteStudentsScreen(),
         AppRoutes.parentDashboard: (_) => const ParentDashboardScreen(),
+        AppRoutes.onlineEnquiries: (_) => const OnlineEnquiriesScreen(),
       },
       onGenerateRoute: (settings) {
         switch (settings.name) {

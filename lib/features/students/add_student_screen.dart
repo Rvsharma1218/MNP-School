@@ -9,7 +9,8 @@ import '../../data/services/session_service.dart';
 import '../../widgets/student_photo_picker.dart';
 
 class AddStudentScreen extends ConsumerStatefulWidget {
-  const AddStudentScreen({super.key});
+  final Map<String, dynamic>? initialData;
+  const AddStudentScreen({super.key, this.initialData});
 
   @override
   ConsumerState<AddStudentScreen> createState() => _AddStudentScreenState();
@@ -57,6 +58,29 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialData != null) {
+      final init = widget.initialData!;
+      _nameCtrl.text = init['studentName']?.toString() ?? init['name']?.toString() ?? '';
+      _fatherCtrl.text = init['fatherName']?.toString() ?? '';
+      _motherCtrl.text = init['motherName']?.toString() ?? '';
+      _mobileCtrl.text = init['mobile']?.toString() ?? '';
+      _altMobileCtrl.text = init['alternateMobile']?.toString() ?? '';
+      _addressCtrl.text = init['address']?.toString() ?? '';
+      final admClass = init['admissionClass']?.toString() ?? '';
+      if (admClass.isNotEmpty && _classes.contains(admClass)) {
+        _selectedClass = admClass;
+      }
+      final g = init['gender']?.toString() ?? '';
+      if (g == 'Male' || g == 'Female' || g == 'Other') {
+        _gender = g;
+      }
+      final dobStr = init['dob']?.toString() ?? '';
+      if (dobStr.isNotEmpty) {
+        try {
+          _dob = DateTime.parse(dobStr);
+        } catch (_) {}
+      }
+    }
     _dobCtrl.text = _formatDate(_dob);
     _admissionDateCtrl.text = _formatDate(_admissionDate);
 
