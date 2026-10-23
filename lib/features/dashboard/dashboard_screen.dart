@@ -1,3 +1,4 @@
+import '../../data/services/firestore_service.dart';
 import 'online_enquiries_screen.dart';
 import '../../core/localization/app_translations.dart';
 import '../security/security_verification_dialog.dart';
