@@ -160,129 +160,172 @@ class FirestoreService {
 
   // ─── Online Admission Enquiries & Teacher Applications ─────────────────
 
+  StreamController<List<Map<String, dynamic>>>? _admissionsController;
+  StreamController<List<Map<String, dynamic>>>? _teachersController;
+  final Map<String, Map<String, Map<String, dynamic>>> _schoolAdmissionsMap = {};
+  final Map<String, Map<String, Map<String, dynamic>>> _schoolTeachersMap = {};
+  List<Map<String, dynamic>> _cachedAdmissionsList = [];
+  List<Map<String, dynamic>> _cachedTeachersList = [];
+  bool _admissionsInitialized = false;
+  bool _teachersInitialized = false;
+
+  void _emitAdmissions() {
+    final merged = <String, Map<String, dynamic>>{};
+    for (final sMap in _schoolAdmissionsMap.values) {
+      merged.addAll(sMap);
+    }
+    final list = merged.values.toList();
+    list.sort((a, b) {
+      final tA = a['submittedAt']?.toString() ?? a['createdAt']?.toString() ?? '';
+      final tB = b['submittedAt']?.toString() ?? b['createdAt']?.toString() ?? '';
+      return tB.compareTo(tA);
+    });
+    _cachedAdmissionsList = list;
+    if (_admissionsController != null && !_admissionsController!.isClosed) {
+      _admissionsController!.add(List.from(list));
+    }
+  }
+
+  void _emitTeachers() {
+    final merged = <String, Map<String, dynamic>>{};
+    for (final sMap in _schoolTeachersMap.values) {
+      merged.addAll(sMap);
+    }
+    final list = merged.values.toList();
+    list.sort((a, b) {
+      final tA = a['submittedAt']?.toString() ?? a['createdAt']?.toString() ?? '';
+      final tB = b['submittedAt']?.toString() ?? b['createdAt']?.toString() ?? '';
+      return tB.compareTo(tA);
+    });
+    _cachedTeachersList = list;
+    if (_teachersController != null && !_teachersController!.isClosed) {
+      _teachersController!.add(List.from(list));
+    }
+  }
+
   Stream<List<Map<String, dynamic>>>? watchAdmissionEnquiries() {
     if (!_enabled || _db == null) return null;
-    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
-    final Map<String, Map<String, dynamic>> combined = {};
-
-    void emitMerged() {
-      final list = combined.values.toList();
-      list.sort((a, b) {
-        final tA = a['submittedAt']?.toString() ?? '';
-        final tB = b['submittedAt']?.toString() ?? '';
-        return tB.compareTo(tA);
-      });
-      if (!controller.isClosed) {
-        controller.add(list);
-      }
-    }
-
-    final targetSchools = <String>{_schoolId, 'SCHOOL_007', 'SCHOOL_001'};
-    final subscriptions = <StreamSubscription>[];
-
-    for (final sId in targetSchools) {
-      if (sId.isEmpty) continue;
-      final sub = _db!
-          .collection('schoolDirectory')
-          .doc(sId)
-          .collection('admissionEnquiries')
-          .snapshots()
-          .listen(
-        (snap) {
-          for (final d in snap.docs) {
-            final data = Map<String, dynamic>.from(d.data());
-            data['refNo'] = d.id;
-            combined[d.id] = data;
+    if (_admissionsController == null || _admissionsController!.isClosed) {
+      _admissionsController = StreamController<List<Map<String, dynamic>>>.broadcast(
+        onListen: () {
+          if (_cachedAdmissionsList.isNotEmpty) {
+            _admissionsController?.add(List.from(_cachedAdmissionsList));
           }
-          emitMerged();
-        },
-        onError: (e) {
-          debugPrint('[Firestore] watchAdmissionEnquiries note: $e');
         },
       );
-      subscriptions.add(sub);
     }
 
-    controller.onCancel = () {
-      for (final s in subscriptions) {
-        s.cancel();
+    if (!_admissionsInitialized) {
+      _admissionsInitialized = true;
+      final targetSchools = <String>{_schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+      for (final sId in targetSchools) {
+        if (sId.isEmpty) continue;
+        _db!
+            .collection('schoolDirectory')
+            .doc(sId)
+            .collection('admissionEnquiries')
+            .snapshots()
+            .listen(
+          (snap) {
+            final map = <String, Map<String, dynamic>>{};
+            for (final d in snap.docs) {
+              final data = Map<String, dynamic>.from(d.data());
+              data['refNo'] = d.id;
+              map[d.id] = data;
+            }
+            _schoolAdmissionsMap[sId] = map;
+            _emitAdmissions();
+          },
+          onError: (e) {
+            debugPrint('[Firestore] watchAdmissionEnquiries note: $e');
+          },
+        );
       }
-    };
+    }
 
-    return controller.stream;
+    if (_cachedAdmissionsList.isNotEmpty) {
+      Future.microtask(() {
+        if (_admissionsController != null && !_admissionsController!.isClosed) {
+          _admissionsController!.add(List.from(_cachedAdmissionsList));
+        }
+      });
+    }
+
+    return _admissionsController!.stream;
   }
 
   Stream<List<Map<String, dynamic>>>? watchTeacherApplications() {
     if (!_enabled || _db == null) return null;
-    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
-    final Map<String, Map<String, dynamic>> combined = {};
-
-    void emitMerged() {
-      final list = combined.values.toList();
-      list.sort((a, b) {
-        final tA = a['submittedAt']?.toString() ?? '';
-        final tB = b['submittedAt']?.toString() ?? '';
-        return tB.compareTo(tA);
-      });
-      if (!controller.isClosed) {
-        controller.add(list);
-      }
-    }
-
-    final targetSchools = <String>{_schoolId, 'SCHOOL_007', 'SCHOOL_001'};
-    final subscriptions = <StreamSubscription>[];
-
-    for (final sId in targetSchools) {
-      if (sId.isEmpty) continue;
-      final sub = _db!
-          .collection('schoolDirectory')
-          .doc(sId)
-          .collection('teacherApplications')
-          .snapshots()
-          .listen(
-        (snap) {
-          for (final d in snap.docs) {
-            final data = Map<String, dynamic>.from(d.data());
-            data['refNo'] = d.id;
-            combined[d.id] = data;
+    if (_teachersController == null || _teachersController!.isClosed) {
+      _teachersController = StreamController<List<Map<String, dynamic>>>.broadcast(
+        onListen: () {
+          if (_cachedTeachersList.isNotEmpty) {
+            _teachersController?.add(List.from(_cachedTeachersList));
           }
-          emitMerged();
-        },
-        onError: (e) {
-          debugPrint('[Firestore] watchTeacherApplications note: $e');
         },
       );
-      subscriptions.add(sub);
     }
 
-    controller.onCancel = () {
-      for (final s in subscriptions) {
-        s.cancel();
+    if (!_teachersInitialized) {
+      _teachersInitialized = true;
+      final targetSchools = <String>{_schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+      for (final sId in targetSchools) {
+        if (sId.isEmpty) continue;
+        _db!
+            .collection('schoolDirectory')
+            .doc(sId)
+            .collection('teacherApplications')
+            .snapshots()
+            .listen(
+          (snap) {
+            final map = <String, Map<String, dynamic>>{};
+            for (final d in snap.docs) {
+              final data = Map<String, dynamic>.from(d.data());
+              data['refNo'] = d.id;
+              map[d.id] = data;
+            }
+            _schoolTeachersMap[sId] = map;
+            _emitTeachers();
+          },
+          onError: (e) {
+            debugPrint('[Firestore] watchTeacherApplications note: $e');
+          },
+        );
       }
-    };
+    }
 
-    return controller.stream;
+    if (_cachedTeachersList.isNotEmpty) {
+      Future.microtask(() {
+        if (_teachersController != null && !_teachersController!.isClosed) {
+          _teachersController!.add(List.from(_cachedTeachersList));
+        }
+      });
+    }
+
+    return _teachersController!.stream;
   }
 
   Future<void> updateAdmissionEnquiryStatus(String refNo, String status) async {
     if (!_enabled || _db == null) return;
+    // Optimistic local update
+    for (final sMap in _schoolAdmissionsMap.values) {
+      if (sMap.containsKey(refNo)) {
+        sMap[refNo]!['status'] = status;
+        sMap[refNo]!['updatedAt'] = DateTime.now().toIso8601String();
+      }
+    }
+    _emitAdmissions();
+
     try {
-      await _db!
+      final targets = <String>{'SCHOOL_007', 'SCHOOL_001'};
+      if (_schoolId.isNotEmpty) targets.add(_schoolId);
+      await Future.wait(targets.map((sId) => _db!
           .collection('schoolDirectory')
-          .doc(_schoolId)
+          .doc(sId)
           .collection('admissionEnquiries')
           .doc(refNo)
-          .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()});
-      if (_schoolId != 'SCHOOL_007') {
-        try {
-          await _db!
-              .collection('schoolDirectory')
-              .doc('SCHOOL_007')
-              .collection('admissionEnquiries')
-              .doc(refNo)
-              .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()});
-        } catch (_) {}
-      }
+          .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()})
+          .catchError((_) => null)));
     } catch (e) {
       debugPrint('[Firestore] updateAdmissionEnquiryStatus error: $e');
     }
@@ -290,23 +333,24 @@ class FirestoreService {
 
   Future<void> deleteAdmissionEnquiry(String refNo) async {
     if (!_enabled || _db == null) return;
+    // 1. Instant optimistic local deletion
+    for (final sMap in _schoolAdmissionsMap.values) {
+      sMap.remove(refNo);
+    }
+    _cachedAdmissionsList.removeWhere((item) => item['refNo'] == refNo || item['id'] == refNo);
+    _emitAdmissions();
+
+    // 2. Parallel remote deletion
     try {
-      await _db!
+      final targets = <String>{'SCHOOL_007', 'SCHOOL_001'};
+      if (_schoolId.isNotEmpty) targets.add(_schoolId);
+      await Future.wait(targets.map((sId) => _db!
           .collection('schoolDirectory')
-          .doc(_schoolId)
+          .doc(sId)
           .collection('admissionEnquiries')
           .doc(refNo)
-          .delete();
-      if (_schoolId != 'SCHOOL_007') {
-        try {
-          await _db!
-              .collection('schoolDirectory')
-              .doc('SCHOOL_007')
-              .collection('admissionEnquiries')
-              .doc(refNo)
-              .delete();
-        } catch (_) {}
-      }
+          .delete()
+          .catchError((_) => null)));
     } catch (e) {
       debugPrint('[Firestore] deleteAdmissionEnquiry error: $e');
     }
@@ -314,23 +358,25 @@ class FirestoreService {
 
   Future<void> updateTeacherApplicationStatus(String refNo, String status) async {
     if (!_enabled || _db == null) return;
+    // Optimistic local update
+    for (final sMap in _schoolTeachersMap.values) {
+      if (sMap.containsKey(refNo)) {
+        sMap[refNo]!['status'] = status;
+        sMap[refNo]!['updatedAt'] = DateTime.now().toIso8601String();
+      }
+    }
+    _emitTeachers();
+
     try {
-      await _db!
+      final targets = <String>{'SCHOOL_007', 'SCHOOL_001'};
+      if (_schoolId.isNotEmpty) targets.add(_schoolId);
+      await Future.wait(targets.map((sId) => _db!
           .collection('schoolDirectory')
-          .doc(_schoolId)
+          .doc(sId)
           .collection('teacherApplications')
           .doc(refNo)
-          .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()});
-      if (_schoolId != 'SCHOOL_007') {
-        try {
-          await _db!
-              .collection('schoolDirectory')
-              .doc('SCHOOL_007')
-              .collection('teacherApplications')
-              .doc(refNo)
-              .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()});
-        } catch (_) {}
-      }
+          .update({'status': status, 'updatedAt': DateTime.now().toIso8601String()})
+          .catchError((_) => null)));
     } catch (e) {
       debugPrint('[Firestore] updateTeacherApplicationStatus error: $e');
     }
@@ -338,29 +384,30 @@ class FirestoreService {
 
   Future<void> deleteTeacherApplication(String refNo) async {
     if (!_enabled || _db == null) return;
+    // 1. Instant optimistic local deletion
+    for (final sMap in _schoolTeachersMap.values) {
+      sMap.remove(refNo);
+    }
+    _cachedTeachersList.removeWhere((item) => item['refNo'] == refNo || item['id'] == refNo);
+    _emitTeachers();
+
+    // 2. Parallel remote deletion
     try {
-      await _db!
+      final targets = <String>{'SCHOOL_007', 'SCHOOL_001'};
+      if (_schoolId.isNotEmpty) targets.add(_schoolId);
+      await Future.wait(targets.map((sId) => _db!
           .collection('schoolDirectory')
-          .doc(_schoolId)
+          .doc(sId)
           .collection('teacherApplications')
           .doc(refNo)
-          .delete();
-      if (_schoolId != 'SCHOOL_007') {
-        try {
-          await _db!
-              .collection('schoolDirectory')
-              .doc('SCHOOL_007')
-              .collection('teacherApplications')
-              .doc(refNo)
-              .delete();
-        } catch (_) {}
-      }
+          .delete()
+          .catchError((_) => null)));
     } catch (e) {
       debugPrint('[Firestore] deleteTeacherApplication error: $e');
     }
   }
 
-  // ─── Student Sync (schools/{schoolId}/students) ─────────────────────────
+    // ─── Student Sync (schools/{schoolId}/students) ─────────────────────────
 
   Future<void> syncStudent(StudentModel student) async {
     if (!_enabled || _students == null) {

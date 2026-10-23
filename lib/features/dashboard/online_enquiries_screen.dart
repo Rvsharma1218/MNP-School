@@ -24,6 +24,8 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
   late TabController _tabController;
   final TextEditingController _searchCtrl = TextEditingController();
   String _selectedStatus = 'all'; // 'all', 'pending', 'contacted', 'enrolled', 'approved'
+  Stream<List<Map<String, dynamic>>>? _admissionsStream;
+  Stream<List<Map<String, dynamic>>>? _teachersStream;
 
   @override
   void initState() {
@@ -33,6 +35,8 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
       vsync: this,
       initialIndex: widget.initialTabIndex.clamp(0, 1),
     );
+    _admissionsStream = FirestoreService.instance.watchAdmissionEnquiries();
+    _teachersStream = FirestoreService.instance.watchTeacherApplications();
   }
 
   @override
@@ -244,9 +248,7 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
   // ─── Live Count Badge in Tab ───────────────────────────────────────────
 
   Widget _buildBadge({required bool isTeacher}) {
-    final stream = isTeacher
-        ? FirestoreService.instance.watchTeacherApplications()
-        : FirestoreService.instance.watchAdmissionEnquiries();
+    final stream = isTeacher ? _teachersStream : _admissionsStream;
 
     if (stream == null) return const SizedBox.shrink();
 
@@ -306,7 +308,7 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
   // ─── TAB 1: Student Admissions List ────────────────────────────────────
 
   Widget _buildAdmissionsList() {
-    final stream = FirestoreService.instance.watchAdmissionEnquiries();
+    final stream = _admissionsStream;
     if (stream == null) {
       return const Center(child: Text('Firestore is offline or not configured'));
     }
