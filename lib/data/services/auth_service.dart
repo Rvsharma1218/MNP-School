@@ -216,7 +216,7 @@ class AuthService {
         'email': cleanEmail,
         if (password != null && password.isNotEmpty) 'password': password,
         'role': 'principal',
-        'instituteName': 'Smart School',
+        'instituteName': 'Mission Navodaya Public School',
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
@@ -232,7 +232,7 @@ class AuthService {
           .timeout(const Duration(seconds: 6));
       if (!schoolDoc.exists) {
         await _db.collection('schools').doc(schoolId).set({
-          'schoolName': 'Smart School',
+          'schoolName': 'Mission Navodaya Public School',
           'email': cleanEmail,
           'active': true,
           'createdAt': FieldValue.serverTimestamp(),

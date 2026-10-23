@@ -18,6 +18,7 @@ import '../../core/localization/app_translations.dart';
 import '../../data/services/providers.dart';
 import '../../data/services/session_service.dart';
 import '../../data/services/teacher_permissions_service.dart';
+import '../../data/services/voice_assistant_service.dart';
 
 class NoticeItem {
   final String id;
@@ -1050,6 +1051,13 @@ class _NoticeScreenState extends ConsumerState<NoticeScreen> {
                                     ),
                                     Row(
                                       children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.volume_up_rounded, size: 20, color: Color(0xFFD97706)),
+                                          onPressed: () {
+                                            VoiceAssistantService.instance.speak('स्कूल सूचना: ${n.title}। ${n.content}');
+                                          },
+                                          tooltip: 'बोलकर सुनें / Listen Notice',
+                                        ),
                                         IconButton(
                                           icon: Icon(
                                             n.isPinned ? Icons.push_pin : Icons.push_pin_outlined,

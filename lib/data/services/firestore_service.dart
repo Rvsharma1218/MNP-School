@@ -132,15 +132,11 @@ class FirestoreService {
     return _payments!.snapshots().map((snap) => snap.docs
         .map((d) {
           final data = Map<String, dynamic>.from(d.data() as Map);
-          if (data['id'] == null || data['id'].toString().isEmpty) {
-            data['id'] = d.id;
-          }
-          if (data['receiptNumber'] == null || data['receiptNumber'].toString().isEmpty) {
-            data['receiptNumber'] = data['receiptNo'] ?? d.id;
-          }
-          if (data['receiptNo'] == null || data['receiptNo'].toString().isEmpty) {
-            data['receiptNo'] = data['receiptNumber'];
-          }
+          final recNo = (data['receiptNumber'] ?? data['receiptNo'] ?? d.id).toString().trim();
+          final canonicalId = recNo.isNotEmpty ? recNo : (data['id']?.toString() ?? d.id);
+          data['id'] = canonicalId;
+          data['receiptNumber'] = canonicalId;
+          data['receiptNo'] = canonicalId;
           return PaymentModel.fromMap(data);
         })
         .toList());
@@ -325,10 +321,14 @@ class FirestoreService {
   Future<void> syncFee(FeeModel fee) async {
     if (!_enabled || _fees == null) return;
     try {
+      final rem = (fee.remaining <= 0 || fee.totalFees <= fee.paidFees) ? 0.0 : fee.remaining;
+      final status = rem <= 0 ? 'Paid' : fee.feeStatus;
       final data = fee.toMap();
       data.remove('schoolId');
-      data['remainingFees'] = fee.remainingFees;
-      data['feeStatus'] = fee.feeStatus;
+      data['remainingFees'] = rem;
+      data['totalPending'] = rem;
+      data['feeStatus'] = status;
+      data['status'] = status;
       data['updatedAt'] = FieldValue.serverTimestamp();
       data['syncedAt'] = FieldValue.serverTimestamp();
 
@@ -337,9 +337,9 @@ class FirestoreService {
         'totalFees': fee.totalFees,
         'totalPaid': fee.paidFees,
         'paidFees': fee.paidFees,
-        'totalPending': fee.remainingFees,
-        'remainingFees': fee.remainingFees,
-        'feeStatus': fee.feeStatus,
+        'totalPending': rem,
+        'remainingFees': rem,
+        'feeStatus': status,
         if (fee.lastPaidDate != null) 'lastPaidDate': fee.lastPaidDate!.toIso8601String(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
@@ -349,9 +349,14 @@ class FirestoreService {
         _studentFees?.doc(fee.studentId).set({
           'studentId': fee.studentId,
           'totalFee': fee.totalFees,
+          'totalFees': fee.totalFees,
           'totalPaid': fee.paidFees,
-          'totalPending': fee.remainingFees,
-          'status': fee.feeStatus,
+          'paidFees': fee.paidFees,
+          'totalPending': rem,
+          'remainingFees': rem,
+          'status': status,
+          'feeStatus': status,
+          'dueDate': fee.dueDate?.toIso8601String() ?? '2026-10-10T00:00:00.000',
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true)) ?? Future.value(),
         _students?.doc(fee.studentId).set(studentDocUpdates, SetOptions(merge: true)) ?? Future.value(),
@@ -462,7 +467,12 @@ class FirestoreService {
       data['year'] = y;
       data['month'] = m;
       data['syncedAt'] = FieldValue.serverTimestamp();
-      final docId = payment.receiptNumber.isNotEmpty ? payment.receiptNumber : payment.id;
+      final cleanReceiptNo = payment.receiptNumber.trim();
+      final docId = cleanReceiptNo.isNotEmpty ? cleanReceiptNo : payment.id;
+      data['id'] = docId;
+      data['receiptId'] = docId;
+      data['receiptNumber'] = docId;
+      data['receiptNo'] = docId;
       await _payments!.doc(docId).set(data, SetOptions(merge: true));
       if (_students != null && payment.studentId.isNotEmpty) {
         _students!.doc(payment.studentId).set({
@@ -485,6 +495,8 @@ class FirestoreService {
     required String admissionNumber,
     required String className,
     required double paidBefore,
+    String mobile = '',
+    String alternateMobile = '',
   }) async {
     if (!_enabled || _root == null) return;
     try {
@@ -523,6 +535,8 @@ class FirestoreService {
         'studentName': studentName,
         'admissionNumber': admissionNumber,
         'className': className,
+        'mobile': mobile,
+        'alternateMobile': alternateMobile,
         'feeMonth': feeMonthLabel,
         'monthKey': monthKey,
         'feeYear': y,

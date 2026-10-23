@@ -104,17 +104,6 @@ class _FeeScreenState extends ConsumerState<FeeScreen> {
     if (!mounted) return;
     setState(() => _loading = true);
     try {
-      try {
-        final rawDoc = await FirestoreService.instance.fetchStudentRaw(widget.studentId);
-        if (rawDoc != null) {
-          await DatabaseService.instance.upsertFeeFromRemote(widget.studentId, rawDoc);
-          final studentModel = StudentModel.fromMap(rawDoc);
-          await DatabaseService.instance.bulkUpsertStudentsFromRemote([studentModel]);
-        }
-      } catch (err) {
-        debugPrint('[FeeScreen] Cloud fetch note: $err');
-      }
-
       final student =
       await DatabaseService.instance.getStudentById(widget.studentId);
 
@@ -544,6 +533,8 @@ class _FeeScreenState extends ConsumerState<FeeScreen> {
           admissionNumber: _student?.admissionNumber ?? '',
           className: _student?.displayClass ?? '',
           paidBefore: paidBefore,
+          mobile: _student?.mobile ?? '',
+          alternateMobile: _student?.alternateMobile ?? '',
         ).catchError((e) {
           debugPrint('[FeeScreen] Firestore syncReceipt skipped: $e');
           return null;
@@ -619,30 +610,35 @@ class _FeeScreenState extends ConsumerState<FeeScreen> {
               ? (fee ?? _fee)!.remaining
               : (effectiveTotalDemand - totalPaid).clamp(0.0, double.infinity));
 
-      String prevPaymentLine = '';
-      if (prevPaid > 0) {
-        final lastPaidDate = priorPayment?.paymentDate ?? fee?.lastPaymentDate;
-        final lastPaidStr = lastPaidDate != null
-            ? '${lastPaidDate.day.toString().padLeft(2, '0')}-${lastPaidDate.month.toString().padLeft(2, '0')}-${lastPaidDate.year}'
-            : '';
-        prevPaymentLine = 'Previous Payment: ${AppUtils.formatCurrency(prevPaid)}${lastPaidStr.isNotEmpty ? " (Paid on: $lastPaidStr)" : ""}\n';
-      }
+      final phone = student.mobile.trim().isNotEmpty
+          ? student.mobile.trim()
+          : (student.alternateMobile?.trim() ?? '');
+
+      final receiptMsg = WhatsAppService.buildReceiptVoucherText(
+        studentName: student.name,
+        fatherName: student.fatherName,
+        className: student.displayClass,
+        receiptNumber: payment.receiptNumber,
+        paymentDate: payment.paymentDate,
+        amount: payment.amount,
+        paymentMode: payment.paymentMode,
+        feeMonth: payment.feeMonth ?? "Monthly Tuition Fee",
+        totalDemand: payment.totalDemand ?? (prevPaid + payment.amount + balance),
+        previousPaid: prevPaid,
+        totalPaid: totalPaid,
+        balanceDue: balance,
+        instituteName: settings.instituteName,
+        institutePhone: settings.mobile,
+      );
 
       if (!mounted) return;
-      await WhatsAppService.sendPdf(
-        context: context,
-        phone: student.mobile,
-        message: 'Dear ${student.name},\n\n'
-            'Please find your official fee payment receipt.\n\n'
-            'Receipt No: ${payment.receiptNumber}\n'
-            'Date: ${payment.paymentDate.day.toString().padLeft(2, '0')}-${payment.paymentDate.month.toString().padLeft(2, '0')}-${payment.paymentDate.year}\n'
-            'Fees For: ${payment.feeMonth ?? "Monthly Tuition Fee"}\n'
-            'Total Demand: ${AppUtils.formatCurrency(payment.totalDemand ?? (prevPaid + payment.amount + balance))}\n'
-            '$prevPaymentLine'
-            'Paid Now: ${AppUtils.formatCurrency(payment.amount)} via ${payment.paymentMode}\n'
-            '${prevPaid > 0 ? "Total Paid: ${AppUtils.formatCurrency(totalPaid)}\n" : ""}'
-            'Balance Due: ${balance <= 0 ? "Rs. 0 (FULL PAID)" : AppUtils.formatCurrency(balance)}\n\n'
-            'Thank you.',
+      await WhatsAppService.showReceiptShareSheet(
+        context,
+        studentName: student.name,
+        phone: phone,
+        alternatePhone: student.alternateMobile,
+        receiptNumber: payment.receiptNumber,
+        message: receiptMsg,
         filePath: file,
       );
     } catch (e) {

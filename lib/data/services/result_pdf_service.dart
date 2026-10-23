@@ -122,7 +122,7 @@ class ResultPdfService {
                     pw.Text(
                       (settings.instituteName.isNotEmpty
                               ? settings.instituteName
-                              : 'SMART SCHOOL & COMPUTER INSTITUTE')
+                              : 'MISSION NAVODAYA PUBLIC SCHOOL')
                           .toUpperCase(),
                       style: pw.TextStyle(
                         font: ttfBold,

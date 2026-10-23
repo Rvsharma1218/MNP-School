@@ -23,6 +23,7 @@ import '../../widgets/responsive_web_layout.dart';
 import '../teachers/teacher_management_screen.dart';
 import '../teachers/teacher_settings_screen.dart';
 import '../attendance/teacher_attendance_screen.dart';
+import '../attendance/teacher_punch_in_card.dart';
 import '../teachers/teacher_role_access_screen.dart';
 import 'all_modules_screen.dart';
 import 'school_status_screen.dart';
@@ -523,8 +524,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
-    // Watch studentsProvider so dashboard rebuilds after add/delete/update
-    ref.watch(studentsProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
     final cs = Theme.of(context).colorScheme;
     final isPrincipal = SessionService.instance.isPrincipal;
@@ -740,37 +739,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          statsAsync.when(
-                            data: (stats) => Row(
-                              children: [
-                                _headerStat(
-                                    '${stats.isFiltered ? stats.totalStudents : stats.totalStudents}',
-                                    stats.isFiltered ? stats.filterLabel.isNotEmpty ? 'Students' : 'Students' : 'Students',
-                                    Icons.people),
-
-                                // FIX: Hide Collected from Teachers
-                                if (isPrincipal) ...[
-                                  const SizedBox(width: 20),
+                          Builder(
+                            builder: (context) {
+                              final stats = statsAsync.valueOrNull;
+                              if (stats == null) return const SizedBox();
+                              return Row(
+                                children: [
                                   _headerStat(
-                                      AppUtils.formatCurrency(stats.totalCollected),
-                                      'Collected',
-                                      Icons.currency_rupee),
-                                ],
+                                      '${stats.isFiltered ? stats.totalStudents : stats.totalStudents}',
+                                      stats.isFiltered ? (stats.filterLabel.isNotEmpty ? 'Students' : 'Students') : 'Students',
+                                      Icons.people),
 
-                                const SizedBox(width: 20),
-                                _headerStat('${stats.presentToday}',
-                                    'Present Today', Icons.check_circle_outline),
+                                  // FIX: Hide Collected from Teachers
+                                  if (isPrincipal) ...[
+                                    const SizedBox(width: 20),
+                                    _headerStat(
+                                        AppUtils.formatCurrency(stats.totalCollected),
+                                        'Collected',
+                                        Icons.currency_rupee),
+                                  ],
 
-                                // Show absent count in header for Teacher when filtered
-                                if (!isPrincipal && stats.isFiltered) ...[
                                   const SizedBox(width: 20),
-                                  _headerStat('${stats.absentToday}',
-                                      'Absent', Icons.cancel_outlined),
+                                  _headerStat('${stats.presentToday}',
+                                      'Present Today', Icons.check_circle_outline),
+
+                                  // Show absent count in header for Teacher when filtered
+                                  if (!isPrincipal && stats.isFiltered) ...[
+                                    const SizedBox(width: 20),
+                                    _headerStat('${stats.absentToday}',
+                                        'Absent', Icons.cancel_outlined),
+                                  ],
                                 ],
-                              ],
-                            ),
-                            loading: () => const SizedBox(),
-                            error: (_, __) => const SizedBox(),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -782,8 +783,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             // ─── Body ─────────────────────────────────────────────────────
             SliverToBoxAdapter(
-              child: statsAsync.when(
-                data: (stats) => Padding(
+              child: Builder(
+                builder: (context) {
+                  final stats = statsAsync.valueOrNull;
+                  if (stats != null) {
+                    return Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -870,6 +874,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
+                      ],
+
+                      // ─── Teacher Campus GPS Punch-In Card (Teachers Only) ───
+                      if (!isPrincipal) ...[
+                        const TeacherPunchInCard(),
+                        const SizedBox(height: 14),
                       ],
 
                       // ─── Exact Mockup Match: Quick Pills & Financial Summary ───
@@ -1250,12 +1260,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       const SizedBox(height: 80),
                     ],
                   ),
-                ),
-                loading: () => const Padding(
+                );
+              }
+              if (statsAsync.isLoading) {
+                return const Padding(
                   padding: EdgeInsets.only(top: 60),
                   child: LoadingWidget(message: 'Loading dashboard...'),
-                ),
-                error: (e, _) => Center(
+                );
+              }
+              if (statsAsync.hasError) {
+                return Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
@@ -1264,7 +1278,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const Icon(Icons.error_outline,
                             size: 48, color: AppColors.error),
                         const SizedBox(height: 12),
-                        Text('Error: $e', textAlign: TextAlign.center),
+                        Text('Error: ${statsAsync.error}', textAlign: TextAlign.center),
                         const SizedBox(height: 12),
                         ElevatedButton(
                           onPressed: () =>
@@ -1274,9 +1288,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ],
                     ),
                   ),
-                ),
-              ),
-            ),
+                );
+              }
+              return const SizedBox();
+            },
+          ),
+        ),
           ],
         ),
       ),
@@ -2338,10 +2355,13 @@ class _WebDashboardViewState extends ConsumerState<_WebDashboardView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ─── ROW 1: TOP KPI METRIC CARDS ──────────────────────────────────
-            widget.statsAsync.when(
-              data: (stats) => _buildTopMetricsGrid(stats, cs),
-              loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('Error loading stats: $e', style: const TextStyle(color: AppColors.error)),
+            Builder(
+              builder: (context) {
+                final stats = widget.statsAsync.valueOrNull;
+                if (stats != null) return _buildTopMetricsGrid(stats, cs);
+                if (widget.statsAsync.isLoading) return const LinearProgressIndicator();
+                return Text('Error loading stats: ${widget.statsAsync.error}', style: const TextStyle(color: AppColors.error));
+              },
             ),
             const SizedBox(height: 20),
 
@@ -2366,19 +2386,24 @@ class _WebDashboardViewState extends ConsumerState<_WebDashboardView> {
                   child: Column(
                     children: [
                       // Today's Attendance Breakdown Card
-                      widget.statsAsync.when(
-                        data: (stats) => _buildAttendanceBreakdownCard(stats, cs),
-                        loading: () => const Card(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
-                        error: (_, __) => const SizedBox(),
+                      Builder(
+                        builder: (context) {
+                          final stats = widget.statsAsync.valueOrNull;
+                          if (stats != null) return _buildAttendanceBreakdownCard(stats, cs);
+                          if (widget.statsAsync.isLoading) return const Card(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
+                          return const SizedBox();
+                        },
                       ),
                       const SizedBox(height: 20),
 
                       // Fee Collection Summary Card (for Principal)
                       if (widget.isPrincipal)
-                        widget.statsAsync.when(
-                          data: (stats) => _buildFinanceSummaryCard(stats, cs),
-                          loading: () => const SizedBox(),
-                          error: (_, __) => const SizedBox(),
+                        Builder(
+                          builder: (context) {
+                            final stats = widget.statsAsync.valueOrNull;
+                            if (stats != null) return _buildFinanceSummaryCard(stats, cs);
+                            return const SizedBox();
+                          },
                         ),
 
                       // Quick Actions & Management Links Card

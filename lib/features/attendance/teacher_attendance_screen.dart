@@ -29,19 +29,13 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
   @override
   void initState() {
     super.initState();
-    final cached = TeacherService.instance.cachedTeachers;
-    if (cached.isNotEmpty) {
-      _teachers = List.from(cached);
-      for (final t in _teachers) {
-        _statusMap[t.teacherId] = 'present';
-      }
-      _loading = false;
-    }
+    TeacherService.instance.clearCache();
     _loadTeachers();
   }
 
   Future<void> _loadTeachers() async {
     setState(() => _loading = true);
+    TeacherService.instance.clearCache();
     _schoolUid = SessionService.instance.activeSchoolUid;
     if (_schoolUid == null || _schoolUid!.isEmpty) {
       final user = AuthService.instance.currentUser;
@@ -50,12 +44,16 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
 
     if (_schoolUid != null && _schoolUid!.isNotEmpty) {
       try {
-        final list = await TeacherService.instance.listAllTeachers(_schoolUid!);
+        final list = await TeacherService.instance.listAllTeachers(_schoolUid!, forceRefresh: true);
+        final validTeachers = list
+            .where((t) => t.name.trim().isNotEmpty && (t.teacherId.trim().isNotEmpty || t.id.trim().isNotEmpty))
+            .toList();
         if (mounted) {
           setState(() {
-            _teachers = list;
-            for (final t in list) {
-              _statusMap[t.teacherId] = 'present';
+            _teachers = validTeachers;
+            for (final t in validTeachers) {
+              final key = t.teacherId.trim().isNotEmpty ? t.teacherId.trim() : t.id.trim();
+              _statusMap[key] = 'present';
             }
             _loading = false;
           });
@@ -89,8 +87,9 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
         final records = Map<String, dynamic>.from(snap.data()!['records']);
         final map = <String, String>{};
         for (final t in _teachers) {
-          final k = t.teacherId.isNotEmpty ? t.teacherId : t.authUid;
-          map[t.teacherId] = records[k]?.toString() ?? records[t.teacherId]?.toString() ?? 'present';
+          final k = t.teacherId.trim().isNotEmpty ? t.teacherId.trim() : t.id.trim();
+          final val = records[k] ?? records[t.teacherId] ?? records[t.authUid] ?? 'present';
+          map[k] = val.toString();
         }
         if (mounted) {
           setState(() {
@@ -101,7 +100,8 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
         if (mounted) {
           setState(() {
             for (final t in _teachers) {
-              _statusMap[t.teacherId] = 'present';
+              final k = t.teacherId.trim().isNotEmpty ? t.teacherId.trim() : t.id.trim();
+              _statusMap[k] = 'present';
             }
           });
         }
@@ -114,7 +114,8 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
   void _setAll(String status) {
     setState(() {
       for (final t in _teachers) {
-        _statusMap[t.teacherId] = status;
+        final k = t.teacherId.trim().isNotEmpty ? t.teacherId.trim() : t.id.trim();
+        _statusMap[k] = status;
       }
     });
   }
@@ -134,7 +135,10 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
 
   Future<void> _saveAttendance() async {
     if (_schoolUid == null || _schoolUid!.isEmpty) {
-      _schoolUid = SessionService.instance.activeSchoolUid ?? AuthService.instance.currentUser?.uid;
+      _schoolUid = SessionService.instance.activeSchoolUid;
+      if (_schoolUid!.isEmpty) {
+        _schoolUid = AuthService.instance.currentUser?.uid;
+      }
     }
     if (_schoolUid == null || _schoolUid!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -147,11 +151,23 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
     try {
       final fullMap = <String, String>{};
       for (final t in _teachers) {
-        final status = _statusMap[t.teacherId] ?? 'present';
-        fullMap[t.teacherId] = status;
-        if (t.authUid.isNotEmpty && t.authUid != t.teacherId) {
-          fullMap[t.authUid] = status;
+        final key = t.teacherId.trim().isNotEmpty ? t.teacherId.trim() : t.id.trim();
+        if (key.isEmpty) continue;
+        final status = _statusMap[key] ?? _statusMap[t.teacherId] ?? 'present';
+        fullMap[key] = status;
+        if (t.authUid.trim().isNotEmpty && t.authUid.trim() != key) {
+          fullMap[t.authUid.trim()] = status;
         }
+      }
+
+      if (fullMap.isEmpty) {
+        if (mounted) {
+          setState(() => _saving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No valid teachers found to save attendance.'), backgroundColor: AppColors.error),
+          );
+        }
+        return;
       }
 
       await FirebaseFirestore.instance
@@ -196,10 +212,10 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    final presentCount = _teachers.where((t) => _statusMap[t.teacherId] == 'present').length;
-    final absentCount = _teachers.where((t) => _statusMap[t.teacherId] == 'absent').length;
-    final halfDayCount = _teachers.where((t) => _statusMap[t.teacherId] == 'half_day').length;
-    final leaveCount = _teachers.where((t) => _statusMap[t.teacherId] == 'leave').length;
+    final presentCount = _teachers.where((t) => (_statusMap[t.teacherId] ?? _statusMap[t.id]) == 'present').length;
+    final absentCount = _teachers.where((t) => (_statusMap[t.teacherId] ?? _statusMap[t.id]) == 'absent').length;
+    final halfDayCount = _teachers.where((t) => (_statusMap[t.teacherId] ?? _statusMap[t.id]) == 'half_day').length;
+    final leaveCount = _teachers.where((t) => (_statusMap[t.teacherId] ?? _statusMap[t.id]) == 'leave').length;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -288,7 +304,8 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
                           separatorBuilder: (_, __) => const SizedBox(height: 8),
                           itemBuilder: (context, i) {
                             final t = _teachers[i];
-                            final status = _statusMap[t.teacherId] ?? 'present';
+                            final key = t.teacherId.trim().isNotEmpty ? t.teacherId.trim() : t.id.trim();
+                            final status = _statusMap[key] ?? _statusMap[t.teacherId] ?? 'present';
 
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -359,13 +376,13 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      _buildStatusBtn('P', 'present', status, const Color(0xFF10B981), t.teacherId),
+                                      _buildStatusBtn('P', 'present', status, const Color(0xFF10B981), key),
                                       const SizedBox(width: 4),
-                                      _buildStatusBtn('A', 'absent', status, const Color(0xFFEF4444), t.teacherId),
+                                      _buildStatusBtn('A', 'absent', status, const Color(0xFFEF4444), key),
                                       const SizedBox(width: 4),
-                                      _buildStatusBtn('HD', 'half_day', status, Colors.purple, t.teacherId),
+                                      _buildStatusBtn('HD', 'half_day', status, Colors.purple, key),
                                       const SizedBox(width: 4),
-                                      _buildStatusBtn('L', 'leave', status, const Color(0xFFF59E0B), t.teacherId),
+                                      _buildStatusBtn('L', 'leave', status, const Color(0xFFF59E0B), key),
                                     ],
                                   ),
                                 ],

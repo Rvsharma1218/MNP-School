@@ -624,7 +624,14 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
   String? subscribedUid;
   bool switching = false;
 
+  Timer? syncDebounceTimer;
+  bool studentsDirty = false;
+  bool statsDirty = false;
+
   Future<void> cancelDataSubscriptions() async {
+    syncDebounceTimer?.cancel();
+    studentsDirty = false;
+    statsDirty = false;
     for (final sub in dataSubs) {
       await sub.cancel();
     }
@@ -675,14 +682,23 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
       ref.read(syncStatusProvider.notifier).state = 'synced';
 
       // Debounced students & dashboard refresh: consolidates initial bursts from all
-      // Firestore streams (students, fees, payments) into a single smooth data update.
-      // Calling loadStudents() updates AsyncData directly without flipping to AsyncLoading,
-      // avoiding screen flashes, and dashboardStatsProvider automatically recomputes.
-      Timer? dashboardDebounceTimer;
-      void triggerDashboardStatsUpdate() {
-        dashboardDebounceTimer?.cancel();
-        dashboardDebounceTimer = Timer(const Duration(milliseconds: 2000), () {
-          ref.read(studentsProvider.notifier).loadStudents();
+      // Firestore streams (students, fees, payments, attendance) into a single coordinated data update.
+      // Waiting 2500ms after the last Firestore stream event guarantees all initial
+      // collections are fully inserted into SQLite before recalculating dashboard stats.
+      void triggerSyncSettled({bool students = false, bool stats = true}) {
+        if (students) studentsDirty = true;
+        if (stats) statsDirty = true;
+
+        syncDebounceTimer?.cancel();
+        syncDebounceTimer = Timer(const Duration(milliseconds: 2500), () {
+          if (studentsDirty) {
+            studentsDirty = false;
+            ref.read(studentsProvider.notifier).loadStudents();
+          }
+          if (statsDirty) {
+            statsDirty = false;
+            ref.invalidate(dashboardStatsProvider);
+          }
         });
       }
 
@@ -702,7 +718,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
 
           // Fast batch upsert all remote students in single SQLite transaction
           await DatabaseService.instance.bulkUpsertStudentsFromRemote(remoteStudents);
-          triggerDashboardStatsUpdate();
+          triggerSyncSettled(students: true, stats: true);
           // Update sync status — data is live!
           ref.read(syncStatusProvider.notifier).state = 'synced';
         }, onError: (e) {
@@ -721,7 +737,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
           for (final entry in remoteFees.entries) {
             await DatabaseService.instance.upsertFeeFromRemote(entry.key, entry.value);
           }
-          triggerDashboardStatsUpdate();
+          triggerSyncSettled(stats: true);
           for (final id in remoteFees.keys) {
             ref.invalidate(feeProvider(id));
           }
@@ -735,7 +751,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
           for (final entry in remoteFees.entries) {
             await DatabaseService.instance.upsertFeeFromRemote(entry.key, entry.value);
           }
-          triggerDashboardStatsUpdate();
+          triggerSyncSettled(stats: true);
           for (final id in remoteFees.keys) {
             ref.invalidate(feeProvider(id));
           }
@@ -749,7 +765,6 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
           for (final res in results) {
             await DatabaseService.instance.upsertResultFromRemote(res);
           }
-          triggerDashboardStatsUpdate();
         }, onError: (e) => debugPrint('[FirestoreSync] results error: $e')));
       }
 
@@ -766,7 +781,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
               affectedStudentIds.add(studentId);
             }
           }
-          triggerDashboardStatsUpdate();
+          triggerSyncSettled(stats: true);
           for (final id in affectedStudentIds) {
             ref.invalidate(feeProvider(id));
           }
@@ -780,7 +795,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
           for (final p in payments) {
             await DatabaseService.instance.upsertPaymentFromRemote(p.toMap());
           }
-          triggerDashboardStatsUpdate();
+          triggerSyncSettled(stats: true);
           final ids = payments.map((p) => p.studentId).toSet();
           for (final id in ids) {
             ref.invalidate(feeProvider(id));
@@ -795,7 +810,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
           for (final record in records) {
             await DatabaseService.instance.upsertAttendanceFromRemote(record);
           }
-          triggerDashboardStatsUpdate();
+          triggerSyncSettled(stats: true);
           final dates = records.map((r) => DateTime(r.date.year, r.date.month, r.date.day)).toSet();
           final ids = records.map((r) => r.studentId).toSet();
           for (final date in dates) {
@@ -899,6 +914,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
   );
 
   ref.onDispose(() async {
+    syncDebounceTimer?.cancel();
     await authSub?.cancel();
     await sessionSub?.cancel();
     await cancelDataSubscriptions();

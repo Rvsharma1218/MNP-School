@@ -12,6 +12,7 @@ import '../../data/services/providers.dart';
 import '../../data/services/session_service.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/responsive_web_layout.dart';
+import '../whatsapp/whatsapp_service.dart';
 import 'teacher_attendance_screen.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
@@ -224,6 +225,136 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     }
   }
 
+  Future<void> _showWhatsAppAbsentDialog() async {
+    final absentStudents = _allStudents.where((s) => _statusMap[s.id] == 'absent').toList();
+    if (absentStudents.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('आज कोई भी छात्र अनुपस्थित (Absent) नहीं है!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      return;
+    }
+
+    final settings = await DatabaseService.instance.getSettings();
+    final schoolName = settings.instituteName.isNotEmpty ? settings.instituteName : 'Mission Navodaya Public School';
+    final dateStr = AppUtils.formatDate(_selectedDate);
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF25D366).withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.chat_rounded, color: Color(0xFF25D366), size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'WhatsApp अनुपस्थित अलर्ट',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF0F172A)),
+                      ),
+                      Text(
+                        'आज ${absentStudents.length} बच्चे अनुपस्थित हैं • $dateStr',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Text(
+                'संदेश: "आदरणीय अभिभावक, आपका बच्चा [नाम] (कक्षा [कक्षा]) आज दिनांक [दिनांक] को स्कूल में अनुपस्थित है।"',
+                style: TextStyle(fontSize: 11.5, color: Color(0xFF475569), fontStyle: FontStyle.italic),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.separated(
+                itemCount: absentStudents.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (c, idx) {
+                  final s = absentStudents[idx];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: const Color(0xFFFEE2E2),
+                      child: Text(
+                        s.name.isNotEmpty ? s.name[0].toUpperCase() : 'S',
+                        style: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text('कक्षा: ${s.className ?? "-"} • मो: ${s.mobile.isNotEmpty ? s.mobile : "उपलब्ध नहीं"}', style: const TextStyle(fontSize: 12)),
+                    trailing: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(Icons.send_rounded, size: 14),
+                      label: const Text('भेजें', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        final msg = '📢 *स्कूल उपस्थिति सूचना (Attendance Alert)*\n'
+                            '━━━━━━━━━━━━━━━━━━━━\n'
+                            'आदरणीय अभिभावक,\n'
+                            'सूचित किया जाता है कि आपका बच्चा *${s.name}* (कक्षा: ${s.className ?? ""}, रोल: ${s.rollNumber ?? ""}) आज दिनांक *${dateStr}* को स्कूल में *अनुपस्थित (Absent)* है।\n\n'
+                            'यदि कोई विशेष कारण हो तो कृपया स्कूल कार्यालय को सूचित करें।\n\n'
+                            '- *${schoolName}*\n'
+                            '━━━━━━━━━━━━━━━━━━━━';
+                        WhatsAppService.sendMessage(
+                          context: context,
+                          phone: s.mobile,
+                          message: msg,
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -242,6 +373,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.mark_chat_unread_rounded, color: Color(0xFF25D366)),
+            tooltip: 'WhatsApp अनुपस्थित अलर्ट (Absent Alert)',
+            onPressed: _showWhatsAppAbsentDialog,
+          ),
           Stack(
             children: [
               IconButton(
@@ -426,7 +562,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           const Spacer(),
           _summaryChip('P: $present', AppColors.success),
           const SizedBox(width: 3),
-          _summaryChip('A: $absent', AppColors.error),
+          InkWell(
+            onTap: absent > 0 ? _showWhatsAppAbsentDialog : null,
+            borderRadius: BorderRadius.circular(10),
+            child: _summaryChip('A: $absent 💬', AppColors.error),
+          ),
           const SizedBox(width: 3),
           _summaryChip('HD: $halfDay', Colors.purple),
           const SizedBox(width: 3),

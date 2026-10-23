@@ -216,7 +216,7 @@ class _WhatsAppFeeReminderDialogState extends State<WhatsAppFeeReminderDialog> {
   String _generateMessage(String lang) {
     final s = widget.student;
     final set = widget.settings;
-    final instName = set.instituteName.isNotEmpty ? set.instituteName : 'Smart School';
+    final instName = set.instituteName.isNotEmpty ? set.instituteName : 'Mission Navodaya Public School';
     final instPhone = set.mobile.isNotEmpty ? set.mobile : '';
     final classStr = s.studentType == 'school'
         ? 'Class ${s.className ?? ''}${s.section != null && s.section!.isNotEmpty ? ' (${s.section})' : ''}'

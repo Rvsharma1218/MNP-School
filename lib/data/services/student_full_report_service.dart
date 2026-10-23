@@ -165,7 +165,7 @@ class StudentFullReportService {
                         pw.SizedBox(height: 6),
                       ],
                       pw.Text(
-                        (settings.instituteName.isNotEmpty ? settings.instituteName : 'SMART SCHOOL & COMPUTER INSTITUTE').toUpperCase(),
+                        (settings.instituteName.isNotEmpty ? settings.instituteName : 'MISSION NAVODAYA PUBLIC SCHOOL').toUpperCase(),
                         style: pw.TextStyle(font: ttfBold, fontSize: 17, color: primaryNavy),
                         textAlign: pw.TextAlign.center,
                       ),

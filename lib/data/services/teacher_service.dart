@@ -100,6 +100,21 @@ class TeacherService {
     _cachedTeachers.clear();
   }
 
+  void clearCache() {
+    _cachedTeachers.clear();
+  }
+
+  TeacherModel? _parseTeacherDoc(QueryDocumentSnapshot d) {
+    final data = Map<String, dynamic>.from(d.data() as Map);
+    final name = (data['name'] as String?)?.trim() ?? '';
+    final tId = (data['teacherId'] as String?)?.trim() ?? (data['id'] as String?)?.trim() ?? d.id.trim();
+    if (name.isEmpty) return null; // Ignore phantom/principal docs without name
+    if (tId.isEmpty) return null;
+    data['teacherId'] = tId;
+    data['id'] = tId;
+    return TeacherModel.fromMap(data);
+  }
+
   Future<List<TeacherModel>> listAllTeachers(String schoolUid, {bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedTeachers.isNotEmpty) {
       _refreshTeachersBackground(schoolUid);
@@ -112,7 +127,8 @@ class TeacherService {
         final cacheSnap = await _teachersCol(schoolUid).get(const GetOptions(source: Source.cache));
         if (cacheSnap.docs.isNotEmpty) {
           _cachedTeachers = cacheSnap.docs
-              .map((d) => TeacherModel.fromMap(d.data() as Map<String, dynamic>))
+              .map(_parseTeacherDoc)
+              .whereType<TeacherModel>()
               .toList()
             ..sort((a, b) => a.name.compareTo(b.name));
           _refreshTeachersBackground(schoolUid);
@@ -123,7 +139,8 @@ class TeacherService {
       // 2. Fetch from server and cache
       final snap = await _teachersCol(schoolUid).get().timeout(const Duration(seconds: 5));
       _cachedTeachers = snap.docs
-          .map((d) => TeacherModel.fromMap(d.data() as Map<String, dynamic>))
+          .map(_parseTeacherDoc)
+          .whereType<TeacherModel>()
           .toList()
         ..sort((a, b) => a.name.compareTo(b.name));
       return _cachedTeachers;
@@ -137,7 +154,8 @@ class TeacherService {
     _teachersCol(schoolUid).get(const GetOptions(source: Source.server)).then((snap) {
       if (snap.docs.isNotEmpty) {
         _cachedTeachers = snap.docs
-            .map((d) => TeacherModel.fromMap(d.data() as Map<String, dynamic>))
+            .map(_parseTeacherDoc)
+            .whereType<TeacherModel>()
             .toList()
           ..sort((a, b) => a.name.compareTo(b.name));
       }
@@ -319,9 +337,9 @@ class TeacherService {
         }, SetOptions(merge: true));
 
         await _directoryDoc(effectiveSchoolEmail).set({
-          'instituteName': instituteName ?? 'Smart School',
+          'instituteName': instituteName ?? 'Mission Navodaya Public School',
           'schoolId': schoolUid,
-          'schoolName': instituteName ?? 'Smart School',
+          'schoolName': instituteName ?? 'Mission Navodaya Public School',
           'schoolUid': schoolUid,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
@@ -346,7 +364,7 @@ class TeacherService {
         'status': 'active',
         'assignedClass': teacher.assignedClass,
         'assignedSection': teacher.assignedSection,
-        'instituteName': instituteName ?? 'Smart School',
+        'instituteName': instituteName ?? 'Mission Navodaya Public School',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
         'fatherName': teacher.fatherName,

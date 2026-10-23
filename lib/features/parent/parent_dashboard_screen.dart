@@ -21,9 +21,12 @@ import '../../data/services/database_service.dart';
 import '../../data/services/session_service.dart';
 import '../../data/services/receipt_pdf_service.dart';
 import '../../data/services/app_notification_service.dart';
+import '../../data/services/voice_assistant_service.dart';
+import '../../data/services/result_pdf_service.dart';
 import '../id_card/id_card_screen.dart';
 import '../admit_card/admit_card_screen.dart';
 import '../notice/notice_screen.dart';
+import '../whatsapp/whatsapp_service.dart';
 import 'parent_complaint_screen.dart';
 
 class ParentDashboardScreen extends ConsumerStatefulWidget {
@@ -57,6 +60,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
 
   @override
   void dispose() {
+    VoiceAssistantService.instance.stop();
     _noticesStreamSub?.cancel();
     super.dispose();
   }
@@ -279,6 +283,82 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
     }
   }
 
+  void _playVoiceReport() async {
+    final vService = VoiceAssistantService.instance;
+    if (vService.isSpeaking) {
+      await vService.stop();
+      if (mounted) setState(() {});
+      return;
+    }
+
+    if (_student == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Student data loading, please wait...')),
+      );
+      return;
+    }
+
+    final totalAtt = _attendanceLogs.length;
+    final presentCount = _attendanceLogs.where((a) => a.status.toLowerCase() == 'present').length;
+    final attPercent = totalAtt > 0 ? (presentCount / totalAtt) * 100.0 : 100.0;
+
+    final paidFee = _payments.fold<double>(0, (acc, p) => acc + p.amount);
+    final double effectiveTotalFee = (_student?.totalFees ?? 0.0) > 0
+        ? _student!.totalFees
+        : (paidFee + (_student?.remainingFees ?? 0.0));
+    final double effectiveRemainingDue = (_student?.remainingFees != null && _student!.remainingFees! >= 0)
+        ? _student!.remainingFees!
+        : (effectiveTotalFee > paidFee ? (effectiveTotalFee - paidFee) : 0.0);
+
+    String? latestExam;
+    double? marksPercent;
+    if (_results.isNotEmpty) {
+      final r = _results.first;
+      latestExam = r.examName;
+      if (r.subjects.isNotEmpty) {
+        marksPercent = r.overallPercentage;
+      }
+    }
+
+    final schoolName = _settings?.instituteName.isNotEmpty == true
+        ? _settings!.instituteName
+        : 'Mission Navodaya Public School';
+
+    final text = vService.generateHindiReport(
+      student: _student!,
+      pendingFees: effectiveRemainingDue,
+      attendancePercentage: attPercent,
+      presentDays: presentCount,
+      totalDays: totalAtt,
+      latestExamName: latestExam,
+      marksPercent: marksPercent,
+      schoolName: schoolName,
+    );
+
+    await vService.speak(text);
+    if (!mounted) return;
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.volume_up_rounded, color: Colors.amberAccent, size: 22),
+            SizedBox(width: 10),
+            Expanded(child: Text('🔊 हिंदी में आवाज़ रिपोर्ट चल रही है...')),
+          ],
+        ),
+        backgroundColor: const Color(0xFF0F172A),
+        duration: const Duration(seconds: 12),
+        action: SnackBarAction(
+          label: 'बंद करें',
+          textColor: Colors.amberAccent,
+          onPressed: () => vService.stop(),
+        ),
+      ),
+    );
+  }
+
   Future<void> _makePhoneCall(String phone) async {
     final clean = phone.replaceAll(RegExp(r'\D'), '');
     if (clean.isEmpty) return;
@@ -493,7 +573,31 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
             },
           ),
 
-          // 2. 3-Dots Overflow Menu: All top options consolidated into dots menu
+          // 2. Hindi Voice Assistant Quick Speaker Button in AppBar
+          ValueListenableBuilder<bool>(
+            valueListenable: VoiceAssistantService.instance.isSpeakingNotifier,
+            builder: (context, isSpeaking, _) {
+              return IconButton(
+                icon: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: isSpeaking ? Colors.amberAccent : Colors.white.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isSpeaking ? Icons.stop_rounded : Icons.volume_up_rounded,
+                    color: isSpeaking ? Colors.black : Colors.white,
+                    size: 20,
+                  ),
+                ),
+                tooltip: isSpeaking ? 'Stop Audio' : 'बोलकर सुनें (Hindi Audio Report)',
+                onPressed: _playVoiceReport,
+              );
+            },
+          ),
+
+          // 3. 3-Dots Overflow Menu: All top options consolidated into dots menu
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 22),
             tooltip: 'More Options',
@@ -601,6 +705,10 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                   children: [
                     // 1. Premium Student Hero Card
                     _buildHeroStudentCard(studentName, className, rollNo, admNo),
+                    const SizedBox(height: 12),
+
+                    // 1b. Hindi Voice Assistant Banner Button for Parents
+                    _buildVoiceAssistantBanner(),
                     const SizedBox(height: 14),
 
                     // 2. Quick Action Grid (ID Card, Admit Card, Fee Receipts, Marksheet, Contact)
@@ -625,6 +733,105 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  // ── HINDI VOICE ASSISTANT BANNER ────────────────────────────────────────
+
+  Widget _buildVoiceAssistantBanner() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: VoiceAssistantService.instance.isSpeakingNotifier,
+      builder: (context, isSpeaking, _) {
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isSpeaking
+                  ? [const Color(0xFFEF4444), const Color(0xFFB91C1C)]
+                  : [const Color(0xFFF59E0B), const Color(0xFFD97706)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: (isSpeaking ? const Color(0xFFEF4444) : const Color(0xFFF59E0B)).withValues(alpha: 0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: _playVoiceReport,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isSpeaking ? Icons.stop_circle_rounded : Icons.record_voice_over_rounded,
+                        color: Colors.black87,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isSpeaking ? '⏹️ आवाज़ बंद करें (Tap to Stop)' : '🔊 बोलकर बताएं / Listen in Hindi',
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isSpeaking
+                                ? 'छात्र की रिपोर्ट आवाज़ में सुनाई जा रही है...'
+                                : 'उपस्थिति और फीस की जानकारी आवाज़ में सुनें',
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isSpeaking ? 'STOP' : 'सुनें 🔊',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -994,6 +1201,200 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
     );
   }
 
+  // ── VISUAL STATUS CARDS (HIGH-CONTRAST FOR ALL PARENTS) ──────────────────
+
+  Widget _buildVisualStatusCards(
+    String todayStatus,
+    int attPercent,
+    double effectiveRemainingDue,
+    Color cardBg,
+    Color cardBorder,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
+    final isPresent = todayStatus.toUpperCase() == 'PRESENT';
+    final isAbsent = todayStatus.toUpperCase() == 'ABSENT';
+    final isLeave = todayStatus.toUpperCase() == 'LEAVE';
+
+    final Color attBg = isPresent
+        ? const Color(0xFF10B981) // High-contrast Emerald Green
+        : (isAbsent
+            ? const Color(0xFFEF4444) // High-contrast Red
+            : (isLeave ? const Color(0xFFF59E0B) : const Color(0xFF4F46E5)));
+
+    final String attTitle = isPresent
+        ? 'स्कूल आया है 😊'
+        : (isAbsent
+            ? 'स्कूल नहीं आया ⚠️'
+            : (isLeave ? 'छुट्टी पर है 📝' : 'हाजिरी लग रही ⏳'));
+
+    final String attSub = isPresent
+        ? 'उपस्थिति $attPercent% • Present'
+        : (isAbsent
+            ? 'अनुपस्थित • Absent Today'
+            : (isLeave ? 'On Leave' : 'Marking In Progress'));
+
+    final bool isFeeClear = effectiveRemainingDue <= 0;
+    final Color feeBg = isFeeClear
+        ? const Color(0xFF059669) // Green
+        : const Color(0xFFDC2626); // Crimson Red
+
+    final String feeTitle = isFeeClear ? 'पूरी फीस जमा है ✅' : 'फीस बाकी है ⚠️';
+    final String feeSub = isFeeClear
+        ? '₹0 बाकी (All Paid)'
+        : 'बकाया: ₹${effectiveRemainingDue.toInt()} (Due)';
+
+    return Row(
+      children: [
+        // Attendance Visual Card
+        Expanded(
+          child: Material(
+            color: attBg,
+            borderRadius: BorderRadius.circular(16),
+            elevation: 3,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                final studentName = _student?.name ?? 'छात्र';
+                final speech = isPresent
+                    ? '$studentName आज स्कूल में उपस्थित है।'
+                    : (isAbsent
+                        ? '$studentName आज स्कूल नहीं आया है, अनुपस्थित है।'
+                        : (isLeave ? '$studentName आज छुट्टी पर है।' : '$studentName की आज की हाजिरी दर्ज हो रही है।'));
+                VoiceAssistantService.instance.speak(speech);
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isPresent
+                              ? Icons.sentiment_very_satisfied_rounded
+                              : (isAbsent
+                                  ? Icons.sentiment_very_dissatisfied_rounded
+                                  : (isLeave ? Icons.event_busy_rounded : Icons.hourglass_top_rounded)),
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.volume_up_rounded, color: Colors.white, size: 14),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      attTitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        letterSpacing: -0.2,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      attSub,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10.5,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Fee Visual Card
+        Expanded(
+          child: Material(
+            color: feeBg,
+            borderRadius: BorderRadius.circular(16),
+            elevation: 3,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                final studentName = _student?.name ?? 'छात्र';
+                final speech = isFeeClear
+                    ? '$studentName की पूरी फीस जमा है। कोई बकाया नहीं है।'
+                    : '$studentName की फीस बाकी है। कुल ${effectiveRemainingDue.toInt()} रुपये बकाया है। कृपया समय पर जमा करें।';
+                VoiceAssistantService.instance.speak(speech);
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isFeeClear ? Icons.check_circle_rounded : Icons.report_problem_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.volume_up_rounded, color: Colors.white, size: 14),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      feeTitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        letterSpacing: -0.2,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      feeSub,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10.5,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // ── TAB 0: OVERVIEW ─────────────────────────────────────────────────────
 
   Widget _buildOverviewTab(Color cardBg, Color cardBorder, Color textPrimary, Color textSecondary, Color dividerColor) {
@@ -1035,6 +1436,10 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 0. High-Contrast Visual Cards for Parents (रंगों और स्माइली से आसान पहचान)
+        _buildVisualStatusCards(todayStatus, attPercent, effectiveRemainingDue, cardBg, cardBorder, textPrimary, textSecondary),
+        const SizedBox(height: 14),
+
         // 1. Complete Student Details Summary Card
         _buildStudentBioOverviewCard(cardBg, cardBorder, textPrimary, textSecondary, dividerColor),
         const SizedBox(height: 14),
@@ -2011,6 +2416,78 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
     );
   }
 
+  // ── RESULT PDF HELPERS (DOWNLOAD & SHARE) ─────────────────────────────
+
+  Future<void> _downloadResultPdf(ResultModel res) async {
+    if (_student == null) return;
+    try {
+      final settings = _settings ??
+          SettingsModel(
+            instituteName: 'Mission Navodaya Public School',
+            address: '',
+            mobile: '',
+          );
+      await ResultPdfService.instance.saveResultPdfToDevice(
+        result: res,
+        student: _student!,
+        settings: settings,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'रिजल्ट PDF डाउनलोड हो गया!\nफ़ोल्डर: Downloads/School/Results',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('डाउनलोड में समस्या: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _shareResultPdf(ResultModel res) async {
+    if (_student == null) return;
+    try {
+      final settings = _settings ??
+          SettingsModel(
+            instituteName: 'Mission Navodaya Public School',
+            address: '',
+            mobile: '',
+          );
+      await ResultPdfService.instance.shareResult(
+        result: res,
+        student: _student!,
+        settings: settings,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('शेयर करने में समस्या: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
   // ── TAB 4: EXAM RESULTS & REPORT CARD ───────────────────────────────────
 
   Widget _buildResultsTab(Color cardBg, Color cardBorder, Color textPrimary, Color textSecondary) {
@@ -2136,6 +2613,141 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                         ],
                       ),
                     )),
+                    const SizedBox(height: 12),
+                    Divider(color: _isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+                    const SizedBox(height: 8),
+                    // Action Buttons: Audio, Download PDF, Share PDF, WhatsApp text
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            // Listen in Hindi Button
+                            Expanded(
+                              child: ValueListenableBuilder<String?>(
+                                valueListenable: VoiceAssistantService.instance.activePlayingIdNotifier,
+                                builder: (context, activeId, _) {
+                                  final resultId = 'result_${res.id}_${res.examName}';
+                                  final isThisPlaying = activeId == resultId;
+
+                                  return ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: isThisPlaying ? const Color(0xFFDC2626) : const Color(0xFFF59E0B),
+                                      foregroundColor: isThisPlaying ? Colors.white : Colors.black87,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                    icon: Icon(
+                                      isThisPlaying ? Icons.stop_circle_rounded : Icons.volume_up_rounded,
+                                      size: 16,
+                                      color: isThisPlaying ? Colors.white : Colors.black87,
+                                    ),
+                                    label: Text(
+                                      isThisPlaying ? 'ऑडियो रोकें' : 'बोलकर सुनें',
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                    ),
+                                    onPressed: () {
+                                      final studentName = _student?.name ?? 'छात्र';
+                                      final speech = VoiceAssistantService.instance.generateResultHindiSpeech(
+                                        studentName: studentName,
+                                        examName: res.examName,
+                                        obtainedMarks: res.obtainedMarks,
+                                        totalMarks: res.totalMarks,
+                                        pct: pct,
+                                        grade: grade,
+                                        isPass: isPass,
+                                        finalResultStatus: res.finalResultStatus,
+                                      );
+                                      VoiceAssistantService.instance.toggleSpeak(id: resultId, text: speech);
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Download PDF Marksheet Button
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1E3A8A),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.download_rounded, size: 16),
+                                label: const Text(
+                                  'PDF डाउनलोड',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                onPressed: () => _downloadResultPdf(res),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            // Share PDF Marksheet Button
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF0D9488),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                                label: const Text(
+                                  'PDF शेयर',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                onPressed: () => _shareResultPdf(res),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Share on WhatsApp Button
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF25D366),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.share_rounded, size: 16),
+                                label: const Text(
+                                  'WhatsApp शेयर',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                onPressed: () {
+                                  final studentName = _student?.name ?? 'Student';
+                                  final schoolName = _settings?.instituteName ?? 'School';
+                                  final msg = '📢 *परीक्षा परिणाम (Exam Result)*\n'
+                                      '━━━━━━━━━━━━━━━━━━━\n'
+                                      '👤 *छात्र:* $studentName\n'
+                                      '🏫 *स्कूल:* $schoolName\n'
+                                      '📝 *परीक्षा:* ${res.examName}\n'
+                                      '📊 *प्राप्तांक:* ${res.obtainedMarks.toInt()} / ${res.totalMarks.toInt()}\n'
+                                      '📈 *प्रतिशत:* $pct%\n'
+                                      '🎯 *ग्रेड:* $grade\n'
+                                      '🏆 *स्थिति:* ${isPass ? "✅ उत्तीर्ण (PASSED)" : "❌ अनुत्तीर्ण (FAILED)"}\n'
+                                      '━━━━━━━━━━━━━━━━━━━\n'
+                                      'धन्यवाद!';
+                                  WhatsAppService.sendMessage(
+                                    context: context,
+                                    phone: _student?.mobile ?? '',
+                                    message: msg,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -2203,6 +2815,16 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                         const Icon(Icons.push_pin_rounded, size: 14, color: Color(0xFFD97706)),
                       ],
                       const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.volume_up_rounded, color: Color(0xFFD97706), size: 20),
+                        tooltip: 'नोटिस बोलकर सुनें (Listen in Hindi)',
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        onPressed: () {
+                          VoiceAssistantService.instance.speak('स्कूल सूचना: ${n.title}। ${n.content}');
+                        },
+                      ),
+                      const SizedBox(width: 4),
                       Text(dateStr, style: TextStyle(fontSize: 10, color: textSecondary)),
                     ],
                   ),
@@ -2550,6 +3172,59 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 10),
+                      ValueListenableBuilder<String?>(
+                        valueListenable: VoiceAssistantService.instance.activePlayingIdNotifier,
+                        builder: (context, activeId, _) {
+                          final cardId = item['docId'] ?? item['id'] ?? subject;
+                          final isThisPlaying = activeId == cardId;
+
+                          return SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                final speech = VoiceAssistantService.instance.generateComplaintHindiSpeech(
+                                  subject: subject,
+                                  message: message,
+                                  status: status,
+                                  category: category.toString(),
+                                  reply: reply.toString(),
+                                  studentName: _student?.name,
+                                );
+                                VoiceAssistantService.instance.toggleSpeak(id: cardId, text: speech);
+                              },
+                              icon: Icon(
+                                isThisPlaying ? Icons.stop_circle_rounded : Icons.volume_up_rounded,
+                                size: 16,
+                                color: isThisPlaying ? Colors.white : (_isDarkMode ? Colors.white : const Color(0xFF1E3A8A)),
+                              ),
+                              label: Text(
+                                isThisPlaying ? '🔊 ऑडियो रोकें' : '🔊 बोलकर सुनें (हिंदी में)',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: isThisPlaying ? Colors.white : (_isDarkMode ? Colors.white : const Color(0xFF1E3A8A)),
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isThisPlaying
+                                    ? const Color(0xFFDC2626)
+                                    : (_isDarkMode ? const Color(0xFF1E3A8A).withValues(alpha: 0.35) : const Color(0xFFDBEAFE)),
+                                foregroundColor: isThisPlaying ? Colors.white : const Color(0xFF1E3A8A),
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: BorderSide(
+                                    color: isThisPlaying ? const Color(0xFFDC2626) : const Color(0xFF93C5FD),
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 );

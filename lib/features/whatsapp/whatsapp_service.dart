@@ -11,6 +11,21 @@ import 'widgets/whatsapp_fee_reminder_dialog.dart';
 class WhatsAppService {
   static const MethodChannel _channel = MethodChannel('school_app/whatsapp');
 
+  static String formatPhone(String? raw) {
+    if (raw == null) return '';
+    var p = raw.replaceAll(RegExp(r'\D'), '');
+    while (p.startsWith('0')) {
+      p = p.substring(1);
+    }
+    if (p.length == 10) {
+      return '91$p';
+    }
+    if (p.length == 12 && p.startsWith('91')) {
+      return p;
+    }
+    return p;
+  }
+
   static Future<Map<String, bool>> checkInstalledApps() async {
     try {
       final result = await _channel.invokeMethod<Map>('checkWhatsAppInstalled');
@@ -81,12 +96,12 @@ class WhatsAppService {
     required String phone,
     required String message,
   }) async {
-    String targetPhone = phone.replaceAll(RegExp(r'\D'), '');
+    String targetPhone = formatPhone(phone);
     if (targetPhone.isEmpty) {
       if (!context.mounted) return;
       final entered = await promptPhoneNumber(context);
       if (entered == null || entered.isEmpty) return;
-      targetPhone = entered;
+      targetPhone = formatPhone(entered);
     }
 
     final apps = await checkInstalledApps();
@@ -97,7 +112,7 @@ class WhatsAppService {
       // Fallback via URL launcher if MethodChannel package check doesn't detect installed app or on desktop/emulator
       final number = targetPhone.startsWith('91') ? targetPhone : '91$targetPhone';
       final encoded = Uri.encodeComponent(message);
-      final uri = Uri.parse('https://wa.me/$number?text=$encoded');
+      final uri = Uri.parse('https://api.whatsapp.com/send?phone=$number&text=$encoded');
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
         return;
@@ -145,12 +160,12 @@ class WhatsAppService {
     required String message,
     required String filePath,
   }) async {
-    String targetPhone = phone.replaceAll(RegExp(r'\D'), '');
+    String targetPhone = formatPhone(phone);
     if (targetPhone.isEmpty) {
       if (!context.mounted) return;
       final entered = await promptPhoneNumber(context);
       if (entered == null || entered.isEmpty) return;
-      targetPhone = entered;
+      targetPhone = formatPhone(entered);
     }
 
     final apps = await checkInstalledApps();
@@ -182,7 +197,7 @@ class WhatsAppService {
 
     try {
       await _channel.invokeMethod('sendWhatsAppPdf', {
-        'phone': phone,
+        'phone': targetPhone,
         'message': message,
         'filePath': filePath,
         'package': selectedPackage,
@@ -194,6 +209,91 @@ class WhatsAppService {
         );
       }
     }
+  }
+
+  static Future<void> showReceiptShareSheet(
+    BuildContext context, {
+    required String studentName,
+    String? phone,
+    String? alternatePhone,
+    required String receiptNumber,
+    required String message,
+    String? filePath,
+  }) async {
+    final candidatePhone = (phone != null && phone.trim().isNotEmpty)
+        ? phone.trim()
+        : (alternatePhone?.trim() ?? '');
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ReceiptShareSheet(
+        studentName: studentName,
+        initialPhone: candidatePhone,
+        receiptNumber: receiptNumber,
+        message: message,
+        filePath: filePath,
+      ),
+    );
+  }
+
+  static String buildReceiptVoucherText({
+    required String studentName,
+    String? fatherName,
+    String? className,
+    required String receiptNumber,
+    required DateTime paymentDate,
+    required double amount,
+    required String paymentMode,
+    String? feeMonth,
+    double? totalDemand,
+    double? previousPaid,
+    double? totalPaid,
+    double? balanceDue,
+    required String instituteName,
+    String? institutePhone,
+  }) {
+    final dateStr = DateFormat('dd MMM yyyy, hh:mm a').format(paymentDate);
+    final buffer = StringBuffer();
+    buffer.writeln('🧾 *FEE PAYMENT RECEIPT*');
+    buffer.writeln('*${instituteName.toUpperCase()}*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('👤 *Student:* $studentName');
+    if (fatherName != null && fatherName.trim().isNotEmpty) {
+      buffer.writeln('👨‍👦 *Father:* ${fatherName.trim()}');
+    }
+    if (className != null && className.trim().isNotEmpty) {
+      buffer.writeln('🏫 *Class:* ${className.trim()}');
+    }
+    buffer.writeln('📄 *Receipt No:* #$receiptNumber');
+    buffer.writeln('📅 *Date:* $dateStr');
+    if (feeMonth != null && feeMonth.trim().isNotEmpty) {
+      buffer.writeln('📆 *Fees For:* ${feeMonth.trim()}');
+    }
+    if (totalDemand != null && totalDemand > 0) {
+      buffer.writeln('💰 *Total Demand:* ₹${totalDemand.toInt()}');
+    }
+    if (previousPaid != null && previousPaid > 0) {
+      buffer.writeln('💵 *Previous Paid:* ₹${previousPaid.toInt()}');
+    }
+    buffer.writeln('✅ *Paid Now:* ₹${amount.toInt()} via ${paymentMode.toUpperCase()}');
+    if (totalPaid != null && totalPaid > 0 && totalPaid != amount) {
+      buffer.writeln('💳 *Total Paid:* ₹${totalPaid.toInt()}');
+    }
+    if (balanceDue != null) {
+      if (balanceDue <= 0) {
+        buffer.writeln('🎉 *Balance Due:* ₹0 (FULL PAID)');
+      } else {
+        buffer.writeln('⚠️ *Balance Due:* ₹${balanceDue.toInt()}');
+      }
+    }
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('Official fee payment recorded successfully.');
+    if (institutePhone != null && institutePhone.trim().isNotEmpty) {
+      buffer.writeln('📞 *Helpline / Office:* ${institutePhone.trim()}');
+    }
+    buffer.writeln('Thank you!\n*$instituteName*');
+    return buffer.toString();
   }
 
   /// Shows interactive WhatsApp Fee Due Reminder Dialog with Hindi/English options
@@ -233,7 +333,7 @@ class WhatsAppService {
   }) {
     final s = student;
     final set = settings;
-    final instName = set.instituteName.isNotEmpty ? set.instituteName : 'Smart School';
+    final instName = set.instituteName.isNotEmpty ? set.instituteName : 'Mission Navodaya Public School';
     final instPhone = set.mobile.isNotEmpty ? set.mobile : '';
     final classStr = s.studentType == 'school'
         ? 'Class ${s.className ?? ''}${s.section != null && s.section!.isNotEmpty ? ' (${s.section})' : ''}'
@@ -836,6 +936,300 @@ class _WhatsAppChooserSheet extends StatelessWidget {
             ),
             Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceiptShareSheet extends StatefulWidget {
+  final String studentName;
+  final String initialPhone;
+  final String receiptNumber;
+  final String message;
+  final String? filePath;
+
+  const _ReceiptShareSheet({
+    required this.studentName,
+    required this.initialPhone,
+    required this.receiptNumber,
+    required this.message,
+    this.filePath,
+  });
+
+  @override
+  State<_ReceiptShareSheet> createState() => _ReceiptShareSheetState();
+}
+
+class _ReceiptShareSheetState extends State<_ReceiptShareSheet> {
+  late TextEditingController _phoneController;
+  bool _isEditingPhone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    String digits = widget.initialPhone.replaceAll(RegExp(r'\D'), '');
+    while (digits.startsWith('0')) {
+      digits = digits.substring(1);
+    }
+    if (digits.startsWith('91') && digits.length == 12) {
+      digits = digits.substring(2);
+    }
+    _phoneController = TextEditingController(text: digits);
+    _isEditingPhone = digits.length < 10;
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  String _cleanEnteredPhone() {
+    return _phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final digits = _cleanEnteredPhone();
+    final hasValidPhone = digits.length >= 10;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.16),
+                blurRadius: 24,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: cs.onSurfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF25D366).withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'WhatsApp Receipt Share',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: cs.onSurface),
+                        ),
+                        Text(
+                          '${widget.studentName} • Receipt #${widget.receiptNumber}',
+                          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: cs.surfaceVariant.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: hasValidPhone ? const Color(0xFF25D366).withOpacity(0.4) : AppColors.warning.withOpacity(0.5),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.phone_android_rounded,
+                              size: 16,
+                              color: hasValidPhone ? const Color(0xFF25D366) : AppColors.warning,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'WhatsApp Mobile Number',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (!_isEditingPhone && digits.length >= 10)
+                          GestureDetector(
+                            onTap: () => setState(() => _isEditingPhone = true),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Text(
+                                'Change / Edit',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF25D366),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isEditingPhone)
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: cs.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: cs.outline.withOpacity(0.3)),
+                            ),
+                            child: const Text(
+                              '+91',
+                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 10,
+                              autofocus: digits.length < 10,
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                counterText: '',
+                                hintText: 'Enter 10-digit number',
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ),
+                          if (digits.length >= 10) ...[
+                            const SizedBox(width: 6),
+                            IconButton(
+                              icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF25D366)),
+                              onPressed: () => setState(() => _isEditingPhone = false),
+                              tooltip: 'Save',
+                            ),
+                          ],
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          Text(
+                            '+91 $digits',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: 0.5),
+                          ),
+                          const Spacer(),
+                          const Text(
+                            'Registered Contact',
+                            style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: !hasValidPhone
+                    ? null
+                    : () async {
+                        final nav = Navigator.of(context);
+                        nav.pop();
+                        await WhatsAppService.sendMessage(
+                          context: context,
+                          phone: digits,
+                          message: widget.message,
+                        );
+                      },
+                icon: const Icon(Icons.chat_bubble_rounded, size: 20, color: Colors.white),
+                label: const Text(
+                  'Direct WhatsApp Chat (सीधा चैट खोलें)',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  disabledBackgroundColor: Colors.grey.shade400,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (widget.filePath != null && widget.filePath!.isNotEmpty) ...[
+                OutlinedButton.icon(
+                  onPressed: !hasValidPhone
+                      ? null
+                      : () async {
+                          final nav = Navigator.of(context);
+                          nav.pop();
+                          await WhatsAppService.sendPdf(
+                            context: context,
+                            phone: digits,
+                            message: widget.message,
+                            filePath: widget.filePath!,
+                          );
+                        },
+                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 20, color: Color(0xFF075E54)),
+                  label: const Text(
+                    'Share PDF File (PDF रसीद भेजें)',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF075E54)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF075E54)),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel', style: TextStyle(color: cs.onSurfaceVariant)),
+              ),
+            ],
+          ),
         ),
       ),
     );

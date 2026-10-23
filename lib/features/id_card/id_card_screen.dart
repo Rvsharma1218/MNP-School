@@ -7,6 +7,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_utils.dart';
 import '../../core/utils/file_saver.dart';
@@ -530,14 +531,34 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
           ),
 
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
+            padding: const EdgeInsets.all(10),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildRuleItem('1. This card is non-transferable and must be presented upon request.'),
-                _buildRuleItem('2. If found, please return to the institute address mentioned below.'),
-                _buildRuleItem('3. Loss of this card must be reported immediately to administration.'),
-                _buildRuleItem('4. Any misuse or damage of this identification badge is prohibited.'),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildRuleItem('1. This card is non-transferable and must be presented upon request.'),
+                      _buildRuleItem('2. If found, return to institute address below.'),
+                      _buildRuleItem('3. Loss must be reported immediately.'),
+                      _buildRuleItem('4. Scan QR code to open Student Portal.'),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: QrImageView(
+                    data: 'ID:${s.id}|ADM:${s.admissionNumber}',
+                    version: QrVersions.auto,
+                    size: 54,
+                  ),
+                ),
               ],
             ),
           ),
@@ -784,14 +805,35 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
             child: pw.Text('TERMS & CONDITIONS', style: pw.TextStyle(color: PdfColor.fromHex('#0A1128'), fontSize: 7, fontWeight: pw.FontWeight.bold)),
           ),
           pw.Padding(
-            padding: const pw.EdgeInsets.all(8),
-            child: pw.Column(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            child: pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                _buildRuleItemPdf('1. This card is non-transferable and must be presented upon request.'),
-                _buildRuleItemPdf('2. If found, please return to the institute address mentioned below.'),
-                _buildRuleItemPdf('3. Loss of this card must be reported immediately to administration.'),
-                _buildRuleItemPdf('4. Any misuse or damage of this identification badge is prohibited.'),
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _buildRuleItemPdf('1. This card is non-transferable and must be presented upon request.'),
+                      _buildRuleItemPdf('2. If found, return to institute address below.'),
+                      _buildRuleItemPdf('3. Loss must be reported immediately to admin.'),
+                      _buildRuleItemPdf('4. Scan QR code for 1-Tap Student Portal login.'),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(width: 6),
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(2),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.white,
+                    borderRadius: pw.BorderRadius.circular(3),
+                  ),
+                  child: pw.BarcodeWidget(
+                    barcode: pw.Barcode.qrCode(),
+                    data: 'ID:${s.id}|ADM:${s.admissionNumber}',
+                    width: 44,
+                    height: 44,
+                  ),
+                ),
               ],
             ),
           ),

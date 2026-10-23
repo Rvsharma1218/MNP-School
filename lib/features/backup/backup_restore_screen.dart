@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/services/database_service.dart';
 
@@ -14,14 +15,36 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
   bool _loading = false;
   String? _message;
   bool _isSuccess = false;
+  String? _lastExportedPath;
 
   Future<void> _export() async {
     setState(() { _loading = true; _message = null; });
     try {
       final path = await DatabaseService.instance.exportDatabase();
-      setState(() { _isSuccess = true; _message = 'Backup saved to:\n$path'; });
+      setState(() {
+        _isSuccess = true;
+        _lastExportedPath = path;
+        _message = 'Backup saved to:\n$path';
+      });
     } catch (e) {
       setState(() { _isSuccess = false; _message = 'Export failed: $e'; });
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _shareBackup() async {
+    setState(() { _loading = true; _message = null; });
+    try {
+      final path = _lastExportedPath ?? await DatabaseService.instance.exportDatabase();
+      _lastExportedPath = path;
+      await Share.shareXFiles(
+        [XFile(path)],
+        subject: 'School Database SQLite Backup',
+        text: 'School Database SQLite Backup file (.db)',
+      );
+    } catch (e) {
+      setState(() { _isSuccess = false; _message = 'Share failed: $e'; });
     } finally {
       setState(() => _loading = false);
     }
@@ -113,6 +136,17 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
             ),
           ),
           const SizedBox(height: 24),
+
+          // 1-Click Share Card
+          _ActionCard(
+            icon: Icons.share_rounded,
+            title: '1-Click Share Backup',
+            subtitle: 'Directly send .db backup file to WhatsApp, Google Drive, or Gmail',
+            color: const Color(0xFF25D366),
+            buttonLabel: 'Share Backup on WhatsApp / Drive',
+            onTap: _loading ? null : _shareBackup,
+          ),
+          const SizedBox(height: 16),
 
           // Export card
           _ActionCard(

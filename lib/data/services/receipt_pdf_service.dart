@@ -1,6 +1,5 @@
 import '../../core/utils/file_saver.dart';
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -270,7 +269,6 @@ class ReceiptPdfService {
         : (aggregateFee?.lastPaidDate ?? resolvedFee?.lastPaymentDate);
 
     final double totalPaidAfter = payment.totalPaidAfter ?? (previousPaid + amountPaid);
-    final double prevDueCarried = payment.previousDue ?? resolvedFee?.previousDue ?? 0.0;
 
     final double remainingDue = (payment.balanceDue != null && payment.balanceDue! >= 0)
         ? payment.balanceDue!
@@ -341,7 +339,7 @@ class ReceiptPdfService {
                 ],
                 pw.Center(
                   child: pw.Text(
-                    (settings.instituteName.isNotEmpty ? settings.instituteName : 'Smart School').toUpperCase(),
+                    (settings.instituteName.isNotEmpty ? settings.instituteName : 'Mission Navodaya Public School').toUpperCase(),
                     textAlign: pw.TextAlign.center,
                     style: pw.TextStyle(font: bold, fontSize: 12, color: darkText),
                   ),
@@ -365,47 +363,77 @@ class ReceiptPdfService {
                 pw.Divider(color: darkText, thickness: 0.6),
                 pw.SizedBox(height: 3),
 
-                // ─── Meta Details Grid (6 Rows, 2 Columns) ───────────
+                // ─── Meta Details Grid + Student QR Code ───────────
                 pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    makeInfoCell('Receipt No', payment.receiptNumber),
-                    makeInfoCell('Payment Date', '${fmtDate(payment.paymentDate)} ${fmtTime(payment.paymentDate)}', alignRight: true),
-                  ],
-                ),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    makeInfoCell("Student's Name", student.name.toUpperCase()),
-                    makeInfoCell('Student ID', student.studentId.isNotEmpty ? student.studentId : '-', alignRight: true),
-                  ],
-                ),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    makeInfoCell('Admission No', student.admissionNumber.isNotEmpty ? student.admissionNumber : '-'),
-                    makeInfoCell("Father's Name", student.fatherName.isNotEmpty ? student.fatherName : '-', alignRight: true),
-                  ],
-                ),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    makeInfoCell('Class / Course', student.displayClass),
-                    makeInfoCell('Roll No', student.rollNumber?.isNotEmpty == true ? student.rollNumber! : '-', alignRight: true),
-                  ],
-                ),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    makeInfoCell('Fees For Period', feeMonthLabel),
-                    makeInfoCell('Payment Mode', payment.paymentMode, alignRight: true),
-                  ],
-                ),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    makeInfoCell('Due Date', dueDateLabel),
-                    makeInfoCell('Session', sessionLabel, alignRight: true),
+                    pw.Expanded(
+                      child: pw.Column(
+                        children: [
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              makeInfoCell('Receipt No', payment.receiptNumber),
+                              makeInfoCell('Payment Date', '${fmtDate(payment.paymentDate)} ${fmtTime(payment.paymentDate)}', alignRight: true),
+                            ],
+                          ),
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              makeInfoCell("Student's Name", student.name.toUpperCase()),
+                              makeInfoCell('Student ID', student.studentId.isNotEmpty ? student.studentId : '-', alignRight: true),
+                            ],
+                          ),
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              makeInfoCell('Admission No', student.admissionNumber.isNotEmpty ? student.admissionNumber : '-'),
+                              makeInfoCell("Father's Name", student.fatherName.isNotEmpty ? student.fatherName : '-', alignRight: true),
+                            ],
+                          ),
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              makeInfoCell('Class / Course', student.displayClass),
+                              makeInfoCell('Roll No', student.rollNumber?.isNotEmpty == true ? student.rollNumber! : '-', alignRight: true),
+                            ],
+                          ),
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              makeInfoCell('Fees For Period', feeMonthLabel),
+                              makeInfoCell('Payment Mode', payment.paymentMode, alignRight: true),
+                            ],
+                          ),
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              makeInfoCell('Due Date', dueDateLabel),
+                              makeInfoCell('Session', sessionLabel, alignRight: true),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    pw.SizedBox(width: 8),
+                    pw.Column(
+                      children: [
+                        pw.Container(
+                          width: 48,
+                          height: 48,
+                          padding: const pw.EdgeInsets.all(2),
+                          decoration: pw.BoxDecoration(
+                            border: pw.Border.all(color: darkText, width: 0.5),
+                          ),
+                          child: pw.BarcodeWidget(
+                            barcode: pw.Barcode.qrCode(),
+                            data: 'ID:${student.id}|ADM:${student.admissionNumber}',
+                          ),
+                        ),
+                        pw.SizedBox(height: 1),
+                        pw.Text('PORTAL QR', style: pw.TextStyle(font: bold, fontSize: 5, color: darkText)),
+                      ],
+                    ),
                   ],
                 ),
                 pw.SizedBox(height: 3),

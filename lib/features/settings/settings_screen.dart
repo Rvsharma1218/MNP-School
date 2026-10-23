@@ -20,6 +20,7 @@ import '../../widgets/student_photo_picker.dart';
 import '../../core/utils/signature_processor.dart';
 import '../../core/utils/app_utils.dart';
 import '../../data/services/database_service.dart';
+import 'campus_geofence_settings_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -215,6 +216,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const InstituteProfileSettingsScreen()),
+                  ),
+                ),
+                const Divider(height: 1, indent: 64),
+                _buildMenuTile(
+                  context: context,
+                  title: 'School Campus GPS & Geofence',
+                  subtitle: 'Set school campus GPS location & allowed radius (e.g. 300m) for teacher punch-in',
+                  icon: Icons.location_on_rounded,
+                  iconColor: const Color(0xFF059669),
+                  iconBg: const Color(0xFFD1FAE5),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CampusGeofenceSettingsScreen()),
                   ),
                 ),
                 const Divider(height: 1, indent: 64),

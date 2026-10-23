@@ -10,6 +10,7 @@ import '../../data/services/session_service.dart';
 import '../../data/services/teacher_service.dart';
 import '../security/device_security_service.dart';
 import '../parent/parent_dashboard_screen.dart';
+import '../qr/qr_scanner_screen.dart';
 import '../../data/services/app_notification_service.dart';
 import 'pin_lock_screen.dart';
 
@@ -277,6 +278,108 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() {
         _submitting = false;
         _errorMsg = 'Login failed: $e';
+      });
+    }
+  }
+
+  Future<void> _scanParentQrCode() async {
+    setState(() => _errorMsg = null);
+    try {
+      final scanned = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const QrScannerScreen(
+            returnResultOnly: true,
+            title: 'Scan Student QR',
+          ),
+        ),
+      );
+
+      if (scanned == null || scanned.trim().isEmpty) return;
+
+      setState(() {
+        _submitting = true;
+        _errorMsg = null;
+      });
+
+      final schoolId = SessionService.instance.activeSchoolId;
+      StudentModel? matchedStudent = await DatabaseService.instance.getStudentByQrId(scanned);
+
+      // Fallback: check Firestore students collection if not found in local db
+      if (matchedStudent == null) {
+        try {
+          final querySnap = await FirebaseFirestore.instance
+              .collection('schools')
+              .doc(schoolId)
+              .collection('students')
+              .get()
+              .timeout(const Duration(seconds: 7));
+
+          final cleanScanned = scanned.trim().toLowerCase();
+          final scannedDigits = cleanScanned.replaceAll(RegExp(r'\D'), '');
+
+          for (final doc in querySnap.docs) {
+            final data = doc.data();
+            final sId = (data['id'] ?? data['studentId'] ?? doc.id).toString().trim().toLowerCase();
+            final adm = (data['admissionNumber'] ?? data['admissionNo'] ?? '').toString().trim().toLowerCase();
+            final admDigits = adm.replaceAll(RegExp(r'\D'), '');
+
+            if (sId == cleanScanned ||
+                adm == cleanScanned ||
+                (scannedDigits.isNotEmpty && admDigits.isNotEmpty && admDigits == scannedDigits)) {
+              final mappedData = Map<String, dynamic>.from(data);
+              mappedData['id'] = doc.id;
+              matchedStudent = StudentModel.fromMap(mappedData);
+              try {
+                await DatabaseService.instance.insertStudent(matchedStudent);
+              } catch (_) {}
+              break;
+            }
+          }
+        } catch (e) {
+          debugPrint('[ParentQrLogin] Firestore lookup note: $e');
+        }
+      }
+
+      if (matchedStudent == null) {
+        if (!mounted) return;
+        setState(() {
+          _submitting = false;
+          _errorMsg = 'QR Code se student record nahi mila ($scanned). Kripya student ka valid ID Card ya Fee Receipt scan karein.';
+        });
+        return;
+      }
+
+      // Auto login parent!
+      await SessionService.instance.setParentSession(
+        schoolUid: schoolId,
+        studentId: matchedStudent.id,
+        studentName: matchedStudent.name,
+        className: matchedStudent.className,
+        rollNo: matchedStudent.rollNumber,
+        mobile: matchedStudent.mobile,
+      );
+
+      AppNotificationService.instance.startListening();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Swagat hai! ${matchedStudent.name} ka dashboard khul raha hai...'),
+          backgroundColor: const Color(0xFF10B981),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const ParentDashboardScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _errorMsg = 'QR Login error: $e';
       });
     }
   }
@@ -559,6 +662,90 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildParentForm() {
     return Column(
       children: [
+        // ── 1-Tap Camera QR Scan Button ──
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: _submitting ? null : _scanParentQrCode,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.black87, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    const Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '📷 QR Code Scan Karein',
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          SizedBox(height: 1),
+                          Text(
+                            'ID Card ya Fee Receipt scan karke turant kholein',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        Row(
+          children: [
+            Expanded(child: Divider(color: Colors.white.withOpacity(0.2))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                'OR / अथवा हाथ से लिखें',
+                style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+            ),
+            Expanded(child: Divider(color: Colors.white.withOpacity(0.2))),
+          ],
+        ),
+        const SizedBox(height: 14),
+
         TextFormField(
           controller: _parentAdmNoCtrl,
           textInputAction: TextInputAction.next,

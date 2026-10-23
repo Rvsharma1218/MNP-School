@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../data/models/student_model.dart';
 import '../../data/models/settings_model.dart';
 import '../../data/services/session_service.dart';
+import '../../data/services/voice_assistant_service.dart';
 
 class ParentComplaintScreen extends StatefulWidget {
   final StudentModel student;
@@ -33,6 +34,12 @@ class _ParentComplaintScreenState extends State<ParentComplaintScreen> {
   void initState() {
     super.initState();
     _loadLocalComplaints();
+  }
+
+  @override
+  void dispose() {
+    VoiceAssistantService.instance.stop();
+    super.dispose();
   }
 
   String get _localPrefsKey => 'parent_complaints_${widget.student.id}';
@@ -548,6 +555,62 @@ class _ParentComplaintScreenState extends State<ParentComplaintScreen> {
               ),
             ),
           ],
+
+          const SizedBox(height: 12),
+
+          // Audio listen button for parents who cannot read
+          ValueListenableBuilder<String?>(
+            valueListenable: VoiceAssistantService.instance.activePlayingIdNotifier,
+            builder: (context, activeId, _) {
+              final cardId = item['docId'] ?? item['id'] ?? subject;
+              final isThisPlaying = activeId == cardId;
+
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final speech = VoiceAssistantService.instance.generateComplaintHindiSpeech(
+                      subject: subject,
+                      message: message,
+                      status: status,
+                      category: category.toString(),
+                      reply: reply.toString(),
+                      studentName: widget.student.name,
+                    );
+                    VoiceAssistantService.instance.toggleSpeak(id: cardId, text: speech);
+                  },
+                  icon: Icon(
+                    isThisPlaying ? Icons.stop_circle_rounded : Icons.volume_up_rounded,
+                    size: 18,
+                    color: isThisPlaying ? Colors.white : (widget.isDarkMode ? Colors.white : const Color(0xFF1E3A8A)),
+                  ),
+                  label: Text(
+                    isThisPlaying ? '🔊 ऑडियो रोकें (Stop Audio)' : '🔊 बोलकर सुनें (हिंदी में सुनें)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: isThisPlaying ? Colors.white : (widget.isDarkMode ? Colors.white : const Color(0xFF1E3A8A)),
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isThisPlaying
+                        ? const Color(0xFFDC2626)
+                        : (widget.isDarkMode ? const Color(0xFF1E3A8A).withValues(alpha: 0.35) : const Color(0xFFDBEAFE)),
+                    foregroundColor: isThisPlaying ? Colors.white : const Color(0xFF1E3A8A),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isThisPlaying ? const Color(0xFFDC2626) : const Color(0xFF93C5FD),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

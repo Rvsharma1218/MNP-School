@@ -5,7 +5,9 @@ import '../../core/constants/app_routes.dart';
 import '../../data/services/database_service.dart';
 
 class QrScannerScreen extends StatefulWidget {
-  const QrScannerScreen({super.key});
+  final bool returnResultOnly;
+  final String? title;
+  const QrScannerScreen({super.key, this.returnResultOnly = false, this.title});
 
   @override
   State<QrScannerScreen> createState() => _QrScannerScreenState();
@@ -39,16 +41,23 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     await _ctrl?.stop();
 
     final qrValue = barcode!.rawValue!;
-    // The ID card's QR encodes a composite string —
-    // 'ID:STU00001|Name:Ravi Sharma|Mobile:9876543210' — so it's readable
-    // by any generic QR scanner too, not just this app. Extract just the
-    // ID part for the lookup. Falls back to treating the raw value as a
-    // bare studentId, so older/plain QR codes still work.
     String lookupId = qrValue;
     final idMatch = RegExp(r'ID:([^|]+)').firstMatch(qrValue);
     if (idMatch != null) {
       lookupId = idMatch.group(1)!.trim();
+    } else {
+      final admMatch = RegExp(r'ADM:([^|]+)').firstMatch(qrValue);
+      if (admMatch != null) {
+        lookupId = admMatch.group(1)!.trim();
+      }
     }
+
+    if (widget.returnResultOnly) {
+      if (!mounted) return;
+      Navigator.pop(context, lookupId);
+      return;
+    }
+
     final student = await DatabaseService.instance.getStudentByQrId(lookupId);
 
     if (!mounted) return;
@@ -85,7 +94,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan Student QR'),
+        title: Text(widget.title ?? 'Scan Student QR'),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         actions: [

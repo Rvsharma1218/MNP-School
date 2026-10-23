@@ -185,119 +185,30 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
           return false;
         }).toList();
 
-        final allTimePaid = stuPayments.fold(0.0, (sum, p) => sum + p.amount);
-
         final fee = feesMap[s.id] ??
             (s.studentId.isNotEmpty ? feesMap[s.studentId] : null) ??
             (s.admissionNumber.isNotEmpty ? feesMap[s.admissionNumber] : null);
 
-        final explicitRem = s.remainingFees ?? s.totalPending ?? fee?.explicitRemaining;
-        final feePaid = fee?.paidFees ?? 0.0;
-        final sPaid = s.initialPaidFees ?? 0.0;
-        final recPaid = feePaid > sPaid ? feePaid : sPaid;
-        final effectivePaid = allTimePaid > recPaid ? allTimePaid : recPaid;
+        final model = fee != null
+            ? FeeModel(
+                studentId: fee.studentId,
+                totalFees: fee.totalFees,
+                paidFees: fee.paidFees,
+                explicitRemaining: fee.explicitRemaining,
+                dueDate: fee.dueDate,
+                lastPaidDate: fee.lastPaidDate,
+                payments: stuPayments.isNotEmpty ? stuPayments : fee.payments,
+              )
+            : FeeModel(
+                studentId: s.id,
+                totalFees: 0,
+                paidFees: 0,
+                explicitRemaining: 0,
+                dueDate: DateTime(now.year, now.month, 10),
+                payments: stuPayments,
+              );
 
-        final rawTotal = fee?.totalFees ?? s.initialTotalFees ?? (s.monthlyFee ?? 0.0);
-        double total = rawTotal;
-        double remaining = 0.0;
-
-        if (s.feeStatus == 'Paid' && (explicitRem == null || explicitRem <= 0)) {
-          remaining = 0.0;
-          if (total < effectivePaid) total = effectivePaid;
-        } else if (explicitRem != null && explicitRem > 0) {
-          remaining = explicitRem;
-          if (total < effectivePaid + remaining) {
-            total = effectivePaid + remaining;
-          }
-        } else if (s.studentType == 'computer') {
-          total = (s.initialTotalFees != null && s.initialTotalFees! > 0)
-              ? s.initialTotalFees!
-              : (fee?.totalFees ?? effectivePaid);
-          remaining = (total - effectivePaid).clamp(0.0, double.infinity);
-        } else {
-          // School student: auto-accrue monthly dues from admission month / session start to current month
-          final sessionStartYear = now.month >= 4 ? now.year : now.year - 1;
-          int startYear = sessionStartYear;
-          int startMonth = 4; // April default
-
-          final sessionStartDate = DateTime(sessionStartYear, 4, 1);
-          if (s.admissionDate.isAfter(sessionStartDate) && !s.admissionDate.isAfter(now)) {
-            startYear = s.admissionDate.year;
-            startMonth = s.admissionDate.month;
-          }
-
-          final fs = s.feeStructure;
-          double recurringTuition = 0.0;
-          if (fs != null && fs['tuitionFee'] != null && (fs['tuitionFee'] as num) > 0) {
-            recurringTuition = (fs['tuitionFee'] as num).toDouble();
-          } else if (s.monthlyFee != null && s.monthlyFee! > 0) {
-            recurringTuition = s.monthlyFee!;
-          } else if (s.initialTotalFees != null && s.initialTotalFees! > 0) {
-            recurringTuition = (s.initialTotalFees! / 12).roundToDouble();
-          }
-
-          final recurringTransport = (fs != null && fs['transportFee'] != null) ? (fs['transportFee'] as num).toDouble() : 0.0;
-          final recurringGame = (fs != null && fs['gameFee'] != null) ? (fs['gameFee'] as num).toDouble() : 0.0;
-
-          if (recurringTuition > 0) {
-            double accruedDemand = (s.previousDue ?? 0.0);
-            DateTime cursor = DateTime(startYear, startMonth, 1);
-            final endCursor = DateTime(now.year, now.month, 1);
-            int loopCount = 0;
-
-            while (!cursor.isAfter(endCursor) && loopCount < 36) {
-              loopCount++;
-              final y = cursor.year;
-              final m = cursor.month;
-              final mKey = '$y-${m.toString().padLeft(2, '0')}';
-
-              final mp = (s.monthlyParticulars != null && s.monthlyParticulars![mKey] is Map)
-                  ? s.monthlyParticulars![mKey] as Map
-                  : null;
-
-              double tuition = recurringTuition;
-              double transport = recurringTransport;
-              double game = recurringGame;
-              double other = 0.0;
-
-              if (mp != null) {
-                if (mp['tuitionFee'] != null && (mp['tuitionFee'] as num) > 0) {
-                  tuition = (mp['tuitionFee'] as num).toDouble();
-                }
-                if (mp['transportFee'] != null) transport = (mp['transportFee'] as num).toDouble();
-                if (mp['gameFee'] != null) game = (mp['gameFee'] as num).toDouble();
-                if (mp['examinationFee'] != null) other += (mp['examinationFee'] as num).toDouble();
-                if (mp['admissionFee'] != null) other += (mp['admissionFee'] as num).toDouble();
-                if (mp['developmentFee'] != null) other += (mp['developmentFee'] as num).toDouble();
-                if (mp['lateFine'] != null) other += (mp['lateFine'] as num).toDouble();
-                if (mp['otherFee'] != null) other += (mp['otherFee'] as num).toDouble();
-              }
-
-              accruedDemand += (tuition + transport + game + other);
-              cursor = DateTime(y, m + 1, 1);
-            }
-
-            total = accruedDemand;
-            remaining = (total - effectivePaid).clamp(0.0, double.infinity);
-          } else {
-            if (total < effectivePaid) total = effectivePaid;
-            remaining = (total - effectivePaid).clamp(0.0, double.infinity);
-          }
-        }
-
-        final dueDate = fee?.dueDate ?? DateTime(now.year, now.month, 10);
-
-        rows.add(_StudentFeeRow(
-          s,
-          FeeModel(
-            studentId: s.id,
-            totalFees: total,
-            paidFees: effectivePaid,
-            explicitRemaining: remaining,
-            dueDate: dueDate,
-            payments: stuPayments,
-          ),
-        ));
+        rows.add(_StudentFeeRow(s, model));
       }
 
       if (mounted) {
@@ -1583,7 +1494,7 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
                       Row(
                         children: [
                           Text(
-                            'Paid: ${AppUtils.formatCurrency(_totalPendingPaidAmount)}',
+                            'Total Collected: ${AppUtils.formatCurrency(_allPayments.fold(0.0, (sum, p) => sum + p.amount))}',
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -1591,7 +1502,7 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
                             ),
                           ),
                           Text(
-                            ' • Total: ${AppUtils.formatCurrency(_totalPendingTotalFees)}',
+                            ' • Due Group Paid: ${AppUtils.formatCurrency(_totalPendingPaidAmount)}',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
@@ -2020,6 +1931,144 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
     );
   }
 
+  // ─── Monthly Trend Chart ─────────────────────────────────────────────────────
+
+  /// Builds a bar chart showing month-wise fee collection for the last 12 months.
+  Widget _buildMonthlyTrendChart(ColorScheme cs) {
+    // Group all payments by YYYY-MM
+    final Map<String, double> monthlyTotals = {};
+    for (final p in _allPayments) {
+      final key = DateFormat('yyyy-MM').format(p.paymentDate.toLocal());
+      monthlyTotals[key] = (monthlyTotals[key] ?? 0) + p.amount;
+    }
+
+    if (monthlyTotals.isEmpty) return const SizedBox.shrink();
+
+    // Last 12 months sorted
+    final now = DateTime.now();
+    final months = List.generate(12, (i) {
+      final d = DateTime(now.year, now.month - 11 + i, 1);
+      return DateFormat('yyyy-MM').format(d);
+    });
+
+    final entries = months.map((k) => MapEntry(k, monthlyTotals[k] ?? 0.0)).toList();
+    final maxVal = entries.map((e) => e.value).fold(0.0, (a, b) => a > b ? a : b);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bar_chart_rounded, size: 18, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                'Monthly Collection Trend',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Last 12 Months',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 100,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: entries.map((e) {
+                final fraction = maxVal > 0 ? e.value / maxVal : 0.0;
+                final isCurrentMonth = e.key == DateFormat('yyyy-MM').format(now);
+                final label = DateFormat('MMM').format(DateTime.parse('${e.key}-01'));
+                final hasData = e.value > 0;
+
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (hasData)
+                          Container(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              AppUtils.formatCurrency(e.value)
+                                  .replaceAll('₹', '')
+                                  .replaceAll(',000', 'k')
+                                  .replaceAll(',', '.'),
+                              style: TextStyle(
+                                fontSize: 7,
+                                fontWeight: FontWeight.w700,
+                                color: isCurrentMonth ? AppColors.primary : cs.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                            ),
+                          ),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeOutCubic,
+                          height: hasData ? (fraction * 70).clamp(4.0, 70.0) : 3,
+                          decoration: BoxDecoration(
+                            gradient: hasData
+                                ? LinearGradient(
+                                    colors: isCurrentMonth
+                                        ? [AppColors.primary, AppColors.primary.withOpacity(0.7)]
+                                        : [AppColors.success, AppColors.success.withOpacity(0.6)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : null,
+                            color: hasData ? null : cs.outlineVariant.withOpacity(0.3),
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: isCurrentMonth ? FontWeight.w800 : FontWeight.w500,
+                            color: isCurrentMonth ? AppColors.primary : cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ─── TAB 3: Transaction Register ────────────────────────────────────────────
 
   Widget _buildTransactionsTab(ColorScheme cs) {
@@ -2107,6 +2156,9 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
               ],
             ),
           ),
+
+          // Monthly trend chart — only visible when no date filter is active
+          if (_transactionDateMode == 'all') _buildMonthlyTrendChart(cs),
 
           // Search bar
           Padding(
@@ -2491,8 +2543,17 @@ Future<void> _sendSingleReceiptWhatsApp(
 }) async {
   StudentModel? s = student;
   if (s == null && payment.studentId.isNotEmpty) {
-      s = await DatabaseService.instance.getStudentById(payment.studentId) ??
-          await DatabaseService.instance.getStudentByQrId(payment.studentId);
+    s = await DatabaseService.instance.getStudentById(payment.studentId) ??
+        await DatabaseService.instance.getStudentByQrId(payment.studentId);
+  }
+  if (s == null && payment.admissionNumber != null && payment.admissionNumber!.isNotEmpty) {
+    s = await DatabaseService.instance.getStudentByQrId(payment.admissionNumber!);
+  }
+  if (s == null && payment.studentName != null && payment.studentName!.isNotEmpty) {
+    try {
+      final all = await DatabaseService.instance.getAllStudents();
+      s = all.firstWhere((st) => st.name.trim().toLowerCase() == payment.studentName!.trim().toLowerCase());
+    } catch (_) {}
   }
   if (s == null) {
     if (context.mounted) {
@@ -2590,14 +2651,23 @@ Future<void> _sendSingleReceiptWhatsApp(
       buffer.writeln('📌 *Total Overall Pending Dues:* ${AppUtils.formatCurrency(overallStudentDue)}');
     }
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('📄 *Official PDF Receipt attached above.*');
-    buffer.writeln('*Payment received successfully. Thank you!*');
+    buffer.writeln('Payment received successfully. Thank you!');
+    if (settings.mobile.isNotEmpty) {
+      buffer.writeln('📞 *Helpline:* ${settings.mobile}');
+    }
     buffer.writeln('*${settings.instituteName}*');
 
+    final phone = s.mobile.trim().isNotEmpty
+        ? s.mobile.trim()
+        : (s.alternateMobile?.trim() ?? '');
+
     if (!context.mounted) return;
-    await WhatsAppService.sendPdf(
-      context: context,
-      phone: s.mobile,
+    await WhatsAppService.showReceiptShareSheet(
+      context,
+      studentName: s.name,
+      phone: phone,
+      alternatePhone: s.alternateMobile,
+      receiptNumber: payment.receiptNumber,
       message: buffer.toString(),
       filePath: filePath,
     );
