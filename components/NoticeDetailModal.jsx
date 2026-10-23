@@ -64,7 +64,7 @@ export default function NoticeDetailModal({ notice, onClose, onEdit }) {
   };
 
   const handleShareWhatsApp = () => {
-    const text = `📢 *NOTICE: ${notice.title}*\n🏫 *${settings.instituteName || 'Smart School'}*\n📅 Date: ${formattedDate} (${formattedTime})\n🏷️ Category: ${notice.category}\n\n${notice.content || ''}\n\n— Issued by ${notice.authorName || 'Principal'}`;
+    const text = `📢 *NOTICE: ${notice.title}*\n🏫 *${settings.instituteName || 'Mission Navodaya Public School'}*\n📅 Date: ${formattedDate} (${formattedTime})\n🏷️ Category: ${notice.category}\n\n${notice.content || ''}\n\n— Issued by ${notice.authorName || 'Principal'}`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -109,7 +109,7 @@ export default function NoticeDetailModal({ notice, onClose, onEdit }) {
                   School Circular / Notice
                 </span>
                 <h2 className="text-base font-bold text-white print:text-xl">
-                  {settings.instituteName || 'Smart School'}
+                  {settings.instituteName || 'Mission Navodaya Public School'}
                 </h2>
               </div>
             </div>

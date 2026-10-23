@@ -392,7 +392,7 @@ export default function PrintResultModal({ result: propResult, student: propStud
 
             {/* Footer Disclaimer */}
             <div className="text-center pt-2 text-[9px] text-slate-400 border-t border-slate-200">
-              Generated on {new Date().toLocaleDateString('en-GB')} • Official Academic Record of {settings.instituteName || 'Smart School'}
+              Generated on {new Date().toLocaleDateString('en-GB')} • Official Academic Record of {settings.instituteName || 'Mission Navodaya Public School'}
             </div>
 
           </div>

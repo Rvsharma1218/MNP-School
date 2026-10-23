@@ -18,7 +18,7 @@ export default function WhatsAppReminderModal({ isOpen, onClose, student, studen
   const studentList = students.length > 0 ? students : (student ? [student] : []);
   const activeStudent = studentList[currentIdx] || student;
 
-  const instituteName = settings?.instituteName || settings?.schoolName || 'Smart School';
+  const instituteName = settings?.instituteName || settings?.schoolName || 'Mission Navodaya Public School';
   const institutePhone = settings?.phone || settings?.mobile || '';
 
   // Compute month-by-month breakdown for a student

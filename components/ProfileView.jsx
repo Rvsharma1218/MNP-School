@@ -134,7 +134,7 @@ export default function ProfileView() {
             <div className="flex items-center gap-2.5 py-1">
               <Building className="w-4 h-4 text-primary" />
               <span>Institute: </span>
-              <span className="text-text">{settings.instituteName || currentUser.instituteName || 'Smart School'}</span>
+              <span className="text-text">{settings.instituteName || currentUser.instituteName || 'Mission Navodaya Public School'}</span>
             </div>
             <div className="flex items-center gap-2.5 py-1">
               <Mail className="w-4 h-4 text-primary" />

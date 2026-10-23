@@ -93,7 +93,7 @@ export default function DashboardView() {
             <span>Welcome back, {currentUser?.name || 'Administrator'}</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-[#0b1c30] tracking-tight">
-            {isPrincipal ? `${settings.instituteName || 'Smart School'} Executive Overview` : `Class ${assignedClass} Faculty Desk`}
+            {isPrincipal ? `${settings.instituteName || 'Mission Navodaya Public School'} Executive Overview` : `Class ${assignedClass} Faculty Desk`}
           </h2>
           <p className="text-xs text-[#464553] font-medium mt-0.5">
             Academic Session {settings.currentSession || '2026-27'} &nbsp;·&nbsp; Live Cloud Synchronized

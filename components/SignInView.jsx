@@ -2,17 +2,36 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSchoolStore } from '../lib/store';
+import { translations } from '../lib/translations';
 import {
   GraduationCap, Mail, Lock, Eye, EyeOff, ShieldCheck,
-  School, UserCheck, ArrowRight, Sparkles, AlertCircle, CheckCircle2, User, ChevronDown
+  School, ArrowRight, AlertCircle, CheckCircle2,
+  User, ChevronDown, Phone, Hash, ArrowLeft, BookOpen,
+  Users, CalendarCheck, CreditCard, Shield, FileText, CheckCircle,
+  Award, Heart, Compass, Sparkles, Building, Quote, Check,
+  Activity, Monitor, Trophy, HelpCircle, MapPin, Clock, MessageSquare, Globe, Briefcase
 } from 'lucide-react';
 
 export default function SignInView() {
-  const { signIn, teacherSignIn, parentSignIn, fetchSchoolTeachersByEmail, teachers, settings, currentUser, navigate, demoSignIn } = useSchoolStore();
+  const {
+    signIn,
+    teacherSignIn,
+    parentSignIn,
+    fetchSchoolTeachersByEmail,
+    teachers,
+    settings,
+    currentUser,
+    navigate,
+    language = 'en',
+    toggleLanguage
+  } = useSchoolStore();
+
+  const t = translations[language] || translations.en;
+
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('principal'); // 'principal' | 'teacher' | 'parent'
-  const [parentSchoolIdentifier, setParentSchoolIdentifier] = useState('');
+  const [role, setRole] = useState('parent'); // Default to parent for ease
   const [parentAdmissionNo, setParentAdmissionNo] = useState('');
   const [parentMobile, setParentMobile] = useState('');
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
@@ -20,6 +39,13 @@ export default function SignInView() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const schoolName = settings?.instituteName || settings?.schoolName || 'Mission Navodaya Public School';
+  const principalName = settings?.principalName || 'Vishal Kumar';
+  const logoSrc = settings?.logoUrl || settings?.logoPath || settings?.logo || '/logo.png';
+  const phone = settings?.phone || '8603481865';
+  const officialEmail = settings?.email || 'mnpschooledu@gmail.com';
+  const campusAddress = settings?.address || 'Mora Bazar Campus';
 
   useEffect(() => {
     if (role === 'teacher' && email) {
@@ -32,14 +58,20 @@ export default function SignInView() {
         }
       });
     }
-  }, [role, email]);
+  }, [role, email, fetchSchoolTeachersByEmail]);
 
   useEffect(() => {
-    // If teachers are available and in teacher mode, pre-select first teacher
     if (teachers && teachers.length > 0 && !selectedTeacherId) {
       setSelectedTeacherId(teachers[0].authUid || teachers[0].id || '');
     }
-  }, [teachers, role]);
+  }, [teachers, role, selectedTeacherId]);
+
+  const openPortalLogin = (targetRole = 'parent') => {
+    setRole(targetRole);
+    setError('');
+    setIsLoginModalOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,33 +81,29 @@ export default function SignInView() {
     try {
       if (role === 'parent') {
         if (!parentAdmissionNo.trim()) {
-          throw new Error("Please enter your child's Admission Number or Roll Number.");
+          throw new Error(language === 'hi' ? 'कृपया छात्र प्रवेश संख्या या रोल नंबर दर्ज करें।' : "Please enter your child's Admission Number or Roll Number.");
         }
-        await parentSignIn(parentSchoolIdentifier.trim(), parentAdmissionNo.trim(), parentMobile.trim());
+        await parentSignIn('', parentAdmissionNo.trim(), parentMobile.trim());
       } else if (role === 'teacher') {
         if (!selectedTeacherId) {
-          throw new Error("Please select your teacher name from the dropdown.");
+          throw new Error(language === 'hi' ? 'कृपया सूची से अपना शिक्षक नाम चुनें।' : "Please select your teacher profile from the dropdown.");
         }
         await teacherSignIn(email.trim(), selectedTeacherId, password);
       } else {
         await signIn(email.trim(), password);
       }
-      
-      // Auto 1-time clean refresh on login into dashboard
+
       if (typeof window !== 'undefined') {
         window.location.href = '/dashboard';
       }
     } catch (err) {
       console.warn('Sign In attempt error:', err.message);
-      // Friendly readable error messages
       if (err.message?.includes('user-not-found') || err.message?.includes('invalid-credential')) {
-        setError('Invalid email or password. Please verify your credentials.');
+        setError(language === 'hi' ? 'अमान्य ईमेल या पासवर्ड। कृपया विवरण जांचें।' : 'Invalid email or password. Please verify your credentials.');
       } else if (err.message?.includes('wrong-password')) {
-        setError('Incorrect password. Please try again or use Forgot Password.');
-      } else if (err.message?.includes('invalid-email')) {
-        setError('Please enter a valid email address.');
+        setError(language === 'hi' ? 'गलत पासवर्ड दर्ज किया गया है।' : 'Incorrect password. Please try again.');
       } else {
-        setError(err.message || 'Failed to sign in. Please try again.');
+        setError(err.message || 'Failed to sign in. Please verify your details.');
       }
     } finally {
       setLoading(false);
@@ -83,356 +111,846 @@ export default function SignInView() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 bg-gradient-to-br from-[#1f108e] via-[#150b69] to-[#0b043b] text-[#0b1c30] font-sans antialiased">
-      
-      {/* ── Main Split-Screen Container ── */}
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden shadow-2xl bg-white border border-white/20">
-        
-        {/* ── Left Side: Academic Branding Hero (Desktop) ── */}
-        <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-[#1f108e] to-[#0f0069] p-8 lg:p-12 text-white flex-col justify-between relative overflow-hidden">
-          
-          {/* Subtle decorative background circles */}
-          <div className="absolute -right-16 -top-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-[#316bf3]/20 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen w-full relative flex flex-col justify-between font-sans antialiased text-[#0f172a] bg-[#f8fafc] selection:bg-[#0c2340] selection:text-white">
 
-          {/* Top Brand Logo */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center shadow-lg">
-              <School className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-black tracking-tight text-white">{settings.instituteName || 'Smart School'}</h2>
-              <p className="text-xs text-white/75 font-medium">SaaS Management Platform</p>
-            </div>
+      {/* 🔹 Top Navigation Bar with Language Switcher 🔹 */}
+      <header className="sticky top-0 z-30 w-full px-6 py-3.5 md:px-12 flex items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 p-1 flex items-center justify-center flex-shrink-0 shadow-2xs overflow-hidden">
+            <img
+              src={logoSrc}
+              alt={schoolName}
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = '/logo.png';
+              }}
+            />
           </div>
-
-          {/* Middle Content Banner */}
-          <div className="relative z-10 my-8 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-semibold text-white/90">
-              <Sparkles className="w-3.5 h-3.5 text-[#ffb694]" />
-              <span>Next-Gen Institution OS</span>
-            </div>
-            <h1 className="text-2xl lg:text-3xl font-extrabold leading-tight tracking-tight text-white">
-              Empowering Educational Excellence
+          <div>
+            <h1 className="text-base sm:text-lg font-black tracking-tight text-[#0c2340]">
+              {t.schoolName}
             </h1>
-            <p className="text-xs lg:text-sm text-white/80 leading-relaxed">
-              Complete student administration, automated recurring fees, real-time attendance, exam marksheets, and faculty portals.
+            <p className="text-[11px] text-[#64748b] font-medium tracking-wide">
+              {t.sessionBadge}
             </p>
-
-            {/* Quick Feature Checklist */}
-            <div className="pt-2 space-y-2 text-xs text-white/90 font-medium">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>Single School Email Login with Faculty Dropdown</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>Auto-Rolled Monthly Dues & Instant Print Receipts</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>Dedicated Class Teacher Attendance & Results Desk</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Footer Notice */}
-          <div className="relative z-10 pt-4 border-t border-white/15 flex items-center justify-between text-[11px] text-white/70">
-            <span>© 2026 {settings.instituteName || 'Smart School SaaS'}</span>
-            <span className="font-mono">v2.5.0</span>
           </div>
         </div>
 
-        {/* ── Right Side: Modern Glass Form Panel ── */}
-        <div className="col-span-1 lg:col-span-7 bg-[#f8f9ff] p-5 sm:p-8 lg:p-12 flex flex-col justify-center">
-          
-          <div className="max-w-md w-full mx-auto space-y-5">
-            
-            {/* Mobile-Only Header Brand Logo */}
-            <div className="flex lg:hidden items-center gap-3 pb-2 border-b border-[#c8c4d5]/40">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1f108e] to-[#0f0069] flex items-center justify-center text-white shadow-sm flex-shrink-0">
-                <School className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="font-black text-sm text-[#1f108e] leading-tight">{settings.instituteName || 'Smart School'}</h2>
-                <p className="text-[10px] text-slate-500 font-medium">SaaS Management Platform</p>
-              </div>
-            </div>
+        {/* Top Action Buttons & Language Switcher */}
+        <div className="flex items-center gap-2.5">
+          <nav className="hidden lg:flex items-center gap-5 mr-2 text-xs font-bold text-[#475569]">
+            <a href="#about" className="hover:text-[#0c2340] transition-colors">{t.aboutSchool}</a>
+            <a href="#leadership" className="hover:text-[#0c2340] transition-colors">{t.leadership}</a>
+            <a href="#facilities" className="hover:text-[#0c2340] transition-colors">{t.facilities}</a>
+            <a href="#contact" className="hover:text-[#0c2340] transition-colors">{t.helpAndContact}</a>
+          </nav>
 
-            {/* Header Title */}
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-[#0b1c30] tracking-tight">Sign In to Your Portal</h2>
-              <p className="text-xs text-[#464553] mt-1">
-                {role === 'principal'
-                  ? 'Enter principal credentials to access full administrative controls.'
-                  : role === 'teacher'
-                  ? 'Enter School Email and select your Teacher name to login.'
-                  : 'Enter School Email/Code, Student Admission No & Mobile to access Parent Portal.'}
+          {/* Language Switcher */}
+          <button
+            type="button"
+            onClick={toggleLanguage}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-[#0c2340] transition-all cursor-pointer shadow-2xs"
+            title="Toggle English / हिन्दी"
+          >
+            <Globe className="w-3.5 h-3.5 text-blue-600" />
+            <span>{t.langLabel}</span>
+          </button>
+
+          {/* Admission Form Link */}
+          <button
+            type="button"
+            onClick={() => navigate('/signup')}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            <span>{t.admissionEnquiry}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openPortalLogin('parent')}
+            className="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-[#0c2340] bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-all cursor-pointer"
+          >
+            <Users className="w-3.5 h-3.5 text-[#0c2340]" />
+            <span>{t.parentLogin}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openPortalLogin('principal')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#0c2340] hover:bg-[#153459] shadow-sm hover:shadow transition-all cursor-pointer"
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-300" />
+            <span>{t.portalLogin}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* 🔹 Main Content Area 🔹 */}
+      <main className="flex-1 w-full">
+        {!isLoginModalOpen ? (
+          /* ========================================================== */
+          /*  STAGE 1: CLEAN LIGHT LANDING & SCHOOL SHOWCASE            */
+          /* ========================================================== */
+          <div className="w-full space-y-16 py-8 md:py-12 animate-in fade-in duration-300">
+
+            {/* 1. Hero Showcase Section */}
+            <section id="about" className="max-w-6xl mx-auto px-6 text-center space-y-6 scroll-mt-24">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-xs font-bold text-[#0c2340] shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>{t.qualityEduBadge}</span>
+              </div>
+
+              <h2 className="text-3xl sm:text-5xl font-black text-[#0c2340] tracking-tight leading-[1.2] max-w-4xl mx-auto">
+                {t.heroTitle}
+              </h2>
+
+              <p className="text-sm sm:text-base text-[#475569] max-w-2xl mx-auto leading-relaxed">
+                {t.heroSubtitle}
               </p>
-            </div>
 
-            {/* Role Toggle Selector (3 Tabs) */}
-            <div className="grid grid-cols-3 p-1 bg-[#dce9ff] rounded-2xl gap-1">
-              <button
-                type="button"
-                onClick={() => { setRole('principal'); setError(''); }}
-                className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  role === 'principal'
-                    ? 'bg-white text-[#1f108e] shadow-sm'
-                    : 'text-[#464553] hover:text-[#0b1c30]'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Principal</span>
-              </button>
+              {/* Action Buttons in Hero */}
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-3.5">
+                <button
+                  type="button"
+                  onClick={() => openPortalLogin('parent')}
+                  className="px-6 py-3.5 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <Users className="w-4 h-4 text-amber-300" />
+                  <span>{t.parentPortalBtn}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => { setRole('teacher'); setError(''); }}
-                className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  role === 'teacher'
-                    ? 'bg-white text-[#1f108e] shadow-sm'
-                    : 'text-[#464553] hover:text-[#0b1c30]'
-                }`}
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Teacher</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setRole('parent'); setError(''); }}
-                className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  role === 'parent'
-                    ? 'bg-white text-[#1f108e] shadow-sm'
-                    : 'text-[#464553] hover:text-[#0b1c30]'
-                }`}
-              >
-                <GraduationCap className="w-3.5 h-3.5" />
-                <span>Parent</span>
-              </button>
-            </div>
-
-
-            {/* Error Message Box */}
-            {error && (
-              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-3 animate-in fade-in duration-200">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
-                <span className="font-medium">{error}</span>
-              </div>
-            )}
-
-            {/* Sign In Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              
-              {/* PARENT MODE FORM FIELDS */}
-              {role === 'parent' ? (
-                <div className="space-y-3.5 animate-in fade-in duration-200">
-                  <div>
-                    <label className="block text-xs font-bold text-[#0b1c30] mb-1">
-                      School Email or Code (Optional)
-                    </label>
-                    <div className="relative">
-                      <School className="w-4 h-4 text-[#777584] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={parentSchoolIdentifier}
-                        onChange={(e) => setParentSchoolIdentifier(e.target.value)}
-                        placeholder="e.g. mnpschooledu@gmail.com or SCHOOL_007 (leave empty for default)"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-[#c8c4d5] text-xs font-medium text-[#0b1c30] placeholder-[#777584] focus:outline-none focus:ring-2 focus:ring-[#1f108e]/30 focus:border-[#1f108e] transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#0b1c30] mb-1">
-                      Child's Admission Number or Roll No *
-                    </label>
-                    <div className="relative">
-                      <GraduationCap className="w-4 h-4 text-[#777584] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        required
-                        value={parentAdmissionNo}
-                        onChange={(e) => setParentAdmissionNo(e.target.value)}
-                        placeholder="e.g. ADM-2026-001 or 1"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-[#c8c4d5] text-xs font-medium text-[#0b1c30] placeholder-[#777584] focus:outline-none focus:ring-2 focus:ring-[#1f108e]/30 focus:border-[#1f108e] transition-all font-mono"
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      Find on school fee receipt, student ID card or report card.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#0b1c30] mb-1">
-                      Registered Mobile Number *
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-[#777584] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="tel"
-                        required
-                        maxLength={10}
-                        value={parentMobile}
-                        onChange={(e) => setParentMobile(e.target.value.replace(/[^0-9]/g, ''))}
-                        placeholder="e.g. 9876543210 (10 digits)"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-[#c8c4d5] text-xs font-medium text-[#0b1c30] placeholder-[#777584] focus:outline-none focus:ring-2 focus:ring-[#1f108e]/30 focus:border-[#1f108e] transition-all font-mono"
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      The contact phone registered at the time of student admission.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                /* PRINCIPAL & TEACHER MODE FORM FIELDS */
-                <>
-                  {/* 1. Main School Email Input */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#0b1c30] mb-1.5">
-                      {role === 'teacher' ? "School's Main Email Address" : "Principal / Admin Email"}
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-[#777584] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="admin@example.com"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-[#c8c4d5] text-xs font-medium text-[#0b1c30] placeholder-[#777584] focus:outline-none focus:ring-2 focus:ring-[#1f108e]/30 focus:border-[#1f108e] transition-all"
-                      />
-                    </div>
-                    {role === 'teacher' && (
-                      <p className="text-[10px] text-slate-500 mt-1">
-                        Enter the school email registered by your Principal.
-                      </p>
-                    )}
-                  </div>
-
-                  {/* 2. Teacher Dropdown (Only visible in Teacher mode) */}
-                  {role === 'teacher' && (
-                    <div className="animate-in fade-in duration-200">
-                      <label className="block text-xs font-bold text-[#0b1c30] mb-1.5">
-                        Select Your Teacher Name *
-                      </label>
-                      <div className="relative">
-                        <User className="w-4 h-4 text-[#777584] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                        <select
-                          required
-                          value={selectedTeacherId}
-                          onChange={(e) => setSelectedTeacherId(e.target.value)}
-                          className="w-full pl-10 pr-10 py-3 rounded-xl bg-white border border-[#c8c4d5] text-xs font-semibold text-[#0b1c30] focus:outline-none focus:ring-2 focus:ring-[#1f108e]/30 focus:border-[#1f108e] transition-all appearance-none cursor-pointer"
-                        >
-                          <option value="">-- Choose Your Teacher Profile --</option>
-                          {teachers.map(t => (
-                            <option key={t.authUid || t.id} value={t.authUid || t.id}>
-                              {t.name} (Class {t.assignedClass} - Sec {t.assignedSection || 'A'})
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-[#777584] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                      {teachers.length === 0 && (
-                        <p className="text-[10px] text-amber-600 font-medium mt-1">
-                          No teachers found. Please ask Principal to add faculty profiles in Faculty Management.
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 3. Password Input with Show/Hide */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-xs font-bold text-[#0b1c30]">
-                        {role === 'teacher' ? "Teacher Password" : "Password"}
-                      </label>
-                      {role === 'principal' && (
-                        <button
-                          type="button"
-                          onClick={() => navigate('/forgot-password')}
-                          className="text-[11px] font-bold text-[#0051d5] hover:underline cursor-pointer"
-                        >
-                          Forgot Password?
-                        </button>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 text-[#777584] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder={role === 'teacher' ? "Enter your teacher password (default: 123456)" : "Enter your secret password"}
-                        className="w-full pl-10 pr-10 py-3 rounded-xl bg-white border border-[#c8c4d5] text-xs font-medium text-[#0b1c30] placeholder-[#777584] focus:outline-none focus:ring-2 focus:ring-[#1f108e]/30 focus:border-[#1f108e] transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(p => !p)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#777584] hover:text-[#0b1c30] cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4 text-primary" />}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Remember Me Checkbox */}
-              <div className="flex items-center justify-between pt-1">
-                <label className="flex items-center gap-2 text-xs font-semibold text-[#464553] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#1f108e] focus:ring-[#1f108e] border-[#c8c4d5] cursor-pointer"
-                  />
-                  <span>Remember my session</span>
-                </label>
-              </div>
-
-              {/* Submit CTA Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-6 rounded-xl bg-[#1f108e] hover:bg-[#0f0069] text-white font-bold text-xs shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group mt-2"
-              >
-                {loading ? (
-                  <span>Authenticating...</span>
-                ) : (
-                  <>
-                    <span>
-                      {role === 'principal'
-                        ? 'Sign In to Admin Dashboard'
-                        : role === 'teacher'
-                        ? 'Sign In to Teacher Portal'
-                        : 'Sign In to Parent Portal'}
-                    </span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Bottom Create Account Link */}
-            <div className="text-center pt-4 border-t border-[#c8c4d5]/50">
-              <p className="text-xs text-[#464553]">
-                Don't have an institution account?{' '}
                 <button
                   type="button"
                   onClick={() => navigate('/signup')}
-                  className="font-bold text-[#0051d5] hover:underline cursor-pointer ml-1"
+                  className="px-5 py-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-300 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
                 >
-                  Create Account / Register
+                  <FileText className="w-4 h-4 text-amber-700" />
+                  <span>{t.admissionDeskBtn}</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/signup')}
+                  className="px-5 py-3.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold text-xs border border-indigo-200 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <Briefcase className="w-4 h-4 text-indigo-700" />
+                  <span>{t.teacherApplicationBtn}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => openPortalLogin('teacher')}
+                  className="px-5 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-[#0c2340] font-bold text-xs border border-slate-300 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <GraduationCap className="w-4 h-4 text-[#0c2340]" />
+                  <span>{t.teacherDeskBtn}</span>
+                </button>
+              </div>
+
+              {/* Fast Facts Badge Bar */}
+              <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto">
+                <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-left">
+                  <div className="text-lg font-black text-[#0c2340]">{t.dailyRollTitle}</div>
+                  <div className="text-[11px] font-medium text-[#64748b] mt-0.5">{t.dailyRollDesc}</div>
+                </div>
+                <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-left">
+                  <div className="text-lg font-black text-[#0c2340]">{t.feeCounterTitle}</div>
+                  <div className="text-[11px] font-medium text-[#64748b] mt-0.5">{t.feeCounterDesc}</div>
+                </div>
+                <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-left">
+                  <div className="text-lg font-black text-[#0c2340]">{t.reportCardsTitle}</div>
+                  <div className="text-[11px] font-medium text-[#64748b] mt-0.5">{t.reportCardsDesc}</div>
+                </div>
+                <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-left">
+                  <div className="text-lg font-black text-[#0c2340]">{t.smartCampusTitle}</div>
+                  <div className="text-[11px] font-medium text-[#64748b] mt-0.5">{t.smartCampusDesc}</div>
+                </div>
+              </div>
+            </section>
+
+            {/* 2. School Leadership Section */}
+            <section id="leadership" className="max-w-6xl mx-auto px-6 scroll-mt-24">
+              <div className="text-center space-y-2 mb-8">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0c2340] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                  {t.leadershipBadge}
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-[#0c2340] tracking-tight">
+                  {t.leadershipHeading}
+                </h3>
+                <p className="text-xs sm:text-sm text-[#64748b] max-w-xl mx-auto">
+                  {t.leadershipSubheading}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Chairman */}
+                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shadow-2xs">
+                      <Quote className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#0c2340]">{t.chairmanVision}</h4>
+                      <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mt-0.5">
+                        {t.chairmanSubtitle}
+                      </p>
+                    </div>
+                    <p className="text-xs text-[#475569] leading-relaxed italic">
+                      {t.chairmanQuote}
+                    </p>
+                  </div>
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
+                    <Building className="w-4 h-4 text-amber-600" />
+                    <span>{t.chairmanOffice}</span>
+                  </div>
+                </div>
+
+                {/* Director */}
+                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shadow-2xs">
+                      <Compass className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#0c2340]">{t.directorMessage}</h4>
+                      <p className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider mt-0.5">
+                        {t.directorSubtitle}
+                      </p>
+                    </div>
+                    <p className="text-xs text-[#475569] leading-relaxed italic">
+                      {t.directorQuote}
+                    </p>
+                  </div>
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
+                    <Shield className="w-4 h-4 text-blue-600" />
+                    <span>{t.directorOffice}</span>
+                  </div>
+                </div>
+
+                {/* Principal */}
+                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-2xs">
+                      <GraduationCap className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#0c2340]">{t.principalTitle}</h4>
+                      <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider mt-0.5">
+                        {t.principalSubtitle}
+                      </p>
+                    </div>
+                    <p className="text-xs text-[#475569] leading-relaxed italic">
+                      {t.principalQuote}
+                    </p>
+                  </div>
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
+                    <School className="w-4 h-4 text-emerald-600" />
+                    <span>{t.principalOffice}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 3. Campus Facilities */}
+            <section id="facilities" className="max-w-6xl mx-auto px-6 scroll-mt-24">
+              <div className="text-center space-y-2 mb-8">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0c2340] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                  {t.facilitiesBadge}
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-[#0c2340] tracking-tight">
+                  {t.facilitiesHeading}
+                </h3>
+                <p className="text-xs sm:text-sm text-[#64748b] max-w-xl mx-auto">
+                  {t.facilitiesSubheading}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <h4 className="text-sm font-bold text-[#0c2340]">{t.libTitle}</h4>
+                  <p className="text-xs text-[#64748b] leading-relaxed">{t.libDesc}</p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                    <Monitor className="w-5 h-5" />
+                  </div>
+                  <h4 className="text-sm font-bold text-[#0c2340]">{t.techTitle}</h4>
+                  <p className="text-xs text-[#64748b] leading-relaxed">{t.techDesc}</p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <h4 className="text-sm font-bold text-[#0c2340]">{t.sportsTitle}</h4>
+                  <p className="text-xs text-[#64748b] leading-relaxed">{t.sportsDesc}</p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <h4 className="text-sm font-bold text-[#0c2340]">{t.parentDeskTitle}</h4>
+                  <p className="text-xs text-[#64748b] leading-relaxed">{t.parentDeskDesc}</p>
+                </div>
+              </div>
+            </section>
+
+            {/* 4. Contact & Help Desk */}
+            <section id="contact" className="max-w-6xl mx-auto px-6 scroll-mt-24">
+              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-10 space-y-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                  <div>
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0c2340] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                      {t.contactBadge}
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-[#0c2340] tracking-tight mt-2">
+                      {t.contactHeading}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[#64748b]">
+                      {t.contactSubheading}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={`tel:${phone}`}
+                      className="px-4 py-2.5 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white text-xs font-bold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>{t.callOfficeBtn}: +91 {phone}</span>
+                    </a>
+                    <a
+                      href={`mailto:${officialEmail}`}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0c2340] text-xs font-bold transition-all border border-slate-300 inline-flex items-center gap-2 cursor-pointer"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>{t.emailOfficeBtn}</span>
+                    </a>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* Address */}
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <h4 className="text-sm font-bold text-[#0c2340]">{t.campusLocTitle}</h4>
+                    <p className="text-xs text-[#64748b] leading-relaxed">
+                      <strong>{schoolName}</strong><br />
+                      {campusAddress}<br />
+                      Dist. &amp; State, India
+                    </p>
+                  </div>
+
+                  {/* Phone Helpline */}
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <h4 className="text-sm font-bold text-[#0c2340]">{t.helplineTitle}</h4>
+                    <p className="text-xs text-[#64748b] leading-relaxed">
+                      Main Desk: +91 {phone}<br />
+                      WhatsApp: +91 {phone}<br />
+                      School Working Days
+                    </p>
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <h4 className="text-sm font-bold text-[#0c2340]">{t.emailTitle}</h4>
+                    <p className="text-xs text-[#64748b] leading-relaxed">
+                      {officialEmail}<br />
+                      Admissions &amp; Queries
+                    </p>
+                  </div>
+
+                  {/* Office Hours */}
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <h4 className="text-sm font-bold text-[#0c2340]">{t.visitingHoursTitle}</h4>
+                    <p className="text-xs text-[#64748b] leading-relaxed whitespace-pre-line">
+                      {t.visitingHoursDesc}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 5. Bottom Access Banner */}
+            <section className="max-w-6xl mx-auto px-6">
+              <div className="rounded-3xl bg-gradient-to-r from-[#0c2340] to-[#153459] text-white p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md">
+                <div className="space-y-1 text-center sm:text-left">
+                  <h4 className="text-xl font-bold">
+                    {language === 'hi' ? 'डिजिटल परिसर में आपका स्वागत है' : 'Ready to access your digital campus?'}
+                  </h4>
+                  <p className="text-xs text-slate-300">
+                    {language === 'hi'
+                      ? 'अभिभावक, शिक्षक और प्रशासन अपने संबंधित पोर्टल में लॉगिन कर सकते हैं।'
+                      : 'Parents, teachers, and administration can log in to view records, fee status, and attendance.'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/signup')}
+                    className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all flex items-center gap-2 cursor-pointer flex-shrink-0"
+                  >
+                    <span>{t.admissionEnquiry}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('parent')}
+                    className="px-6 py-3 rounded-xl bg-white text-[#0c2340] font-black text-xs hover:bg-slate-100 transition-all flex items-center gap-2 cursor-pointer shadow-sm flex-shrink-0"
+                  >
+                    <span>{t.portalLogin}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </section>
+
+          </div>
+        ) : (
+          /* ========================================================== */
+          /*  STAGE 2: AUTHENTICATION MODAL (CLEAN LIGHT THEME)         */
+          /* ========================================================== */
+          <div className="w-full max-w-lg mx-auto py-10 px-4 animate-in zoom-in-95 duration-200">
+            <div className="rounded-3xl bg-white border border-slate-200 shadow-xl p-6 sm:p-8 relative">
+
+              {/* Back to Campus Landing Button */}
+              <button
+                type="button"
+                onClick={() => setIsLoginModalOpen(false)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-[#0c2340] transition-all cursor-pointer mb-5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>&larr; {t.backToHome}</span>
+              </button>
+
+              {/* School Header in Modal */}
+              <div className="text-center space-y-1.5 mb-6">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-50 border border-slate-200 p-1.5 shadow-2xs flex items-center justify-center overflow-hidden">
+                  <img
+                    src={logoSrc}
+                    alt={schoolName}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/logo.png';
+                    }}
+                  />
+                </div>
+                <h2 className="text-xl font-black text-[#0c2340] tracking-tight">
+                  {t.modalTitle}
+                </h2>
+                <p className="text-xs text-[#64748b] font-medium">
+                  {t.modalSubtitle}
+                </p>
+              </div>
+
+              {/* Role Switcher Tabs */}
+              <div className="grid grid-cols-3 p-1 rounded-2xl bg-slate-100 border border-slate-200 mb-6">
+                <button
+                  type="button"
+                  onClick={() => { setRole('parent'); setError(''); }}
+                  className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    role === 'parent'
+                      ? 'bg-white text-[#0c2340] shadow-sm'
+                      : 'text-[#64748b] hover:text-[#0c2340]'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5 text-amber-600" />
+                  <span>{t.parentRole}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setRole('teacher'); setError(''); }}
+                  className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    role === 'teacher'
+                      ? 'bg-white text-[#0c2340] shadow-sm'
+                      : 'text-[#64748b] hover:text-[#0c2340]'
+                  }`}
+                >
+                  <GraduationCap className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{t.teacherRole}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setRole('principal'); setError(''); }}
+                  className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    role === 'principal'
+                      ? 'bg-white text-[#0c2340] shadow-sm'
+                      : 'text-[#64748b] hover:text-[#0c2340]'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{t.principalRole}</span>
+                </button>
+              </div>
+
+              {/* Error Alert Box */}
+              {error && (
+                <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-rose-700 text-xs animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <span className="leading-relaxed font-semibold">{error}</span>
+                </div>
+              )}
+
+              {/* Dynamic Authentication Form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {role === 'parent' ? (
+                  /* PARENT LOGIN FIELDS */
+                  <div className="space-y-4 animate-in fade-in">
+                    <div>
+                      <label className="block text-xs font-bold text-[#0c2340] mb-1.5">
+                        {t.admissionNoLabel}
+                      </label>
+                      <div className="relative">
+                        <Hash className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          required
+                          value={parentAdmissionNo}
+                          onChange={(e) => setParentAdmissionNo(e.target.value)}
+                          placeholder={t.admissionNoPlaceholder}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#0c2340] mb-1.5">
+                        {t.parentMobileLabel}
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="tel"
+                          required
+                          value={parentMobile}
+                          onChange={(e) => setParentMobile(e.target.value)}
+                          placeholder={t.parentMobilePlaceholder}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all"
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        {t.parentMobileHelp}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  /* PRINCIPAL & TEACHER LOGIN FIELDS */
+                  <div className="space-y-4 animate-in fade-in">
+                    <div>
+                      <label className="block text-xs font-bold text-[#0c2340] mb-1.5">
+                        {role === 'teacher' ? "School Email Address" : "Principal / Admin Email"}
+                      </label>
+                      <div className="relative">
+                        <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder={role === 'teacher' ? "teacher@school.com" : "admin@mnpschool.com"}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {role === 'teacher' && (
+                      <div>
+                        <label className="block text-xs font-bold text-[#0c2340] mb-1.5">
+                          Select Your Teacher Name *
+                        </label>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <select
+                            required
+                            value={selectedTeacherId}
+                            onChange={(e) => setSelectedTeacherId(e.target.value)}
+                            className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all appearance-none cursor-pointer"
+                          >
+                            <option value="">-- Choose Your Teacher Profile --</option>
+                            {teachers.map(t => (
+                              <option key={t.authUid || t.id} value={t.authUid || t.id}>
+                                {t.name} (Class {t.assignedClass} - Sec {t.assignedSection || 'A'})
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-[#0c2340]">
+                          {role === 'teacher' ? "Teacher Password" : "Password"}
+                        </label>
+                        {role === 'principal' && (
+                          <button
+                            type="button"
+                            onClick={() => navigate('/forgot-password')}
+                            className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                          >
+                            {t.forgotPasswordLink}
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder={role === 'teacher' ? "Enter your teacher password" : "Enter your secret password"}
+                          className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(p => !p)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4 text-slate-600" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Remember Me */}
+                <div className="flex items-center justify-between pt-1">
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#0c2340] focus:ring-[#0c2340] border-slate-300 cursor-pointer"
+                    />
+                    <span>{t.rememberSession}</span>
+                  </label>
+                </div>
+
+                {/* Submit Action Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 px-6 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group mt-4"
+                >
+                  {loading ? (
+                    <span>Verifying Credentials...</span>
+                  ) : (
+                    <>
+                      <span>
+                        {role === 'principal'
+                          ? (language === 'hi' ? 'प्रधानाचार्य डैशबोर्ड में लॉगिन करें' : 'Sign In to Admin Dashboard')
+                          : role === 'teacher'
+                          ? (language === 'hi' ? 'शिक्षक पोर्टल में लॉगिन करें' : 'Sign In to Teacher Portal')
+                          : (language === 'hi' ? 'अभिभावक पोर्टल में लॉगिन करें' : 'Sign In to Parent Portal')}
+                      </span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* In-Modal School Contact Help Desk */}
+              <div className="mt-6 pt-5 border-t border-slate-100 rounded-2xl bg-slate-50 p-3.5 text-xs text-slate-600 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-[#0c2340]">
+                    <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{t.needHelpLoggingIn}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-semibold">Campus Office</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  {role === 'parent' ? t.parentHelpText : "For password reset or credentials help, contact the Principal's office:"}
+                </p>
+                <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold text-[#0c2340]">
+                  <a href={`tel:${phone}`} className="flex items-center gap-1 text-emerald-700 hover:underline">
+                    <Phone className="w-3 h-3" />
+                    <span>+91 {phone}</span>
+                  </a>
+                  <a href={`mailto:${officialEmail}`} className="flex items-center gap-1 text-blue-700 hover:underline">
+                    <Mail className="w-3 h-3" />
+                    <span>{officialEmail}</span>
+                  </a>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* 🔹 Comprehensive Institutional Footer 🔹 */}
+      <footer className="w-full border-t border-slate-200/90 bg-white mt-12">
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            
+            {/* Column 1: School Identity */}
+            <div className="space-y-3.5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 p-1 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-[#0c2340] tracking-tight">{t.schoolName}</h4>
+                  <p className="text-[10px] text-slate-500 font-medium">{t.moraBazarCampus}</p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {t.footerMotto}
               </p>
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] font-bold text-[#0c2340]">
+                <span>{t.sessionActive}</span>
+              </div>
+            </div>
+
+            {/* Column 2: Quick Links */}
+            <div className="space-y-3">
+              <h5 className="text-xs font-black uppercase tracking-wider text-[#0c2340]">
+                {t.exploreCampus}
+              </h5>
+              <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                <li>
+                  <a href="#about" className="hover:text-[#0c2340] transition-colors">{t.aboutSchool}</a>
+                </li>
+                <li>
+                  <a href="#leadership" className="hover:text-[#0c2340] transition-colors">{t.leadership}</a>
+                </li>
+                <li>
+                  <a href="#facilities" className="hover:text-[#0c2340] transition-colors">{t.facilities}</a>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/signup')}
+                    className="hover:text-[#0c2340] transition-colors text-amber-700 font-bold cursor-pointer"
+                  >
+                    {t.admissionDeskBtn} &rarr;
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/signup')}
+                    className="hover:text-[#0c2340] transition-colors text-indigo-700 font-bold cursor-pointer"
+                  >
+                    {t.teacherApplicationBtn} &rarr;
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Portals & Access */}
+            <div className="space-y-3">
+              <h5 className="text-xs font-black uppercase tracking-wider text-[#0c2340]">
+                {t.digitalPortals}
+              </h5>
+              <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('parent')}
+                    className="hover:text-[#0c2340] transition-colors cursor-pointer"
+                  >
+                    {t.parentPortalBtn}
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('teacher')}
+                    className="hover:text-[#0c2340] transition-colors cursor-pointer"
+                  >
+                    {t.teacherDeskBtn}
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('principal')}
+                    className="hover:text-[#0c2340] transition-colors cursor-pointer"
+                  >
+                    {language === 'hi' ? 'प्रधानाचार्य प्रशासनिक प्रवेश' : 'Principal Administrative Access'}
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="hover:text-[#0c2340] transition-colors text-blue-600 cursor-pointer"
+                  >
+                    {t.forgotPasswordLink}
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Contact & Office */}
+            <div className="space-y-3">
+              <h5 className="text-xs font-black uppercase tracking-wider text-[#0c2340]">
+                {t.campusContact}
+              </h5>
+              <div className="space-y-2 text-xs text-slate-600">
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                  <span>{campusAddress}, District &amp; State, India</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <a href={`tel:${phone}`} className="hover:underline font-semibold text-[#0c2340]">
+                    +91 {phone}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                  <a href={`mailto:${officialEmail}`} className="hover:underline text-slate-600">
+                    {officialEmail}
+                  </a>
+                </div>
+                <div className="flex items-start gap-2 text-[11px] text-slate-500 pt-1">
+                  <Clock className="w-3 h-3 text-slate-400 flex-shrink-0 mt-0.5" />
+                  <span>{language === 'hi' ? 'कार्यालय: सोम - शनि: 8:00 AM - 2:00 PM' : 'Office: Mon - Sat: 8:00 AM - 2:00 PM'}</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Copyright & Campus Credit Bar */}
+          <div className="mt-10 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div>
+              &copy; {new Date().getFullYear()} <strong>{schoolName}</strong>. {t.allRightsReserved}
+            </div>
+            <div className="flex items-center gap-4 text-[11px]">
+              <span>{t.moraBazarCampus}</span>
+              <span>&bull;</span>
+              <span>{t.officialSystem}</span>
             </div>
           </div>
         </div>
+      </footer>
 
-      </div>
     </div>
   );
 }

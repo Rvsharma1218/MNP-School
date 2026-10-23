@@ -98,7 +98,7 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="font-bold text-sm text-[#1f108e] leading-snug truncate">{settings.instituteName || 'Smart School'}</div>
+              <div className="font-bold text-sm text-[#1f108e] leading-snug truncate">{settings.instituteName || 'Mission Navodaya Public School'}</div>
               <div className="mt-0.5 inline-flex items-center gap-1 px-2 py-0.2 rounded-md bg-[#dce9ff] text-[10px] font-bold text-[#0051d5]">
                 <span>Session {settings.currentSession || '2026-27'}</span>
               </div>
