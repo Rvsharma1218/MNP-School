@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -161,46 +162,106 @@ class FirestoreService {
 
   Stream<List<Map<String, dynamic>>>? watchAdmissionEnquiries() {
     if (!_enabled || _db == null) return null;
-    return _db!
-        .collection('schoolDirectory')
-        .doc(_schoolId)
-        .collection('admissionEnquiries')
-        .snapshots()
-        .map((snap) {
-      final list = snap.docs.map((d) {
-        final data = Map<String, dynamic>.from(d.data());
-        data['refNo'] = d.id;
-        return data;
-      }).toList();
+    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
+    final Map<String, Map<String, dynamic>> combined = {};
+
+    void emitMerged() {
+      final list = combined.values.toList();
       list.sort((a, b) {
         final tA = a['submittedAt']?.toString() ?? '';
         final tB = b['submittedAt']?.toString() ?? '';
         return tB.compareTo(tA);
       });
-      return list;
-    });
+      if (!controller.isClosed) {
+        controller.add(list);
+      }
+    }
+
+    final targetSchools = <String>{_schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+    final subscriptions = <StreamSubscription>[];
+
+    for (final sId in targetSchools) {
+      if (sId.isEmpty) continue;
+      final sub = _db!
+          .collection('schoolDirectory')
+          .doc(sId)
+          .collection('admissionEnquiries')
+          .snapshots()
+          .listen(
+        (snap) {
+          for (final d in snap.docs) {
+            final data = Map<String, dynamic>.from(d.data());
+            data['refNo'] = d.id;
+            combined[d.id] = data;
+          }
+          emitMerged();
+        },
+        onError: (e) {
+          debugPrint('[Firestore] watchAdmissionEnquiries note: $e');
+        },
+      );
+      subscriptions.add(sub);
+    }
+
+    controller.onCancel = () {
+      for (final s in subscriptions) {
+        s.cancel();
+      }
+    };
+
+    return controller.stream;
   }
 
   Stream<List<Map<String, dynamic>>>? watchTeacherApplications() {
     if (!_enabled || _db == null) return null;
-    return _db!
-        .collection('schoolDirectory')
-        .doc(_schoolId)
-        .collection('teacherApplications')
-        .snapshots()
-        .map((snap) {
-      final list = snap.docs.map((d) {
-        final data = Map<String, dynamic>.from(d.data());
-        data['refNo'] = d.id;
-        return data;
-      }).toList();
+    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
+    final Map<String, Map<String, dynamic>> combined = {};
+
+    void emitMerged() {
+      final list = combined.values.toList();
       list.sort((a, b) {
         final tA = a['submittedAt']?.toString() ?? '';
         final tB = b['submittedAt']?.toString() ?? '';
         return tB.compareTo(tA);
       });
-      return list;
-    });
+      if (!controller.isClosed) {
+        controller.add(list);
+      }
+    }
+
+    final targetSchools = <String>{_schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+    final subscriptions = <StreamSubscription>[];
+
+    for (final sId in targetSchools) {
+      if (sId.isEmpty) continue;
+      final sub = _db!
+          .collection('schoolDirectory')
+          .doc(sId)
+          .collection('teacherApplications')
+          .snapshots()
+          .listen(
+        (snap) {
+          for (final d in snap.docs) {
+            final data = Map<String, dynamic>.from(d.data());
+            data['refNo'] = d.id;
+            combined[d.id] = data;
+          }
+          emitMerged();
+        },
+        onError: (e) {
+          debugPrint('[Firestore] watchTeacherApplications note: $e');
+        },
+      );
+      subscriptions.add(sub);
+    }
+
+    controller.onCancel = () {
+      for (final s in subscriptions) {
+        s.cancel();
+      }
+    };
+
+    return controller.stream;
   }
 
   Future<void> updateAdmissionEnquiryStatus(String refNo, String status) async {

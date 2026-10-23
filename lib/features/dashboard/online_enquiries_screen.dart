@@ -412,7 +412,10 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Colors.grey.shade200, width: 1.2),
       ),
-      child: Padding(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showStudentApplicationDetails(context, item),
+        child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -601,6 +604,7 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -715,8 +719,11 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Colors.grey.shade200, width: 1.2),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showTeacherApplicationDetails(context, item),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -897,6 +904,7 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -1006,4 +1014,432 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
       ),
     );
   }
+
+  // ─── Show Student Admission Application Form Modal ─────────────────────
+  void _showStudentApplicationDetails(BuildContext context, Map<String, dynamic> item) {
+    final refNo = item['refNo']?.toString() ?? '';
+    final studentName = item['studentName']?.toString() ?? 'N/A';
+    final admClass = item['admissionClass']?.toString() ?? '1st';
+    final medium = item['medium']?.toString() ?? 'English';
+    final gender = item['gender']?.toString() ?? 'Male';
+    final dob = item['dob']?.toString() ?? 'N/A';
+    final category = item['category']?.toString() ?? 'General';
+    final bloodGroup = item['bloodGroup']?.toString() ?? 'N/A';
+    final fatherName = item['fatherName']?.toString() ?? '';
+    final fatherOccupation = item['fatherOccupation']?.toString() ?? 'N/A';
+    final motherName = item['motherName']?.toString() ?? 'N/A';
+    final mobile = item['mobile']?.toString() ?? '';
+    final address = item['address']?.toString() ?? '';
+    final busRequired = item['transportRequired'] == 'Yes';
+    final previousSchool = item['previousSchool']?.toString() ?? 'First Admission';
+    final lastClassPassed = item['lastClassPassed']?.toString() ?? 'N/A';
+    final status = (item['status'] ?? 'pending').toString();
+    final submittedAt = item['submittedAt']?.toString() ?? '';
+
+    String dateStr = 'Recently';
+    if (submittedAt.isNotEmpty) {
+      try {
+        final dt = DateTime.parse(submittedAt);
+        dateStr = DateFormat('dd MMM yyyy, hh:mm a').format(dt);
+      } catch (_) {}
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.88,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 6),
+              width: 44,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+
+            // Top Header: Application Form Title
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 8, 16, 14),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.amberAccent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.description_rounded, color: AppColors.primary, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white24,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                refNo,
+                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: status == 'approved' || status == 'enrolled' ? Colors.greenAccent.withValues(alpha: 0.3) : Colors.amberAccent.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                status.toUpperCase(),
+                                style: TextStyle(
+                                  color: status == 'approved' || status == 'enrolled' ? Colors.greenAccent : Colors.amberAccent,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          'Student Admission Form / छात्र प्रवेश प्रपत्र',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        Text(
+                          'Applied on: $dateStr',
+                          style: const TextStyle(color: Colors.white70, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+
+            // Scrollable Official Form Details
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(18),
+                children: [
+                  // SECTION 1: STUDENT PARTICULARS
+                  _buildFormSectionHeader('Section 1: Student Information (छात्र का विवरण)', Icons.person_rounded),
+                  const SizedBox(height: 8),
+                  _buildFormDetailRow('Student Full Name', studentName, isBold: true),
+                  _buildFormDetailRow('Seeking Admission In', 'Class $admClass ($medium Medium)', isBold: true),
+                  _buildFormDetailRow('Date of Birth (DOB)', dob),
+                  _buildFormDetailRow('Gender / Category', '$gender · $category'),
+                  _buildFormDetailRow('Blood Group', bloodGroup),
+
+                  const SizedBox(height: 18),
+                  // SECTION 2: PARENTS PARTICULARS
+                  _buildFormSectionHeader('Section 2: Parent / Guardian Details (अभिभावक विवरण)', Icons.family_restroom_rounded),
+                  const SizedBox(height: 8),
+                  _buildFormDetailRow('Father\'s Name', fatherName, isBold: true),
+                  _buildFormDetailRow('Father\'s Occupation', fatherOccupation),
+                  _buildFormDetailRow('Mother\'s Name', motherName),
+                  _buildFormDetailRow('Contact Mobile', mobile, isMono: true),
+
+                  const SizedBox(height: 18),
+                  // SECTION 3: ADDRESS & TRANSPORT
+                  _buildFormSectionHeader('Section 3: Address & School Facilities (सुविधाएं)', Icons.location_on_rounded),
+                  const SizedBox(height: 8),
+                  _buildFormDetailRow('Residential Address', address.isNotEmpty ? address : 'Local Address'),
+                  _buildFormDetailRow(
+                    'School Bus Service',
+                    busRequired ? '✓ YES (School Bus Transport Required)' : '✕ NO (Self Conveyance)',
+                    highlightColor: busRequired ? Colors.orange.shade800 : null,
+                  ),
+                  _buildFormDetailRow('Previous School', previousSchool),
+                  _buildFormDetailRow('Last Class Passed', lastClassPassed),
+                ],
+              ),
+            ),
+
+            // Bottom Actions Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: Row(
+                children: [
+                  if (mobile.isNotEmpty) ...[
+                    IconButton.filledTonal(
+                      onPressed: () => _makePhoneCall(mobile),
+                      icon: const Icon(Icons.phone, size: 20, color: AppColors.primary),
+                      tooltip: 'Call Mobile',
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filledTonal(
+                      onPressed: () => _openWhatsAppChat(mobile, studentName, false, refNo),
+                      icon: const Icon(Icons.chat, size: 20, color: Color(0xFF25D366)),
+                      tooltip: 'WhatsApp',
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _enrollStudent(item);
+                      },
+                      icon: const Icon(Icons.how_to_reg_rounded, size: 18),
+                      label: const Text(
+                        'Enroll Student (नामांकन करें)',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Show Faculty Application Form Modal ──────────────────────────────
+  void _showTeacherApplicationDetails(BuildContext context, Map<String, dynamic> item) {
+    final refNo = item['refNo']?.toString() ?? '';
+    final teacherName = item['teacherName']?.toString() ?? 'N/A';
+    final subject = item['subjectSpecialization']?.toString() ?? 'General';
+    final wing = item['preferredWing']?.toString() ?? 'All Wings';
+    final experience = item['experience']?.toString() ?? 'Fresher';
+    final degree = item['highestDegree']?.toString() ?? 'Graduate';
+    final university = item['university']?.toString() ?? '';
+    final passingYear = item['passingYear']?.toString() ?? '';
+    final tetStatus = item['tetStatus']?.toString() ?? 'Not Qualified';
+    final mobile = item['mobile']?.toString() ?? '';
+    final email = item['email']?.toString() ?? '';
+    final address = item['address']?.toString() ?? '';
+    final bio = item['teacherBio']?.toString() ?? '';
+    // status used
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 6),
+              width: 44,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 8, 16, 14),
+              decoration: const BoxDecoration(
+                color: Color(0xFF1E293B),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.indigoAccent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.school, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          refNo,
+                          style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: 'monospace'),
+                        ),
+                        Text(
+                          teacherName,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Text(
+                          'Candidate for: $subject ($wing)',
+                          style: const TextStyle(color: Colors.amberAccent, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(18),
+                children: [
+                  _buildFormSectionHeader('Candidate Profile & Qualifications', Icons.badge_rounded),
+                  const SizedBox(height: 8),
+                  _buildFormDetailRow('Full Name', teacherName, isBold: true),
+                  _buildFormDetailRow('Subject Specialization', subject, isBold: true),
+                  _buildFormDetailRow('Preferred Wing', wing),
+                  _buildFormDetailRow('Teaching Experience', experience),
+                  _buildFormDetailRow('Highest Degree', degree),
+                  if (university.isNotEmpty) _buildFormDetailRow('University / College', '$university ($passingYear)'),
+                  _buildFormDetailRow('TET / CTET Status', tetStatus, isBold: true),
+                  _buildFormDetailRow('Mobile Number', mobile, isMono: true),
+                  _buildFormDetailRow('Email Address', email),
+                  _buildFormDetailRow('Address', address),
+                  if (bio.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildFormSectionHeader('Candidate Bio & Teaching Philosophy', Icons.notes_rounded),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Text(bio, style: const TextStyle(fontSize: 12, height: 1.4)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: Row(
+                children: [
+                  if (mobile.isNotEmpty) ...[
+                    IconButton.filledTonal(
+                      onPressed: () => _makePhoneCall(mobile),
+                      icon: const Icon(Icons.phone, size: 20, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filledTonal(
+                      onPressed: () => _openWhatsAppChat(mobile, teacherName, true, refNo),
+                      icon: const Icon(Icons.chat, size: 20, color: Color(0xFF25D366)),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        FirestoreService.instance.updateTeacherApplicationStatus(refNo, 'approved');
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('✓ $teacherName added to faculty review!')),
+                        );
+                      },
+                      icon: const Icon(Icons.verified_rounded, size: 18),
+                      label: const Text('Approve Application'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.primary),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormDetailRow(String label, String value, {bool isBold = false, bool isMono = false, Color? highlightColor}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200, width: 0.8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value.isNotEmpty ? value : '—',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+                fontFamily: isMono ? 'monospace' : null,
+                color: highlightColor ?? (isBold ? Colors.black87 : Colors.grey.shade800),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
