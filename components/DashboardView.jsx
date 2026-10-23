@@ -48,11 +48,12 @@ export default function DashboardView() {
     setSelectedStudentId, setIsAddStudentOpen, currentUser, navigate,
     setFeeDetailStudent, setIsFeeDetailSelectorOpen, setWhatsAppReminderData,
     teacherPermissions, openSettings,
-    admissionEnquiries = [], teacherApplications = [], openEnquiriesModal, pendingEnquiriesTotal = 0
+    admissionEnquiries = [], teacherApplications = [], openEnquiriesModal
   } = useSchoolStore();
 
   const pendingAdmissionsCount = admissionEnquiries.filter(a => (a.status || 'pending') === 'pending').length;
   const pendingTeachersCount = teacherApplications.filter(t => (t.status || 'pending') === 'pending').length;
+  const pendingEnquiriesTotal = pendingAdmissionsCount + pendingTeachersCount;
 
   const isPrincipal = currentUser?.role === 'principal';
   const assignedClass = currentUser?.assignedClass || '10th';
