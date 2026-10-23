@@ -22,10 +22,18 @@ export default function SubscriptionView() {
   useEffect(() => {
     if (!db) return;
     try {
-      const unsub = onSnapshot(doc(db, 'schoolDirectory', 'support_info'), (snap) => {
-        if (snap.exists()) setSupportConfig(snap.data());
-      });
-      return () => unsub();
+      const unsub = onSnapshot(
+        doc(db, 'schoolDirectory', 'support_info'),
+        (snap) => {
+          if (snap.exists()) setSupportConfig(snap.data());
+        },
+        (err) => {
+          console.warn('Subscription support_info note:', err?.message);
+        }
+      );
+      return () => {
+        if (unsub) unsub();
+      };
     } catch (_) {}
   }, []);
 

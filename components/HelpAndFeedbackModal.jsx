@@ -112,19 +112,19 @@ export default function HelpAndFeedbackModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!db) return;
     try {
-      const unsubDir = onSnapshot(doc(db, 'schoolDirectory', 'support_info'), (snap) => {
-        if (snap.exists()) {
-          setSupportConfig(snap.data());
+      const unsubDir = onSnapshot(
+        doc(db, 'schoolDirectory', 'support_info'),
+        (snap) => {
+          if (snap.exists()) {
+            setSupportConfig(snap.data());
+          }
+        },
+        (err) => {
+          console.warn('Support info listener note:', err?.message);
         }
-      });
-      const unsubSys = onSnapshot(doc(db, 'system_config', 'support_info'), (snap) => {
-        if (snap.exists()) {
-          setSupportConfig(prev => prev || snap.data());
-        }
-      });
+      );
       return () => {
-        unsubDir();
-        unsubSys();
+        if (unsubDir) unsubDir();
       };
     } catch (e) {
       console.warn('Support info listener error:', e);

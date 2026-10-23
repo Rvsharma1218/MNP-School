@@ -53,20 +53,38 @@ export default function ParentComplaintsView() {
           console.warn('Realtime complaints snapshot fallback:', error);
           // If orderBy('createdAt') fails due to index or missing field, fallback to plain query
           const fallbackQ = collection(db, 'feedbacks');
-          unsubscribe = onSnapshot(fallbackQ, (snapshot) => {
-            const list = [];
-            snapshot.forEach((docSnap) => {
-              list.push({ docId: docSnap.id, id: docSnap.id, ...docSnap.data() });
-            });
-            // Sort client-side
-            list.sort((a, b) => {
-              const dateA = new Date(a.createdAt || a.date || 0);
-              const dateB = new Date(b.createdAt || b.date || 0);
-              return dateB - dateA;
-            });
-            setComplaints(list);
-            setLoading(false);
-          });
+          unsubscribe = onSnapshot(
+            fallbackQ,
+            (snapshot) => {
+              const list = [];
+              snapshot.forEach((docSnap) => {
+                list.push({ docId: docSnap.id, id: docSnap.id, ...docSnap.data() });
+              });
+              // Sort client-side
+              list.sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.date || 0);
+                const dateB = new Date(b.createdAt || b.date || 0);
+                return dateB - dateA;
+              });
+              setComplaints(list);
+              setLoading(false);
+            },
+            (fallbackErr) => {
+              console.warn('Complaints fallback note:', fallbackErr?.message);
+              // Read from schoolDirectory backup
+              getDocs(collection(db, 'schoolDirectory', 'system_feedbacks', 'items'))
+                .then((snap) => {
+                  const list = snap.docs.map(d => ({ docId: d.id, id: d.id, ...d.data() }));
+                  list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                  setComplaints(list);
+                  setLoading(false);
+                })
+                .catch(() => {
+                  setComplaints([]);
+                  setLoading(false);
+                });
+            }
+          );
         }
       );
     } catch (err) {
