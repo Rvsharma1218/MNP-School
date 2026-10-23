@@ -82,6 +82,11 @@ function AppContent() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleOpenAudioModal = () => setIsAudioModalOpen(true);
@@ -224,9 +229,10 @@ function AppContent() {
 
   // Security route guards
   useEffect(() => {
+    const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
+
     // 1. Force Sign In if unauthenticated
     if (!currentUser) {
-      const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
       if (!['/signin', '/signup', '/forgot-password'].includes(cleanPath)) {
         navigate('/signin');
       }
@@ -289,6 +295,15 @@ function AppContent() {
       navigate('/dashboard');
     }
   }, [currentUser, currentPath, teacherPermissions]);
+
+  // Prevent hydration mismatch between server SSR and client localStorage/session
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#0c2340] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // ── Render 1: Public full-screen auth routes
   const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
