@@ -36,6 +36,8 @@ export default function StudentsView() {
     whatsAppReminderData,
     setWhatsAppReminderData,
     teacherPermissions,
+    admissionEnquiries,
+    openEnquiriesModal,
     showToast
   } = useSchoolStore();
 
@@ -223,6 +225,21 @@ export default function StudentsView() {
             <Eye className="w-4 h-4" />
             <span>{showQuickView ? 'Hide Quick View' : 'Quick View'}</span>
           </button>
+          {isPrincipal && (
+            <button
+              onClick={() => openEnquiriesModal('admissions')}
+              className="px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              title="View online student admissions submitted from website"
+            >
+              <ClipboardList className="w-4 h-4 text-blue-600" />
+              <span>Online Enquiries</span>
+              {(admissionEnquiries || []).filter(e => !e.status || e.status === 'pending').length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black animate-pulse">
+                  {(admissionEnquiries || []).filter(e => !e.status || e.status === 'pending').length}
+                </span>
+              )}
+            </button>
+          )}
           {isPrincipal && (
             <button
               onClick={() => setIsPromoteModalOpen(true)}

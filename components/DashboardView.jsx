@@ -47,8 +47,12 @@ export default function DashboardView() {
     students, payments, attendance, results, settings, stats,
     setSelectedStudentId, setIsAddStudentOpen, currentUser, navigate,
     setFeeDetailStudent, setIsFeeDetailSelectorOpen, setWhatsAppReminderData,
-    teacherPermissions, openSettings
+    teacherPermissions, openSettings,
+    admissionEnquiries = [], teacherApplications = [], openEnquiriesModal, pendingEnquiriesTotal = 0
   } = useSchoolStore();
+
+  const pendingAdmissionsCount = admissionEnquiries.filter(a => (a.status || 'pending') === 'pending').length;
+  const pendingTeachersCount = teacherApplications.filter(t => (t.status || 'pending') === 'pending').length;
 
   const isPrincipal = currentUser?.role === 'principal';
   const assignedClass = currentUser?.assignedClass || '10th';
@@ -103,6 +107,20 @@ export default function DashboardView() {
         <div className="flex items-center gap-2">
           {isPrincipal && (
             <button
+              onClick={() => openEnquiriesModal && openEnquiriesModal('admissions')}
+              className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-white" />
+              <span>Online Enquiries</span>
+              {pendingEnquiriesTotal > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-white text-[#0c2340] text-[10px] font-black">
+                  {pendingEnquiriesTotal}
+                </span>
+              )}
+            </button>
+          )}
+          {isPrincipal && (
+            <button
               onClick={() => setIsAddStudentOpen(true)}
               className="px-3.5 py-2 bg-[#1f108e] hover:bg-[#0f0069] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
             >
@@ -124,7 +142,7 @@ export default function DashboardView() {
       {isPrincipal ? (
         <div className="space-y-3.5">
           {/* Top 5 Sleek Web KPI Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
             <CompactKpiCard
               icon={GraduationCap}
               iconBg="bg-blue-50"
@@ -179,6 +197,17 @@ export default function DashboardView() {
               badge={settings.campusLatitude ? 'GPS Active' : 'Setup'}
               badgeColor="bg-indigo-50 text-indigo-700 border border-indigo-200/80"
               onClick={() => openSettings('geofence')}
+            />
+            <CompactKpiCard
+              icon={Sparkles}
+              iconBg="bg-amber-50"
+              iconColor="text-amber-600"
+              label="Online Enquiries"
+              value={pendingEnquiriesTotal}
+              sub={`${pendingAdmissionsCount} Adm · ${pendingTeachersCount} Staff`}
+              badge={pendingEnquiriesTotal > 0 ? `${pendingEnquiriesTotal} New` : 'Live'}
+              badgeColor={pendingEnquiriesTotal > 0 ? "bg-amber-400 text-[#0c2340] border border-amber-300 font-black animate-pulse" : "bg-slate-100 text-slate-600 border border-slate-200"}
+              onClick={() => openEnquiriesModal && openEnquiriesModal('admissions')}
             />
           </div>
 

@@ -46,6 +46,7 @@ import UserManagementView from '../components/UserManagementView';
 import ProfileView from '../components/ProfileView';
 import ParentPortalView from '../components/ParentPortalView';
 import ParentComplaintsView from '../components/ParentComplaintsView';
+import OnlineEnquiriesModal from '../components/OnlineEnquiriesModal';
 
 function AppContent() {
   const {
@@ -71,6 +72,8 @@ function AppContent() {
     viewingNotice, setViewingNotice,
     isTeacherPermissionsModalOpen, setIsTeacherPermissionsModalOpen,
     isHelpFeedbackOpen, setIsHelpFeedbackOpen,
+    isEnquiriesModalOpen, setIsEnquiriesModalOpen,
+    enquiriesModalTab,
     securityConfig,
     showToast,
     logout
@@ -456,7 +459,14 @@ function AppContent() {
       )}
 
 
-      {/* Oral Voice Note & Viva Recording Modal */}
+            {/* Online Enquiries & Admissions Desk Modal */}
+      <OnlineEnquiriesModal
+        isOpen={isEnquiriesModalOpen}
+        onClose={() => setIsEnquiriesModalOpen(false)}
+        initialTab={enquiriesModalTab}
+      />
+
+{/* Oral Voice Note & Viva Recording Modal */}
       <AudioVoiceNoteModal
         isOpen={isAudioModalOpen}
         onClose={() => setIsAudioModalOpen(false)}

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSchoolStore } from '../lib/store';
 import { t } from '../lib/translations';
 import {
-  Menu, Search, Plus, Clock, Calendar, Bell, ChevronDown, User, Settings,
+  Menu, Search, ClipboardList, Plus, Clock, Calendar, Bell, ChevronDown, User, Settings,
   Key, LogOut, ShieldAlert, Wifi, WifiOff, RefreshCw, CheckCircle2,
   AlertCircle, ArrowLeft, HelpCircle, Languages, Sun, Moon, MessageSquare
 } from 'lucide-react';
@@ -30,7 +30,10 @@ export default function Header({ onMenuClick }) {
     showToast,
     setIsHelpFeedbackOpen,
     updateSettings,
-    teacherPermissions
+    teacherPermissions,
+    admissionEnquiries,
+    teacherApplications,
+    openEnquiriesModal
   } = useSchoolStore();
 
   const [mounted, setMounted] = useState(false);
@@ -204,6 +207,23 @@ export default function Header({ onMenuClick }) {
             <Clock className="w-4 h-4 text-primary" />
             <span>{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()}</span>
           </div>
+        )}
+
+        {/* Online Enquiries & Admissions Desk */}
+        {isPrincipal && (
+          <button
+            onClick={() => openEnquiriesModal('admissions')}
+            className="relative hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+            title="View online student admissions and teacher applications"
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span className="hidden lg:inline">Online Enquiries</span>
+            {((admissionEnquiries || []).filter(e => !e.status || e.status === 'pending').length + (teacherApplications || []).filter(a => !a.status || a.status === 'pending').length) > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black animate-pulse">
+                {(admissionEnquiries || []).filter(e => !e.status || e.status === 'pending').length + (teacherApplications || []).filter(a => !a.status || a.status === 'pending').length}
+              </span>
+            )}
+          </button>
         )}
 
         {/* Add Student */}

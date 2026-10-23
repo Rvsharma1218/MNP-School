@@ -56,6 +56,8 @@ export default function TeachersView() {
     setUserRole,
     currentTeacher,
     setCurrentTeacher,
+    teacherApplications,
+    openEnquiriesModal,
     showToast
   } = useSchoolStore();
 
@@ -471,6 +473,20 @@ export default function TeachersView() {
               </button>
             </>
           )}
+
+          <button
+            onClick={() => openEnquiriesModal('teachers')}
+            className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+            title="View teacher job applications submitted from website"
+          >
+            <Briefcase className="w-4 h-4 text-emerald-600" />
+            <span>Faculty Applications</span>
+            {(teacherApplications || []).filter(a => !a.status || a.status === 'pending').length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black animate-pulse">
+                {(teacherApplications || []).filter(a => !a.status || a.status === 'pending').length}
+              </span>
+            )}
+          </button>
 
           <button
             onClick={() => setIsPermsModalOpen(true)}

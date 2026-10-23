@@ -107,6 +107,7 @@ export default function SignUpView() {
     const generatedRef = `MNP-ADM-2026-${Date.now().toString().slice(-4)}`;
 
     try {
+      const targetSchoolId = settings?.schoolId || 'SCHOOL_001';
       const enquiryPayload = {
         refNo: generatedRef,
         studentName: studentName.trim(),
@@ -126,12 +127,24 @@ export default function SignUpView() {
         lastClassPassed: lastClassPassed.trim(),
         status: 'pending',
         type: 'student_admission_enquiry',
-        schoolId: settings?.schoolId || 'SCHOOL_007',
+        schoolId: targetSchoolId,
         submittedAt: new Date().toISOString()
       };
-      await setDoc(doc(db, 'admissionEnquiries', generatedRef), enquiryPayload);
+      // Primary: Save in schoolDirectory scoped subcollection (guaranteed public write permission)
+      await setDoc(doc(db, 'schoolDirectory', targetSchoolId, 'admissionEnquiries', generatedRef), enquiryPayload);
+      // Fallback: Also save under SCHOOL_007 for compatibility
+      if (targetSchoolId !== 'SCHOOL_007') {
+        try {
+          await setDoc(doc(db, 'schoolDirectory', 'SCHOOL_007', 'admissionEnquiries', generatedRef), enquiryPayload);
+        } catch (_) {}
+      }
+      // Top-level write attempt
+      try {
+        await setDoc(doc(db, 'admissionEnquiries', generatedRef), enquiryPayload);
+      } catch (_) {}
+      console.log('Admission enquiry successfully synced to cloud:', generatedRef);
     } catch (err) {
-      console.warn('Admission enquiry cloud sync notice:', err.message);
+      console.error('Admission enquiry cloud sync error:', err.message);
     } finally {
       setEnquiryRef(generatedRef);
       setSubmitted(true);
@@ -153,6 +166,7 @@ export default function SignUpView() {
     const generatedRef = `MNP-FAC-2026-${Date.now().toString().slice(-4)}`;
 
     try {
+      const targetSchoolId = settings?.schoolId || 'SCHOOL_001';
       const applicationPayload = {
         refNo: generatedRef,
         teacherName: teacherName.trim(),
@@ -171,12 +185,24 @@ export default function SignUpView() {
         teacherBio: teacherBio.trim(),
         status: 'pending',
         type: 'faculty_application',
-        schoolId: settings?.schoolId || 'SCHOOL_007',
+        schoolId: targetSchoolId,
         submittedAt: new Date().toISOString()
       };
-      await setDoc(doc(db, 'teacherApplications', generatedRef), applicationPayload);
+      // Primary: Save in schoolDirectory scoped subcollection (guaranteed public write permission)
+      await setDoc(doc(db, 'schoolDirectory', targetSchoolId, 'teacherApplications', generatedRef), applicationPayload);
+      // Fallback: Also save under SCHOOL_007 for compatibility
+      if (targetSchoolId !== 'SCHOOL_007') {
+        try {
+          await setDoc(doc(db, 'schoolDirectory', 'SCHOOL_007', 'teacherApplications', generatedRef), applicationPayload);
+        } catch (_) {}
+      }
+      // Top-level write attempt
+      try {
+        await setDoc(doc(db, 'teacherApplications', generatedRef), applicationPayload);
+      } catch (_) {}
+      console.log('Teacher application successfully synced to cloud:', generatedRef);
     } catch (err) {
-      console.warn('Teacher application cloud sync notice:', err.message);
+      console.error('Teacher application cloud sync error:', err.message);
     } finally {
       setEnquiryRef(generatedRef);
       setSubmitted(true);
