@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSchoolStore } from '../lib/store';
 import { translations } from '../lib/translations';
 import { db } from '../lib/firebase';
@@ -13,11 +13,27 @@ import {
 } from 'lucide-react';
 
 export default function SignUpView() {
-  const { navigate, settings, language = 'en', setLanguage, toggleLanguage } = useSchoolStore();
+  const { navigate, settings, language = 'en', setLanguage, toggleLanguage, signUpFormTab, setSignUpFormTab } = useSchoolStore();
   const t = translations[language] || translations.en;
 
   // Tab: 'student' | 'teacher'
-  const [activeFormTab, setActiveFormTab] = useState('student');
+  const [activeFormTab, setActiveFormTab] = useState(() => {
+    if (signUpFormTab) return signUpFormTab;
+    if (typeof window !== 'undefined') {
+      const search = window.location.search || '';
+      const hash = window.location.hash || '';
+      if (search.includes('teacher') || search.includes('faculty') || hash.includes('teacher') || hash.includes('faculty')) {
+        return 'teacher';
+      }
+    }
+    return 'student';
+  });
+
+  useEffect(() => {
+    if (signUpFormTab && (signUpFormTab === 'student' || signUpFormTab === 'teacher')) {
+      setActiveFormTab(signUpFormTab);
+    }
+  }, [signUpFormTab]);
 
   // ==========================================
   // Student Admission Form State
@@ -243,7 +259,7 @@ export default function SignUpView() {
             <div className="mt-6 flex flex-wrap gap-2.5">
               <button
                 type="button"
-                onClick={() => { setActiveFormTab('student'); setSubmitted(false); setError(''); }}
+                onClick={() => { setActiveFormTab('student'); if (setSignUpFormTab) setSignUpFormTab('student'); setSubmitted(false); setError(''); }}
                 className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
                   activeFormTab === 'student'
                     ? 'bg-amber-400 text-[#0c2340] shadow-sm'
@@ -256,7 +272,7 @@ export default function SignUpView() {
 
               <button
                 type="button"
-                onClick={() => { setActiveFormTab('teacher'); setSubmitted(false); setError(''); }}
+                onClick={() => { setActiveFormTab('teacher'); if (setSignUpFormTab) setSignUpFormTab('teacher'); setSubmitted(false); setError(''); }}
                 className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
                   activeFormTab === 'teacher'
                     ? 'bg-amber-400 text-[#0c2340] shadow-sm'

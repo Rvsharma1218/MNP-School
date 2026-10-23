@@ -223,14 +223,15 @@ function AppContent() {
   useEffect(() => {
     // 1. Force Sign In if unauthenticated
     if (!currentUser) {
-      if (!['/signin', '/signup', '/forgot-password'].includes(currentPath)) {
+      const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
+      if (!['/signin', '/signup', '/forgot-password'].includes(cleanPath)) {
         navigate('/signin');
       }
       return;
     }
 
     // 2. Redirect to Dashboard if logged in user visits signin/signup/forgot
-    if (['/signin', '/signup', '/forgot-password'].includes(currentPath)) {
+    if (['/signin', '/signup', '/forgot-password'].includes(cleanPath)) {
       navigate('/dashboard');
       return;
     }
@@ -287,13 +288,14 @@ function AppContent() {
   }, [currentUser, currentPath, teacherPermissions]);
 
   // ── Render 1: Public full-screen auth routes
-  const isPublicRoute = ['/signin', '/signup', '/forgot-password'].includes(currentPath);
+  const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
+  const isPublicRoute = ['/signin', '/signup', '/forgot-password'].includes(cleanPath);
   if (!currentUser && isPublicRoute) {
     return (
       <>
-        {currentPath === '/signin' && <SignInView />}
-        {currentPath === '/signup' && <SignUpView />}
-        {currentPath === '/forgot-password' && <ForgotPasswordView />}
+        {cleanPath === '/signin' && <SignInView />}
+        {cleanPath === '/signup' && <SignUpView />}
+        {cleanPath === '/forgot-password' && <ForgotPasswordView />}
       </>
     );
   }

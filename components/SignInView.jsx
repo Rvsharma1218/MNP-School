@@ -23,7 +23,8 @@ export default function SignInView() {
     currentUser,
     navigate,
     language = 'en',
-    toggleLanguage
+    toggleLanguage,
+    setSignUpFormTab
   } = useSchoolStore();
 
   const t = translations[language] || translations.en;
@@ -212,24 +213,34 @@ export default function SignInView() {
 
               {/* Action Buttons in Hero */}
               <div className="pt-2 flex flex-wrap items-center justify-center gap-3.5">
-                <button
-                  type="button"
-                  onClick={() => navigate('/signup')}
+                <a
+                  id="admission-desk-hero-btn"
+                  href="/signup?tab=admission"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (setSignUpFormTab) setSignUpFormTab('student');
+                    navigate('/signup?tab=admission');
+                  }}
                   className="px-6 py-3.5 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2.5 cursor-pointer"
                 >
                   <FileText className="w-4 h-4 text-amber-300" />
                   <span>{t.admissionDeskBtn}</span>
                   <ArrowRight className="w-4 h-4" />
-                </button>
+                </a>
 
-                <button
-                  type="button"
-                  onClick={() => navigate('/signup')}
+                <a
+                  id="faculty-recruitment-hero-btn"
+                  href="/signup?tab=faculty"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (setSignUpFormTab) setSignUpFormTab('teacher');
+                    navigate('/signup?tab=faculty');
+                  }}
                   className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-[#0c2340] font-bold text-xs border border-slate-300 shadow-2xs transition-all flex items-center gap-2.5 cursor-pointer"
                 >
                   <Briefcase className="w-4 h-4 text-indigo-700" />
                   <span>{t.teacherApplicationBtn}</span>
-                </button>
+                </a>
               </div>
 
               {/* Fast Facts Badge Bar */}
@@ -495,7 +506,10 @@ export default function SignInView() {
                   </a>
                   <button
                     type="button"
-                    onClick={() => navigate('/signup')}
+                    onClick={() => {
+                      if (setSignUpFormTab) setSignUpFormTab('student');
+                      navigate('/signup');
+                    }}
                     className="px-6 py-3 rounded-xl bg-white text-[#0c2340] font-black text-xs hover:bg-slate-100 transition-all flex items-center gap-2 cursor-pointer shadow-sm flex-shrink-0"
                   >
                     <span>{t.admissionDeskBtn}</span>
@@ -823,22 +837,30 @@ export default function SignInView() {
                   <a href="#facilities" className="hover:text-[#0c2340] transition-colors">{t.facilities}</a>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/signup')}
+                  <a
+                    href="/signup?tab=admission"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (setSignUpFormTab) setSignUpFormTab('student');
+                      navigate('/signup?tab=admission');
+                    }}
                     className="hover:text-[#0c2340] transition-colors text-amber-700 font-bold cursor-pointer"
                   >
                     {t.admissionDeskBtn} &rarr;
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/signup')}
+                  <a
+                    href="/signup?tab=faculty"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (setSignUpFormTab) setSignUpFormTab('teacher');
+                      navigate('/signup?tab=faculty');
+                    }}
                     className="hover:text-[#0c2340] transition-colors text-indigo-700 font-bold cursor-pointer"
                   >
                     {t.teacherApplicationBtn} &rarr;
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
