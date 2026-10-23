@@ -961,14 +961,10 @@ class FirestoreService {
         map['logoUrl'] = resolvedLogo;
         map['logo'] = resolvedLogo;
       }
-      if (resolvedSig != null && resolvedSig.isNotEmpty) {
-        map['principalSignature'] = resolvedSig;
-        map['signatureUrl'] = resolvedSig;
-        map['signature'] = resolvedSig;
-      }
-      if (settings.rawSignature != null && settings.rawSignature!.isNotEmpty) {
-        map['rawSignature'] = settings.rawSignature;
-      }
+      map['principalSignature'] = resolvedSig ?? '';
+      map['signatureUrl'] = resolvedSig ?? '';
+      map['signature'] = resolvedSig ?? '';
+      map['rawSignature'] = settings.rawSignature ?? '';
       map['signatureColorMode'] = settings.signatureColorMode;
 
       // Auto-convert local school stamp to base64 Data URL

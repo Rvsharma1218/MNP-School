@@ -1738,23 +1738,11 @@ CREATE TABLE monthly_fees (
         currentDue = (currMonthFee.totalDue - effPaid).clamp(0.0, double.infinity);
         totalDemand = finalPaid + currentDue;
         dueDate = currMonthFee.dueDate ?? _dueDateFromStructure(currentMonthKey, struct);
-      } else if (studentType != 'computer' && recurringMonthly > 0) {
-        // School students with monthly fee calculate from previousDue + 1 month recurring fee
-        // instead of trusting stale/corrupt explicitRemaining from Firestore.
-        final monthDue = safeNum(sRow['previousDue']) + recurringMonthly;
-        totalDemand = monthDue < finalPaid ? finalPaid : monthDue;
-        currentDue = (totalDemand - finalPaid).clamp(0.0, double.infinity);
-        dueDate = _dueDateFromStructure(currentMonthKey, struct);
       } else if (isExplicitPaid) {
         final rawTotal = studentTotalFees > 0 ? studentTotalFees : flatTotalFromFeesTable;
         totalDemand = rawTotal > 0 ? (rawTotal < finalPaid ? finalPaid : rawTotal) : finalPaid;
         currentDue = 0.0;
         dueDate = DateTime.tryParse(feeRow?['dueDate']?.toString() ?? '');
-      } else if (studentType == 'computer') {
-        final rawTotal = studentTotalFees > 0 ? studentTotalFees : flatTotalFromFeesTable;
-        totalDemand = rawTotal < finalPaid ? finalPaid : rawTotal;
-        currentDue = (totalDemand - finalPaid).clamp(0.0, double.infinity);
-        dueDate = DateTime.tryParse(feeRow?['dueDate']?.toString() ?? '') ?? _dueDateFromStructure(currentMonthKey, struct);
       } else if (hasExplicitRemaining) {
         final rawTotal = studentTotalFees > 0 ? studentTotalFees : flatTotalFromFeesTable;
         if (rawTotal > 0) {
@@ -1765,6 +1753,16 @@ CREATE TABLE monthly_fees (
           totalDemand = finalPaid + currentDue;
         }
         dueDate = DateTime.tryParse(feeRow?['dueDate']?.toString() ?? '') ?? _dueDateFromStructure(currentMonthKey, struct);
+      } else if (studentType == 'computer') {
+        final rawTotal = studentTotalFees > 0 ? studentTotalFees : flatTotalFromFeesTable;
+        totalDemand = rawTotal < finalPaid ? finalPaid : rawTotal;
+        currentDue = (totalDemand - finalPaid).clamp(0.0, double.infinity);
+        dueDate = DateTime.tryParse(feeRow?['dueDate']?.toString() ?? '') ?? _dueDateFromStructure(currentMonthKey, struct);
+      } else if (studentType != 'computer' && recurringMonthly > 0) {
+        final monthDue = safeNum(sRow['previousDue']) + recurringMonthly;
+        totalDemand = monthDue < finalPaid ? finalPaid : monthDue;
+        currentDue = (totalDemand - finalPaid).clamp(0.0, double.infinity);
+        dueDate = _dueDateFromStructure(currentMonthKey, struct);
       } else if (flatTotalFromFeesTable > 0 || studentTotalFees > 0) {
         final rawTotal = studentTotalFees > 0 ? studentTotalFees : flatTotalFromFeesTable;
         totalDemand = rawTotal < finalPaid ? finalPaid : rawTotal;
@@ -1954,6 +1952,12 @@ CREATE TABLE monthly_fees (
       if (dedupKey.isNotEmpty && !seenReceipts.add(dedupKey)) continue;
 
       total += (r['amount'] as num?)?.toDouble() ?? 0.0;
+    }
+    if (total == 0.0) {
+      final sRows = await db.rawQuery('SELECT SUM(paidFees) as sumPaid FROM students');
+      if (sRows.isNotEmpty) {
+        total = (sRows.first['sumPaid'] as num?)?.toDouble() ?? 0.0;
+      }
     }
     return total;
   }
