@@ -744,6 +744,17 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
         }, onError: (e) => debugPrint('[FirestoreSync] fees error: $e')));
       }
 
+      // ── Payments stream (schools/{schoolId}/payments) ───────────────────
+      final paymentsStream = FirestoreService.instance.watchPayments();
+      if (paymentsStream != null) {
+        dataSubs.add(paymentsStream.listen((remotePayments) async {
+          if (remotePayments.isNotEmpty) {
+            await DatabaseService.instance.bulkUpsertPaymentsFromRemote(remotePayments);
+            triggerSyncSettled(stats: true);
+          }
+        }, onError: (e) => debugPrint('[FirestoreSync] payments error: $e')));
+      }
+
       // ── Student Fees stream (schools/{schoolId}/studentFees) ────────────
       final studentFeesStream = FirestoreService.instance.watchStudentFees();
       if (studentFeesStream != null) {
