@@ -1,3 +1,4 @@
+import '../whatsapp/whatsapp_service.dart';
 import '../../core/utils/signature_processor.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -5,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:share_plus/share_plus.dart';
 
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/constants/app_colors.dart';
@@ -73,8 +73,8 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.share_outlined),
-            tooltip: 'Share ID Card',
+            icon: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366)),
+            tooltip: 'Share ID Card on WhatsApp',
             onPressed: _previewStudent == null ? null : () => _shareIdCardPDF(_previewStudent!),
           ),
           IconButton(
@@ -257,10 +257,10 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                       ),
                       const SizedBox(width: 10),
                       IconButton.filled(
-                        style: IconButton.styleFrom(backgroundColor: const Color(0xFF0A1128), foregroundColor: const Color(0xFFFFD700)),
-                        icon: const Icon(Icons.share),
+                        style: IconButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
+                        icon: const Icon(Icons.chat_bubble_rounded, size: 20),
                         onPressed: () => _shareIdCardPDF(_previewStudent!),
-                        tooltip: 'Share Card',
+                        tooltip: 'Share ID Card on WhatsApp',
                       ),
                     ],
                   ),
@@ -1028,12 +1028,27 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
       final file = File('${tempDir.path}/ID_${student.name.replaceAll(' ', '_')}.pdf');
       await file.writeAsBytes(bytes);
 
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          text: 'Official Student ID Card - ${student.name}',
-        ),
+      final msg = WhatsAppService.buildIdCardText(
+        studentName: student.name,
+        studentId: student.id,
+        admissionNumber: student.admissionNumber.isNotEmpty ? student.admissionNumber : student.id,
+        fatherName: student.fatherName,
+        className: student.displayClass,
+        mobile: student.mobile,
+        instituteName: settings.schoolName.isNotEmpty ? settings.schoolName : 'Mission Navodaya Public School',
+        institutePhone: settings.mobile,
       );
+
+      if (mounted) {
+        await WhatsAppService.showIdCardShareSheet(
+          context,
+          studentName: student.name,
+          phone: student.mobile,
+          alternatePhone: student.alternateMobile,
+          message: msg,
+          filePath: file.path,
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sharing ID card: $e')));

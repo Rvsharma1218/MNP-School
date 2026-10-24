@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import '../whatsapp/whatsapp_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,7 +67,22 @@ class _AdmitCardScreenState extends ConsumerState<AdmitCardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    final cached = ref.read(studentsProvider).valueOrNull;
+    if (cached != null && cached.isNotEmpty) {
+      _allStudents = cached;
+      final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+      final classes = settings.schoolClasses.isNotEmpty ? settings.schoolClasses : SettingsModel.defaultClasses;
+      _availableClasses = ['All Classes', ...[...classes]..sort(_compareClassNames)];
+      if (widget.studentId != null && widget.studentId!.isNotEmpty) {
+        _selectedStudent = cached.where((s) => s.id == widget.studentId).firstOrNull;
+        if (_selectedStudent != null && _selectedStudent!.className != null) {
+          _selectedClass = _selectedStudent!.className!;
+        }
+      }
+      _filterClassStudents();
+      _loading = false;
+    }
+    _loadData(isInitial: _loading);
     _searchCtrl.addListener(_onSearchChanged);
   }
 
@@ -90,8 +108,8 @@ class _AdmitCardScreenState extends ConsumerState<AdmitCardScreen> {
     });
   }
 
-  Future<void> _loadData() async {
-    setState(() => _loading = true);
+  Future<void> _loadData({bool isInitial = false}) async {
+    if (isInitial && mounted) setState(() => _loading = true);
     final db = DatabaseService.instance;
     final students = await db.getAllStudents();
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
@@ -464,6 +482,81 @@ class _AdmitCardScreenState extends ConsumerState<AdmitCardScreen> {
         },
       ),
     );
+  }
+
+  Future<String?> _generateSingleAdmitCardPdfFile(StudentModel s) async {
+    final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+    final logoBytes = await AppUtils.loadAppImageBytes(settings.logoPath);
+    final sigBytes = await AppUtils.loadAppImageBytes(settings.principalSignature);
+    final stampBytes = await AppUtils.loadAppImageBytes(settings.schoolStamp);
+
+    final pw.MemoryImage? logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    final pw.MemoryImage? sigImage = sigBytes != null ? pw.MemoryImage(sigBytes) : null;
+    final pw.MemoryImage? stampImage = stampBytes != null ? pw.MemoryImage(stampBytes) : null;
+
+    pw.MemoryImage? photo;
+    if (s.photoPath != null && s.photoPath!.isNotEmpty) {
+      final pBytes = await AppUtils.loadAppImageBytes(s.photoPath);
+      if (pBytes != null) photo = pw.MemoryImage(pBytes);
+    }
+
+    final pdf = pw.Document();
+    final studentClass = s.className ?? _selectedClass;
+    final schedule = await _getClassSchedule(studentClass);
+    final examTitle = await _getClassExamName(studentClass);
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+        build: (pw.Context ctx) => _buildAdmitCardLayout(s, settings, logoImage, sigImage, photo, stampImage, schedule, examTitle),
+      ),
+    );
+
+    final bytes = await pdf.save();
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/AdmitCard_${s.name.replaceAll(' ', '_')}.pdf');
+    await file.writeAsBytes(bytes);
+    return file.path;
+  }
+
+  Future<void> _shareAdmitCardWhatsApp(StudentModel s) async {
+    setState(() => _generatingPdf = true);
+    try {
+      final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+      final studentClass = s.className ?? _selectedClass;
+      final examTitle = await _getClassExamName(studentClass);
+      final pdfPath = await _generateSingleAdmitCardPdfFile(s);
+      final msg = WhatsAppService.buildAdmitCardText(
+        studentName: s.name,
+        fatherName: s.fatherName,
+        rollNumber: s.rollNumber,
+        admissionNumber: s.admissionNumber.isNotEmpty ? s.admissionNumber : s.id,
+        className: s.displayClass,
+        examTitle: examTitle,
+        instituteName: settings.schoolName.isNotEmpty ? settings.schoolName : 'Mission Navodaya Public School',
+        institutePhone: settings.mobile,
+      );
+      if (mounted) {
+        setState(() => _generatingPdf = false);
+        await WhatsAppService.showAdmitCardShareSheet(
+          context,
+          studentName: s.name,
+          phone: s.mobile,
+          alternatePhone: s.alternateMobile,
+          examTitle: examTitle,
+          message: msg,
+          filePath: pdfPath,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _generatingPdf = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sharing Admit Card on WhatsApp: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   // ─── PDF EXPORT / PRINT GENERATOR ───
@@ -923,23 +1016,42 @@ class _AdmitCardScreenState extends ConsumerState<AdmitCardScreen> {
                               ],
                             ),
                             const SizedBox(height: 18),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: ElevatedButton.icon(
-                                icon: _generatingPdf
-                                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                    : const Icon(Icons.download_rounded, color: Colors.white),
-                                label: Text(
-                                  _generatingPdf ? 'Generating...' : 'Download Official Admit Card (PDF)',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 48,
+                                    child: ElevatedButton.icon(
+                                      icon: _generatingPdf
+                                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                          : const Icon(Icons.download_rounded, color: Colors.white),
+                                      label: Text(
+                                        _generatingPdf ? 'Generating...' : 'Download (PDF)',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF1E3A8A),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      onPressed: _generatingPdf ? null : () => _generateAndExportPDF(singleStudent: _selectedStudent),
+                                    ),
+                                  ),
                                 ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1E3A8A),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                const SizedBox(width: 10),
+                                SizedBox(
+                                  height: 48,
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 18),
+                                    label: const Text('WhatsApp', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF25D366),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                                    ),
+                                    onPressed: (_generatingPdf || _selectedStudent == null) ? null : () => _shareAdmitCardWhatsApp(_selectedStudent!),
+                                  ),
                                 ),
-                                onPressed: _generatingPdf ? null : () => _generateAndExportPDF(singleStudent: _selectedStudent),
-                              ),
+                              ],
                             ),
                           ],
                         ),
@@ -985,17 +1097,27 @@ class _AdmitCardScreenState extends ConsumerState<AdmitCardScreen> {
                                       dense: true,
                                       title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                                       subtitle: Text('Roll: ${s.rollNumber ?? "N/A"} • Class: ${s.displayClass}'),
-                                      trailing: ElevatedButton.icon(
-                                        icon: const Icon(Icons.download, size: 14),
-                                        label: const Text('Admit Card', style: TextStyle(fontSize: 11)),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF1E3A8A),
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        ),
-                                        onPressed: () {
-                                          _generateAndExportPDF(singleStudent: s);
-                                        },
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366), size: 20),
+                                            tooltip: 'Share on WhatsApp',
+                                            onPressed: () => _shareAdmitCardWhatsApp(s),
+                                          ),
+                                          ElevatedButton.icon(
+                                            icon: const Icon(Icons.download, size: 14),
+                                            label: const Text('Admit Card', style: TextStyle(fontSize: 11)),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFF1E3A8A),
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            ),
+                                            onPressed: () {
+                                              _generateAndExportPDF(singleStudent: s);
+                                            },
+                                          ),
+                                        ],
                                       ),
                                     );
                                   },

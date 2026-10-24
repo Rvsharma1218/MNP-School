@@ -237,6 +237,236 @@ class WhatsAppService {
     );
   }
 
+  static Future<void> showDocumentShareSheet(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    String? phone,
+    String? alternatePhone,
+    required String message,
+    String? filePath,
+    String pdfButtonLabel = 'Share PDF File (PDF भेजें)',
+    IconData documentIcon = Icons.chat_bubble_rounded,
+  }) async {
+    final candidatePhone = (phone != null && phone.trim().isNotEmpty)
+        ? phone.trim()
+        : (alternatePhone?.trim() ?? '');
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _DocumentShareSheet(
+        title: title,
+        subtitle: subtitle,
+        initialPhone: candidatePhone,
+        message: message,
+        filePath: filePath,
+        pdfButtonLabel: pdfButtonLabel,
+        documentIcon: documentIcon,
+      ),
+    );
+  }
+
+  static Future<void> showResultShareSheet(
+    BuildContext context, {
+    required String studentName,
+    String? phone,
+    String? alternatePhone,
+    required String examName,
+    required String message,
+    String? filePath,
+  }) {
+    return showDocumentShareSheet(
+      context,
+      title: 'WhatsApp Result / Marksheet',
+      subtitle: '$studentName • $examName',
+      phone: phone,
+      alternatePhone: alternatePhone,
+      message: message,
+      filePath: filePath,
+      pdfButtonLabel: 'Share Result PDF (मार्कशीट PDF भेजें)',
+      documentIcon: Icons.school_rounded,
+    );
+  }
+
+  static Future<void> showAdmitCardShareSheet(
+    BuildContext context, {
+    required String studentName,
+    String? phone,
+    String? alternatePhone,
+    required String examTitle,
+    required String message,
+    String? filePath,
+  }) {
+    return showDocumentShareSheet(
+      context,
+      title: 'WhatsApp Admit Card Share',
+      subtitle: '$studentName • $examTitle',
+      phone: phone,
+      alternatePhone: alternatePhone,
+      message: message,
+      filePath: filePath,
+      pdfButtonLabel: 'Share Admit Card PDF (प्रवेश पत्र PDF भेजें)',
+      documentIcon: Icons.confirmation_number_rounded,
+    );
+  }
+
+  static Future<void> showIdCardShareSheet(
+    BuildContext context, {
+    required String studentName,
+    String? phone,
+    String? alternatePhone,
+    required String message,
+    String? filePath,
+  }) {
+    return showDocumentShareSheet(
+      context,
+      title: 'WhatsApp ID Card Share',
+      subtitle: '$studentName • Student ID Card',
+      phone: phone,
+      alternatePhone: alternatePhone,
+      message: message,
+      filePath: filePath,
+      pdfButtonLabel: 'Share ID Card PDF (आईडी कार्ड PDF भेजें)',
+      documentIcon: Icons.badge_rounded,
+    );
+  }
+
+  static String buildResultVoucherText({
+    required String studentName,
+    String? rollNumber,
+    String? admissionNumber,
+    String? className,
+    required String examName,
+    required double totalMarks,
+    required double obtainedMarks,
+    required double percentage,
+    required String grade,
+    required String status,
+    List<Map<String, dynamic>>? subjects,
+    String? remarks,
+    required String instituteName,
+    String? institutePhone,
+  }) {
+    final buffer = StringBuffer();
+    buffer.writeln('🎓 *ACADEMIC MARKSHEET / RESULT*');
+    buffer.writeln('*${instituteName.toUpperCase()}*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('👤 *Student:* $studentName');
+    if (className != null && className.trim().isNotEmpty) {
+      buffer.writeln('🏫 *Class:* ${className.trim()}');
+    }
+    if (rollNumber != null && rollNumber.trim().isNotEmpty) {
+      buffer.writeln('🆔 *Roll No:* ${rollNumber.trim()}');
+    } else if (admissionNumber != null && admissionNumber.trim().isNotEmpty) {
+      buffer.writeln('📄 *Adm No:* ${admissionNumber.trim()}');
+    }
+    buffer.writeln('📝 *Exam:* $examName');
+    if (subjects != null && subjects.isNotEmpty) {
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('📚 *Subject-wise Marks:*');
+      for (final sub in subjects) {
+        final sName = sub['name'] ?? sub['subject'] ?? 'Subject';
+        final obt = sub['obtained'] ?? sub['marks'] ?? 0;
+        final maxM = sub['total'] ?? sub['totalMarks'] ?? 100;
+        buffer.writeln('• $sName: $obt / $maxM');
+      }
+    }
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('🎯 *Total Marks:* ${obtainedMarks.toInt()} / ${totalMarks.toInt()}');
+    buffer.writeln('📊 *Percentage:* ${percentage.toStringAsFixed(1)}%');
+    buffer.writeln('🏅 *Grade:* $grade');
+    buffer.writeln('🏆 *Result Status:* *${status.toUpperCase()}*');
+    if (remarks != null && remarks.trim().isNotEmpty) {
+      buffer.writeln('💬 *Remarks:* ${remarks.trim()}');
+    }
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('📄 Official mark sheet PDF attached.');
+    if (institutePhone != null && institutePhone.trim().isNotEmpty) {
+      buffer.writeln('📞 *Helpline / Office:* ${institutePhone.trim()}');
+    }
+    buffer.writeln('Thank you!');
+    buffer.writeln('*$instituteName*');
+    return buffer.toString();
+  }
+
+  static String buildAdmitCardText({
+    required String studentName,
+    String? fatherName,
+    String? rollNumber,
+    String? admissionNumber,
+    String? className,
+    required String examTitle,
+    required String instituteName,
+    String? institutePhone,
+  }) {
+    final buffer = StringBuffer();
+    buffer.writeln('🎫 *EXAMINATION ADMIT CARD / HALL TICKET*');
+    buffer.writeln('*${instituteName.toUpperCase()}*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('👤 *Candidate:* $studentName');
+    if (fatherName != null && fatherName.trim().isNotEmpty) {
+      buffer.writeln('👨‍👦 *Father:* ${fatherName.trim()}');
+    }
+    if (className != null && className.trim().isNotEmpty) {
+      buffer.writeln('🏫 *Class:* ${className.trim()}');
+    }
+    if (rollNumber != null && rollNumber.trim().isNotEmpty) {
+      buffer.writeln('🆔 *Roll No:* ${rollNumber.trim()}');
+    }
+    if (admissionNumber != null && admissionNumber.trim().isNotEmpty) {
+      buffer.writeln('📄 *Adm No:* ${admissionNumber.trim()}');
+    }
+    buffer.writeln('📝 *Exam:* $examTitle');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('📄 Official Hall Ticket & Subject Time Table PDF attached.');
+    buffer.writeln('⚠️ *Note:* Please print and bring this admit card to the examination hall.');
+    if (institutePhone != null && institutePhone.trim().isNotEmpty) {
+      buffer.writeln('📞 *Office:* ${institutePhone.trim()}');
+    }
+    buffer.writeln('*$instituteName*');
+    return buffer.toString();
+  }
+
+  static String buildIdCardText({
+    required String studentName,
+    String? studentId,
+    String? admissionNumber,
+    String? fatherName,
+    String? className,
+    String? mobile,
+    required String instituteName,
+    String? institutePhone,
+  }) {
+    final buffer = StringBuffer();
+    buffer.writeln('🪪 *OFFICIAL STUDENT IDENTITY CARD*');
+    buffer.writeln('*${instituteName.toUpperCase()}*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('👤 *Student:* $studentName');
+    if (studentId != null && studentId.trim().isNotEmpty) {
+      buffer.writeln('🆔 *Student ID:* ${studentId.trim()}');
+    }
+    if (admissionNumber != null && admissionNumber.trim().isNotEmpty) {
+      buffer.writeln('📄 *Adm No:* ${admissionNumber.trim()}');
+    }
+    if (className != null && className.trim().isNotEmpty) {
+      buffer.writeln('🏫 *Class / Course:* ${className.trim()}');
+    }
+    if (fatherName != null && fatherName.trim().isNotEmpty) {
+      buffer.writeln('👨‍👦 *Father:* ${fatherName.trim()}');
+    }
+    if (mobile != null && mobile.trim().isNotEmpty) {
+      buffer.writeln('📞 *Contact:* ${mobile.trim()}');
+    }
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('📄 Verified Digital ID Card PDF attached.');
+    if (institutePhone != null && institutePhone.trim().isNotEmpty) {
+      buffer.writeln('📞 *Office:* ${institutePhone.trim()}');
+    }
+    buffer.writeln('*$instituteName*');
+    return buffer.toString();
+  }
+
   static String buildReceiptVoucherText({
     required String studentName,
     String? fatherName,
@@ -292,7 +522,7 @@ class WhatsAppService {
     if (institutePhone != null && institutePhone.trim().isNotEmpty) {
       buffer.writeln('📞 *Helpline / Office:* ${institutePhone.trim()}');
     }
-    buffer.writeln('Thank you!\n*$instituteName*');
+    buffer.writeln('Thank you!');
     return buffer.toString();
   }
 
@@ -942,26 +1172,30 @@ class _WhatsAppChooserSheet extends StatelessWidget {
   }
 }
 
-class _ReceiptShareSheet extends StatefulWidget {
-  final String studentName;
+class _DocumentShareSheet extends StatefulWidget {
+  final String title;
+  final String subtitle;
   final String initialPhone;
-  final String receiptNumber;
   final String message;
   final String? filePath;
+  final String pdfButtonLabel;
+  final IconData documentIcon;
 
-  const _ReceiptShareSheet({
-    required this.studentName,
+  const _DocumentShareSheet({
+    required this.title,
+    required this.subtitle,
     required this.initialPhone,
-    required this.receiptNumber,
     required this.message,
     this.filePath,
+    this.pdfButtonLabel = 'Share PDF File (PDF भेजें)',
+    this.documentIcon = Icons.chat_bubble_rounded,
   });
 
   @override
-  State<_ReceiptShareSheet> createState() => _ReceiptShareSheetState();
+  State<_DocumentShareSheet> createState() => _DocumentShareSheetState();
 }
 
-class _ReceiptShareSheetState extends State<_ReceiptShareSheet> {
+class _DocumentShareSheetState extends State<_DocumentShareSheet> {
   late TextEditingController _phoneController;
   bool _isEditingPhone = false;
 
@@ -1037,7 +1271,7 @@ class _ReceiptShareSheetState extends State<_ReceiptShareSheet> {
                       color: const Color(0xFF25D366).withOpacity(0.14),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366), size: 22),
+                    child: Icon(widget.documentIcon, color: const Color(0xFF25D366), size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1045,11 +1279,11 @@ class _ReceiptShareSheetState extends State<_ReceiptShareSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'WhatsApp Receipt Share',
+                          widget.title,
                           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: cs.onSurface),
                         ),
                         Text(
-                          '${widget.studentName} • Receipt #${widget.receiptNumber}',
+                          widget.subtitle,
                           style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1212,9 +1446,9 @@ class _ReceiptShareSheetState extends State<_ReceiptShareSheet> {
                           );
                         },
                   icon: const Icon(Icons.picture_as_pdf_rounded, size: 20, color: Color(0xFF075E54)),
-                  label: const Text(
-                    'Share PDF File (PDF रसीद भेजें)',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF075E54)),
+                  label: Text(
+                    widget.pdfButtonLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF075E54)),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF075E54)),
@@ -1232,6 +1466,35 @@ class _ReceiptShareSheetState extends State<_ReceiptShareSheet> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ReceiptShareSheet extends StatelessWidget {
+  final String studentName;
+  final String initialPhone;
+  final String receiptNumber;
+  final String message;
+  final String? filePath;
+
+  const _ReceiptShareSheet({
+    required this.studentName,
+    required this.initialPhone,
+    required this.receiptNumber,
+    required this.message,
+    this.filePath,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _DocumentShareSheet(
+      title: 'WhatsApp Receipt Share',
+      subtitle: '$studentName • Receipt #$receiptNumber',
+      initialPhone: initialPhone,
+      message: message,
+      filePath: filePath,
+      pdfButtonLabel: 'Share PDF File (PDF रसीद भेजें)',
+      documentIcon: Icons.receipt_long_rounded,
     );
   }
 }

@@ -11,6 +11,7 @@ import '../../../data/models/student_model.dart';
 import '../../../data/services/database_service.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/result_pdf_service.dart';
+import '../../whatsapp/whatsapp_service.dart';
 import 'class_mark_entry_desk_screen.dart';
 import 'create_exam_screen.dart';
 import 'student_mark_entry_screen.dart';
@@ -27,6 +28,9 @@ class ResultDashboardScreen extends ConsumerStatefulWidget {
 
 class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     with SingleTickerProviderStateMixin {
+  static List<ExamModel>? _cachedExams;
+  static List<ResultModel>? _cachedResults;
+
   late TabController _tabController;
   bool _loading = true;
 
@@ -43,11 +47,33 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
   int _resultsCurrentPage = 0;
   static const int _pageSize = 10;
 
+  void _populateClassFilters(List<StudentModel> stus, SettingsModel settings) {
+    final enrolledClasses = stus
+        .map((s) => (s.className?.trim().isNotEmpty == true) ? s.className!.trim() : (s.course?.trim() ?? ''))
+        .where((c) => c.isNotEmpty)
+        .toSet()
+        .toList();
+
+    final Set<String> classSet = {'All Classes'};
+    classSet.addAll(enrolledClasses);
+    classSet.addAll(settings.schoolClasses);
+    _availableClasses = classSet.toList()..sort(_compareClassNames);
+  }
+
   @override
   void initState() {
     super.initState();
+    final cachedStudents = ref.read(studentsProvider).valueOrNull;
+    final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+    if (_cachedExams != null && _cachedResults != null && cachedStudents != null && cachedStudents.isNotEmpty) {
+      _exams = _cachedExams!;
+      _results = _cachedResults!;
+      _students = cachedStudents;
+      _populateClassFilters(cachedStudents, settings);
+      _loading = false;
+    }
     _tabController = TabController(length: 2, vsync: this);
-    _loadDashboardData();
+    _loadDashboardData(isInitial: _loading);
   }
 
   @override
@@ -56,13 +82,16 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     super.dispose();
   }
 
-  Future<void> _loadDashboardData() async {
-    setState(() => _loading = true);
+  Future<void> _loadDashboardData({bool isInitial = false}) async {
+    if (isInitial && mounted) setState(() => _loading = true);
     final db = DatabaseService.instance;
     final exams = await db.getAllExams();
     final results = await db.getAllResults();
     final students = await db.getAllStudents();
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+    _cachedExams = exams;
+    _cachedResults = results;
+    _populateClassFilters(students, settings);
 
     final enrolledClasses = students
         .map((s) => (s.className?.trim().isNotEmpty == true) ? s.className!.trim() : (s.course?.trim() ?? ''))
@@ -210,7 +239,37 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
         student: student,
         settings: settings,
       );
-      await Share.shareXFiles([XFile(path)], text: "Marksheet - ${student.name} (${result.examName})");
+      final subjects = result.subjects.map((s) => {
+        'name': s.subjectName,
+        'obtained': s.marks,
+        'total': s.totalMarks,
+      }).toList();
+      final msg = WhatsAppService.buildResultVoucherText(
+        studentName: student.name,
+        rollNumber: student.rollNumber,
+        admissionNumber: student.admissionNumber,
+        className: student.displayClass,
+        examName: result.examName,
+        totalMarks: result.totalMarks,
+        obtainedMarks: result.obtainedMarks,
+        percentage: result.overallPercentage,
+        grade: result.overallGrade,
+        status: result.finalResultStatus,
+        subjects: subjects,
+        remarks: result.remarks,
+        instituteName: settings.instituteName.isNotEmpty ? settings.instituteName : 'Mission Navodaya Public School',
+        institutePhone: settings.mobile,
+      );
+      if (!mounted) return;
+      await WhatsAppService.showResultShareSheet(
+        context,
+        studentName: student.name,
+        phone: student.mobile,
+        alternatePhone: student.alternateMobile,
+        examName: result.examName,
+        message: msg,
+        filePath: path,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();

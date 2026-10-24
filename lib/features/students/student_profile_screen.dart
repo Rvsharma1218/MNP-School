@@ -83,14 +83,19 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cachedStudent = ref.watch(studentsProvider).valueOrNull?.where(
+          (s) => s.id == widget.studentId || s.studentId == widget.studentId,
+        ).firstOrNull;
+
     return FutureBuilder<StudentModel?>(
+      initialData: cachedStudent,
       future: _getStudent(),
       builder: (ctx, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: LoadingWidget());
-        }
-        final student = snap.data;
+        final student = snap.data ?? cachedStudent;
         if (student == null) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: LoadingWidget());
+          }
           return const Scaffold(body: Center(child: Text('Student not found')));
         }
         return _buildProfile(context, student);
@@ -1612,6 +1617,59 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      IconButton(
+                        tooltip: 'Share Marksheet on WhatsApp',
+                        icon: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366)),
+                        onPressed: () async {
+                          if (student != null) {
+                            try {
+                              final path = await ResultPdfService.instance.saveResultPdfToDevice(
+                                result: r,
+                                student: student,
+                                settings: settings,
+                              );
+                              final subjects = r.subjects.map((s) => {
+                                'name': s.subjectName,
+                                'obtained': s.marks,
+                                'total': s.totalMarks,
+                              }).toList();
+                              final msg = WhatsAppService.buildResultVoucherText(
+                                studentName: student.name,
+                                rollNumber: student.rollNumber,
+                                admissionNumber: student.admissionNumber,
+                                className: student.displayClass,
+                                examName: r.examName,
+                                totalMarks: r.totalMarks,
+                                obtainedMarks: r.obtainedMarks,
+                                percentage: r.overallPercentage,
+                                grade: r.overallGrade,
+                                status: r.finalResultStatus,
+                                subjects: subjects,
+                                remarks: r.remarks,
+                                instituteName: settings.instituteName.isNotEmpty ? settings.instituteName : 'Mission Navodaya Public School',
+                                institutePhone: settings.mobile,
+                              );
+                              if (ctx.mounted) {
+                                await WhatsAppService.showResultShareSheet(
+                                  ctx,
+                                  studentName: student.name,
+                                  phone: student.mobile,
+                                  alternatePhone: student.alternateMobile,
+                                  examName: r.examName,
+                                  message: msg,
+                                  filePath: path,
+                                );
+                              }
+                            } catch (e) {
+                              if (ctx.mounted) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(content: Text('Error sharing on WhatsApp: $e'), backgroundColor: Colors.red),
+                                );
+                              }
+                            }
+                          }
+                        },
+                      ),
                       IconButton(
                         tooltip: 'Save PDF to Device',
                         icon: const Icon(Icons.download_rounded, color: Color(0xFF0D9488)),
