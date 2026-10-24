@@ -257,7 +257,7 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
 
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: stream,
-      initialData: initial.isNotEmpty ? initial : null,
+      initialData: initial,
       builder: (context, snapshot) {
         final list = snapshot.data ?? initial;
         final count = list.where((item) {
@@ -321,10 +321,10 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
 
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: stream,
-      initialData: initial.isNotEmpty ? initial : null,
+      initialData: initial,
       builder: (context, snapshot) {
         final rawList = snapshot.data ?? initial;
-        if (snapshot.connectionState == ConnectionState.waiting && rawList.isEmpty) {
+        if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
           return const Center(child: CircularProgressIndicator());
         }
         final query = _searchCtrl.text.toLowerCase().trim();
@@ -656,10 +656,10 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
 
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: stream,
-      initialData: initial.isNotEmpty ? initial : null,
+      initialData: initial,
       builder: (context, snapshot) {
         final rawList = snapshot.data ?? initial;
-        if (snapshot.connectionState == ConnectionState.waiting && rawList.isEmpty) {
+        if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
           return const Center(child: CircularProgressIndicator());
         }
         final query = _searchCtrl.text.toLowerCase().trim();

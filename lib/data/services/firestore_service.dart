@@ -256,9 +256,7 @@ class FirestoreService {
     if (_admissionsController == null || _admissionsController!.isClosed) {
       _admissionsController = StreamController<List<Map<String, dynamic>>>.broadcast(
         onListen: () {
-          if (_cachedAdmissionsList.isNotEmpty) {
-            _admissionsController?.add(List.from(_cachedAdmissionsList));
-          }
+          _admissionsController?.add(List.from(_cachedAdmissionsList));
         },
       );
     }
@@ -291,13 +289,11 @@ class FirestoreService {
       }
     }
 
-    if (_cachedAdmissionsList.isNotEmpty) {
-      Future.microtask(() {
-        if (_admissionsController != null && !_admissionsController!.isClosed) {
-          _admissionsController!.add(List.from(_cachedAdmissionsList));
-        }
-      });
-    }
+    Future.microtask(() {
+      if (_admissionsController != null && !_admissionsController!.isClosed) {
+        _admissionsController!.add(List.from(_cachedAdmissionsList));
+      }
+    });
 
     return _admissionsController!.stream;
   }
@@ -307,9 +303,7 @@ class FirestoreService {
     if (_teachersController == null || _teachersController!.isClosed) {
       _teachersController = StreamController<List<Map<String, dynamic>>>.broadcast(
         onListen: () {
-          if (_cachedTeachersList.isNotEmpty) {
-            _teachersController?.add(List.from(_cachedTeachersList));
-          }
+          _teachersController?.add(List.from(_cachedTeachersList));
         },
       );
     }
@@ -342,13 +336,11 @@ class FirestoreService {
       }
     }
 
-    if (_cachedTeachersList.isNotEmpty) {
-      Future.microtask(() {
-        if (_teachersController != null && !_teachersController!.isClosed) {
-          _teachersController!.add(List.from(_cachedTeachersList));
-        }
-      });
-    }
+    Future.microtask(() {
+      if (_teachersController != null && !_teachersController!.isClosed) {
+        _teachersController!.add(List.from(_cachedTeachersList));
+      }
+    });
 
     return _teachersController!.stream;
   }

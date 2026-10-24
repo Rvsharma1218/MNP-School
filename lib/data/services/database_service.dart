@@ -932,6 +932,9 @@ CREATE TABLE monthly_fees (
       }
     } catch (_) {}
 
+    final seenAdmissionNumbers = <String>{};
+    final seenStudentIds = <String>{};
+
     for (final student in students) {
       final fs = student.feeStructure;
       double mFee = student.monthlyFee ?? 0.0;
@@ -942,6 +945,30 @@ CREATE TABLE monthly_fees (
       if (mFee > 0) {
         dbMap['monthlyFee'] = mFee;
       }
+
+      // Safeguard against duplicate admissionNumber / studentId replacing other rows in SQLite
+      var adm = (dbMap['admissionNumber']?.toString() ?? '').trim();
+      if (adm.isEmpty) {
+        adm = 'ADM-${student.id}';
+        dbMap['admissionNumber'] = adm;
+      }
+      if (seenAdmissionNumbers.contains(adm)) {
+        adm = '${adm}_${student.id}';
+        dbMap['admissionNumber'] = adm;
+      }
+      seenAdmissionNumbers.add(adm);
+
+      var sId = (dbMap['studentId']?.toString() ?? '').trim();
+      if (sId.isEmpty) {
+        sId = student.id;
+        dbMap['studentId'] = sId;
+      }
+      if (seenStudentIds.contains(sId)) {
+        sId = '${sId}_${student.id}';
+        dbMap['studentId'] = sId;
+      }
+      seenStudentIds.add(sId);
+
       batch.insert('students', dbMap, conflictAlgorithm: ConflictAlgorithm.replace);
       final total = student.initialTotalFees ?? 0.0;
       final paid = student.initialPaidFees ?? 0.0;
