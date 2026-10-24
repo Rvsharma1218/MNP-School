@@ -9,7 +9,9 @@ import {
   User, ChevronDown, Phone, Hash, ArrowLeft, BookOpen,
   Users, CalendarCheck, CreditCard, Shield, FileText, CheckCircle,
   Award, Heart, Compass, Sparkles, Building, Quote, Check,
-  Activity, Monitor, Trophy, HelpCircle, MapPin, Clock, MessageSquare, Globe, Briefcase
+  Activity, Monitor, Trophy, HelpCircle, MapPin, Clock, MessageSquare,
+  Globe, Briefcase, Menu, X, ExternalLink, Calendar, Star,
+  TrendingUp, CheckCircle as CheckIcon
 } from 'lucide-react';
 
 export default function SignInView() {
@@ -30,9 +32,10 @@ export default function SignInView() {
   const t = translations[language] || translations.en;
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('parent'); // Default to parent for ease
+  const [role, setRole] = useState('parent'); // 'parent' | 'teacher' | 'principal'
   const [parentAdmissionNo, setParentAdmissionNo] = useState('');
   const [parentMobile, setParentMobile] = useState('');
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
@@ -41,12 +44,14 @@ export default function SignInView() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const schoolName = settings?.instituteName || settings?.schoolName || 'Mission Navodaya Public School';
-  const principalName = settings?.principalName || 'Vishal Kumar';
+  // Institution Verified Details from Official School Banner
+  const schoolName = settings?.instituteName || 'MISSION NAVODAYA PUBLIC SCHOOL';
+  const schoolSubtitle = 'PUBLIC SCHOOL, MORA';
+  const schoolLocation = 'Mora Bazar, Siwan (Bihar)';
   const logoSrc = settings?.logoUrl || settings?.logoPath || settings?.logo || '/logo.png';
-  const phone = settings?.phone || '8603481865';
+  const primaryPhone = '9162724680';
+  const altPhone = settings?.phone || '8603481865';
   const officialEmail = settings?.email || 'mnpschooledu@gmail.com';
-  const campusAddress = settings?.address || 'Mora Bazar Campus';
 
   useEffect(() => {
     if (role === 'teacher' && email) {
@@ -67,11 +72,31 @@ export default function SignInView() {
     }
   }, [teachers, role, selectedTeacherId]);
 
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
+
   const openPortalLogin = (targetRole = 'parent') => {
     setRole(targetRole);
     setError('');
     setIsLoginModalOpen(true);
+    setIsMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeMobileMenuAndNavigate = (hash) => {
+    setIsMobileMenuOpen(false);
+    const el = document.querySelector(hash);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -112,556 +137,798 @@ export default function SignInView() {
   };
 
   return (
-    <div className="min-h-screen w-full relative flex flex-col justify-between font-sans antialiased text-[#0f172a] bg-[#f8fafc] selection:bg-[#0c2340] selection:text-white">
+    <div className="min-h-screen w-full relative flex flex-col justify-between font-sans antialiased text-[#14243B] bg-[#F7F9FC] selection:bg-[#102747] selection:text-white">
 
-      {/* 🔹 Top Navigation Bar with Language Switcher 🔹 */}
-      <header
-        className="sticky top-0 z-30 w-full px-3.5 sm:px-6 py-3 md:px-12 flex items-center justify-between border-b border-amber-500/40 shadow-md text-white transition-all relative overflow-hidden backdrop-blur-md"
-        style={{
-          backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.95), rgba(10, 32, 66, 0.88), rgba(6, 20, 44, 0.95)), url('/header_campus_bg.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center"
-        }}
-      >
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 p-1 flex items-center justify-center flex-shrink-0 shadow-2xs overflow-hidden">
-            <img
-              src={logoSrc}
-              alt={schoolName}
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = '/logo.png';
-              }}
-            />
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 1. TOP ANNOUNCEMENT STRIP (Navy #102747 + Gold #F4B323)       */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      <div className="bg-[#091A32] text-white text-[11px] font-bold px-4 py-2 border-b border-[#1E3A60] hidden sm:block">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#F4B323] text-[#091A32] text-[10px] font-black uppercase tracking-wider">
+              Admissions 2026–27
+            </span>
+            <span className="text-slate-200">
+              Now Enrolling Nursery to 8th Grade · Mora Bazar, Siwan (Bihar)
+            </span>
           </div>
-          <div>
-            <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight text-white drop-shadow-sm truncate max-w-[170px] xs:max-w-[240px] sm:max-w-none">
-              {t.schoolName}
-            </h1>
-            <p className="text-[10px] sm:text-[11px] text-amber-300 font-bold tracking-wide truncate">
-              {t.sessionBadge}
-            </p>
+
+          <div className="flex items-center gap-5 text-slate-300">
+            <a href={`tel:${primaryPhone}`} className="hover:text-[#F4B323] transition-colors flex items-center gap-1.5">
+              <Phone className="w-3 h-3 text-[#F4B323]" />
+              <span>+91 {primaryPhone}</span>
+            </a>
+            <span className="text-slate-600">·</span>
+            <a href={`mailto:${officialEmail}`} className="hover:text-[#F4B323] transition-colors flex items-center gap-1.5">
+              <Mail className="w-3 h-3 text-[#F4B323]" />
+              <span>{officialEmail}</span>
+            </a>
+            <span className="text-slate-600">·</span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3 text-[#F4B323]" />
+              <span>Mon – Sat: 8:00 AM – 2:00 PM</span>
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* Top Action Buttons & Language Switcher */}
-        <div className="flex items-center gap-2.5">
-          <nav className="hidden lg:flex items-center gap-5 mr-2 text-xs font-bold text-slate-200">
-            <a href="#about" className="hover:text-amber-300 transition-colors">{t.aboutSchool}</a>
-            <a href="#leadership" className="hover:text-amber-300 transition-colors">{t.leadership}</a>
-            <a href="#facilities" className="hover:text-amber-300 transition-colors">{t.facilities}</a>
-            <a href="#contact" className="hover:text-amber-300 transition-colors">{t.helpAndContact}</a>
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 2. MAIN HEADER & INSTITUTIONAL NAVIGATION                    */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 w-full bg-[#102747] text-white border-b border-[#1E3A60] shadow-md backdrop-blur-md">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between gap-4">
+          
+          {/* Brand Seal, School Title & Subtitle */}
+          <a href="#about" className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-shrink-0 group">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white border border-[#E2E8F0] p-1 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden transition-transform group-hover:scale-105">
+              <img
+                src={logoSrc}
+                alt="Mission Navodaya Public School Mora Official Seal"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = '/logo.png';
+                }}
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-white leading-tight truncate uppercase">
+                {schoolName}
+              </div>
+              <div className="text-[10px] sm:text-[11px] font-bold text-[#F4B323] tracking-wide truncate flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#F4B323] animate-pulse" />
+                <span>Mora Bazar, Siwan (Bihar) · Session 2026–27</span>
+              </div>
+            </div>
+          </a>
+
+          {/* Desktop Navigation Links */}
+          <nav className="hidden xl:flex items-center gap-6 text-[13px] font-bold text-slate-200">
+            <a href="#about" className="hover:text-[#F4B323] transition-colors py-1">About School</a>
+            <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">Admissions 2026–27</a>
+            <a href="#features" className="hover:text-[#F4B323] transition-colors py-1">Campus Features</a>
+            <a href="#leadership" className="hover:text-[#F4B323] transition-colors py-1">Leadership</a>
+            <a href="#facilities" className="hover:text-[#F4B323] transition-colors py-1">Facilities</a>
+            <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors py-1">Gallery</a>
+            <a href="#contact" className="hover:text-[#F4B323] transition-colors py-1">Contact</a>
           </nav>
 
-          {/* Language Switcher */}
-          <button
-            type="button"
-            onClick={toggleLanguage}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-xs font-bold text-white transition-all cursor-pointer shadow-2xs"
-            title="Toggle English / हिन्दी"
-          >
-            <Globe className="w-3.5 h-3.5 text-blue-600" />
-            <span>{t.langLabel}</span>
-          </button>
+          {/* Desktop Action Buttons */}
+          <div className="hidden md:flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
+            {/* Language Toggle */}
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-slate-100 transition-all cursor-pointer"
+              title="Toggle Language"
+            >
+              <Globe className="w-3.5 h-3.5 text-[#F4B323]" />
+              <span>{language === 'hi' ? 'English' : 'हिन्दी'}</span>
+            </button>
 
-          {/* Admission Form Link */}
-          <button
-            type="button"
-            onClick={() => navigate('/signup')}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all cursor-pointer"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>{t.admissionEnquiry}</span>
-          </button>
+            {/* Parent Login */}
+            <button
+              type="button"
+              onClick={() => openPortalLogin('parent')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/25 transition-all cursor-pointer shadow-2xs"
+            >
+              <Users className="w-3.5 h-3.5 text-[#F4B323]" />
+              <span>Parent Portal</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => openPortalLogin('parent')}
-            className="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-white/12 hover:bg-white/20 border border-white/25 transition-all cursor-pointer"
-          >
-            <Users className="w-3.5 h-3.5 text-[#0c2340]" />
-            <span>{t.parentLogin}</span>
-          </button>
+            {/* Staff / Principal Login */}
+            <button
+              type="button"
+              onClick={() => openPortalLogin('principal')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/25 transition-all cursor-pointer shadow-2xs"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#F4B323]" />
+              <span>Portal Login</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => openPortalLogin('principal')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#0c2340] hover:bg-[#153459] shadow-sm hover:shadow transition-all cursor-pointer"
-          >
-            <ShieldCheck className="w-4 h-4 text-amber-300" />
-            <span>{t.portalLogin}</span>
-          </button>
+            {/* Online Admission Form Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (setSignUpFormTab) setSignUpFormTab('student');
+                navigate('/signup?tab=admission');
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black text-[#091A32] bg-[#F4B323] hover:bg-[#e0a21a] shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#091A32]" />
+              <span>Online Admission</span>
+            </button>
+          </div>
+
+          {/* Mobile Right Action Area (Language + Hamburger) */}
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 text-xs font-bold text-white border border-white/20"
+              title="Toggle Language"
+            >
+              <Globe className="w-3 h-3 text-[#F4B323]" />
+              <span className="text-[11px]">{language === 'hi' ? 'EN' : 'हिन्दी'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(prev => !prev)}
+              aria-label="Toggle Mobile Navigation Menu"
+              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5 text-[#F4B323]" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+
         </div>
-      </header>
 
-      {/* 🔹 Main Content Area 🔹 */}
-      <main className="flex-1 w-full">
-        {!isLoginModalOpen ? (
-          /* ========================================================== */
-          /*  STAGE 1: CLEAN LIGHT LANDING & SCHOOL SHOWCASE            */
-          /* ========================================================== */
-          <div className="w-full space-y-16 py-8 md:py-12 animate-in fade-in duration-300">
-
-            {/* 1. Hero Showcase Section */}
-            <section id="about" className="max-w-6xl mx-auto px-6 text-center space-y-6 scroll-mt-24">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-xs font-bold text-[#0c2340] shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>{t.qualityEduBadge}</span>
+        {/* Mobile Slide-down Drawer Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed inset-x-0 top-18 sm:top-20 bottom-0 bg-[#091A32]/98 backdrop-blur-lg z-50 overflow-y-auto px-5 py-6 flex flex-col justify-between border-t border-[#1E3A60] animate-in slide-in-from-top-4 duration-200 text-white">
+            <div className="space-y-6">
+              <div className="p-3 rounded-xl bg-[#102747] border border-[#1E3A60] flex items-center gap-2.5 text-xs font-bold text-[#F4B323]">
+                <Sparkles className="w-4 h-4 flex-shrink-0 text-[#F4B323]" />
+                <span>Session 2026–27 · Nursery to 8th Admissions Open</span>
               </div>
 
-              <h2 className="text-3xl sm:text-5xl font-black text-[#0c2340] tracking-tight leading-[1.2] max-w-4xl mx-auto">
-                {t.heroTitle}
-              </h2>
+              <div className="space-y-1 font-bold text-sm text-slate-200">
+                <button
+                  type="button"
+                  onClick={() => closeMobileMenuAndNavigate('#about')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
+                >
+                  <span>About School</span>
+                  <ArrowRight className="w-4 h-4 text-slate-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeMobileMenuAndNavigate('#admissions')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between text-[#F4B323]"
+                >
+                  <span>Admissions 2026–27 (Nursery – 8th)</span>
+                  <ArrowRight className="w-4 h-4 text-[#F4B323]" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeMobileMenuAndNavigate('#features')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
+                >
+                  <span>5 Signature Features</span>
+                  <ArrowRight className="w-4 h-4 text-slate-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeMobileMenuAndNavigate('#leadership')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
+                >
+                  <span>School Leadership</span>
+                  <ArrowRight className="w-4 h-4 text-slate-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeMobileMenuAndNavigate('#facilities')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
+                >
+                  <span>Campus Facilities</span>
+                  <ArrowRight className="w-4 h-4 text-slate-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeMobileMenuAndNavigate('#campus-gallery')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
+                >
+                  <span>Photo Gallery</span>
+                  <ArrowRight className="w-4 h-4 text-slate-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeMobileMenuAndNavigate('#contact')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
+                >
+                  <span>Office Helpline &amp; Contact</span>
+                  <ArrowRight className="w-4 h-4 text-slate-400" />
+                </button>
+              </div>
 
-              <p className="text-sm sm:text-base text-[#475569] max-w-2xl mx-auto leading-relaxed">
-                {t.heroSubtitle}
-              </p>
-
-              {/* Action Buttons in Hero */}
-              <div className="pt-2 flex flex-wrap items-center justify-center gap-3.5">
-                <a
-                  id="admission-desk-hero-btn"
-                  href="/signup?tab=admission"
-                  onClick={(e) => {
-                    e.preventDefault();
+              <div className="space-y-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
                     if (setSignUpFormTab) setSignUpFormTab('student');
                     navigate('/signup?tab=admission');
                   }}
-                  className="px-6 py-3.5 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2.5 cursor-pointer"
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
                 >
-                  <FileText className="w-4 h-4 text-amber-300" />
-                  <span>{t.admissionDeskBtn}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </a>
+                  <Sparkles className="w-4 h-4 text-[#091A32]" />
+                  <span>Online Admission Form</span>
+                </button>
 
-                <a
-                  id="faculty-recruitment-hero-btn"
-                  href="/signup?tab=faculty"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (setSignUpFormTab) setSignUpFormTab('teacher');
-                    navigate('/signup?tab=faculty');
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('parent')}
+                    className="py-3 px-3 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Users className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span>Parent Portal</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('principal')}
+                    className="py-3 px-3 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span>Portal Login</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-white/10 text-center text-xs text-slate-400 space-y-1">
+              <div>Office Call/WhatsApp: <a href={`tel:${primaryPhone}`} className="text-[#F4B323] font-bold">+91 {primaryPhone}</a></div>
+              <div>{schoolLocation}</div>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 3. HERO SECTION FEATURING THE PANORAMIC INSTITUTIONAL BANNER  */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      <main className="flex-1 w-full">
+        {!isLoginModalOpen ? (
+          <div className="w-full space-y-12 sm:space-y-20 py-6 sm:py-10">
+
+            {/* ── SECTION 1: PANORAMIC HERO SHOWCASE ── */}
+            <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+              
+              {/* Institution Header Block */}
+              <div className="text-center space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#102747]/8 border border-[#102747]/15 text-xs font-bold text-[#102747] shadow-2xs">
+                  <Sparkles className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>DISCIPLINE · KNOWLEDGE · EXCELLENCE · BRIGHT FUTURE</span>
+                </div>
+
+                <h1 className="text-3xl sm:text-5xl lg:text-[54px] font-black text-[#102747] tracking-tight leading-[1.14] uppercase max-w-5xl mx-auto">
+                  MISSION NAVODAYA PUBLIC SCHOOL, MORA
+                </h1>
+                
+                <p className="text-base sm:text-lg text-[#65748B] font-medium max-w-2xl mx-auto italic">
+                  &ldquo;A Safe Campus for Brighter Futures.&rdquo;
+                </p>
+
+                {/* 4 Pillars Badges from Banner */}
+                <div className="pt-2 flex flex-wrap items-center justify-center gap-2 sm:gap-3 max-w-3xl mx-auto">
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs text-xs font-bold text-[#102747]">
+                    <BookOpen className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span>Quality Education</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs text-xs font-bold text-[#102747]">
+                    <Shield className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Moral Values</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs text-xs font-bold text-[#102747]">
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Holistic Development</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs text-xs font-bold text-[#102747]">
+                    <Trophy className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span>Better Tomorrow</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* The Official Widescreen Panoramic School Banner */}
+              <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 border-[#E2E8F0] bg-[#091A32] group">
+                <img
+                  src="/school_panoramic_banner.png"
+                  alt="Mission Navodaya Public School Mora Official Panoramic Banner"
+                  className="w-full h-auto object-cover object-center transition-transform duration-700 group-hover:scale-[1.008]"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = '/school_official_banner.png';
                   }}
-                  className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-[#0c2340] font-bold text-xs border border-slate-300 shadow-2xs transition-all flex items-center gap-2.5 cursor-pointer"
-                >
-                  <Briefcase className="w-4 h-4 text-indigo-700" />
-                  <span>{t.teacherApplicationBtn}</span>
-                </a>
+                />
               </div>
 
-              {/* Official School Banner with Campus Gate & Logo */}
-              <div className="pt-6 max-w-6xl mx-auto w-full">
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-amber-500/40 group bg-[#07182D]">
-                  <img
-                    src="/school_official_banner.png"
-                    alt="Mission Navodaya Public School Banner"
-                    className="w-full h-auto max-h-[580px] object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
-                  />
-                </div>
-              </div>
+            </section>
 
-              {/* Fast Facts Badge Bar */}
-              <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto">
-                <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-left">
-                  <div className="text-lg font-black text-[#0c2340]">{t.dailyRollTitle}</div>
-                  <div className="text-[11px] font-medium text-[#64748b] mt-0.5">{t.dailyRollDesc}</div>
+            {/* ── SECTION 2: ADMISSIONS CALLOUT & CTAS (Direct from Banner) ── */}
+            <section id="admissions" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+              <div className="rounded-3xl bg-gradient-to-r from-[#102747] via-[#091A32] to-[#102747] border border-[#1E3A60] p-6 sm:p-8 text-white shadow-xl flex flex-col lg:flex-row items-center justify-between gap-6">
+                
+                {/* Left: Admissions Title & Classes */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                  <div className="w-14 h-14 rounded-2xl bg-[#F4B323] text-[#091A32] flex items-center justify-center flex-shrink-0 shadow-md">
+                    <GraduationCap className="w-8 h-8 text-[#091A32]" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                      <span className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight uppercase">
+                        ADMISSIONS OPEN
+                      </span>
+                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-md bg-[#F4B323] text-[#091A32] uppercase tracking-wider">
+                        SESSION 2026–27
+                      </span>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-bold text-[#F4B323] border border-white/15">
+                      <span>For Classes Nursery to 8th</span>
+                    </div>
+                    <p className="text-xs text-slate-300 max-w-xl pt-0.5">
+                      Empower your child with disciplined learning, modern digital education, and holistic values at our Mora Bazar campus.
+                    </p>
+                  </div>
                 </div>
-                <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-left">
-                  <div className="text-lg font-black text-[#0c2340]">{t.feeCounterTitle}</div>
-                  <div className="text-[11px] font-medium text-[#64748b] mt-0.5">{t.feeCounterDesc}</div>
+
+                {/* Right: The 2 Action CTAs from the Banner */}
+                <div className="flex flex-wrap items-center justify-center gap-3.5 flex-shrink-0 w-full lg:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (setSignUpFormTab) setSignUpFormTab('student');
+                      navigate('/signup?tab=admission');
+                    }}
+                    className="flex-1 sm:flex-initial px-7 py-4 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-[#091A32]" />
+                    <span>Online Admission Form &rarr;</span>
+                  </button>
+
+                  <a
+                    href="#contact"
+                    className="flex-1 sm:flex-initial px-6 py-4 rounded-xl bg-[#091A32] hover:bg-[#102747] text-white font-bold text-sm border border-white/20 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                  >
+                    <Calendar className="w-4 h-4 text-[#F4B323]" />
+                    <span>Book a School Visit &rarr;</span>
+                  </a>
                 </div>
-                <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-left">
-                  <div className="text-lg font-black text-[#0c2340]">{t.reportCardsTitle}</div>
-                  <div className="text-[11px] font-medium text-[#64748b] mt-0.5">{t.reportCardsDesc}</div>
-                </div>
-                <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-left">
-                  <div className="text-lg font-black text-[#0c2340]">{t.smartCampusTitle}</div>
-                  <div className="text-[11px] font-medium text-[#64748b] mt-0.5">{t.smartCampusDesc}</div>
-                </div>
+
               </div>
             </section>
 
-            {/* 2. School Leadership Section */}
-            <section id="leadership" className="max-w-6xl mx-auto px-6 scroll-mt-24">
-              <div className="text-center space-y-2 mb-8">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0c2340] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                  {t.leadershipBadge}
+            {/* ── SECTION 3: 5 SIGNATURE CAMPUS FEATURES (From Banner Cards) ── */}
+            <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+              <div className="text-center space-y-2 mb-8 sm:mb-10">
+                <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
+                  CAMPUS EXCELLENCE
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-black text-[#0c2340] tracking-tight">
-                  {t.leadershipHeading}
-                </h3>
-                <p className="text-xs sm:text-sm text-[#64748b] max-w-xl mx-auto">
-                  {t.leadershipSubheading}
+                <h2 className="text-2xl sm:text-3xl font-black text-[#14243B] tracking-tight">
+                  5 Pillars of Mission Navodaya Public School
+                </h2>
+                <p className="text-xs sm:text-sm text-[#65748B] max-w-xl mx-auto">
+                  Designed for safe, disciplined, and comprehensive schooling for students from Nursery to Grade 8.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
+              {/* 5 Cards Row matching the Banner Ribbon */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
+                
+                {/* 1. Enriched Library */}
+                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
+                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                    <BookOpen className="w-6 h-6 text-[#F4B323]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-[#14243B]">Enriched Library</h3>
+                    <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
+                      Wide range of books, NCERT textbooks, and inspiring learning resources.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. Computer & Tech Wing */}
+                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                    <Monitor className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-[#14243B]">Computer &amp; Tech Wing</h3>
+                    <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
+                      Modern digital learning, dedicated computer lab, and practical tech skills.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Sports & Physical Fitness */}
+                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                    <Trophy className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-[#14243B]">Sports &amp; Physical Fitness</h3>
+                    <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
+                      Spacious open playground for football, athletics, and overall development.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4. Safe & Secure Campus */}
+                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                    <ShieldCheck className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-[#14243B]">Safe &amp; Secure Campus</h3>
+                    <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
+                      A disciplined, walled, and caring environment ensuring student safety.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 5. Dedicated Teachers */}
+                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
+                  <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                    <Users className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-[#14243B]">Dedicated Teachers</h3>
+                    <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
+                      Experienced, caring, and supportive faculty devoted to each child.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            {/* ── SECTION 4: SCHOOL LEADERSHIP ── */}
+            <section id="leadership" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+              <div className="text-center space-y-2 mb-8 sm:mb-12">
+                <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
+                  LEADERSHIP &amp; VISION
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black text-[#14243B] tracking-tight">
+                  Guided by Experience, Integrity &amp; Dedication
+                </h2>
+                <p className="text-xs sm:text-sm text-[#65748B] max-w-xl mx-auto">
+                  Meet the leadership team steering Mission Navodaya Public School toward academic excellence and values-driven education.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
                 {/* 1. Chairman: Uday Shankar Patel */}
-                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                <div className="bg-white rounded-3xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
                   <div>
                     <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-100">
                       <img
                         src="/chairman_uday_shankar_patel.jpg"
-                        alt="Uday Shankar Patel - Chairman"
+                        alt="Uday Shankar Patel — Chairman, Mission Navodaya Public School"
                         className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                       />
-                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-amber-500 text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
-                        <Award className="w-3.5 h-3.5" />
-                        <span>CHAIRMAN & FOUNDER</span>
+                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-[#F4B323] text-[#091A32] font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5 text-[#091A32]" />
+                        <span>CHAIRMAN &amp; FOUNDER</span>
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute bottom-3 left-4 right-4 text-white">
-                        <h4 className="text-lg font-black tracking-tight drop-shadow">Uday Shankar Patel</h4>
-                        <p className="text-[11px] text-amber-300 font-semibold uppercase tracking-wider">Chairman</p>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+                      <div className="absolute bottom-3.5 left-4 right-4 text-white">
+                        <h3 className="text-lg font-black tracking-tight drop-shadow">Uday Shankar Patel</h3>
+                        <p className="text-[11px] text-[#F4B323] font-bold uppercase tracking-wider">Chairman &amp; Founder</p>
                       </div>
                     </div>
                     <div className="p-6 space-y-3">
-                      <p className="text-xs text-[#475569] leading-relaxed italic">
-                        {t.chairmanQuote}
+                      <p className="text-xs text-[#65748B] leading-relaxed italic">
+                        &ldquo;Education is not merely acquiring degrees; it is about cultivating moral character, discipline, and building a foundation that empowers every child to serve society with pride.&rdquo;
                       </p>
                     </div>
                   </div>
-                  <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
-                    <Building className="w-4 h-4 text-amber-600" />
-                    <span>{t.chairmanOffice}</span>
+                  <div className="px-6 py-4 bg-slate-50 border-t border-[#E2E8F0] flex items-center gap-2 text-xs font-bold text-[#102747]">
+                    <Building className="w-4 h-4 text-[#F4B323]" />
+                    <span>Chairman&apos;s Secretariat · Founder&apos;s Desk</span>
                   </div>
                 </div>
 
-                {/* 2. Director: Vishal Patel */}
-                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                {/* 2. Managing Director: Vishal Patel */}
+                <div className="bg-white rounded-3xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
                   <div>
                     <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-100">
                       <img
                         src="/director_vishal_patel.jpg"
-                        alt="Vishal Patel - Managing Director"
+                        alt="Vishal Patel — Managing Director, Mission Navodaya Public School"
                         className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                       />
-                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-blue-600 text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5" />
+                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-[#102747] text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5 border border-white/20">
+                        <Shield className="w-3.5 h-3.5 text-[#F4B323]" />
                         <span>MANAGING DIRECTOR</span>
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute bottom-3 left-4 right-4 text-white">
-                        <h4 className="text-lg font-black tracking-tight drop-shadow">Vishal Patel</h4>
-                        <p className="text-[11px] text-blue-300 font-semibold uppercase tracking-wider">Director</p>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+                      <div className="absolute bottom-3.5 left-4 right-4 text-white">
+                        <h3 className="text-lg font-black tracking-tight drop-shadow">Vishal Patel</h3>
+                        <p className="text-[11px] text-blue-200 font-bold uppercase tracking-wider">Managing Director</p>
                       </div>
                     </div>
                     <div className="p-6 space-y-3">
-                      <p className="text-xs text-[#475569] leading-relaxed italic">
-                        {t.directorQuote}
+                      <p className="text-xs text-[#65748B] leading-relaxed italic">
+                        &ldquo;We combine modern educational infrastructure with deep-rooted values, ensuring that our students excel in academics, technology, and life skills.&rdquo;
                       </p>
                     </div>
                   </div>
-                  <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
-                    <Shield className="w-4 h-4 text-blue-600" />
-                    <span>{t.directorOffice}</span>
+                  <div className="px-6 py-4 bg-slate-50 border-t border-[#E2E8F0] flex items-center gap-2 text-xs font-bold text-[#102747]">
+                    <Shield className="w-4 h-4 text-[#102747]" />
+                    <span>Executive Operations &amp; Administration</span>
                   </div>
                 </div>
 
                 {/* 3. Principal: Soni Madam */}
-                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                <div className="bg-white rounded-3xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
                   <div>
                     <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-100">
                       <img
                         src="/principal_soni_madam.jpg"
-                        alt="Soni Madam - Principal"
+                        alt="Soni Madam — Principal, Mission Navodaya Public School"
                         className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                       />
-                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-emerald-600 text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
-                        <GraduationCap className="w-3.5 h-3.5" />
+                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-emerald-700 text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
+                        <GraduationCap className="w-3.5 h-3.5 text-white" />
                         <span>PRINCIPAL</span>
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute bottom-3 left-4 right-4 text-white">
-                        <h4 className="text-lg font-black tracking-tight drop-shadow">Soni Madam</h4>
-                        <p className="text-[11px] text-emerald-300 font-semibold uppercase tracking-wider">Principal</p>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+                      <div className="absolute bottom-3.5 left-4 right-4 text-white">
+                        <h3 className="text-lg font-black tracking-tight drop-shadow">Soni Madam</h3>
+                        <p className="text-[11px] text-emerald-300 font-bold uppercase tracking-wider">Principal</p>
                       </div>
                     </div>
                     <div className="p-6 space-y-3">
-                      <p className="text-xs text-[#475569] leading-relaxed italic">
-                        {t.principalQuote}
+                      <p className="text-xs text-[#65748B] leading-relaxed italic">
+                        &ldquo;Every student has unique potential. Our faculty is devoted to personalized mentorship, holistic growth, and academic rigor in a nurturing atmosphere.&rdquo;
                       </p>
                     </div>
                   </div>
-                  <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
+                  <div className="px-6 py-4 bg-slate-50 border-t border-[#E2E8F0] flex items-center gap-2 text-xs font-bold text-[#102747]">
                     <School className="w-4 h-4 text-emerald-600" />
-                    <span>{t.principalOffice}</span>
+                    <span>Academic Administration &amp; Faculty Head</span>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* 3. Campus Facilities */}
-            <section id="facilities" className="max-w-6xl mx-auto px-6 scroll-mt-24">
-              <div className="text-center space-y-2 mb-8">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0c2340] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                  {t.facilitiesBadge}
+            {/* ── SECTION 5: REAL CAMPUS PHOTO GALLERY ── */}
+            <section id="campus-gallery" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+              <div className="text-center space-y-2 mb-8 sm:mb-12">
+                <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
+                  CAMPUS GALLERY
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-black text-[#0c2340] tracking-tight">
-                  {t.facilitiesHeading}
-                </h3>
-                <p className="text-xs sm:text-sm text-[#64748b] max-w-xl mx-auto">
-                  {t.facilitiesSubheading}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
-                    <BookOpen className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-sm font-bold text-[#0c2340]">{t.libTitle}</h4>
-                  <p className="text-xs text-[#64748b] leading-relaxed">{t.libDesc}</p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
-                    <Monitor className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-sm font-bold text-[#0c2340]">{t.techTitle}</h4>
-                  <p className="text-xs text-[#64748b] leading-relaxed">{t.techDesc}</p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-sm font-bold text-[#0c2340]">{t.sportsTitle}</h4>
-                  <p className="text-xs text-[#64748b] leading-relaxed">{t.sportsDesc}</p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-sm font-bold text-[#0c2340]">{t.parentDeskTitle}</h4>
-                  <p className="text-xs text-[#64748b] leading-relaxed">{t.parentDeskDesc}</p>
-                </div>
-              </div>
-            </section>
-
-            {/* 3.5 Campus & Infrastructure Photo Gallery */}
-            <section id="campus-gallery" className="max-w-6xl mx-auto px-6 scroll-mt-24">
-              <div className="text-center space-y-2 mb-8">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0c2340] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                  CAMPUS & FACILITIES
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-black text-[#0c2340] tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-black text-[#14243B] tracking-tight">
                   Life at Mission Navodaya Public School, Mora
-                </h3>
-                <p className="text-xs sm:text-sm text-[#64748b] max-w-xl mx-auto">
+                </h2>
+                <p className="text-xs sm:text-sm text-[#65748B] max-w-xl mx-auto">
                   A serene, green, and spacious campus built for modern learning, sports, and holistic character building.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {/* Gate Banner */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group">
-                  <div className="h-48 overflow-hidden bg-slate-100">
+                {/* 1. Main Gate Banner */}
+                <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
+                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
                     <img
                       src="/school_gate_banner.jpg"
-                      alt="Main Gate - Mission Navodaya Public School"
+                      alt="Main Campus Entrance - Mission Navodaya Public School"
+                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <div className="p-4 space-y-1">
-                    <h5 className="text-sm font-bold text-[#0c2340]">Main Campus Entrance</h5>
-                    <p className="text-[11px] text-slate-500">Secure gate with official school identification board</p>
+                  <div className="p-4 space-y-1 bg-white">
+                    <h3 className="text-sm font-bold text-[#14243B]">Main Campus Entrance</h3>
+                    <p className="text-[11px] text-[#65748B]">Secure entrance with official school identification</p>
                   </div>
                 </div>
 
-                {/* Playground */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group">
-                  <div className="h-48 overflow-hidden bg-slate-100">
+                {/* 2. Playground */}
+                <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
+                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
                     <img
                       src="/campus_playground.jpg"
-                      alt="Sports Ground and Playground"
+                      alt="Sports & Football Arena - Mission Navodaya Public School"
+                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <div className="p-4 space-y-1">
-                    <h5 className="text-sm font-bold text-[#0c2340]">Sports & Football Arena</h5>
-                    <p className="text-[11px] text-slate-500">Expansive open playground for athletics and football</p>
+                  <div className="p-4 space-y-1 bg-white">
+                    <h3 className="text-sm font-bold text-[#14243B]">Sports &amp; Football Arena</h3>
+                    <p className="text-[11px] text-[#65748B]">Expansive open playground for athletics and football</p>
                   </div>
                 </div>
 
-                {/* Academic Building */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group">
-                  <div className="h-48 overflow-hidden bg-slate-100">
+                {/* 3. Academic Building Block */}
+                <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
+                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
                     <img
                       src="/campus_building.jpg"
-                      alt="Academic Building"
+                      alt="Academic Building Block - Mission Navodaya Public School"
+                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <div className="p-4 space-y-1">
-                    <h5 className="text-sm font-bold text-[#0c2340]">Academic Building Block</h5>
-                    <p className="text-[11px] text-slate-500">Spacious, ventilated classrooms and digital study points</p>
+                  <div className="p-4 space-y-1 bg-white">
+                    <h3 className="text-sm font-bold text-[#14243B]">Academic Building Block</h3>
+                    <p className="text-[11px] text-[#65748B]">Spacious, ventilated classrooms and digital study points</p>
                   </div>
                 </div>
 
-                {/* School Entrance Life */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group">
-                  <div className="h-48 overflow-hidden bg-slate-100">
+                {/* 4. Student Arrival & Campus Life */}
+                <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
+                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
                     <img
                       src="/school_entrance.jpg"
-                      alt="School Entrance and Students"
+                      alt="Student Arrival & Campus Life - Mission Navodaya Public School"
+                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <div className="p-4 space-y-1">
-                    <h5 className="text-sm font-bold text-[#0c2340]">Student Arrival & Life</h5>
-                    <p className="text-[11px] text-slate-500">Safe bicycle parking, disciplined campus gates and arrival</p>
+                  <div className="p-4 space-y-1 bg-white">
+                    <h3 className="text-sm font-bold text-[#14243B]">Student Arrival &amp; Life</h3>
+                    <p className="text-[11px] text-[#65748B]">Disciplined campus gates, bicycle parking and arrival</p>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* 4. Contact & Help Desk */}
-            <section id="contact" className="max-w-6xl mx-auto px-6 scroll-mt-24">
-              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-10 space-y-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+            {/* ── SECTION 6: CONTACT & CAMPUS HELPLINE (Direct from Banner Footer Strip) ── */}
+            <section id="contact" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+              <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-10 space-y-8">
+                
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-6">
                   <div>
-                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0c2340] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                      {t.contactBadge}
+                    <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
+                      REACH OUT
                     </span>
-                    <h3 className="text-2xl sm:text-3xl font-black text-[#0c2340] tracking-tight mt-2">
-                      {t.contactHeading}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-[#64748b]">
-                      {t.contactSubheading}
+                    <h2 className="text-2xl sm:text-3xl font-black text-[#14243B] tracking-tight mt-2">
+                      Reach Out to Mission Navodaya Public School
+                    </h2>
+                    <p className="text-xs sm:text-sm text-[#65748B] mt-1">
+                      Official admission desk, phone helpline, and visiting hours for parents and guardians.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <a
-                      href={`tel:${phone}`}
-                      className="px-4 py-2.5 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white text-xs font-bold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer"
+                      href={`tel:${primaryPhone}`}
+                      className="px-5 py-3 rounded-xl bg-[#102747] hover:bg-[#091A32] text-white text-xs font-bold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer"
                     >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>{t.callOfficeBtn}: +91 {phone}</span>
+                      <Phone className="w-4 h-4 text-[#F4B323]" />
+                      <span>Call Helpline: +91 {primaryPhone}</span>
                     </a>
+                    <a
+                      href={`https://wa.me/91${primaryPhone}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>WhatsApp Desk</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* 4 Cards Matching Banner Footer Strip */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* Location */}
+                  <div className="p-4 rounded-xl bg-slate-50 border border-[#E2E8F0] space-y-2">
+                    <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                      <MapPin className="w-4.5 h-4.5" />
+                    </div>
+                    <h3 className="text-sm font-bold text-[#14243B]">{schoolLocation}</h3>
+                    <p className="text-xs text-[#65748B] leading-relaxed">
+                      Our School Campus<br />
+                      Mora, Siwan District<br />
+                      Bihar, India
+                    </p>
+                    <a
+                      href="https://maps.google.com/?q=Mission+Navodaya+Public+School+Mora+Bihar"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-[#102747] hover:underline inline-flex items-center gap-1 pt-1"
+                    >
+                      <span>Open Google Maps</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+
+                  {/* Phone & WhatsApp */}
+                  <div className="p-4 rounded-xl bg-slate-50 border border-[#E2E8F0] space-y-2">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                      <Phone className="w-4.5 h-4.5" />
+                    </div>
+                    <h3 className="text-sm font-bold text-[#14243B]">+91 {primaryPhone}</h3>
+                    <p className="text-xs text-[#65748B] leading-relaxed">
+                      Call / WhatsApp Desk<br />
+                      Alt Helpline: +91 {altPhone}<br />
+                      Monday through Saturday
+                    </p>
+                    <a
+                      href={`https://wa.me/91${primaryPhone}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1 pt-1"
+                    >
+                      <span>Chat on WhatsApp</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+
+                  {/* Official Email */}
+                  <div className="p-4 rounded-xl bg-slate-50 border border-[#E2E8F0] space-y-2">
+                    <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                      <Mail className="w-4.5 h-4.5" />
+                    </div>
+                    <h3 className="text-sm font-bold text-[#14243B]">{officialEmail}</h3>
+                    <p className="text-xs text-[#65748B] leading-relaxed">
+                      Official Institutional Email<br />
+                      Admissions &amp; Verification<br />
+                      Student Inquiries
+                    </p>
                     <a
                       href={`mailto:${officialEmail}`}
-                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0c2340] text-xs font-bold transition-all border border-slate-300 inline-flex items-center gap-2 cursor-pointer"
+                      className="text-[11px] font-bold text-[#102747] hover:underline inline-flex items-center gap-1 pt-1"
                     >
-                      <Mail className="w-3.5 h-3.5" />
-                      <span>{t.emailOfficeBtn}</span>
+                      <span>Send Direct Mail</span>
+                      <ArrowRight className="w-3 h-3" />
                     </a>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {/* Address */}
-                  <div className="space-y-2">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
-                      <MapPin className="w-5 h-5" />
+                  {/* School Timings */}
+                  <div className="p-4 rounded-xl bg-slate-50 border border-[#E2E8F0] space-y-2">
+                    <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+                      <Clock className="w-4.5 h-4.5" />
                     </div>
-                    <h4 className="text-sm font-bold text-[#0c2340]">{t.campusLocTitle}</h4>
-                    <p className="text-xs text-[#64748b] leading-relaxed">
-                      <strong>{schoolName}</strong><br />
-                      {campusAddress}<br />
-                      Dist. &amp; State, India
+                    <h3 className="text-sm font-bold text-[#14243B]">School Timings</h3>
+                    <p className="text-xs text-[#65748B] leading-relaxed">
+                      Monday – Saturday<br />
+                      <strong>8:00 AM – 2:00 PM</strong><br />
+                      Sunday: Closed
                     </p>
-                  </div>
-
-                  {/* Phone Helpline */}
-                  <div className="space-y-2">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-                      <Phone className="w-5 h-5" />
+                    <div className="text-[11px] text-purple-700 font-semibold pt-1">
+                      <span>Administrative &amp; Fee Counter Open</span>
                     </div>
-                    <h4 className="text-sm font-bold text-[#0c2340]">{t.helplineTitle}</h4>
-                    <p className="text-xs text-[#64748b] leading-relaxed">
-                      Main Desk: +91 {phone}<br />
-                      WhatsApp: +91 {phone}<br />
-                      School Working Days
-                    </p>
-                  </div>
-
-                  {/* Email */}
-                  <div className="space-y-2">
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                    <h4 className="text-sm font-bold text-[#0c2340]">{t.emailTitle}</h4>
-                    <p className="text-xs text-[#64748b] leading-relaxed">
-                      {officialEmail}<br />
-                      Admissions &amp; Queries
-                    </p>
-                  </div>
-
-                  {/* Office Hours */}
-                  <div className="space-y-2">
-                    <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
-                      <Clock className="w-5 h-5" />
-                    </div>
-                    <h4 className="text-sm font-bold text-[#0c2340]">{t.visitingHoursTitle}</h4>
-                    <p className="text-xs text-[#64748b] leading-relaxed whitespace-pre-line">
-                      {t.visitingHoursDesc}
-                    </p>
                   </div>
                 </div>
-              </div>
-            </section>
 
-            {/* 5. Bottom Admission & Enquiry Banner */}
-            <section className="max-w-6xl mx-auto px-6">
-              <div className="rounded-3xl bg-gradient-to-r from-[#0c2340] to-[#153459] text-white p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md">
-                <div className="space-y-1 text-center sm:text-left">
-                  <h4 className="text-xl font-bold">
-                    {language === 'hi' ? 'सत्र 2026-27 के लिए नए नामांकन प्रारंभ हैं' : 'Admissions Open for Session 2026-27'}
-                  </h4>
-                  <p className="text-xs text-slate-300">
-                    {language === 'hi'
-                      ? 'अपने बच्चे के उज्ज्वल भविष्य के लिए आज ही ऑनलाइन प्रवेश पूछताछ फॉर्म भरें।'
-                      : 'Register your interest today to secure admission for your child at Mission Navodaya Public School.'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <a
-                    href={`tel:${phone}`}
-                    className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all flex items-center gap-2 cursor-pointer flex-shrink-0"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>{t.callOfficeBtn}</span>
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (setSignUpFormTab) setSignUpFormTab('student');
-                      navigate('/signup');
-                    }}
-                    className="px-6 py-3 rounded-xl bg-white text-[#0c2340] font-black text-xs hover:bg-slate-100 transition-all flex items-center gap-2 cursor-pointer shadow-sm flex-shrink-0"
-                  >
-                    <span>{t.admissionDeskBtn}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
             </section>
 
           </div>
         ) : (
-          /* ========================================================== */
-          /*  STAGE 2: AUTHENTICATION MODAL (CLEAN LIGHT THEME)         */
-          /* ========================================================== */
+          /* ───────────────────────────────────────────────────────────── */
+          /* STAGE 2: PRESERVED AUTHENTICATION MODAL (100% WORKING LOGIC)  */
+          /* ───────────────────────────────────────────────────────────── */
           <div className="w-full max-w-lg mx-auto py-10 px-4 animate-in zoom-in-95 duration-200">
-            <div className="rounded-3xl bg-white border border-slate-200 shadow-xl p-6 sm:p-8 relative">
+            <div className="rounded-3xl bg-white border border-[#E2E8F0] shadow-xl p-6 sm:p-8 relative">
 
-              {/* Back to Campus Landing Button */}
               <button
                 type="button"
                 onClick={() => setIsLoginModalOpen(false)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-[#0c2340] transition-all cursor-pointer mb-5"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-[#102747] transition-all cursor-pointer mb-5"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>&larr; {t.backToHome}</span>
+                <ArrowLeft className="w-3.5 h-3.5 text-[#102747]" />
+                <span>&larr; Back to School Website</span>
               </button>
 
-              {/* School Header in Modal */}
               <div className="text-center space-y-1.5 mb-6">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-50 border border-slate-200 p-1.5 shadow-2xs flex items-center justify-center overflow-hidden">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-white border border-[#E2E8F0] p-1.5 shadow-xs flex items-center justify-center overflow-hidden">
                   <img
                     src={logoSrc}
                     alt={schoolName}
@@ -672,53 +939,55 @@ export default function SignInView() {
                     }}
                   />
                 </div>
-                <h2 className="text-xl font-black text-[#0c2340] tracking-tight">
-                  {t.modalTitle}
+                <h2 className="text-xl font-black text-[#14243B] tracking-tight">
+                  {role === 'parent' ? 'Parent Portal Sign In' : role === 'teacher' ? 'Faculty & Teacher Sign In' : 'Principal Administration Portal'}
                 </h2>
-                <p className="text-xs text-[#64748b] font-medium">
-                  {t.modalSubtitle}
+                <p className="text-xs text-[#65748B] font-medium">
+                  {role === 'parent'
+                    ? 'Access your child’s fee statement, attendance records and report cards'
+                    : 'Secure institutional portal for authenticated staff and administration'}
                 </p>
               </div>
 
               {/* Role Switcher Tabs */}
-              <div className="grid grid-cols-3 p-1 rounded-2xl bg-slate-100 border border-slate-200 mb-6">
+              <div className="grid grid-cols-3 p-1 rounded-2xl bg-slate-100 border border-[#E2E8F0] mb-6">
                 <button
                   type="button"
                   onClick={() => { setRole('parent'); setError(''); }}
-                  className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     role === 'parent'
-                      ? 'bg-white text-[#0c2340] shadow-sm'
-                      : 'text-[#64748b] hover:text-amber-300'
+                      ? 'bg-white text-[#102747] shadow-sm'
+                      : 'text-[#65748B] hover:text-[#102747]'
                   }`}
                 >
-                  <Users className="w-3.5 h-3.5 text-amber-600" />
-                  <span>{t.parentRole}</span>
+                  <Users className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>Parent</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => { setRole('teacher'); setError(''); }}
-                  className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     role === 'teacher'
-                      ? 'bg-white text-[#0c2340] shadow-sm'
-                      : 'text-[#64748b] hover:text-amber-300'
+                      ? 'bg-white text-[#102747] shadow-sm'
+                      : 'text-[#65748B] hover:text-[#102747]'
                   }`}
                 >
-                  <GraduationCap className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{t.teacherRole}</span>
+                  <GraduationCap className="w-3.5 h-3.5 text-[#102747]" />
+                  <span>Teacher</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => { setRole('principal'); setError(''); }}
-                  className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     role === 'principal'
-                      ? 'bg-white text-[#0c2340] shadow-sm'
-                      : 'text-[#64748b] hover:text-amber-300'
+                      ? 'bg-white text-[#102747] shadow-sm'
+                      : 'text-[#65748B] hover:text-[#102747]'
                   }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{t.principalRole}</span>
+                  <span>Principal</span>
                 </button>
               </div>
 
@@ -730,14 +999,14 @@ export default function SignInView() {
                 </div>
               )}
 
-              {/* Dynamic Authentication Form */}
+              {/* Authentication Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {role === 'parent' ? (
                   /* PARENT LOGIN FIELDS */
                   <div className="space-y-4 animate-in fade-in">
                     <div>
-                      <label className="block text-xs font-bold text-[#0c2340] mb-1.5">
-                        {t.admissionNoLabel}
+                      <label className="block text-xs font-bold text-[#14243B] mb-1.5">
+                        Child Admission ID or Roll Number *
                       </label>
                       <div className="relative">
                         <Hash className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -746,15 +1015,15 @@ export default function SignInView() {
                           required
                           value={parentAdmissionNo}
                           onChange={(e) => setParentAdmissionNo(e.target.value)}
-                          placeholder={t.admissionNoPlaceholder}
-                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all"
+                          placeholder="e.g. MNP-2026-0042 or Roll Number"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-medium text-[#14243B] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-[#0c2340] mb-1.5">
-                        {t.parentMobileLabel}
+                      <label className="block text-xs font-bold text-[#14243B] mb-1.5">
+                        Registered Parent Mobile Number *
                       </label>
                       <div className="relative">
                         <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -763,12 +1032,12 @@ export default function SignInView() {
                           required
                           value={parentMobile}
                           onChange={(e) => setParentMobile(e.target.value)}
-                          placeholder={t.parentMobilePlaceholder}
-                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all"
+                          placeholder="Enter 10-digit mobile number"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-medium text-[#14243B] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all"
                         />
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-1">
-                        {t.parentMobileHelp}
+                      <p className="text-[10px] text-[#65748B] mt-1">
+                        Used to verify enrollment and safeguard your child’s records.
                       </p>
                     </div>
                   </div>
@@ -776,8 +1045,8 @@ export default function SignInView() {
                   /* PRINCIPAL & TEACHER LOGIN FIELDS */
                   <div className="space-y-4 animate-in fade-in">
                     <div>
-                      <label className="block text-xs font-bold text-[#0c2340] mb-1.5">
-                        {role === 'teacher' ? "School Email Address" : "Principal / Admin Email"}
+                      <label className="block text-xs font-bold text-[#14243B] mb-1.5">
+                        {role === 'teacher' ? 'Registered School Email Address *' : 'Principal / Admin Email *'}
                       </label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -786,15 +1055,15 @@ export default function SignInView() {
                           required
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder={role === 'teacher' ? "teacher@school.com" : "admin@mnpschool.com"}
-                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all"
+                          placeholder={role === 'teacher' ? 'teacher@school.com' : 'admin@mnpschool.com'}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-medium text-[#14243B] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all"
                         />
                       </div>
                     </div>
 
                     {role === 'teacher' && (
                       <div>
-                        <label className="block text-xs font-bold text-[#0c2340] mb-1.5">
+                        <label className="block text-xs font-bold text-[#14243B] mb-1.5">
                           Select Your Teacher Name *
                         </label>
                         <div className="relative">
@@ -803,7 +1072,7 @@ export default function SignInView() {
                             required
                             value={selectedTeacherId}
                             onChange={(e) => setSelectedTeacherId(e.target.value)}
-                            className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all appearance-none cursor-pointer"
+                            className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-semibold text-[#14243B] focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all appearance-none cursor-pointer"
                           >
                             <option value="">-- Choose Your Teacher Profile --</option>
                             {teachers.map(t => (
@@ -819,16 +1088,16 @@ export default function SignInView() {
 
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-bold text-[#0c2340]">
-                          {role === 'teacher' ? "Teacher Password" : "Password"}
+                        <label className="text-xs font-bold text-[#14243B]">
+                          {role === 'teacher' ? 'Teacher Password *' : 'Admin Password *'}
                         </label>
                         {role === 'principal' && (
                           <button
                             type="button"
                             onClick={() => navigate('/forgot-password')}
-                            className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                            className="text-[11px] font-bold text-[#102747] hover:underline cursor-pointer"
                           >
-                            {t.forgotPasswordLink}
+                            Forgot Password?
                           </button>
                         )}
                       </div>
@@ -839,8 +1108,8 @@ export default function SignInView() {
                           required
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder={role === 'teacher' ? "Enter your teacher password" : "Enter your secret password"}
-                          className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all"
+                          placeholder="Enter password"
+                          className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-medium text-[#14243B] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all"
                         />
                         <button
                           type="button"
@@ -856,59 +1125,56 @@ export default function SignInView() {
 
                 {/* Remember Me */}
                 <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs font-medium text-[#65748B] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#0c2340] focus:ring-[#0c2340] border-slate-300 cursor-pointer"
+                      className="w-4 h-4 rounded text-[#102747] focus:ring-[#102747]/20 cursor-pointer border-[#E2E8F0]"
                     />
-                    <span>{t.rememberSession}</span>
+                    <span>Remember this device</span>
                   </label>
+                  <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    <span>256-bit Encrypted</span>
+                  </span>
                 </div>
 
                 {/* Submit Action Button */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 px-6 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group mt-4"
+                  className="w-full py-3.5 rounded-xl bg-[#102747] hover:bg-[#091A32] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
                 >
                   {loading ? (
-                    <span>Verifying Credentials...</span>
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Authenticating Credentials...</span>
+                    </>
                   ) : (
                     <>
-                      <span>
-                        {role === 'principal'
-                          ? (language === 'hi' ? 'प्रधानाचार्य डैशबोर्ड में लॉगिन करें' : 'Sign In to Admin Dashboard')
-                          : role === 'teacher'
-                          ? (language === 'hi' ? 'शिक्षक पोर्टल में लॉगिन करें' : 'Sign In to Teacher Portal')
-                          : (language === 'hi' ? 'अभिभावक पोर्टल में लॉगिन करें' : 'Sign In to Parent Portal')}
-                      </span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      <span>Sign In to {role === 'parent' ? 'Parent Desk' : role === 'teacher' ? 'Teacher Console' : 'Admin Portal'}</span>
+                      <ArrowRight className="w-4 h-4 text-[#F4B323]" />
                     </>
                   )}
                 </button>
               </form>
 
               {/* In-Modal School Contact Help Desk */}
-              <div className="mt-6 pt-5 border-t border-slate-100 rounded-2xl bg-slate-50 p-3.5 text-xs text-slate-600 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-bold text-[#0c2340]">
-                    <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
-                    <span>{t.needHelpLoggingIn}</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-semibold">Campus Office</span>
-                </div>
-                <p className="text-[11px] leading-relaxed text-slate-500">
-                  {role === 'parent' ? t.parentHelpText : "For password reset or credentials help, contact the Principal's office:"}
+              <div className="mt-6 pt-5 border-t border-[#E2E8F0] text-center space-y-1.5">
+                <p className="text-[11px] text-[#65748B]">
+                  {role === 'parent'
+                    ? 'Need help finding your child admission ID? Contact the school helpline:'
+                    : 'For credentials assistance, contact the Principal Secretariat:'}
                 </p>
-                <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold text-[#0c2340]">
-                  <a href={`tel:${phone}`} className="flex items-center gap-1 text-emerald-700 hover:underline">
-                    <Phone className="w-3 h-3" />
-                    <span>+91 {phone}</span>
+                <div className="flex items-center justify-center gap-3 text-xs font-bold text-[#102747]">
+                  <a href={`tel:${primaryPhone}`} className="inline-flex items-center gap-1.5 hover:underline">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>+91 {primaryPhone}</span>
                   </a>
-                  <a href={`mailto:${officialEmail}`} className="flex items-center gap-1 text-blue-700 hover:underline">
-                    <Mail className="w-3 h-3" />
+                  <span>·</span>
+                  <a href={`mailto:${officialEmail}`} className="inline-flex items-center gap-1.5 hover:underline">
+                    <Mail className="w-3.5 h-3.5 text-blue-600" />
                     <span>{officialEmail}</span>
                   </a>
                 </div>
@@ -919,44 +1185,93 @@ export default function SignInView() {
         )}
       </main>
 
-      {/* 🔹 Comprehensive Institutional Footer 🔹 */}
-      <footer className="w-full border-t border-slate-200/90 bg-white mt-12">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 4. INSTITUTIONAL FOOTER MATCHING THE BANNER (Navy + Gold)     */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      <footer className="w-full border-t border-[#1E3A60] bg-[#091A32] text-white mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
             
             {/* Column 1: School Identity */}
-            <div className="space-y-3.5">
+            <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 p-1 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="w-11 h-11 rounded-xl bg-white border border-[#E2E8F0] p-1 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xs">
                   <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-[#0c2340] tracking-tight">{t.schoolName}</h4>
-                  <p className="text-[10px] text-slate-500 font-medium">{t.moraBazarCampus}</p>
+                  <h3 className="text-sm font-black text-white tracking-tight uppercase">{schoolName}</h3>
+                  <p className="text-[11px] text-[#F4B323] font-medium">{schoolSubtitle}</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                {t.footerMotto}
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Dedicated to nurturing young minds with knowledge, character, discipline, and life skills for a brighter future.
               </p>
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] font-bold text-[#0c2340]">
-                <span>{t.sessionActive}</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#102747] text-[11px] font-bold text-[#F4B323] border border-[#1E3A60]">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Session 2026–27 Nursery to 8th</span>
               </div>
             </div>
 
             {/* Column 2: Quick Links */}
             <div className="space-y-3">
-              <h5 className="text-xs font-black uppercase tracking-wider text-[#0c2340]">
-                {t.exploreCampus}
-              </h5>
-              <ul className="space-y-2 text-xs text-slate-600 font-medium">
+              <h4 className="text-xs font-black uppercase tracking-wider text-[#F4B323]">
+                Explore Campus
+              </h4>
+              <ul className="space-y-2 text-xs text-slate-300 font-medium">
                 <li>
-                  <a href="#about" className="hover:text-amber-300 transition-colors">{t.aboutSchool}</a>
+                  <a href="#about" className="hover:text-[#F4B323] transition-colors">About the School</a>
                 </li>
                 <li>
-                  <a href="#leadership" className="hover:text-amber-300 transition-colors">{t.leadership}</a>
+                  <a href="#admissions" className="hover:text-[#F4B323] transition-colors text-[#F4B323] font-bold">Admissions 2026–27 &rarr;</a>
                 </li>
                 <li>
-                  <a href="#facilities" className="hover:text-amber-300 transition-colors">{t.facilities}</a>
+                  <a href="#features" className="hover:text-[#F4B323] transition-colors">5 Campus Pillars</a>
+                </li>
+                <li>
+                  <a href="#leadership" className="hover:text-[#F4B323] transition-colors">Leadership &amp; Vision</a>
+                </li>
+                <li>
+                  <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors">Photo Gallery</a>
+                </li>
+                <li>
+                  <a href="#contact" className="hover:text-[#F4B323] transition-colors">Help &amp; Office Desk</a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Digital Portals */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-black uppercase tracking-wider text-[#F4B323]">
+                Digital Portals
+              </h4>
+              <ul className="space-y-2 text-xs text-slate-300 font-medium">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('parent')}
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
+                  >
+                    Parent Portal Login &rarr;
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('teacher')}
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
+                  >
+                    Faculty &amp; Teacher Console &rarr;
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('principal')}
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
+                  >
+                    Principal Administrative Access &rarr;
+                  </button>
                 </li>
                 <li>
                   <a
@@ -966,9 +1281,9 @@ export default function SignInView() {
                       if (setSignUpFormTab) setSignUpFormTab('student');
                       navigate('/signup?tab=admission');
                     }}
-                    className="hover:text-amber-300 transition-colors text-amber-700 font-bold cursor-pointer"
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
                   >
-                    {t.admissionDeskBtn} &rarr;
+                    Student Admission Desk &rarr;
                   </a>
                 </li>
                 <li>
@@ -979,92 +1294,61 @@ export default function SignInView() {
                       if (setSignUpFormTab) setSignUpFormTab('teacher');
                       navigate('/signup?tab=faculty');
                     }}
-                    className="hover:text-amber-300 transition-colors text-indigo-700 font-bold cursor-pointer"
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
                   >
-                    {t.teacherApplicationBtn} &rarr;
+                    Teacher Recruitment Application &rarr;
                   </a>
                 </li>
               </ul>
             </div>
 
-            {/* Column 3: Portals & Access */}
+            {/* Column 4: Contact & Office Strip */}
             <div className="space-y-3">
-              <h5 className="text-xs font-black uppercase tracking-wider text-[#0c2340]">
-                {t.digitalPortals}
-              </h5>
-              <ul className="space-y-2 text-xs text-slate-600 font-medium">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => openPortalLogin('parent')}
-                    className="hover:text-amber-300 transition-colors cursor-pointer"
-                  >
-                    {t.parentPortalBtn}
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => openPortalLogin('teacher')}
-                    className="hover:text-amber-300 transition-colors cursor-pointer"
-                  >
-                    {t.teacherDeskBtn}
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => openPortalLogin('principal')}
-                    className="hover:text-amber-300 transition-colors cursor-pointer"
-                  >
-                    {language === 'hi' ? 'प्रधानाचार्य प्रशासनिक प्रवेश' : 'Principal Administrative Access'}
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 4: Contact & Office */}
-            <div className="space-y-3">
-              <h5 className="text-xs font-black uppercase tracking-wider text-[#0c2340]">
-                {t.campusContact}
-              </h5>
-              <div className="space-y-2 text-xs text-slate-600">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
-                  <span>{campusAddress}, District &amp; State, India</span>
+              <h4 className="text-xs font-black uppercase tracking-wider text-[#F4B323]">
+                Campus &amp; Office
+              </h4>
+              <div className="space-y-2.5 text-xs text-slate-300">
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="w-4 h-4 text-[#F4B323] flex-shrink-0 mt-0.5" />
+                  <span>{schoolLocation}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                  <a href={`tel:${phone}`} className="hover:underline font-semibold text-[#0c2340]">
-                    +91 {phone}
+                <div className="flex items-center gap-2.5">
+                  <Phone className="w-4 h-4 text-[#F4B323] flex-shrink-0" />
+                  <a href={`tel:${primaryPhone}`} className="hover:underline font-bold text-white">
+                    +91 {primaryPhone}
+                  </a>
+                  <span className="text-slate-500">·</span>
+                  <a href={`tel:${altPhone}`} className="hover:underline text-slate-300">
+                    +91 {altPhone}
                   </a>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                  <a href={`mailto:${officialEmail}`} className="hover:underline text-slate-600">
+                <div className="flex items-center gap-2.5">
+                  <Mail className="w-4 h-4 text-[#F4B323] flex-shrink-0" />
+                  <a href={`mailto:${officialEmail}`} className="hover:underline text-slate-300">
                     {officialEmail}
                   </a>
                 </div>
-                <div className="flex items-start gap-2 text-[11px] text-slate-500 pt-1">
-                  <Clock className="w-3 h-3 text-slate-400 flex-shrink-0 mt-0.5" />
-                  <span>{language === 'hi' ? 'कार्यालय: सोम - शनि: 8:00 AM - 2:00 PM' : 'Office: Mon - Sat: 8:00 AM - 2:00 PM'}</span>
+                <div className="flex items-start gap-2.5 text-[11px] text-slate-400 pt-1">
+                  <Clock className="w-3.5 h-3.5 text-[#F4B323] flex-shrink-0 mt-0.5" />
+                  <span>Monday – Saturday: 8:00 AM – 2:00 PM</span>
                 </div>
               </div>
             </div>
 
           </div>
 
-          {/* Bottom Copyright & Campus Credit Bar */}
-          <div className="mt-10 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+          {/* Bottom Navy Footer Strip (Matching Image) */}
+          <div className="mt-12 pt-6 border-t border-[#1E3A60] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
             <div>
-              &copy; {new Date().getFullYear()} <strong>{schoolName}</strong>. {t.allRightsReserved}
+              &copy; {new Date().getFullYear()} <strong>{schoolName}</strong>. All rights reserved.
             </div>
-            <div className="flex items-center gap-4 text-[11px]">
-              <span>{t.moraBazarCampus}</span>
+            <div className="flex items-center gap-3 text-[11px]">
+              <span>{schoolLocation}</span>
               <span>&bull;</span>
-              <span>{t.officialSystem}</span>
+              <span>Official Institutional Management System</span>
             </div>
           </div>
+
         </div>
       </footer>
 

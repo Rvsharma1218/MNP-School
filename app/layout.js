@@ -13,21 +13,21 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#1f108e',
+  themeColor: '#102747',
 };
 
 export const metadata = {
-  title: "School Management",
-  description: "Complete student administration, attendance register, fee collection & receipts, marksheet results, and ID card generator.",
+  title: "Mission Navodaya Public School | Mora, Bihar · Session 2026-27",
+  description: "Official digital campus of Mission Navodaya Public School, Mora, Bihar. Quality education, discipline, creativity, holistic development, online admissions, and parent portal.",
   openGraph: {
-    title: "School Management",
-    description: "Complete student administration, attendance register, fee collection & receipts, marksheet results, and ID card generator.",
+    title: "Mission Navodaya Public School | Mora, Bihar · Session 2026-27",
+    description: "Official digital campus of Mission Navodaya Public School, Mora, Bihar. Quality education, discipline, creativity, holistic development, online admissions, and parent portal.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "School Management",
-    description: "Complete student administration, attendance register, fee collection & receipts, marksheet results, and ID card generator.",
+    title: "Mission Navodaya Public School | Mora, Bihar · Session 2026-27",
+    description: "Official digital campus of Mission Navodaya Public School, Mora, Bihar. Quality education, discipline, creativity, holistic development, online admissions, and parent portal.",
   },
 };
 
