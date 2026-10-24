@@ -154,7 +154,7 @@ export default function Header({ onMenuClick }) {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center justify-between px-5 lg:px-8 h-16 w-full border-b border-amber-500/40 shadow-md text-white transition-all relative overflow-hidden backdrop-blur-md"
+      className="sticky top-0 z-50 flex items-center justify-between px-5 lg:px-8 h-16 w-full border-b border-amber-500/40 shadow-md text-white transition-all relative overflow-visible backdrop-blur-md"
       style={{
         backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.94), rgba(10, 32, 66, 0.88), rgba(6, 20, 44, 0.95)), url('/header_campus_bg.jpg')",
         backgroundSize: "cover",
@@ -283,7 +283,7 @@ export default function Header({ onMenuClick }) {
 
           {/* Notifications Popover Menu */}
           {isNotificationsOpen && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-[#c8c4d5]/60 rounded-2xl shadow-2xl overflow-hidden text-xs z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-[#c8c4d5]/80 rounded-2xl shadow-2xl overflow-hidden text-xs z-50 animate-in fade-in slide-in-from-top-3 duration-200 text-[#0b1c30]">
               
               {/* Header */}
               <div className="p-3.5 bg-gradient-to-r from-[#1f108e] to-[#0f0069] text-white flex items-center justify-between">
@@ -467,7 +467,7 @@ export default function Header({ onMenuClick }) {
 
           {/* Premium Dropdown menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-2xl shadow-xl py-2 overflow-hidden text-xs z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-[#c8c4d5]/80 rounded-2xl shadow-2xl py-2 overflow-hidden text-xs z-50 animate-in fade-in slide-in-from-top-3 duration-200 text-[#0b1c30]">
               {/* Profile Card Header */}
               <div className="px-4 py-3 border-b border-border space-y-1">
                 <p className="font-bold text-text leading-tight">{principalDisplayName}</p>
