@@ -897,17 +897,22 @@ class _LoginScreenState extends State<LoginScreen>
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF051221),
+      backgroundColor: const Color(0xFF041024),
       body: SizedBox.expand(
         child: Container(
           decoration: BoxDecoration(
-            image: DecorationImage(
-              image: const AssetImage('assets/images/campus_bg.jpg'),
+            image: const DecorationImage(
+              image: AssetImage('assets/images/header_campus_bg.jpg'),
               fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(
-                const Color(0xFF07182D).withValues(alpha: 0.88),
-                BlendMode.srcOver,
-              ),
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFF041024).withValues(alpha: 0.88),
+                const Color(0xFF071B38).withValues(alpha: 0.72),
+                const Color(0xFF030D1C).withValues(alpha: 0.94),
+              ],
             ),
           ),
           child: SafeArea(
@@ -921,7 +926,41 @@ class _LoginScreenState extends State<LoginScreen>
                     constraints: BoxConstraints(minHeight: constraints.maxHeight),
                     child: Column(
                       children: [
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 28),
+
+                        // Official School Campus Badge
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: const Color(0xFFDAA520).withValues(alpha: 0.7), width: 1.2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.verified_rounded, size: 14, color: Color(0xFFDAA520)),
+                              const SizedBox(width: 6),
+                              Text(
+                                'MISSION NAVODAYA PUBLIC SCHOOL MORA',
+                                style: TextStyle(
+                                  color: Colors.amber.shade200,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
                   // ── Official School Logo ────────────────────────────
                   Hero(

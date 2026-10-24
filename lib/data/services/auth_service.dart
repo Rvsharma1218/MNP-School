@@ -256,6 +256,37 @@ class AuthService {
 
   // ─── Other Auth Methods ─────────────────────────────────────────────────────
 
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null || user.email == null) {
+      throw Exception('No active authenticated session found. Please sign in again.');
+    }
+
+    final cred = EmailAuthProvider.credential(
+      email: user.email!,
+      password: currentPassword.trim(),
+    );
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(newPassword.trim());
+
+    try {
+      await _db.collection('users').doc(user.uid).set({
+        'password': newPassword.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await _db.collection('schoolDirectory').doc(user.email!.toLowerCase().trim()).set({
+        'password': newPassword.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[AuthService] Firestore password sync warning: $e');
+    }
+  }
+
   Future<void> sendPasswordReset(String email) async {
     await _auth.sendPasswordResetEmail(email: email.trim());
   }

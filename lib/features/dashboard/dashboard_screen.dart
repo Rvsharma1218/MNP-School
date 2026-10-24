@@ -377,8 +377,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         actions: [
-          TextButton(
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showChangePasswordDialog(context, isPrincipal);
+            },
+            icon: const Icon(Icons.key_rounded, size: 16),
+            label: const Text('Change Password'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+            ),
+          ),
+          ElevatedButton(
             onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
             child: const Text('Close'),
           ),
         ],
@@ -411,55 +424,195 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _showChangePasswordDialog(BuildContext context, bool isPrincipal) {
-    final pinCtrl = TextEditingController();
+    final currentPassCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController();
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    bool isSubmitting = false;
+    String? errorText;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Change Access PIN / Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Enter a new 4-digit security PIN or password to secure your login:',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: pinCtrl,
-              obscureText: true,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'New Security PIN',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock_outline),
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+          titlePadding: const EdgeInsets.fromLTRB(22, 22, 22, 10),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+          actionsPadding: const EdgeInsets.fromLTRB(22, 10, 22, 20),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.key_rounded, color: AppColors.primary, size: 22),
               ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Change Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 2),
+                    Text('Update your login security credentials', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (errorText != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded, size: 16, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(errorText!, style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                const Text('Current Password', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: currentPassCtrl,
+                  obscureText: obscureCurrent,
+                  decoration: InputDecoration(
+                    hintText: 'Enter current password',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18),
+                      onPressed: () => setDialogState(() => obscureCurrent = !obscureCurrent),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text('New Password', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: newPassCtrl,
+                  obscureText: obscureNew,
+                  decoration: InputDecoration(
+                    hintText: 'Minimum 6 characters',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    prefixIcon: const Icon(Icons.lock_reset_rounded, size: 18),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18),
+                      onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text('Confirm New Password', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: confirmPassCtrl,
+                  obscureText: obscureConfirm,
+                  decoration: InputDecoration(
+                    hintText: 'Re-enter new password',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    prefixIcon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18),
+                      onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      final currentPass = currentPassCtrl.text.trim();
+                      final newPass = newPassCtrl.text.trim();
+                      final confirmPass = confirmPassCtrl.text.trim();
+
+                      if (currentPass.isEmpty) {
+                        setDialogState(() => errorText = 'Please enter your current password.');
+                        return;
+                      }
+                      if (newPass.length < 6) {
+                        setDialogState(() => errorText = 'New password must be at least 6 characters long.');
+                        return;
+                      }
+                      if (newPass != confirmPass) {
+                        setDialogState(() => errorText = 'New passwords do not match.');
+                        return;
+                      }
+
+                      setDialogState(() {
+                        isSubmitting = true;
+                        errorText = null;
+                      });
+
+                      try {
+                        await AuthService.instance.changePassword(
+                          currentPassword: currentPass,
+                          newPassword: newPass,
+                        );
+
+                        if (context.mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Password updated successfully!'),
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        setDialogState(() {
+                          isSubmitting = false;
+                          errorText = AuthService.instance.friendlyError(e);
+                        });
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+              ),
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Update Password', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final pin = pinCtrl.text.trim();
-              if (pin.length < 4) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('PIN must be at least 4 digits!'), backgroundColor: AppColors.error),
-                );
-                return;
-              }
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Security PIN updated successfully!'), backgroundColor: AppColors.success),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-            child: const Text('Update PIN'),
-          ),
-        ],
       ),
     );
   }
@@ -707,13 +860,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 stretchModes: const [StretchMode.zoomBackground],
                 background: Container(
                   decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: const AssetImage('assets/images/campus_bg.jpg'),
+                    image: const DecorationImage(
+                      image: AssetImage('assets/images/header_campus_bg.jpg'),
                       fit: BoxFit.cover,
-                      colorFilter: ColorFilter.mode(
-                        AppColors.primaryDark.withValues(alpha: 0.86),
-                        BlendMode.srcOver,
-                      ),
+                      alignment: Alignment.center,
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFF06142C).withValues(alpha: 0.82),
+                        const Color(0xFF0A2042).withValues(alpha: 0.65),
+                        const Color(0xFF040E1E).withValues(alpha: 0.90),
+                      ],
                     ),
                   ),
                   child: SafeArea(
@@ -725,32 +884,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         children: [
                           _LiveDateTimeWidget(now: _now),
                           const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              _buildLogoWidget(logoPath),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      instituteName,
-                                      style: const TextStyle(
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.28),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1),
+                            ),
+                            child: Row(
+                              children: [
+                                _buildLogoWidget(logoPath),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        instituteName,
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 18,
-                                          fontWeight: FontWeight.w800),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      session,
-                                      style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.8),
-                                          fontSize: 12),
-                                    ),
-                                  ],
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.2,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black80,
+                                              offset: Offset(0, 1),
+                                              blurRadius: 4,
+                                            ),
+                                          ],
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        session,
+                                        style: const TextStyle(
+                                          color: Color(0xFFFFD54F),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Builder(
