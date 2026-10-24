@@ -780,12 +780,40 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                     ),
                     const SizedBox(height: 6),
 
-                    // Row 4: Status Chip + Salary Chip
+                    // Row 4: Status Chip + Salary Chip + Direct Actions
                     Row(
                       children: [
                         _statusChip(t.active ? 'Active' : 'Disabled', t.active ? AppColors.success : AppColors.error),
                         const SizedBox(width: 6),
                         _salaryChip(salaryText),
+                        const Spacer(),
+                        InkWell(
+                          onTap: () => _quickDeleteTeacher(t),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.delete_outline, size: 14, color: AppColors.error),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Delete',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.error,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -945,6 +973,11 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
 
     if (confirmed != true) return;
 
+    // Optimistic UI deletion: remove immediately so UI responds in 0ms
+    setState(() {
+      _teachers.removeWhere((x) => x.teacherId == t.teacherId || x.id == t.id || (t.authUid.isNotEmpty && x.authUid == t.authUid));
+    });
+
     try {
       final schoolUid = _schoolUid ?? SessionService.instance.activeSchoolId;
       await TeacherService.instance.deleteTeacher(
@@ -952,10 +985,6 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
         schoolEmail: _schoolEmail,
         teacher: t,
       );
-
-      setState(() {
-        _teachers.removeWhere((x) => x.teacherId == t.teacherId || x.id == t.id || (t.authUid.isNotEmpty && x.authUid == t.authUid));
-      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

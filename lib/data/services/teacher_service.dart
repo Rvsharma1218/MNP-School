@@ -787,6 +787,7 @@ class TeacherService {
     required TeacherModel teacher,
   }) async {
     final idsToDelete = <String>{
+      if (teacher.id.isNotEmpty) teacher.id,
       if (teacher.teacherId.isNotEmpty) teacher.teacherId,
       if (teacher.authUid.isNotEmpty) teacher.authUid,
     };
@@ -838,10 +839,12 @@ class TeacherService {
       } catch (_) {}
     }
 
-    // 5. Purge from in-memory cache to ensure real-time UI reflection
+    // 5. Purge from in-memory cache and update disk cache
     _cachedTeachers.removeWhere((t) =>
+        idsToDelete.contains(t.id) ||
         idsToDelete.contains(t.teacherId) ||
         idsToDelete.contains(t.authUid) ||
         (teacher.authEmail.isNotEmpty && t.authEmail == teacher.authEmail));
+    _saveToDisk();
   }
 }

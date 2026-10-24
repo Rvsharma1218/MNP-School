@@ -1427,6 +1427,17 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _deleteTeacher,
+          icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+          label: const Text('Delete Teacher Permanently', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppColors.error),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
       ],
     );
   }
