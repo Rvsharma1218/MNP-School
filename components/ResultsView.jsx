@@ -8,7 +8,7 @@ import {
   FileSpreadsheet, X, Save, Share2, ClipboardList, TrendingUp, Sparkles, ChevronRight, BarChart, Download, FileText,
   Users, Check, MessageCircle, AlertCircle
 } from 'lucide-react';
-import { exportExamResultsToExcel, exportExamResultsPDF, exportSingleResultPDF } from '../lib/exportUtils';
+import { exportExamResultsToExcel, exportExamResultsPDF, exportSingleResultPDF, openWhatsAppResultShare } from '../lib/exportUtils';
 
 
 const STANDARD_RESULT_SUBJECTS = [
@@ -206,43 +206,13 @@ export default function ResultsView() {
   };
 
   // WhatsApp Share handler
-  const handleWhatsAppShare = (res, stu) => {
-    const phone = stu?.mobile || stu?.parentPhone || stu?.phone || stu?.whatsappNumber || '';
-    const cleanDigits = String(phone).replace(/[^0-9]/g, '');
-    const totalObt = res.subjects?.reduce((a, s) => a + (Number(s.marks) || 0), 0) || 0;
-    const totalMax = res.subjects?.reduce((a, s) => a + (Number(s.totalMarks) || 100), 0) || 100;
-    const pct = Math.round((totalObt / totalMax) * 100);
-    const schoolName = settings.instituteName || settings.schoolName || 'School';
-    
-    const passCriteria = Number(res.passingMarks || 33);
-    const failedSubs = res.subjects?.filter(sub => {
-      const sMax = Number(sub.totalMarks) || 100;
-      const sObt = Number(sub.marks) || 0;
-      const minP = sub.passingMarks != null ? Number(sub.passingMarks) : Math.round(sMax * (passCriteria / 100));
-      return sObt < minP;
-    }) || [];
-    const failCount = failedSubs.length;
-
-    const statusText = res.status === 'PROMOTED'
-      ? 'PROMOTED TO NEXT CLASS'
-      : (failCount > 0 || pct < passCriteria || res.status === 'FAIL')
-      ? 'NEEDS IMPROVEMENT / FAILED'
-      : 'PASSED';
-
-    const textMsg = `*ACADEMIC RESULT - ${schoolName.toUpperCase()}*\n\n` +
-      `Dear Parent,\n` +
-      `Examination Result for *${stu?.name || 'Student'}* (${res.examName}):\n` +
-      `• Total Marks: *${totalObt} / ${totalMax}* (${pct}%)\n` +
-      `• Result Status: *${statusText}*\n\n` +
-      `Regards,\n${schoolName}`;
-
-    if (cleanDigits.length >= 10) {
-      const finalPhone = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
-      window.open(`https://wa.me/${finalPhone}?text=${encodeURIComponent(textMsg)}`, '_blank');
-      showToast(`Opening WhatsApp chat with ${stu?.name || 'student'} parent...`, 'info');
-    } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(textMsg)}`, '_blank');
-      showToast(`No contact number registered for ${stu?.name || 'student'}. Choose contact in WhatsApp.`, 'info');
+  const handleWhatsAppShare = async (res, stu) => {
+    try {
+      showToast(`Preparing WhatsApp Marksheet & PDF for ${stu?.name || 'student'}...`, 'info');
+      await openWhatsAppResultShare(res, stu, settings);
+    } catch (e) {
+      console.error(e);
+      showToast('Error sharing result on WhatsApp', 'error');
     }
   };
 

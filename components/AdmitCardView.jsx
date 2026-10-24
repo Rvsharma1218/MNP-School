@@ -3,12 +3,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSchoolStore } from '../lib/store';
 import {
-  Printer, Download, Plus, Trash2, Calendar,
+  Printer, Download, Plus, Trash2, Calendar, MessageCircle,
   GraduationCap, FileText, CheckCircle2, User, Search, Share2, Shield, QrCode,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import { getImageDataUrl } from '../lib/exportUtils';
+import { getImageDataUrl, openWhatsAppAdmitCardShare } from '../lib/exportUtils';
 
 
 const STANDARD_ADMIT_SUBJECTS = [
@@ -753,6 +753,15 @@ export default function AdmitCardView() {
                     >
                       <Printer className="w-3.5 h-3.5" />
                       <span>Print Single</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openWhatsAppAdmitCardShare(s, settings, timetable, examTitle)}
+                      className="px-3 py-1.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
+                      title="Share Admit Card & PDF on WhatsApp"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>WhatsApp Share</span>
                     </button>
                   </div>
                 );

@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useSchoolStore } from '../lib/store';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-  Printer, Download, Filter, Users, Sparkles, Layers,
+  Printer, Download, Filter, Users, Sparkles, Layers, MessageCircle,
   CheckCircle2, Share2, Eye, Layout, FileText, Check, ChevronRight, RefreshCw, Search, Crop
 } from 'lucide-react';
-import { exportIdCardPNG, exportIdCardsPDF, removeSignatureBackground } from '../lib/exportUtils';
+import { exportIdCardPNG, exportIdCardsPDF, removeSignatureBackground, openWhatsAppIdCardShare } from '../lib/exportUtils';
 import ImageCropperModal from './ImageCropperModal';
 
 export default function IdCardView() {
@@ -509,6 +509,20 @@ export default function IdCardView() {
               >
                 <Download className="w-4 h-4 text-emerald-600" />
                 <span>Export as PNG</span>
+              </button>
+              <button
+                onClick={async () => {
+                  if (!previewStudent) {
+                    showToast("No student selected to share on WhatsApp.", "warning");
+                    return;
+                  }
+                  showToast(`Opening WhatsApp share for ${previewStudent.name}...`, "info");
+                  await openWhatsAppIdCardShare(previewStudent, settings);
+                }}
+                className="w-full py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95"
+              >
+                <MessageCircle className="w-4 h-4 text-white" />
+                <span>Share on WhatsApp</span>
               </button>
             </div>
           </div>
