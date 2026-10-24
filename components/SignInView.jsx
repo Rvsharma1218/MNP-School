@@ -243,6 +243,31 @@ export default function SignInView() {
                 </a>
               </div>
 
+              {/* Official School Banner with Campus Gate & Logo */}
+              <div className="pt-4 max-w-5xl mx-auto">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-slate-200/90 group bg-[#07182D]">
+                  <img
+                    src="/school_hero_banner.jpg"
+                    alt="Mission Navodaya Public School Mora Banner"
+                    className="w-full h-auto max-h-[460px] object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#07182D]/95 via-[#07182D]/20 to-transparent flex items-end p-6 sm:p-8 pointer-events-none">
+                    <div className="text-left text-white max-w-2xl">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500 text-white text-[11px] font-bold tracking-wide mb-1.5 shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-white" />
+                        <span>MORA, JAMUI • ACCREDITED & RECOGNIZED</span>
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-black text-white drop-shadow">
+                        MISSION NAVODAYA PUBLIC SCHOOL
+                      </h3>
+                      <p className="text-xs text-slate-200 font-medium mt-1">
+                        Discipline • Knowledge • Bright Future
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Fast Facts Badge Bar */}
               <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto">
                 <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-left">
@@ -278,68 +303,95 @@ export default function SignInView() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Chairman */}
-                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shadow-2xs">
-                      <Quote className="w-6 h-6" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
+                {/* 1. Chairman: Uday Shankar Patel */}
+                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                  <div>
+                    <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-100">
+                      <img
+                        src="/chairman_uday_shankar_patel.jpg"
+                        alt="Uday Shankar Patel - Chairman"
+                        className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-amber-500 text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5" />
+                        <span>CHAIRMAN & FOUNDER</span>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute bottom-3 left-4 right-4 text-white">
+                        <h4 className="text-lg font-black tracking-tight drop-shadow">Uday Shankar Patel</h4>
+                        <p className="text-[11px] text-amber-300 font-semibold uppercase tracking-wider">Chairman</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-[#0c2340]">{t.chairmanVision}</h4>
-                      <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mt-0.5">
-                        {t.chairmanSubtitle}
+                    <div className="p-6 space-y-3">
+                      <p className="text-xs text-[#475569] leading-relaxed italic">
+                        {t.chairmanQuote}
                       </p>
                     </div>
-                    <p className="text-xs text-[#475569] leading-relaxed italic">
-                      {t.chairmanQuote}
-                    </p>
                   </div>
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
+                  <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
                     <Building className="w-4 h-4 text-amber-600" />
                     <span>{t.chairmanOffice}</span>
                   </div>
                 </div>
 
-                {/* Director */}
-                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shadow-2xs">
-                      <Compass className="w-6 h-6" />
+                {/* 2. Director: Vishal Patel */}
+                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                  <div>
+                    <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-100">
+                      <img
+                        src="/director_vishal_patel.jpg"
+                        alt="Vishal Patel - Managing Director"
+                        className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-blue-600 text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>MANAGING DIRECTOR</span>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute bottom-3 left-4 right-4 text-white">
+                        <h4 className="text-lg font-black tracking-tight drop-shadow">Vishal Patel</h4>
+                        <p className="text-[11px] text-blue-300 font-semibold uppercase tracking-wider">Director</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-[#0c2340]">{t.directorMessage}</h4>
-                      <p className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider mt-0.5">
-                        {t.directorSubtitle}
+                    <div className="p-6 space-y-3">
+                      <p className="text-xs text-[#475569] leading-relaxed italic">
+                        {t.directorQuote}
                       </p>
                     </div>
-                    <p className="text-xs text-[#475569] leading-relaxed italic">
-                      {t.directorQuote}
-                    </p>
                   </div>
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
+                  <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
                     <Shield className="w-4 h-4 text-blue-600" />
                     <span>{t.directorOffice}</span>
                   </div>
                 </div>
 
-                {/* Principal */}
-                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-2xs">
-                      <GraduationCap className="w-6 h-6" />
+                {/* 3. Principal: Soni Madam */}
+                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                  <div>
+                    <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-100">
+                      <img
+                        src="/principal_soni_madam.jpg"
+                        alt="Soni Madam - Principal"
+                        className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-emerald-600 text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
+                        <GraduationCap className="w-3.5 h-3.5" />
+                        <span>PRINCIPAL</span>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute bottom-3 left-4 right-4 text-white">
+                        <h4 className="text-lg font-black tracking-tight drop-shadow">Soni Madam</h4>
+                        <p className="text-[11px] text-emerald-300 font-semibold uppercase tracking-wider">Principal</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-[#0c2340]">{t.principalTitle}</h4>
-                      <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider mt-0.5">
-                        {t.principalSubtitle}
+                    <div className="p-6 space-y-3">
+                      <p className="text-xs text-[#475569] leading-relaxed italic">
+                        {t.principalQuote}
                       </p>
                     </div>
-                    <p className="text-xs text-[#475569] leading-relaxed italic">
-                      {t.principalQuote}
-                    </p>
                   </div>
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
+                  <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-[#0c2340]">
                     <School className="w-4 h-4 text-emerald-600" />
                     <span>{t.principalOffice}</span>
                   </div>
@@ -392,6 +444,83 @@ export default function SignInView() {
                   </div>
                   <h4 className="text-sm font-bold text-[#0c2340]">{t.parentDeskTitle}</h4>
                   <p className="text-xs text-[#64748b] leading-relaxed">{t.parentDeskDesc}</p>
+                </div>
+              </div>
+            </section>
+
+            {/* 3.5 Campus & Infrastructure Photo Gallery */}
+            <section id="campus-gallery" className="max-w-6xl mx-auto px-6 scroll-mt-24">
+              <div className="text-center space-y-2 mb-8">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0c2340] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                  CAMPUS & FACILITIES
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-[#0c2340] tracking-tight">
+                  Life at Mission Navodaya Public School, Mora
+                </h3>
+                <p className="text-xs sm:text-sm text-[#64748b] max-w-xl mx-auto">
+                  A serene, green, and spacious campus built for modern learning, sports, and holistic character building.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {/* Gate Banner */}
+                <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group">
+                  <div className="h-48 overflow-hidden bg-slate-100">
+                    <img
+                      src="/school_gate_banner.jpg"
+                      alt="Main Gate - Mission Navodaya Public School"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-4 space-y-1">
+                    <h5 className="text-sm font-bold text-[#0c2340]">Main Campus Entrance</h5>
+                    <p className="text-[11px] text-slate-500">Secure gate with official school identification board</p>
+                  </div>
+                </div>
+
+                {/* Playground */}
+                <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group">
+                  <div className="h-48 overflow-hidden bg-slate-100">
+                    <img
+                      src="/campus_playground.jpg"
+                      alt="Sports Ground and Playground"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-4 space-y-1">
+                    <h5 className="text-sm font-bold text-[#0c2340]">Sports & Football Arena</h5>
+                    <p className="text-[11px] text-slate-500">Expansive open playground for athletics and football</p>
+                  </div>
+                </div>
+
+                {/* Academic Building */}
+                <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group">
+                  <div className="h-48 overflow-hidden bg-slate-100">
+                    <img
+                      src="/campus_building.jpg"
+                      alt="Academic Building"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-4 space-y-1">
+                    <h5 className="text-sm font-bold text-[#0c2340]">Academic Building Block</h5>
+                    <p className="text-[11px] text-slate-500">Spacious, ventilated classrooms and digital study points</p>
+                  </div>
+                </div>
+
+                {/* School Entrance Life */}
+                <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group">
+                  <div className="h-48 overflow-hidden bg-slate-100">
+                    <img
+                      src="/school_entrance.jpg"
+                      alt="School Entrance and Students"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-4 space-y-1">
+                    <h5 className="text-sm font-bold text-[#0c2340]">Student Arrival & Life</h5>
+                    <p className="text-[11px] text-slate-500">Safe bicycle parking, disciplined campus gates and arrival</p>
+                  </div>
                 </div>
               </div>
             </section>
