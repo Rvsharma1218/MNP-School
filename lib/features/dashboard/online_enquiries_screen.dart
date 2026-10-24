@@ -483,6 +483,34 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
                   dateDisplay,
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => _confirmDelete(refNo, isTeacher: false, name: studentName),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.delete_outline, size: 14, color: AppColors.error),
+                        SizedBox(width: 4),
+                        Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, size: 20),
                   onSelected: (val) {
@@ -776,7 +804,7 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
                     ),
                     child: Text(
                       tetStatus.toString(),
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF065F46)),
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF065F46)),
                     ),
                   ),
                 ],
@@ -784,6 +812,34 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
                 Text(
                   dateDisplay,
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => _confirmDelete(refNo, isTeacher: true, name: teacherName),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.delete_outline, size: 14, color: AppColors.error),
+                        SizedBox(width: 4),
+                        Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, size: 20),
@@ -961,28 +1017,36 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
 
   // ─── Delete Confirmation ───────────────────────────────────────────────
 
-  void _confirmDelete(String refNo, {required bool isTeacher}) {
+  void _confirmDelete(String refNo, {required bool isTeacher, String? name}) {
+    final typeLabel = isTeacher ? 'faculty application' : 'admission enquiry';
+    final nameStr = (name != null && name.isNotEmpty) ? ' for "$name"' : '';
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Entry?'),
-        content: Text('Are you sure you want to delete enquiry "$refNo"? This cannot be undone.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(isTeacher ? 'Delete Faculty Application?' : 'Delete Admission Enquiry?'),
+        content: Text('Are you sure you want to permanently delete $typeLabel$nameStr ($refNo)? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               Navigator.pop(ctx);
+              setState(() {});
               if (isTeacher) {
                 FirestoreService.instance.deleteTeacherApplication(refNo);
               } else {
                 FirestoreService.instance.deleteAdmissionEnquiry(refNo);
               }
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Deleted successfully')),
+                SnackBar(
+                  content: Text('${name ?? refNo} has been deleted.'),
+                  backgroundColor: AppColors.success,
+                ),
               );
             },
             child: const Text('Delete', style: TextStyle(color: Colors.white)),
@@ -992,7 +1056,7 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
     );
   }
 
-  Widget _buildEmptyState({required IconData icon, required String title, required String subtitle}) {
+    Widget _buildEmptyState({required IconData icon, required String title, required String subtitle}) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -1080,9 +1144,9 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
             // Top Header: Application Form Title
             Container(
               padding: const EdgeInsets.fromLTRB(20, 8, 16, 14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 children: [
@@ -1199,6 +1263,18 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
               ),
               child: Row(
                 children: [
+                  IconButton.filledTonal(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _confirmDelete(refNo, isTeacher: false, name: studentName);
+                    },
+                    icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                    tooltip: 'Delete Enquiry',
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.error.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   if (mobile.isNotEmpty) ...[
                     IconButton.filledTonal(
                       onPressed: () => _makePhoneCall(mobile),
@@ -1363,6 +1439,18 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
               ),
               child: Row(
                 children: [
+                  IconButton.filledTonal(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _confirmDelete(refNo, isTeacher: true, name: teacherName);
+                    },
+                    icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                    tooltip: 'Delete Application',
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.error.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   if (mobile.isNotEmpty) ...[
                     IconButton.filledTonal(
                       onPressed: () => _makePhoneCall(mobile),

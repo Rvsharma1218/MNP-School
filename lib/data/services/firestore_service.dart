@@ -386,19 +386,32 @@ class FirestoreService {
       sMap.remove(refNo);
     }
     _cachedAdmissionsList.removeWhere((item) => item['refNo'] == refNo || item['id'] == refNo);
+    _saveAdmissionsToDisk();
     _emitAdmissions();
 
     // 2. Parallel remote deletion
     try {
       final targets = <String>{'SCHOOL_007', 'SCHOOL_001'};
       if (_schoolId.isNotEmpty) targets.add(_schoolId);
-      await Future.wait(targets.map((sId) => _db!
-          .collection('schoolDirectory')
-          .doc(sId)
-          .collection('admissionEnquiries')
-          .doc(refNo)
-          .delete()
-          .catchError((_) => null)));
+      final futures = <Future>[];
+      for (final sId in targets) {
+        futures.add(_db!
+            .collection('schoolDirectory')
+            .doc(sId)
+            .collection('admissionEnquiries')
+            .doc(refNo)
+            .delete()
+            .catchError((_) => null));
+        futures.add(_db!
+            .collection('schools')
+            .doc(sId)
+            .collection('admissionEnquiries')
+            .doc(refNo)
+            .delete()
+            .catchError((_) => null));
+      }
+      futures.add(_db!.collection('admissionEnquiries').doc(refNo).delete().catchError((_) => null));
+      await Future.wait(futures);
     } catch (e) {
       debugPrint('[Firestore] deleteAdmissionEnquiry error: $e');
     }
@@ -437,19 +450,32 @@ class FirestoreService {
       sMap.remove(refNo);
     }
     _cachedTeachersList.removeWhere((item) => item['refNo'] == refNo || item['id'] == refNo);
+    _saveTeachersToDisk();
     _emitTeachers();
 
     // 2. Parallel remote deletion
     try {
       final targets = <String>{'SCHOOL_007', 'SCHOOL_001'};
       if (_schoolId.isNotEmpty) targets.add(_schoolId);
-      await Future.wait(targets.map((sId) => _db!
-          .collection('schoolDirectory')
-          .doc(sId)
-          .collection('teacherApplications')
-          .doc(refNo)
-          .delete()
-          .catchError((_) => null)));
+      final futures = <Future>[];
+      for (final sId in targets) {
+        futures.add(_db!
+            .collection('schoolDirectory')
+            .doc(sId)
+            .collection('teacherApplications')
+            .doc(refNo)
+            .delete()
+            .catchError((_) => null));
+        futures.add(_db!
+            .collection('schools')
+            .doc(sId)
+            .collection('teacherApplications')
+            .doc(refNo)
+            .delete()
+            .catchError((_) => null));
+      }
+      futures.add(_db!.collection('teacherApplications').doc(refNo).delete().catchError((_) => null));
+      await Future.wait(futures);
     } catch (e) {
       debugPrint('[Firestore] deleteTeacherApplication error: $e');
     }
@@ -545,70 +571,118 @@ class FirestoreService {
     }
   }
 
-  Future<void> deleteStudent(String studentId) async {
-    if (!_enabled || _students == null) return;
+  Future<void> deleteStudent(String studentId, {Iterable<String>? altIds}) async {
+    if (!_enabled || _db == null) return;
+    final allIds = <String>{
+      if (studentId.isNotEmpty) studentId,
+      if (altIds != null) ...altIds.where((s) => s.isNotEmpty),
+    };
+    if (allIds.isEmpty) return;
+
     try {
-      await _students!.doc(studentId).delete();
-      await _fees?.doc(studentId).delete();
-      await _studentFees?.doc(studentId).delete();
+      final targets = <String>{'SCHOOL_007', 'SCHOOL_001'};
+      if (_schoolId.isNotEmpty) targets.add(_schoolId);
 
-      final monthlyDocs = await _monthlyFees?.where('studentId', isEqualTo: studentId).get();
-      if (monthlyDocs != null && monthlyDocs.docs.isNotEmpty) {
-        final batch = _db!.batch();
-        for (final doc in monthlyDocs.docs) {
-          batch.delete(doc.reference);
+      for (final sId in targets) {
+        final sRoot = _db!.collection('schools').doc(sId);
+        final sStudents = sRoot.collection('students');
+        for (final id in allIds) {
+          try {
+            await sStudents.doc(id).delete();
+          } catch (_) {}
+          try {
+            await sRoot.collection('fees').doc(id).delete();
+          } catch (_) {}
+          try {
+            await sRoot.collection('studentFees').doc(id).delete();
+          } catch (_) {}
+
+          try {
+            final q1 = await sStudents.where('studentId', isEqualTo: id).get();
+            for (final d in q1.docs) {
+              await d.reference.delete();
+            }
+          } catch (_) {}
+          try {
+            final q2 = await sStudents.where('admissionNumber', isEqualTo: id).get();
+            for (final d in q2.docs) {
+              await d.reference.delete();
+            }
+          } catch (_) {}
         }
-        await batch.commit();
       }
 
-      final paymentDocs = await _payments?.where('studentId', isEqualTo: studentId).get();
-      if (paymentDocs != null && paymentDocs.docs.isNotEmpty) {
-        final batch = _db!.batch();
-        for (final doc in paymentDocs.docs) {
-          batch.delete(doc.reference);
-        }
-        await batch.commit();
-      }
-
-      final receiptDocs = await _root?.collection('receipts').where('studentId', isEqualTo: studentId).get();
-      if (receiptDocs != null && receiptDocs.docs.isNotEmpty) {
-        final batch = _db!.batch();
-        for (final doc in receiptDocs.docs) {
-          batch.delete(doc.reference);
-        }
-        await batch.commit();
-      }
-
-      final flatDocs = await _root?.collection('attendance_flat').where('studentId', isEqualTo: studentId).get();
-      if (flatDocs != null && flatDocs.docs.isNotEmpty) {
-        final batch = _db!.batch();
-        for (final doc in flatDocs.docs) {
-          batch.delete(doc.reference);
-        }
-        await batch.commit();
-      }
-
-      final attDocs = await _attendance?.get();
-      if (attDocs != null && attDocs.docs.isNotEmpty) {
-        final batch = _db!.batch();
-        for (final doc in attDocs.docs) {
-          if (doc.id.contains(studentId)) {
-            batch.delete(doc.reference);
+      for (final id in allIds) {
+        try {
+          final monthlyDocs = await _monthlyFees?.where('studentId', isEqualTo: id).get();
+          if (monthlyDocs != null && monthlyDocs.docs.isNotEmpty) {
+            final batch = _db!.batch();
+            for (final doc in monthlyDocs.docs) {
+              batch.delete(doc.reference);
+            }
+            await batch.commit();
           }
-        }
-        await batch.commit();
+        } catch (_) {}
+
+        try {
+          final paymentDocs = await _payments?.where('studentId', isEqualTo: id).get();
+          if (paymentDocs != null && paymentDocs.docs.isNotEmpty) {
+            final batch = _db!.batch();
+            for (final doc in paymentDocs.docs) {
+              batch.delete(doc.reference);
+            }
+            await batch.commit();
+          }
+        } catch (_) {}
+
+        try {
+          final receiptDocs = await _root?.collection('receipts').where('studentId', isEqualTo: id).get();
+          if (receiptDocs != null && receiptDocs.docs.isNotEmpty) {
+            final batch = _db!.batch();
+            for (final doc in receiptDocs.docs) {
+              batch.delete(doc.reference);
+            }
+            await batch.commit();
+          }
+        } catch (_) {}
+
+        try {
+          final flatDocs = await _root?.collection('attendance_flat').where('studentId', isEqualTo: id).get();
+          if (flatDocs != null && flatDocs.docs.isNotEmpty) {
+            final batch = _db!.batch();
+            for (final doc in flatDocs.docs) {
+              batch.delete(doc.reference);
+            }
+            await batch.commit();
+          }
+        } catch (_) {}
+
+        try {
+          final resultDocs = await _results?.where('studentId', isEqualTo: id).get();
+          if (resultDocs != null && resultDocs.docs.isNotEmpty) {
+            final batch = _db!.batch();
+            for (final doc in resultDocs.docs) {
+              batch.delete(doc.reference);
+            }
+            await batch.commit();
+          }
+        } catch (_) {}
       }
 
-      final resultDocs = await _results?.where('studentId', isEqualTo: studentId).get();
-      if (resultDocs != null && resultDocs.docs.isNotEmpty) {
-        final batch = _db!.batch();
-        for (final doc in resultDocs.docs) {
-          batch.delete(doc.reference);
+      try {
+        final attDocs = await _attendance?.get();
+        if (attDocs != null && attDocs.docs.isNotEmpty) {
+          final batch = _db!.batch();
+          for (final doc in attDocs.docs) {
+            if (allIds.any((id) => doc.id.contains(id))) {
+              batch.delete(doc.reference);
+            }
+          }
+          await batch.commit();
         }
-        await batch.commit();
-      }
+      } catch (_) {}
 
-      debugPrint('[Firestore] ✅ Student and all related data deleted from school $_schoolId: $studentId');
+      debugPrint('[Firestore] ✅ Student and all related data purged across schools: $allIds');
     } catch (e) {
       debugPrint('[Firestore] ❌ Student delete failed: $e');
     }

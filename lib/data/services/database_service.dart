@@ -1557,8 +1557,16 @@ CREATE TABLE monthly_fees (
   }
 
   Future<void> deleteStudent(String id) async {
+    final s = await getStudentById(id) ?? await getStudentByQrId(id);
+    final altIds = <String>{
+      if (s != null && s.studentId.isNotEmpty) s.studentId,
+      if (s != null && s.admissionNumber.isNotEmpty) s.admissionNumber,
+    };
     await deleteStudentLocalOnly(id);
-    FirestoreService.instance.deleteStudent(id).catchError((e) {
+    if (s != null && s.studentId.isNotEmpty && s.studentId != id) {
+      await deleteStudentLocalOnly(s.studentId);
+    }
+    FirestoreService.instance.deleteStudent(id, altIds: altIds).catchError((e) {
       debugPrint('[DatabaseService] Firestore deleteStudent note: $e');
       return null;
     });
