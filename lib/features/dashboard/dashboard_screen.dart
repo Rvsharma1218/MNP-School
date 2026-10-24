@@ -1521,16 +1521,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     if (admStream == null && teachStream == null) return const SizedBox.shrink();
 
+    final initAdm = FirestoreService.instance.cachedAdmissionsList;
+    final initTeach = FirestoreService.instance.cachedTeachersList;
+
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: admStream,
+      initialData: initAdm.isNotEmpty ? initAdm : null,
       builder: (context, admSnap) {
-        final admissions = admSnap.data ?? [];
+        final admissions = admSnap.data ?? initAdm;
         final pendingAdm = admissions.where((i) => (i['status'] ?? 'pending').toString().toLowerCase() == 'pending').length;
 
         return StreamBuilder<List<Map<String, dynamic>>>(
           stream: teachStream,
+          initialData: initTeach.isNotEmpty ? initTeach : null,
           builder: (context, teachSnap) {
-            final teachers = teachSnap.data ?? [];
+            final teachers = teachSnap.data ?? initTeach;
             final pendingTeach = teachers.where((i) => (i['status'] ?? 'pending').toString().toLowerCase() == 'pending').length;
             final totalPending = pendingAdm + pendingTeach;
             final totalAll = admissions.length + teachers.length;

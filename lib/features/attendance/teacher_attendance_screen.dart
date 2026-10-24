@@ -44,7 +44,7 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
 
     if (_schoolUid != null && _schoolUid!.isNotEmpty) {
       try {
-        final list = await TeacherService.instance.listAllTeachers(_schoolUid!, forceRefresh: true);
+        final list = await TeacherService.instance.listAllTeachers(_schoolUid!, forceRefresh: false);
         final validTeachers = list
             .where((t) => t.name.trim().isNotEmpty && (t.teacherId.trim().isNotEmpty || t.id.trim().isNotEmpty))
             .toList();

@@ -71,7 +71,9 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
   }
 
   Future<void> _load({bool forceRefresh = false}) async {
-    setState(() => _loading = true);
+    if (_teachers.isEmpty || forceRefresh) {
+      setState(() => _loading = true);
+    }
     final activeUid = SessionService.instance.activeSchoolUid;
     _schoolUid = activeUid.isNotEmpty ? activeUid : SessionService.instance.activeSchoolId;
     final currentEmail = AuthService.instance.currentUser?.email;

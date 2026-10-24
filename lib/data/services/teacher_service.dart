@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -7,7 +9,31 @@ import '../models/teacher_model.dart';
 
 class TeacherService {
   static final TeacherService instance = TeacherService._internal();
-  TeacherService._internal();
+  TeacherService._internal() {
+    _initFromDisk();
+  }
+
+  Future<void> _initFromDisk() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('cached_teachers_disk_v1');
+      if (raw != null && raw.isNotEmpty && _cachedTeachers.isEmpty) {
+        final List<dynamic> list = jsonDecode(raw);
+        _cachedTeachers = list
+            .map((e) => TeacherModel.fromMap(Map<String, dynamic>.from(e as Map)))
+            .toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
+      }
+    } catch (_) {}
+  }
+
+  void _saveToDisk() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = jsonEncode(_cachedTeachers.map((t) => t.toMap()).toList());
+      await prefs.setString('cached_teachers_disk_v1', raw);
+    } catch (_) {}
+  }
 
   static const _secondaryAppName = 'teacherAdmin';
 
@@ -101,7 +127,7 @@ class TeacherService {
   }
 
   void clearCache() {
-    _cachedTeachers.clear();
+    // Soft clear, keep cached data available for instant UI
   }
 
   TeacherModel? _parseTeacherDoc(QueryDocumentSnapshot d) {
@@ -119,6 +145,14 @@ class TeacherService {
     if (!forceRefresh && _cachedTeachers.isNotEmpty) {
       _refreshTeachersBackground(schoolUid);
       return _cachedTeachers;
+    }
+
+    if (_cachedTeachers.isEmpty) {
+      await _initFromDisk();
+      if (!forceRefresh && _cachedTeachers.isNotEmpty) {
+        _refreshTeachersBackground(schoolUid);
+        return _cachedTeachers;
+      }
     }
 
     try {
@@ -158,6 +192,7 @@ class TeacherService {
             .whereType<TeacherModel>()
             .toList()
           ..sort((a, b) => a.name.compareTo(b.name));
+        _saveToDisk();
       }
     }).catchError((_) {});
   }

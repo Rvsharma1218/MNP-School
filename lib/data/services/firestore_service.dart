@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/student_model.dart';
@@ -16,7 +17,9 @@ import 'session_service.dart';
 /// Syncs data to Firestore scoped to schools/{schoolId}/... for true multi-school isolation.
 class FirestoreService {
   static final FirestoreService instance = FirestoreService._internal();
-  FirestoreService._internal();
+  FirestoreService._internal() {
+    _loadCachedEnquiriesFromDisk();
+  }
 
   FirebaseFirestore? _firestore;
   bool _enabled = true;
@@ -166,6 +169,49 @@ class FirestoreService {
   final Map<String, Map<String, Map<String, dynamic>>> _schoolTeachersMap = {};
   List<Map<String, dynamic>> _cachedAdmissionsList = [];
   List<Map<String, dynamic>> _cachedTeachersList = [];
+
+  List<Map<String, dynamic>> get cachedAdmissionsList => List.unmodifiable(_cachedAdmissionsList);
+  List<Map<String, dynamic>> get cachedTeachersList => List.unmodifiable(_cachedTeachersList);
+
+  Future<void> _loadCachedEnquiriesFromDisk() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_cachedAdmissionsList.isEmpty) {
+        final admRaw = prefs.getString('cached_admissions_enquiries_disk_v1');
+        if (admRaw != null && admRaw.isNotEmpty) {
+          final List<dynamic> list = jsonDecode(admRaw);
+          _cachedAdmissionsList = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          if (_admissionsController != null && !_admissionsController!.isClosed) {
+            _admissionsController!.add(List.from(_cachedAdmissionsList));
+          }
+        }
+      }
+      if (_cachedTeachersList.isEmpty) {
+        final teachRaw = prefs.getString('cached_teachers_applications_disk_v1');
+        if (teachRaw != null && teachRaw.isNotEmpty) {
+          final List<dynamic> list = jsonDecode(teachRaw);
+          _cachedTeachersList = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          if (_teachersController != null && !_teachersController!.isClosed) {
+            _teachersController!.add(List.from(_cachedTeachersList));
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  void _saveAdmissionsToDisk() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_admissions_enquiries_disk_v1', jsonEncode(_cachedAdmissionsList));
+    } catch (_) {}
+  }
+
+  void _saveTeachersToDisk() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_teachers_applications_disk_v1', jsonEncode(_cachedTeachersList));
+    } catch (_) {}
+  }
   bool _admissionsInitialized = false;
   bool _teachersInitialized = false;
 
@@ -181,6 +227,7 @@ class FirestoreService {
       return tB.compareTo(tA);
     });
     _cachedAdmissionsList = list;
+    _saveAdmissionsToDisk();
     if (_admissionsController != null && !_admissionsController!.isClosed) {
       _admissionsController!.add(List.from(list));
     }
@@ -198,6 +245,7 @@ class FirestoreService {
       return tB.compareTo(tA);
     });
     _cachedTeachersList = list;
+    _saveTeachersToDisk();
     if (_teachersController != null && !_teachersController!.isClosed) {
       _teachersController!.add(List.from(list));
     }

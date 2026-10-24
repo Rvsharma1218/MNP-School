@@ -249,14 +249,18 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
 
   Widget _buildBadge({required bool isTeacher}) {
     final stream = isTeacher ? _teachersStream : _admissionsStream;
+    final initial = isTeacher
+        ? FirestoreService.instance.cachedTeachersList
+        : FirestoreService.instance.cachedAdmissionsList;
 
     if (stream == null) return const SizedBox.shrink();
 
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: stream,
+      initialData: initial.isNotEmpty ? initial : null,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
-        final count = snapshot.data!.where((item) {
+        final list = snapshot.data ?? initial;
+        final count = list.where((item) {
           final s = (item['status'] ?? 'pending').toString().toLowerCase();
           return s == 'pending';
         }).length;
@@ -313,14 +317,16 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
       return const Center(child: Text('Firestore is offline or not configured'));
     }
 
+    final initial = FirestoreService.instance.cachedAdmissionsList;
+
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: stream,
+      initialData: initial.isNotEmpty ? initial : null,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+        final rawList = snapshot.data ?? initial;
+        if (snapshot.connectionState == ConnectionState.waiting && rawList.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-
-        final rawList = snapshot.data ?? [];
         final query = _searchCtrl.text.toLowerCase().trim();
 
         final filtered = rawList.where((item) {
@@ -613,19 +619,21 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
   // ─── TAB 2: Faculty Applications List ──────────────────────────────────
 
   Widget _buildFacultyList() {
-    final stream = FirestoreService.instance.watchTeacherApplications();
+    final stream = _teachersStream;
     if (stream == null) {
       return const Center(child: Text('Firestore is offline or not configured'));
     }
 
+    final initial = FirestoreService.instance.cachedTeachersList;
+
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: stream,
+      initialData: initial.isNotEmpty ? initial : null,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+        final rawList = snapshot.data ?? initial;
+        if (snapshot.connectionState == ConnectionState.waiting && rawList.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-
-        final rawList = snapshot.data ?? [];
         final query = _searchCtrl.text.toLowerCase().trim();
 
         final filtered = rawList.where((item) {
