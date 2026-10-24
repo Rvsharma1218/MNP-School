@@ -1020,15 +1020,6 @@ export default function SignInView() {
                     {language === 'hi' ? 'प्रधानाचार्य प्रशासनिक प्रवेश' : 'Principal Administrative Access'}
                   </button>
                 </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/forgot-password')}
-                    className="hover:text-amber-300 transition-colors text-blue-600 cursor-pointer"
-                  >
-                    {t.forgotPasswordLink}
-                  </button>
-                </li>
               </ul>
             </div>
 
