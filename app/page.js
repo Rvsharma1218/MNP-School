@@ -368,7 +368,7 @@ function AppContent() {
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col min-h-screen">
         <Header onMenuClick={() => setIsMobileNavOpen(true)} />
-        <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-x-hidden px-3 py-4 sm:p-6 lg:p-8">
           <div className="w-full max-w-[1600px] mx-auto">
             {currentPath === '/dashboard' && <DashboardView />}
             {currentPath === '/notices' && (

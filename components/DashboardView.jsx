@@ -15,26 +15,26 @@ function CompactKpiCard({ icon: Icon, iconColor, iconBg, label, value, sub, badg
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-2xl p-4 border border-[#c8c4d5]/60 hover:border-[#1f108e]/40 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer group flex flex-col justify-between min-h-[105px]"
+      className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#c8c4d5]/60 hover:border-[#1f108e]/40 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer group flex flex-col justify-between min-h-[95px] sm:min-h-[105px]"
     >
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <div className={`w-9 h-9 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-2xs`}>
-          <Icon className="w-4.5 h-4.5" />
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl ${iconBg} ${iconColor} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-2xs`}>
+          <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
         </div>
         {badge && (
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${badgeColor}`}>
+          <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider truncate max-w-[80px] sm:max-w-none ${badgeColor}`}>
             {badge}
           </span>
         )}
       </div>
       <div>
-        <div className="text-xl sm:text-2xl font-black text-[#0b1c30] tracking-tight leading-tight truncate">
+        <div className="text-lg sm:text-2xl font-black text-[#0b1c30] tracking-tight leading-tight truncate">
           {value}
         </div>
-        <div className="text-[11px] font-bold text-[#464553] uppercase tracking-wider truncate mt-0.5">
+        <div className="text-[10px] sm:text-[11px] font-bold text-[#464553] uppercase tracking-wider truncate mt-0.5">
           {label}
         </div>
-        <div className="text-[10px] font-medium text-[#777584] truncate mt-1">
+        <div className="text-[9px] sm:text-[10px] font-medium text-[#777584] truncate mt-0.5 sm:mt-1">
           {sub}
         </div>
       </div>
@@ -92,7 +92,7 @@ export default function DashboardView() {
 
       {/* ── Top Header Banner ── */}
       <div
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 sm:p-6 rounded-3xl border border-amber-500/40 shadow-lg text-white relative overflow-hidden transition-all group"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-amber-500/40 shadow-lg text-white relative overflow-hidden transition-all group"
         style={{
           backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.94), rgba(10, 32, 66, 0.86), rgba(6, 20, 44, 0.95)), url('/school_hero_banner.jpg')",
           backgroundSize: "cover",
@@ -112,11 +112,11 @@ export default function DashboardView() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {isPrincipal && (
             <button
               onClick={() => openEnquiriesModal && openEnquiriesModal('admissions')}
-              className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+              className="flex-1 sm:flex-initial justify-center px-3 sm:px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <Sparkles className="w-4 h-4 text-white" />
               <span>Online Enquiries</span>
@@ -130,7 +130,7 @@ export default function DashboardView() {
           {isPrincipal && (
             <button
               onClick={() => setIsAddStudentOpen(true)}
-              className="px-3.5 py-2 bg-[#1f108e] hover:bg-[#0f0069] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+              className="flex-1 sm:flex-initial justify-center px-3 sm:px-3.5 py-2 bg-[#1f108e] hover:bg-[#0f0069] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>Enroll Student</span>
@@ -138,7 +138,7 @@ export default function DashboardView() {
           )}
           <button
             onClick={() => navigate('/reports')}
-            className="px-3.5 py-2 bg-white hover:bg-white/80 text-[#0b1c30] font-bold text-xs rounded-xl shadow-xs border border-[#c8c4d5]/50 transition-all flex items-center gap-2 cursor-pointer"
+            className="flex-1 sm:flex-initial justify-center px-3 sm:px-3.5 py-2 bg-white hover:bg-white/80 text-[#0b1c30] font-bold text-xs rounded-xl shadow-xs border border-[#c8c4d5]/50 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
           >
             <FileSpreadsheet className="w-4 h-4 text-[#0051d5]" />
             <span>Generate Report</span>
@@ -220,7 +220,7 @@ export default function DashboardView() {
           </div>
 
           {/* Compact Live Pulse & Quick Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:px-4 bg-white rounded-2xl border border-[#c8c4d5]/50 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-2.5 sm:px-4 bg-white rounded-xl sm:rounded-2xl border border-[#c8c4d5]/50 shadow-2xs">
             <div className="flex items-center gap-2.5">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -337,7 +337,7 @@ export default function DashboardView() {
               <p className="text-xs text-rose-600 mt-0.5">Total Pending Amount: ₹{stats.totalPendingFees.toLocaleString('en-IN')} — Send automated reminders via WhatsApp</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => {
                 const defaulters = students.filter(s => {
@@ -430,7 +430,7 @@ export default function DashboardView() {
           </div>
 
           <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[550px] text-left text-xs">
               <thead className="bg-[#eff4ff] border-b border-[#c8c4d5]/40 sticky top-0 z-10 text-[#777584]">
                 <tr>
                   {(isPrincipal

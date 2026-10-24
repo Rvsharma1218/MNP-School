@@ -116,7 +116,7 @@ export default function SignInView() {
 
       {/* 🔹 Top Navigation Bar with Language Switcher 🔹 */}
       <header
-        className="sticky top-0 z-30 w-full px-6 py-3.5 md:px-12 flex items-center justify-between border-b border-amber-500/40 shadow-md text-white transition-all relative overflow-hidden backdrop-blur-md"
+        className="sticky top-0 z-30 w-full px-3.5 sm:px-6 py-3 md:px-12 flex items-center justify-between border-b border-amber-500/40 shadow-md text-white transition-all relative overflow-hidden backdrop-blur-md"
         style={{
           backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.95), rgba(10, 32, 66, 0.88), rgba(6, 20, 44, 0.95)), url('/header_campus_bg.jpg')",
           backgroundSize: "cover",
@@ -136,10 +136,10 @@ export default function SignInView() {
             />
           </div>
           <div>
-            <h1 className="text-base sm:text-lg font-black tracking-tight text-white drop-shadow-sm">
+            <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight text-white drop-shadow-sm truncate max-w-[170px] xs:max-w-[240px] sm:max-w-none">
               {t.schoolName}
             </h1>
-            <p className="text-[11px] text-amber-300 font-bold tracking-wide">
+            <p className="text-[10px] sm:text-[11px] text-amber-300 font-bold tracking-wide truncate">
               {t.sessionBadge}
             </p>
           </div>

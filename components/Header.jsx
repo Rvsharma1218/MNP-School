@@ -154,7 +154,7 @@ export default function Header({ onMenuClick }) {
 
   return (
     <header
-      className="sticky top-0 z-50 flex items-center justify-between px-5 lg:px-8 h-16 w-full border-b border-amber-500/40 shadow-md text-white transition-all relative overflow-visible backdrop-blur-md"
+      className="sticky top-0 z-50 flex items-center justify-between px-3 sm:px-5 lg:px-8 h-16 w-full border-b border-amber-500/40 shadow-md text-white transition-all relative overflow-visible backdrop-blur-md"
       style={{
         backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.94), rgba(10, 32, 66, 0.88), rgba(6, 20, 44, 0.95)), url('/header_campus_bg.jpg')",
         backgroundSize: "cover",
@@ -163,7 +163,7 @@ export default function Header({ onMenuClick }) {
     >
       
       {/* Left */}
-      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+      <div className="flex items-center gap-1.5 sm:gap-4 min-w-0">
         <button
           onClick={onMenuClick}
           className="lg:hidden p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer"
@@ -187,7 +187,7 @@ export default function Header({ onMenuClick }) {
           </button>
         )}
         <div className="min-w-0">
-          <h1 className="text-base sm:text-lg font-black text-white truncate drop-shadow-sm">{viewTitles[currentPath] || 'Dashboard'}</h1>
+          <h1 className="text-sm sm:text-base lg:text-lg font-black text-white truncate drop-shadow-sm max-w-[130px] xs:max-w-[180px] sm:max-w-none">{viewTitles[currentPath] || 'Dashboard'}</h1>
           <p className="text-xs text-amber-300 font-bold tracking-wide truncate hidden sm:block drop-shadow-2xs">
             {settings.instituteName || 'School Management'} &nbsp;·&nbsp; Session {settings.currentSession || '2026-27'}
           </p>
@@ -195,12 +195,12 @@ export default function Header({ onMenuClick }) {
       </div>
 
       {/* Right Action Cluster */}
-      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
         {/* Universal Search Icon Button */}
         <button
           type="button"
           onClick={() => setIsGlobalSearchOpen(true)}
-          className="p-2.5 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs flex items-center justify-center group"
+          className="p-2 sm:p-2.5 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs flex items-center justify-center group"
           title="Search (Ctrl+K)"
         >
           <Search className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
@@ -283,7 +283,7 @@ export default function Header({ onMenuClick }) {
 
           {/* Notifications Popover Menu */}
           {isNotificationsOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-[#c8c4d5]/80 rounded-2xl shadow-2xl overflow-hidden text-xs z-50 animate-in fade-in slide-in-from-top-3 duration-200 text-[#0b1c30]">
+            <div className="absolute right-0 top-full mt-2 w-[calc(100vw-24px)] sm:w-96 max-w-sm bg-white border border-[#c8c4d5]/80 rounded-2xl shadow-2xl overflow-hidden text-xs z-50 animate-in fade-in slide-in-from-top-3 duration-200 text-[#0b1c30]">
               
               {/* Header */}
               <div className="p-3.5 bg-gradient-to-r from-[#1f108e] to-[#0f0069] text-white flex items-center justify-between">
@@ -404,7 +404,7 @@ export default function Header({ onMenuClick }) {
             updateSettings({ appLanguage: nextLang });
             showToast(nextLang === 'hi' ? 'पोर्टल भाषा हिन्दी में बदल दी गई है' : 'Display language switched to English', 'success');
           }}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/12 hover:bg-white/20 text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs font-extrabold text-xs"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/12 hover:bg-white/20 text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs font-extrabold text-xs"
           title={lang === 'hi' ? 'अंग्रेज़ी भाषा में बदलें (Switch to English)' : 'Switch to Hindi (हिन्दी भाषा चुनें)'}
         >
           <Languages className="w-4 h-4 text-amber-400" />
@@ -415,7 +415,7 @@ export default function Header({ onMenuClick }) {
         <button
           type="button"
           onClick={() => setIsHelpFeedbackOpen(true)}
-          className="p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-colors relative cursor-pointer border border-white/20 shadow-2xs"
+          className="hidden md:flex p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-colors relative cursor-pointer border border-white/20 shadow-2xs"
           title="Help and feedback (FAQs, Support, Reports)"
         >
           <HelpCircle className="w-4.5 h-4.5 text-amber-300" />
@@ -425,7 +425,7 @@ export default function Header({ onMenuClick }) {
         <button
           type="button"
           onClick={toggleTheme}
-          className="p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
+          className="hidden md:flex p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
           title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {themeMode === 'dark' ? (
@@ -439,7 +439,7 @@ export default function Header({ onMenuClick }) {
         <button
           type="button"
           onClick={() => navigate('/complaints')}
-          className="p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors relative cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
+          className="hidden lg:flex p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors relative cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
           title="Parent Complaints & Messages Desk"
         >
           <MessageSquare className="w-4.5 h-4.5 text-amber-300" />
@@ -449,7 +449,7 @@ export default function Header({ onMenuClick }) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(p => !p)}
-            className="flex items-center gap-2.5 pl-2 border-l border-border hover:opacity-85 transition-opacity cursor-pointer text-left"
+            className="flex items-center gap-1.5 sm:gap-2.5 pl-1.5 sm:pl-2 border-l border-white/20 hover:opacity-85 transition-opacity cursor-pointer text-left"
           >
             <div className="w-10 h-10 rounded-full border border-border bg-primary/10 text-primary flex items-center justify-center font-bold text-sm overflow-hidden flex-shrink-0 shadow-2xs">
               {currentUser.photoPath ? (
@@ -467,7 +467,7 @@ export default function Header({ onMenuClick }) {
 
           {/* Premium Dropdown menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-[#c8c4d5]/80 rounded-2xl shadow-2xl py-2 overflow-hidden text-xs z-50 animate-in fade-in slide-in-from-top-3 duration-200 text-[#0b1c30]">
+            <div className="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-24px)] bg-white border border-[#c8c4d5]/80 rounded-2xl shadow-2xl py-2 overflow-hidden text-xs z-50 animate-in fade-in slide-in-from-top-3 duration-200 text-[#0b1c30]">
               {/* Profile Card Header */}
               <div className="px-4 py-3 border-b border-border space-y-1">
                 <p className="font-bold text-text leading-tight">{principalDisplayName}</p>
