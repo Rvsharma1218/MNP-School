@@ -91,16 +91,23 @@ export default function DashboardView() {
     <div className="space-y-6 pb-16 w-full animate-in fade-in duration-300 font-sans">
 
       {/* ── Top Header Banner ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-[#eff4ff] via-[#dce9ff] to-[#eff4ff] p-4 sm:p-5 rounded-2xl border border-[#c8c4d5]/40 shadow-xs">
+      <div
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 sm:p-6 rounded-3xl border border-amber-500/40 shadow-lg text-white relative overflow-hidden transition-all group"
+        style={{
+          backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.94), rgba(10, 32, 66, 0.86), rgba(6, 20, 44, 0.95)), url('/school_hero_banner.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center"
+        }}
+      >
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/80 text-[11px] font-bold text-[#1f108e] mb-1.5 shadow-2xs">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/90 text-[11px] font-black text-slate-950 mb-1.5 shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Welcome back, {currentUser?.name || 'Administrator'}</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-[#0b1c30] tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight drop-shadow-sm">
             {isPrincipal ? `${settings.instituteName || 'Mission Navodaya Public School'} Executive Overview` : `Class ${assignedClass} Faculty Desk`}
           </h2>
-          <p className="text-xs text-[#464553] font-medium mt-0.5">
+          <p className="text-xs text-amber-300 font-bold mt-0.5 drop-shadow-2xs">
             Academic Session {settings.currentSession || '2026-27'} &nbsp;·&nbsp; Live Cloud Synchronized
           </p>
         </div>

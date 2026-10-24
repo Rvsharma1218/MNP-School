@@ -153,13 +153,20 @@ export default function Header({ onMenuClick }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-5 lg:px-8 h-16 w-full bg-white/90 backdrop-blur-md border-b border-border shadow-sm">
+    <header
+      className="sticky top-0 z-30 flex items-center justify-between px-5 lg:px-8 h-16 w-full border-b border-amber-500/40 shadow-md text-white transition-all relative overflow-hidden backdrop-blur-md"
+      style={{
+        backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.94), rgba(10, 32, 66, 0.88), rgba(6, 20, 44, 0.95)), url('/header_campus_bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      }}
+    >
       
       {/* Left */}
       <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-xl bg-surface2 hover:bg-border text-text transition-colors cursor-pointer"
+          className="lg:hidden p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer"
           title="Open Menu"
         >
           <Menu className="w-5 h-5" />
@@ -173,15 +180,15 @@ export default function Header({ onMenuClick }) {
                 navigate('/dashboard');
               }
             }}
-            className="p-2 rounded-xl bg-surface2 hover:bg-border text-text transition-colors cursor-pointer flex items-center justify-center"
+            className="p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
             title="Go Back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
         )}
         <div className="min-w-0">
-          <h1 className="text-base sm:text-lg font-bold text-text truncate">{viewTitles[currentPath] || 'Dashboard'}</h1>
-          <p className="text-xs text-text-secondary font-semibold truncate hidden sm:block">
+          <h1 className="text-base sm:text-lg font-black text-white truncate drop-shadow-sm">{viewTitles[currentPath] || 'Dashboard'}</h1>
+          <p className="text-xs text-amber-300 font-bold tracking-wide truncate hidden sm:block drop-shadow-2xs">
             {settings.instituteName || 'School Management'} &nbsp;·&nbsp; Session {settings.currentSession || '2026-27'}
           </p>
         </div>
@@ -193,18 +200,18 @@ export default function Header({ onMenuClick }) {
         <button
           type="button"
           onClick={() => setIsGlobalSearchOpen(true)}
-          className="p-2.5 rounded-xl bg-surface2 hover:bg-border text-text-secondary hover:text-primary transition-all cursor-pointer border border-border shadow-2xs flex items-center justify-center group"
+          className="p-2.5 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs flex items-center justify-center group"
           title="Search (Ctrl+K)"
         >
           <Search className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
         </button>
         {/* Date & Time */}
         {mounted && (
-          <div className="hidden lg:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface2 border border-border text-xs font-bold text-text">
-            <Calendar className="w-4 h-4 text-primary" />
+          <div className="hidden lg:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/12 border border-white/20 text-xs font-bold text-white shadow-2xs">
+            <Calendar className="w-4 h-4 text-amber-400" />
             <span>{time.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
             <span className="text-text-muted mx-1">·</span>
-            <Clock className="w-4 h-4 text-primary" />
+            <Clock className="w-4 h-4 text-amber-400" />
             <span>{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()}</span>
           </div>
         )}
@@ -263,7 +270,7 @@ export default function Header({ onMenuClick }) {
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setIsNotificationsOpen(p => !p)}
-            className="p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#464553] hover:text-[#0b1c30] transition-colors relative cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
+            className="p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-colors relative cursor-pointer border border-white/20 shadow-2xs"
             title="Notice Board & Notifications"
           >
             <Bell className="w-4.5 h-4.5" />
@@ -397,10 +404,10 @@ export default function Header({ onMenuClick }) {
             updateSettings({ appLanguage: nextLang });
             showToast(nextLang === 'hi' ? 'पोर्टल भाषा हिन्दी में बदल दी गई है' : 'Display language switched to English', 'success');
           }}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-all cursor-pointer border border-[#c8c4d5]/50 shadow-2xs font-extrabold text-xs"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/12 hover:bg-white/20 text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs font-extrabold text-xs"
           title={lang === 'hi' ? 'अंग्रेज़ी भाषा में बदलें (Switch to English)' : 'Switch to Hindi (हिन्दी भाषा चुनें)'}
         >
-          <Languages className="w-4 h-4 text-[#1f108e]" />
+          <Languages className="w-4 h-4 text-amber-400" />
           <span className="font-bold text-[11px]">{lang === 'hi' ? 'हिन्दी' : 'English'}</span>
         </button>
 
@@ -408,10 +415,10 @@ export default function Header({ onMenuClick }) {
         <button
           type="button"
           onClick={() => setIsHelpFeedbackOpen(true)}
-          className="p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#464553] hover:text-[#0b1c30] transition-colors relative cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
+          className="p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-colors relative cursor-pointer border border-white/20 shadow-2xs"
           title="Help and feedback (FAQs, Support, Reports)"
         >
-          <HelpCircle className="w-4.5 h-4.5 text-[#1f108e]" />
+          <HelpCircle className="w-4.5 h-4.5 text-amber-300" />
         </button>
 
         {/* Dark / Light Mode Theme Toggle */}
@@ -424,7 +431,7 @@ export default function Header({ onMenuClick }) {
           {themeMode === 'dark' ? (
             <Sun className="w-4.5 h-4.5 text-amber-500" />
           ) : (
-            <Moon className="w-4.5 h-4.5 text-[#1f108e]" />
+            <Moon className="w-4.5 h-4.5 text-amber-300" />
           )}
         </button>
 
@@ -435,7 +442,7 @@ export default function Header({ onMenuClick }) {
           className="p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors relative cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
           title="Parent Complaints & Messages Desk"
         >
-          <MessageSquare className="w-4.5 h-4.5 text-[#1f108e]" />
+          <MessageSquare className="w-4.5 h-4.5 text-amber-300" />
         </button>
 
         {/* User Info Profile Dropdown */}
@@ -452,10 +459,10 @@ export default function Header({ onMenuClick }) {
               )}
             </div>
             <div className="hidden lg:block leading-none">
-              <p className="font-bold text-xs text-text">{principalDisplayName}</p>
-              <p className="text-[10px] text-text-secondary mt-0.5 capitalize">{currentUser.role === 'principal' ? 'Principal / Admin' : 'Teacher'}</p>
+              <p className="font-bold text-xs text-white">{principalDisplayName}</p>
+              <p className="text-[10px] text-amber-300/90 font-medium mt-0.5 capitalize">{currentUser.role === 'principal' ? 'Principal / Admin' : 'Teacher'}</p>
             </div>
-            <ChevronDown className="w-4 h-4 text-text-secondary hidden lg:block" />
+            <ChevronDown className="w-4 h-4 text-amber-300 hidden lg:block" />
           </button>
 
           {/* Premium Dropdown menu */}

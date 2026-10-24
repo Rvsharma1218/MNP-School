@@ -115,7 +115,14 @@ export default function SignInView() {
     <div className="min-h-screen w-full relative flex flex-col justify-between font-sans antialiased text-[#0f172a] bg-[#f8fafc] selection:bg-[#0c2340] selection:text-white">
 
       {/* 🔹 Top Navigation Bar with Language Switcher 🔹 */}
-      <header className="sticky top-0 z-30 w-full px-6 py-3.5 md:px-12 flex items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs">
+      <header
+        className="sticky top-0 z-30 w-full px-6 py-3.5 md:px-12 flex items-center justify-between border-b border-amber-500/40 shadow-md text-white transition-all relative overflow-hidden backdrop-blur-md"
+        style={{
+          backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.95), rgba(10, 32, 66, 0.88), rgba(6, 20, 44, 0.95)), url('/header_campus_bg.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center"
+        }}
+      >
         <div className="flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 p-1 flex items-center justify-center flex-shrink-0 shadow-2xs overflow-hidden">
             <img
@@ -129,10 +136,10 @@ export default function SignInView() {
             />
           </div>
           <div>
-            <h1 className="text-base sm:text-lg font-black tracking-tight text-[#0c2340]">
+            <h1 className="text-base sm:text-lg font-black tracking-tight text-white drop-shadow-sm">
               {t.schoolName}
             </h1>
-            <p className="text-[11px] text-[#64748b] font-medium tracking-wide">
+            <p className="text-[11px] text-amber-300 font-bold tracking-wide">
               {t.sessionBadge}
             </p>
           </div>
@@ -140,18 +147,18 @@ export default function SignInView() {
 
         {/* Top Action Buttons & Language Switcher */}
         <div className="flex items-center gap-2.5">
-          <nav className="hidden lg:flex items-center gap-5 mr-2 text-xs font-bold text-[#475569]">
-            <a href="#about" className="hover:text-[#0c2340] transition-colors">{t.aboutSchool}</a>
-            <a href="#leadership" className="hover:text-[#0c2340] transition-colors">{t.leadership}</a>
-            <a href="#facilities" className="hover:text-[#0c2340] transition-colors">{t.facilities}</a>
-            <a href="#contact" className="hover:text-[#0c2340] transition-colors">{t.helpAndContact}</a>
+          <nav className="hidden lg:flex items-center gap-5 mr-2 text-xs font-bold text-slate-200">
+            <a href="#about" className="hover:text-amber-300 transition-colors">{t.aboutSchool}</a>
+            <a href="#leadership" className="hover:text-amber-300 transition-colors">{t.leadership}</a>
+            <a href="#facilities" className="hover:text-amber-300 transition-colors">{t.facilities}</a>
+            <a href="#contact" className="hover:text-amber-300 transition-colors">{t.helpAndContact}</a>
           </nav>
 
           {/* Language Switcher */}
           <button
             type="button"
             onClick={toggleLanguage}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-[#0c2340] transition-all cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-xs font-bold text-white transition-all cursor-pointer shadow-2xs"
             title="Toggle English / हिन्दी"
           >
             <Globe className="w-3.5 h-3.5 text-blue-600" />
@@ -171,7 +178,7 @@ export default function SignInView() {
           <button
             type="button"
             onClick={() => openPortalLogin('parent')}
-            className="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-[#0c2340] bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-all cursor-pointer"
+            className="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-white/12 hover:bg-white/20 border border-white/25 transition-all cursor-pointer"
           >
             <Users className="w-3.5 h-3.5 text-[#0c2340]" />
             <span>{t.parentLogin}</span>
@@ -244,27 +251,13 @@ export default function SignInView() {
               </div>
 
               {/* Official School Banner with Campus Gate & Logo */}
-              <div className="pt-4 max-w-5xl mx-auto">
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-slate-200/90 group bg-[#07182D]">
+              <div className="pt-6 max-w-6xl mx-auto w-full">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-amber-500/40 group bg-[#07182D]">
                   <img
-                    src="/school_hero_banner.jpg"
-                    alt="Mission Navodaya Public School Mora Banner"
-                    className="w-full h-auto max-h-[460px] object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
+                    src="/school_official_banner.png"
+                    alt="Mission Navodaya Public School Banner"
+                    className="w-full h-auto max-h-[580px] object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#07182D]/95 via-[#07182D]/20 to-transparent flex items-end p-6 sm:p-8 pointer-events-none">
-                    <div className="text-left text-white max-w-2xl">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500 text-white text-[11px] font-bold tracking-wide mb-1.5 shadow-sm">
-                        <Sparkles className="w-3.5 h-3.5 text-white" />
-                        <span>MORA, JAMUI • ACCREDITED & RECOGNIZED</span>
-                      </div>
-                      <h3 className="text-xl sm:text-2xl font-black text-white drop-shadow">
-                        MISSION NAVODAYA PUBLIC SCHOOL
-                      </h3>
-                      <p className="text-xs text-slate-200 font-medium mt-1">
-                        Discipline • Knowledge • Bright Future
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -695,7 +688,7 @@ export default function SignInView() {
                   className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     role === 'parent'
                       ? 'bg-white text-[#0c2340] shadow-sm'
-                      : 'text-[#64748b] hover:text-[#0c2340]'
+                      : 'text-[#64748b] hover:text-amber-300'
                   }`}
                 >
                   <Users className="w-3.5 h-3.5 text-amber-600" />
@@ -708,7 +701,7 @@ export default function SignInView() {
                   className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     role === 'teacher'
                       ? 'bg-white text-[#0c2340] shadow-sm'
-                      : 'text-[#64748b] hover:text-[#0c2340]'
+                      : 'text-[#64748b] hover:text-amber-300'
                   }`}
                 >
                   <GraduationCap className="w-3.5 h-3.5 text-blue-600" />
@@ -721,7 +714,7 @@ export default function SignInView() {
                   className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     role === 'principal'
                       ? 'bg-white text-[#0c2340] shadow-sm'
-                      : 'text-[#64748b] hover:text-[#0c2340]'
+                      : 'text-[#64748b] hover:text-amber-300'
                   }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -957,13 +950,13 @@ export default function SignInView() {
               </h5>
               <ul className="space-y-2 text-xs text-slate-600 font-medium">
                 <li>
-                  <a href="#about" className="hover:text-[#0c2340] transition-colors">{t.aboutSchool}</a>
+                  <a href="#about" className="hover:text-amber-300 transition-colors">{t.aboutSchool}</a>
                 </li>
                 <li>
-                  <a href="#leadership" className="hover:text-[#0c2340] transition-colors">{t.leadership}</a>
+                  <a href="#leadership" className="hover:text-amber-300 transition-colors">{t.leadership}</a>
                 </li>
                 <li>
-                  <a href="#facilities" className="hover:text-[#0c2340] transition-colors">{t.facilities}</a>
+                  <a href="#facilities" className="hover:text-amber-300 transition-colors">{t.facilities}</a>
                 </li>
                 <li>
                   <a
@@ -973,7 +966,7 @@ export default function SignInView() {
                       if (setSignUpFormTab) setSignUpFormTab('student');
                       navigate('/signup?tab=admission');
                     }}
-                    className="hover:text-[#0c2340] transition-colors text-amber-700 font-bold cursor-pointer"
+                    className="hover:text-amber-300 transition-colors text-amber-700 font-bold cursor-pointer"
                   >
                     {t.admissionDeskBtn} &rarr;
                   </a>
@@ -986,7 +979,7 @@ export default function SignInView() {
                       if (setSignUpFormTab) setSignUpFormTab('teacher');
                       navigate('/signup?tab=faculty');
                     }}
-                    className="hover:text-[#0c2340] transition-colors text-indigo-700 font-bold cursor-pointer"
+                    className="hover:text-amber-300 transition-colors text-indigo-700 font-bold cursor-pointer"
                   >
                     {t.teacherApplicationBtn} &rarr;
                   </a>
@@ -1004,7 +997,7 @@ export default function SignInView() {
                   <button
                     type="button"
                     onClick={() => openPortalLogin('parent')}
-                    className="hover:text-[#0c2340] transition-colors cursor-pointer"
+                    className="hover:text-amber-300 transition-colors cursor-pointer"
                   >
                     {t.parentPortalBtn}
                   </button>
@@ -1013,7 +1006,7 @@ export default function SignInView() {
                   <button
                     type="button"
                     onClick={() => openPortalLogin('teacher')}
-                    className="hover:text-[#0c2340] transition-colors cursor-pointer"
+                    className="hover:text-amber-300 transition-colors cursor-pointer"
                   >
                     {t.teacherDeskBtn}
                   </button>
@@ -1022,7 +1015,7 @@ export default function SignInView() {
                   <button
                     type="button"
                     onClick={() => openPortalLogin('principal')}
-                    className="hover:text-[#0c2340] transition-colors cursor-pointer"
+                    className="hover:text-amber-300 transition-colors cursor-pointer"
                   >
                     {language === 'hi' ? 'प्रधानाचार्य प्रशासनिक प्रवेश' : 'Principal Administrative Access'}
                   </button>
@@ -1031,7 +1024,7 @@ export default function SignInView() {
                   <button
                     type="button"
                     onClick={() => navigate('/forgot-password')}
-                    className="hover:text-[#0c2340] transition-colors text-blue-600 cursor-pointer"
+                    className="hover:text-amber-300 transition-colors text-blue-600 cursor-pointer"
                   >
                     {t.forgotPasswordLink}
                   </button>
