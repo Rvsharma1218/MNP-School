@@ -1,3 +1,4 @@
+import '../../data/services/auth_service.dart';
 import '../../data/services/firestore_service.dart';
 import 'online_enquiries_screen.dart';
 import '../../core/localization/app_translations.dart';
@@ -908,7 +909,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                           letterSpacing: 0.2,
                                           shadows: [
                                             Shadow(
-                                              color: Colors.black80,
+                                              color: Colors.black87,
                                               offset: Offset(0, 1),
                                               blurRadius: 4,
                                             ),
