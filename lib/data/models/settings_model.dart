@@ -162,10 +162,11 @@ class SettingsModel {
 
   factory SettingsModel.defaultSettings() {
     return SettingsModel(
-      instituteName: 'My School & Institute',
-      tagline: '',
-      address: 'Enter Address Here',
-      mobile: '9876543210',
+      instituteName: 'MISSION NAVODAYA PUBLIC SCHOOL MORA',
+      tagline: 'Discipline • Knowledge • Bright Future',
+      address: 'Mora, Jamui (Bihar)',
+      mobile: '8603481865',
+      principalName: 'Soni Madam',
       currentSession: '2026-27',
       themeMode: 'light',
       appLanguage: 'en',

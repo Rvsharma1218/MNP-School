@@ -900,15 +900,14 @@ class _LoginScreenState extends State<LoginScreen>
       backgroundColor: const Color(0xFF051221),
       body: SizedBox.expand(
         child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF07182D),
-                Color(0xFF0D2C54),
-                Color(0xFF051221),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: const AssetImage('assets/images/campus_bg.jpg'),
+              fit: BoxFit.cover,
+              colorFilter: ColorFilter.mode(
+                const Color(0xFF07182D).withValues(alpha: 0.88),
+                BlendMode.srcOver,
+              ),
             ),
           ),
           child: SafeArea(

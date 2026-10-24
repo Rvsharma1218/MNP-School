@@ -706,11 +706,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               flexibleSpace: FlexibleSpaceBar(
                 stretchModes: const [StretchMode.zoomBackground],
                 background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.primaryDark, AppColors.primary, AppColors.primaryLight],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: const AssetImage('assets/images/campus_bg.jpg'),
+                      fit: BoxFit.cover,
+                      colorFilter: ColorFilter.mode(
+                        AppColors.primaryDark.withValues(alpha: 0.86),
+                        BlendMode.srcOver,
+                      ),
                     ),
                   ),
                   child: SafeArea(
