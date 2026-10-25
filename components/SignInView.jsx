@@ -198,11 +198,11 @@ export default function SignInView() {
           
           {/* Brand Seal, School Title & Subtitle */}
           <a href="#about" className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-shrink-0 group">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white border-2 border-white/60 p-1 flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden transition-transform group-hover:scale-105">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
               <img
                 src={logoSrc}
                 alt="Mission Navodaya Public School Mora Official Seal"
-                className="w-full h-full object-contain rounded-full"
+                className="w-full h-full object-contain"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = '/logo.png';
@@ -498,18 +498,18 @@ export default function SignInView() {
                   
                   {/* Official School Crest Logo */}
                   <div className="relative flex-shrink-0 group">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full bg-white p-2 sm:p-2.5 shadow-2xl border-3 border-[#F4B323] flex items-center justify-center transition-transform group-hover:scale-105 overflow-hidden">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 flex items-center justify-center transition-transform group-hover:scale-105 drop-shadow-2xl">
                       <img
                         src={logoSrc}
                         alt="Mission Navodaya Public School Crest"
-                        className="w-full h-full object-contain rounded-full"
+                        className="w-full h-full object-contain drop-shadow-xl"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = '/logo.png';
                         }}
                       />
                     </div>
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#102747] border border-[#F4B323] text-[9px] font-black text-[#F4B323] uppercase shadow-md whitespace-nowrap">
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-[#102747] border border-[#F4B323] text-[9px] font-black text-[#F4B323] uppercase shadow-lg whitespace-nowrap">
                       ESTD 2025
                     </div>
                   </div>
@@ -1252,11 +1252,11 @@ export default function SignInView() {
               </button>
 
               <div className="text-center space-y-1.5 mb-6">
-                <div className="w-14 h-14 mx-auto rounded-full bg-white border-2 border-[#E2E8F0] p-1.5 shadow-xs flex items-center justify-center overflow-hidden">
+                <div className="w-16 h-16 mx-auto flex items-center justify-center drop-shadow-md">
                   <img
                     src={logoSrc}
                     alt={schoolName}
-                    className="w-full h-full object-contain rounded-full"
+                    className="w-full h-full object-contain"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = '/logo.png';
@@ -1520,8 +1520,8 @@ export default function SignInView() {
             {/* Column 1: School Identity */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-white border border-[#E2E8F0] p-1 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xs">
-                  <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain rounded-full" />
+                <div className="w-11 h-11 flex items-center justify-center flex-shrink-0 drop-shadow-sm">
+                  <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-white tracking-tight uppercase">{schoolName}</h3>

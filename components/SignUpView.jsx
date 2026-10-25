@@ -224,8 +224,8 @@ export default function SignUpView() {
           }}
           className="flex items-center gap-3 cursor-pointer group min-w-0"
         >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border border-[#E2E8F0] p-1 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm transition-transform group-hover:scale-105">
-            <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain rounded-full" />
+          <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
+            <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base font-black tracking-tight text-white uppercase group-hover:text-[#F4B323] transition-colors truncate">
@@ -1011,8 +1011,8 @@ export default function SignUpView() {
       {/* 🔹 Institutional Footer 🔹 */}
       <footer className="w-full px-6 py-5 md:px-12 border-t border-slate-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-center text-xs text-[#64748b]">
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-full bg-slate-100 p-0.5 flex items-center justify-center overflow-hidden">
-            <img src={logoSrc} alt="Logo" className="w-full h-full object-contain rounded-full" />
+          <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 drop-shadow-xs">
+            <img src={logoSrc} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <span>&copy; {new Date().getFullYear()} {schoolName}. All Rights Reserved.</span>
         </div>

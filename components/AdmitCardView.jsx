@@ -795,11 +795,11 @@ export default function AdmitCardView() {
                     <div className="bg-[#1E3A8A] text-white rounded-xl p-3 flex items-center justify-between mb-3" style={{ backgroundColor: '#1E3A8A', color: '#ffffff' }}>
                       <div className="flex items-center gap-2.5 min-w-0">
                         {settings.logoUrl || settings.logoPath || settings.logo ? (
-                          <div className="w-9 h-9 bg-white rounded-full p-0.5 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                          <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center">
                             <img
                               src={settings.logoUrl || settings.logoPath || settings.logo}
                               alt="Logo"
-                              className="w-full h-full object-contain rounded-full"
+                              className="w-full h-full object-contain"
                             />
                           </div>
                         ) : (
@@ -976,11 +976,11 @@ export default function AdmitCardView() {
                     <div className="bg-[#1E3A8A] text-white rounded-xl p-3.5 flex items-center justify-between mb-4" style={{ backgroundColor: '#1E3A8A', color: '#ffffff' }}>
                       <div className="flex items-center gap-3">
                         {settings.logoUrl || settings.logoPath || settings.logo ? (
-                          <div className="w-12 h-12 bg-white rounded-full p-1 flex items-center justify-center overflow-hidden">
+                          <div className="w-12 h-12 flex items-center justify-center">
                             <img
                               src={settings.logoUrl || settings.logoPath || settings.logo}
                               alt="Logo"
-                              className="w-full h-full object-contain rounded-full"
+                              className="w-full h-full object-contain"
                             />
                           </div>
                         ) : (

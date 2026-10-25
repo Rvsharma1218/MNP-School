@@ -85,11 +85,11 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
 
         {/* ── Brand Header ── */}
         <div className={`flex items-center border-b border-[#c8c4d5]/40 flex-shrink-0 ${collapsed ? 'p-3 justify-center flex-col gap-2' : 'p-4 gap-3'}`}>
-          <div className="w-10 h-10 rounded-full bg-white border border-[#c8c4d5]/40 flex items-center justify-center flex-shrink-0 shadow-xs overflow-hidden p-1">
+          <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 drop-shadow-sm">
             <img
               src={settings.logoUrl || settings.logoPath || settings.logo || '/logo.png'}
               alt="Logo"
-              className="w-full h-full object-contain rounded-full"
+              className="w-full h-full object-contain"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = '/logo.png';
