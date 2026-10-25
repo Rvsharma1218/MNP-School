@@ -3561,10 +3561,14 @@ CREATE TABLE monthly_fees (
       await saveSettingsLocalOnly(settings);
     }
 
-    // 2. Sync to Firestore in background without blocking UI
-    FirestoreService.instance.syncSettings(settings).catchError((e) {
-      debugPrint('[Firestore] Settings sync error: $e');
-    });
+    // 2. Sync to Firestore (with safe 4s timeout so UI never hangs)
+    try {
+      await FirestoreService.instance
+          .syncSettings(settings)
+          .timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('[Firestore] Settings sync notice: $e');
+    }
   }
 
   /// Save settings directly to local SQLite without re-broadcasting to Firestore.

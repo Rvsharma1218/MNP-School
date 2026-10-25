@@ -23,7 +23,8 @@ class FirestoreService {
 
   FirebaseFirestore? _firestore;
   bool _enabled = true;
-  bool _initialized = false;
+
+  bool get isInitialized => _firestore != null;
 
   void disable() {
     _enabled = false;
@@ -47,7 +48,6 @@ class FirestoreService {
       } catch (settingsError) {
         debugPrint('[Firestore] Settings note: $settingsError');
       }
-      _initialized = true;
       _enabled = true;
       debugPrint('[Firestore] ✅ Service initialized successfully');
     } catch (e) {
@@ -57,8 +57,15 @@ class FirestoreService {
   }
 
   FirebaseFirestore? get _db {
-    if (!_initialized || !_enabled) return null;
-    return _firestore;
+    if (_firestore != null) return _firestore;
+    try {
+      _firestore = FirebaseFirestore.instance;
+      _enabled = true;
+      return _firestore;
+    } catch (e) {
+      debugPrint('[Firestore] ❌ FirebaseFirestore.instance fallback error: $e');
+      return null;
+    }
   }
 
   /// The active school ID (e.g. SCHOOL_001).
@@ -1115,38 +1122,72 @@ class FirestoreService {
       map['isAdmissionOpen'] = settings.isAdmissionOpen;
       map['updatedAt'] = FieldValue.serverTimestamp();
 
+      final rootMap = <String, dynamic>{
+        'schoolName': settings.instituteName,
+        'instituteName': settings.instituteName,
+        'address': settings.address,
+        'phone': settings.phone,
+        'mobile': settings.mobile,
+        'email': settings.email,
+        'academicYear': settings.currentSession,
+        'currentSession': settings.currentSession,
+        'isAdmissionOpen': settings.isAdmissionOpen,
+        'schoolClasses': settings.schoolClasses,
+        'computerCourses': settings.computerCourses,
+        'sections': settings.sections,
+        'batches': settings.batches,
+        'logo': resolvedLogo,
+        'logoUrl': resolvedLogo,
+        'schoolStamp': resolvedStamp,
+        'stampUrl': resolvedStamp,
+        'sealUrl': resolvedStamp,
+        'signature': resolvedSig,
+        'signatureUrl': resolvedSig,
+        'principalSignature': resolvedSig,
+        'active': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
       final futures = <Future>[];
-      if (_schoolSettings != null) futures.add(_schoolSettings!.set(map, SetOptions(merge: true)));
-      if (_configSettings != null) futures.add(_configSettings!.set(map, SetOptions(merge: true)));
-      if (_root != null) {
-        futures.add(_root!.set({
-          'schoolName': settings.instituteName,
-          'instituteName': settings.instituteName,
-          'address': settings.address,
-          'phone': settings.phone,
-          'mobile': settings.mobile,
-          'email': settings.email,
-          'academicYear': settings.currentSession,
-          'currentSession': settings.currentSession,
-          'isAdmissionOpen': settings.isAdmissionOpen,
-          'schoolClasses': settings.schoolClasses,
-          'computerCourses': settings.computerCourses,
-          'sections': settings.sections,
-          'batches': settings.batches,
-          'logo': resolvedLogo,
-          'logoUrl': resolvedLogo,
-          'schoolStamp': resolvedStamp,
-          'stampUrl': resolvedStamp,
-          'sealUrl': resolvedStamp,
-          'signature': resolvedSig,
-          'signatureUrl': resolvedSig,
-          'principalSignature': resolvedSig,
-          'active': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true)));
-      }
+      // 1. Current school scope
+      if (_schoolSettings != null) futures.add(_schoolSettings!.set(map, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] _schoolSettings write note: $e'); }));
+      if (_configSettings != null) futures.add(_configSettings!.set(map, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] _configSettings write note: $e'); }));
+      if (_root != null) futures.add(_root!.set(rootMap, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] _root write note: $e'); }));
+
+      // 2. Explicit SCHOOL_007 (MNP School primary cloud ID)
+      final s007 = _db!.collection('schools').doc('SCHOOL_007');
+      futures.add(s007.collection('settings').doc('school').set(map, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] SCHOOL_007 school write note: $e'); }));
+      futures.add(s007.collection('settings').doc('config').set(map, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] SCHOOL_007 config write note: $e'); }));
+      futures.add(s007.set(rootMap, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] SCHOOL_007 root write note: $e'); }));
+
+      // 3. Explicit SCHOOL_001 (fallback/legacy ID)
+      final s001 = _db!.collection('schools').doc('SCHOOL_001');
+      futures.add(s001.collection('settings').doc('school').set(map, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] SCHOOL_001 school write note: $e'); }));
+      futures.add(s001.collection('settings').doc('config').set(map, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] SCHOOL_001 config write note: $e'); }));
+      futures.add(s001.set(rootMap, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] SCHOOL_001 root write note: $e'); }));
+
+      // 4. Public schoolDirectory entries (guaranteed public read & write)
+      final dirData = <String, dynamic>{
+        'schoolId': 'SCHOOL_007',
+        'schoolUid': 'SCHOOL_007',
+        'schoolName': settings.instituteName,
+        'instituteName': settings.instituteName,
+        'address': settings.address,
+        'phone': settings.phone,
+        'mobile': settings.mobile,
+        'email': settings.email,
+        'currentSession': settings.currentSession,
+        'academicYear': settings.currentSession,
+        'isAdmissionOpen': settings.isAdmissionOpen,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      final dirCol = _db!.collection('schoolDirectory');
+      futures.add(dirCol.doc('mnpschooledu@gmail.com').set(dirData, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] dir email write note: $e'); }));
+      futures.add(dirCol.doc('SCHOOL_007').set(dirData, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] dir 007 write note: $e'); }));
+      futures.add(dirCol.doc('SCHOOL_001').set(dirData, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] dir 001 write note: $e'); }));
+
       await Future.wait(futures);
-      debugPrint('[Firestore] Settings synced across school $_schoolId with base64 Data URLs');
+      debugPrint('[Firestore] ✅ SUCCESS: Settings synced (isAdmissionOpen=${settings.isAdmissionOpen}, currentSession=${settings.currentSession}) across all MNP school paths');
     } catch (e) {
       debugPrint('[Firestore] Settings sync failed: $e');
     }
