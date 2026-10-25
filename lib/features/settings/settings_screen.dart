@@ -203,6 +203,73 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             child: Column(
               children: [
+                // ─── Online Admissions 2026-27 Switch Tile ───
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: settings.isAdmissionOpen ? const Color(0xFFD1FAE5) : const Color(0xFFFFE4E6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      settings.isAdmissionOpen ? Icons.how_to_reg_rounded : Icons.app_registration_outlined,
+                      color: settings.isAdmissionOpen ? const Color(0xFF059669) : const Color(0xFFE11D48),
+                      size: 22,
+                    ),
+                  ),
+                  title: Row(
+                    children: [
+                      const Text(
+                        'Online Admissions 2026-27',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: settings.isAdmissionOpen ? const Color(0xFFD1FAE5) : const Color(0xFFFFE4E6),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          settings.isAdmissionOpen ? 'ACTIVE' : 'PAUSED',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: settings.isAdmissionOpen ? const Color(0xFF059669) : const Color(0xFFE11D48),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  subtitle: Text(
+                    settings.isAdmissionOpen
+                        ? 'Public registration is OPEN on website for Nursery–8th'
+                        : 'Registration is PAUSED on website (Admissions closed)',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  ),
+                  trailing: Switch.adaptive(
+                    value: settings.isAdmissionOpen,
+                    activeThumbColor: const Color(0xFF10B981),
+                    activeTrackColor: const Color(0xFF059669),
+                    onChanged: (val) async {
+                      await ref.read(settingsProvider.notifier).save(settings.copyWith(isAdmissionOpen: val));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(val
+                                ? '✅ Online Admissions are now ACTIVE on website'
+                                : '⏸️ Online Admissions are now PAUSED on website'),
+                            backgroundColor: val ? const Color(0xFF059669) : const Color(0xFFD97706),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                const Divider(height: 1, indent: 64),
                 _buildMenuTile(
                   context: context,
                   title: 'Institute Profile & Details',

@@ -78,6 +78,7 @@ class DatabaseService {
           'computerCourses TEXT',
           'principalSignature TEXT',
           'appLanguage TEXT DEFAULT "en"',
+          'isAdmissionOpen INTEGER DEFAULT 1',
         ]) {
           try {
             await db.execute('ALTER TABLE settings ADD COLUMN $col');
@@ -3592,6 +3593,7 @@ CREATE TABLE monthly_fees (
       'computerCourses': jsonEncode(settings.computerCourses),
       'sections': jsonEncode(settings.sections),
       'batches': jsonEncode(settings.batches),
+      'isAdmissionOpen': settings.isAdmissionOpen ? 1 : 0,
     };
     await db.insert('settings', map, conflictAlgorithm: ConflictAlgorithm.replace);
   }

@@ -124,6 +124,66 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final settings = ref.watch(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+              final isOpen = settings.isAdmissionOpen;
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: isOpen
+                      ? const Color(0xFF059669).withValues(alpha: 0.30)
+                      : const Color(0xFFDC2626).withValues(alpha: 0.30),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isOpen ? const Color(0xFF34D399) : const Color(0xFFF87171),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isOpen ? 'Admissions: ON' : 'Admissions: OFF',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isOpen ? const Color(0xFF34D399) : const Color(0xFFFCA5A5),
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Transform.scale(
+                      scale: 0.75,
+                      child: Switch(
+                        value: isOpen,
+                        activeThumbColor: const Color(0xFF34D399),
+                        activeTrackColor: const Color(0xFF059669),
+                        inactiveThumbColor: Colors.white70,
+                        inactiveTrackColor: Colors.red.shade900,
+                        onChanged: (val) async {
+                          await ref.read(settingsProvider.notifier).save(settings.copyWith(isAdmissionOpen: val));
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(val
+                                    ? '✅ Website Online Admissions are now OPEN'
+                                    : '⏸️ Website Online Admissions are now PAUSED'),
+                                backgroundColor: val ? const Color(0xFF059669) : const Color(0xFFD97706),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(105),
           child: Column(

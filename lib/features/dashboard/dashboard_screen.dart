@@ -861,19 +861,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 stretchModes: const [StretchMode.zoomBackground],
                 background: Container(
                   decoration: BoxDecoration(
-                    image: const DecorationImage(
-                      image: AssetImage('assets/images/header_campus_bg.jpg'),
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                    ),
-                    gradient: LinearGradient(
+                    color: const Color(0xFF040E1E),
+                    gradient: const LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        const Color(0xFF06142C).withValues(alpha: 0.82),
-                        const Color(0xFF0A2042).withValues(alpha: 0.65),
-                        const Color(0xFF040E1E).withValues(alpha: 0.90),
+                        Color(0xFF051329),
+                        Color(0xFF081E3E),
+                        Color(0xFF030B17),
                       ],
+                    ),
+                    image: DecorationImage(
+                      image: const AssetImage('assets/images/header_campus_bg.jpg'),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      opacity: 0.16,
+                      colorFilter: ColorFilter.mode(
+                        const Color(0xFF040E1E).withValues(alpha: 0.70),
+                        BlendMode.darken,
+                      ),
                     ),
                   ),
                   child: SafeArea(
@@ -888,9 +894,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.28),
+                              color: Colors.black.withValues(alpha: 0.40),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.22), width: 1),
                             ),
                             child: Row(
                               children: [
@@ -985,6 +991,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (isPrincipal) ...[
+                        _AdmissionStatusControlCard(settings: settings),
+                        const SizedBox(height: 14),
+                      ],
                       if (stats.overdueCount > 0 && isPrincipal) ...[
                         _OverdueAlert(count: stats.overdueCount),
                         const SizedBox(height: 16),
@@ -3480,6 +3490,168 @@ class _WebMetricCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AdmissionStatusControlCard extends ConsumerWidget {
+  final SettingsModel settings;
+  const _AdmissionStatusControlCard({required this.settings});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOpen = settings.isAdmissionOpen;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isOpen
+              ? [const Color(0xFF03261C), const Color(0xFF064E3B)]
+              : [const Color(0xFF2E0D10), const Color(0xFF4C151B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isOpen
+              ? const Color(0xFF10B981).withValues(alpha: 0.5)
+              : const Color(0xFFF87171).withValues(alpha: 0.5),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isOpen ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: (isOpen ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isOpen ? Icons.how_to_reg_rounded : Icons.app_registration_outlined,
+                  color: isOpen ? const Color(0xFF34D399) : const Color(0xFFFCA5A5),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          isOpen ? 'Online Admission: OPEN' : 'Online Admission: PAUSED',
+                          style: TextStyle(
+                            color: isOpen ? const Color(0xFF6EE7B7) : const Color(0xFFFCA5A5),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: (isOpen ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            isOpen ? 'सत्र 2026-27' : 'प्रवेश बंद',
+                            style: TextStyle(
+                              color: isOpen ? Colors.white : Colors.white70,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isOpen
+                          ? 'वेबसाइट पर एडमिशन फॉर्म खुला है (Nursery से 8th)'
+                          : 'वेबसाइट पर एडमिशन फॉर्म बंद है (फॉर्म सबमिशन रोका गया)',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Transform.scale(
+                scale: 0.85,
+                child: Switch.adaptive(
+                  value: isOpen,
+                  activeThumbColor: const Color(0xFF34D399),
+                  activeTrackColor: const Color(0xFF059669),
+                  inactiveThumbColor: Colors.white70,
+                  inactiveTrackColor: Colors.red.shade900,
+                  onChanged: (val) async {
+                    final updated = settings.copyWith(isAdmissionOpen: val);
+                    await ref.read(settingsProvider.notifier).save(updated);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(val
+                              ? '✅ Online Admission is now OPEN on website & app'
+                              : '⏸️ Online Admission is now PAUSED on website'),
+                          backgroundColor: val ? const Color(0xFF059669) : const Color(0xFFD97706),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const OnlineEnquiriesScreen()),
+            ),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.assignment_ind_outlined, size: 14, color: Colors.amberAccent.shade100),
+                      const SizedBox(width: 6),
+                      Text(
+                        'ऑनलाइन प्रवेश डेस्क व आवेदन देखें (Applications Desk)',
+                        style: TextStyle(
+                          color: Colors.amberAccent.shade100,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.amberAccent.shade100),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

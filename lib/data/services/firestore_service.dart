@@ -1112,6 +1112,7 @@ class FirestoreService {
       map['computerCourses'] = settings.computerCourses;
       map['sections'] = settings.sections;
       map['batches'] = settings.batches;
+      map['isAdmissionOpen'] = settings.isAdmissionOpen;
       map['updatedAt'] = FieldValue.serverTimestamp();
 
       final futures = <Future>[];
@@ -1127,6 +1128,7 @@ class FirestoreService {
           'email': settings.email,
           'academicYear': settings.currentSession,
           'currentSession': settings.currentSession,
+          'isAdmissionOpen': settings.isAdmissionOpen,
           'schoolClasses': settings.schoolClasses,
           'computerCourses': settings.computerCourses,
           'sections': settings.sections,

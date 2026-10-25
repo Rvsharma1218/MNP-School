@@ -22,6 +22,7 @@ class SettingsModel {
   // Website-compatible fields (schools/{schoolId}/settings/config)
   final List<String> sections;   // e.g. ['A', 'B', 'C']
   final List<String> batches;    // Computer course time batches
+  final bool isAdmissionOpen;    // Online Admission Toggle (Website & App)
 
   static const List<String> defaultClasses = [
     'Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th',
@@ -70,6 +71,7 @@ class SettingsModel {
     this.batches = defaultBatches,
     this.stampScale = 1.0,
     this.signatureScale = 1.0,
+    this.isAdmissionOpen = true,
   });
 
   final double stampScale;
@@ -113,6 +115,7 @@ class SettingsModel {
       'batches': batches,
       'stampScale': stampScale,
       'signatureScale': signatureScale,
+      'isAdmissionOpen': isAdmissionOpen,
     };
   }
 
@@ -157,6 +160,11 @@ class SettingsModel {
       batches: parseList(map['batches'], defaultBatches),
       stampScale: (map['stampScale'] as num?)?.toDouble() ?? 1.0,
       signatureScale: (map['signatureScale'] as num?)?.toDouble() ?? 1.0,
+      isAdmissionOpen: map['isAdmissionOpen'] == null
+          ? true
+          : (map['isAdmissionOpen'] is bool
+              ? map['isAdmissionOpen'] as bool
+              : (map['isAdmissionOpen'] == 1 || map['isAdmissionOpen'].toString().toLowerCase() == 'true')),
     );
   }
 
@@ -177,6 +185,7 @@ class SettingsModel {
       batches: defaultBatches,
       stampScale: 1.0,
       signatureScale: 1.0,
+      isAdmissionOpen: true,
     );
   }
 
@@ -203,6 +212,7 @@ class SettingsModel {
     List<String>? batches,
     double? stampScale,
     double? signatureScale,
+    bool? isAdmissionOpen,
   }) {
     return SettingsModel(
       instituteName: instituteName ?? this.instituteName,
@@ -227,6 +237,7 @@ class SettingsModel {
       batches: batches ?? this.batches,
       stampScale: stampScale ?? this.stampScale,
       signatureScale: signatureScale ?? this.signatureScale,
+      isAdmissionOpen: isAdmissionOpen ?? this.isAdmissionOpen,
     );
   }
 
