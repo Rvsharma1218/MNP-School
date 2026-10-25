@@ -26,7 +26,9 @@ export default function SignInView() {
     navigate,
     language = 'en',
     toggleLanguage,
-    setSignUpFormTab
+    setSignUpFormTab,
+    openEnquiriesModal,
+    setIsEnquiriesModalOpen
   } = useSchoolStore();
 
   const t = translations[language] || translations.en;
@@ -45,13 +47,16 @@ export default function SignInView() {
   const [loading, setLoading] = useState(false);
 
   // Institution Verified Details from Official School Banner
-  const schoolName = settings?.instituteName || 'MISSION NAVODAYA PUBLIC SCHOOL';
+  const schoolName = settings?.instituteName || settings?.schoolName || 'MISSION NAVODAYA PUBLIC SCHOOL';
   const schoolSubtitle = 'PUBLIC SCHOOL, MORA';
   const schoolLocation = 'Mora Bazar, Siwan (Bihar)';
   const logoSrc = settings?.logoUrl || settings?.logoPath || settings?.logo || '/logo.png';
   const primaryPhone = '9162724680';
-  const altPhone = settings?.phone || '8603481865';
+  const altPhone = settings?.phone || settings?.mobile || '8603481865';
   const officialEmail = settings?.email || 'mnpschooledu@gmail.com';
+  const currentSession = settings?.currentSession || settings?.academicYear || '2026-27';
+  const isAdmissionOpen = settings?.isAdmissionOpen !== false;
+  const admissionClasses = settings?.admissionClasses || 'For Classes Nursery to 8th';
 
   useEffect(() => {
     if (role === 'teacher' && email) {
@@ -145,12 +150,25 @@ export default function SignInView() {
       <div className="bg-[#091A32] text-white text-[11px] font-bold px-4 py-2 border-b border-[#1E3A60] hidden sm:block">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="px-2.5 py-0.5 rounded-full bg-[#F4B323] text-[#091A32] text-[10px] font-black uppercase tracking-wider">
-              Admissions 2026–27
-            </span>
-            <span className="text-slate-200">
-              Now Enrolling Nursery to 8th Grade · Mora Bazar, Siwan (Bihar)
-            </span>
+            {isAdmissionOpen ? (
+              <>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#F4B323] text-[#091A32] text-[10px] font-black uppercase tracking-wider">
+                  Admissions {currentSession}
+                </span>
+                <span className="text-slate-200">
+                  Now Enrolling {admissionClasses} · {schoolLocation}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-700 text-slate-200 text-[10px] font-bold uppercase tracking-wider border border-slate-600">
+                  Session {currentSession}
+                </span>
+                <span className="text-slate-200">
+                  Academic Session in Progress · {schoolLocation}
+                </span>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-5 text-slate-300">
@@ -401,63 +419,229 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       <main className="flex-1 w-full">
         {!isLoginModalOpen ? (
-          <div className="w-full space-y-12 sm:space-y-20 py-6 sm:py-10">
+          <div className="w-full space-y-12 sm:space-y-16 pb-10">
 
-            {/* ── SECTION 1: PANORAMIC HERO SHOWCASE ── */}
-            <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+            {/* ── SECTION 1: FULL-WIDTH PANORAMIC HERO BANNER (Left to Right Full Width, Balanced Height) ── */}
+            <section id="about" className="w-full relative overflow-hidden bg-[#07162C] border-b-2 border-[#1E3A60] shadow-2xl scroll-mt-24">
               
-              {/* Institution Header Block */}
-              <div className="text-center space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#102747]/8 border border-[#102747]/15 text-xs font-bold text-[#102747] shadow-2xs">
-                  <Sparkles className="w-3.5 h-3.5 text-[#F4B323]" />
-                  <span>DISCIPLINE · KNOWLEDGE · EXCELLENCE · BRIGHT FUTURE</span>
+              {/* Clean Campus Collage Background (No baked-in promotional text) */}
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-[1.01]"
+                style={{ backgroundImage: "url('/school_campus_banner.jpg')" }}
+                aria-hidden="true"
+              />
+
+              {/* Rich Glassmorphism Gradient Overlays — Enhances readability of all text while keeping the campus and students visible */}
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-[#07172E]/96 via-[#091D38]/88 to-[#061426]/75"
+                aria-hidden="true"
+              />
+              <div
+                className="absolute inset-0 bg-gradient-to-t from-[#07172E] via-transparent to-[#07172E]/60"
+                aria-hidden="true"
+              />
+              <div
+                className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#F4B323]/10 blur-3xl pointer-events-none"
+                aria-hidden="true"
+              />
+              <div
+                className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"
+                aria-hidden="true"
+              />
+
+              {/* Banner Content Container (Constrained width inside, spanning full width outside) */}
+              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-14 flex flex-col justify-between min-h-[460px] sm:min-h-[500px] lg:min-h-[530px]">
+                
+                {/* Top Strip: 4 Pillars Motto Badge + Academic Session Tag */}
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-md">
+                    <Sparkles className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span className="tracking-wide">DISCIPLINE · KNOWLEDGE · EXCELLENCE · BRIGHT FUTURE</span>
+                  </div>
+
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F4B323]/15 border border-[#F4B323]/30 backdrop-blur-md text-xs font-black text-[#F4B323] shadow-xs">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>SESSION {currentSession}</span>
+                  </div>
                 </div>
 
-                <h1 className="text-3xl sm:text-5xl lg:text-[54px] font-black text-[#102747] tracking-tight leading-[1.14] uppercase max-w-5xl mx-auto">
-                  MISSION NAVODAYA PUBLIC SCHOOL, MORA
-                </h1>
-                
-                <p className="text-base sm:text-lg text-[#65748B] font-medium max-w-2xl mx-auto italic">
-                  &ldquo;A Safe Campus for Brighter Futures.&rdquo;
-                </p>
+                {/* Middle Hero Block: Logo + School Name + Tagline + Location */}
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-5 sm:gap-6 text-center md:text-left">
+                  
+                  {/* Official School Crest Logo */}
+                  <div className="relative flex-shrink-0 group">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-2xl bg-white p-2.5 shadow-2xl border-2 border-[#F4B323] flex items-center justify-center transition-transform group-hover:scale-105">
+                      <img
+                        src={logoSrc}
+                        alt="Mission Navodaya Public School Crest"
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = '/logo.png';
+                        }}
+                      />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-md bg-[#102747] border border-[#F4B323] text-[9px] font-black text-[#F4B323] uppercase">
+                      ESTD 2021
+                    </div>
+                  </div>
+
+                  {/* School Typography & Tagline */}
+                  <div className="space-y-2 flex-1">
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#F4B323]">
+                      <span>CBSE Curriculum Pattern &bull; English Medium Co-Educational</span>
+                    </div>
+
+                    <h1 className="text-2xl sm:text-4xl lg:text-[46px] font-black text-white tracking-tight uppercase leading-[1.12] drop-shadow-md">
+                      MISSION NAVODAYA <span className="text-[#F4B323]">PUBLIC SCHOOL</span>, MORA
+                    </h1>
+
+                    <p className="text-xs sm:text-sm text-slate-300 font-medium italic max-w-2xl">
+                      &ldquo;A Safe Campus for Brighter Futures.&rdquo; &mdash; Dedicated to Academic Excellence, Moral Character, and Digital Innovation.
+                    </p>
+
+                    {/* School Location & Timings Quick Micro-Badges */}
+                    <div className="pt-1 flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 text-xs text-slate-300 font-medium">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 backdrop-blur-xs border border-white/15">
+                        <MapPin className="w-3.5 h-3.5 text-[#F4B323]" />
+                        <span>Mora Bazar, Siwan (Bihar)</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 backdrop-blur-xs border border-white/15">
+                        <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Mon &ndash; Sat: 8:00 AM &ndash; 2:00 PM</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 backdrop-blur-xs border border-white/15">
+                        <Phone className="w-3.5 h-3.5 text-blue-400" />
+                        <span>+91 {primaryPhone}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── DYNAMIC ADMISSION BANNER CARD (Controlled from Settings / App) ── */}
+                {isAdmissionOpen ? (
+                  <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/92 via-[#112F56]/88 to-[#0C223F]/92 border-2 border-[#F4B323]/50 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4">
+                    {/* Left: Admissions Open Title + Session + Classes */}
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F4B323] to-[#E09B10] text-[#091A32] flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <GraduationCap className="w-6 h-6 text-[#091A32]" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                          <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+                            <span className="relative flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F4B323] opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#F4B323]"></span>
+                            </span>
+                            ADMISSIONS OPEN
+                          </span>
+                          <span className="text-xs font-black px-2.5 py-0.5 rounded-md bg-[#F4B323] text-[#091A32] tracking-wider uppercase shadow-xs">
+                            SESSION {currentSession}
+                          </span>
+                        </div>
+                        <div className="text-xs text-[#F4B323] font-bold">
+                          {admissionClasses} &bull; Limited Seats Available for New Enrolments
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Action CTAs */}
+                    <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (setSignUpFormTab) setSignUpFormTab('student');
+                          navigate('/signup?tab=admission');
+                        }}
+                        className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4 text-[#091A32]" />
+                        <span>Online Admission Form &rarr;</span>
+                      </button>
+
+                      <a
+                        href="#contact"
+                        className="flex-1 sm:flex-initial px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Calendar className="w-4 h-4 text-[#F4B323]" />
+                        <span>Book Campus Visit</span>
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/92 via-[#112F56]/88 to-[#0C223F]/92 border border-white/20 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4">
+                    {/* Left: Academic Session in Progress */}
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                      <div className="w-12 h-12 rounded-xl bg-white/10 text-[#F4B323] border border-white/20 flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <School className="w-6 h-6 text-[#F4B323]" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                          <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase">
+                            ACADEMIC SESSION {currentSession}
+                          </span>
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-slate-700/80 text-slate-200 border border-slate-600 tracking-wider uppercase">
+                            Admissions Closed
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-300 font-medium">
+                          Academic curriculum in progress &bull; Enquire now for next academic session or campus tour
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Action CTAs when closed */}
+                    <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (openEnquiriesModal) {
+                            openEnquiriesModal('admissions');
+                          } else if (setIsEnquiriesModalOpen) {
+                            setIsEnquiriesModalOpen(true);
+                          }
+                        }}
+                        className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <MessageSquare className="w-4 h-4 text-[#091A32]" />
+                        <span>Enquire for Next Session &rarr;</span>
+                      </button>
+
+                      <a
+                        href="#campus-gallery"
+                        className="flex-1 sm:flex-initial px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Building className="w-4 h-4 text-[#F4B323]" />
+                        <span>Explore Campus Life</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
 
                 {/* 4 Pillars Badges from Banner */}
-                <div className="pt-2 flex flex-wrap items-center justify-center gap-2 sm:gap-3 max-w-3xl mx-auto">
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs text-xs font-bold text-[#102747]">
+                <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3">
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15 text-xs font-bold text-white shadow-xs">
                     <BookOpen className="w-3.5 h-3.5 text-[#F4B323]" />
                     <span>Quality Education</span>
                   </div>
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs text-xs font-bold text-[#102747]">
-                    <Shield className="w-3.5 h-3.5 text-blue-600" />
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15 text-xs font-bold text-white shadow-xs">
+                    <Shield className="w-3.5 h-3.5 text-blue-400" />
                     <span>Moral Values</span>
                   </div>
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs text-xs font-bold text-[#102747]">
-                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15 text-xs font-bold text-white shadow-xs">
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Holistic Development</span>
                   </div>
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs text-xs font-bold text-[#102747]">
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15 text-xs font-bold text-white shadow-xs">
                     <Trophy className="w-3.5 h-3.5 text-[#F4B323]" />
                     <span>Better Tomorrow</span>
                   </div>
                 </div>
-              </div>
 
-              {/* The Official Widescreen Panoramic School Banner */}
-              <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 border-[#E2E8F0] bg-[#091A32] group">
-                <img
-                  src="/school_panoramic_banner.png"
-                  alt="Mission Navodaya Public School Mora Official Panoramic Banner"
-                  className="w-full h-auto object-cover object-center transition-transform duration-700 group-hover:scale-[1.008]"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/school_official_banner.png';
-                  }}
-                />
               </div>
-
             </section>
 
-            {/* ── SECTION 2: ADMISSIONS CALLOUT & CTAS (Direct from Banner) ── */}
+            {/* ── SECTION 2: ADMISSIONS CALLOUT & CTAS (Dynamic with Settings) ── */}
             <section id="admissions" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
               <div className="rounded-3xl bg-gradient-to-r from-[#102747] via-[#091A32] to-[#102747] border border-[#1E3A60] p-6 sm:p-8 text-white shadow-xl flex flex-col lg:flex-row items-center justify-between gap-6">
                 
@@ -469,34 +653,53 @@ export default function SignInView() {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                       <span className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight uppercase">
-                        ADMISSIONS OPEN
+                        {isAdmissionOpen ? 'ADMISSIONS OPEN' : 'ACADEMIC SESSION'}
                       </span>
                       <span className="text-xs font-extrabold px-2.5 py-1 rounded-md bg-[#F4B323] text-[#091A32] uppercase tracking-wider">
-                        SESSION 2026–27
+                        SESSION {currentSession}
                       </span>
                     </div>
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-bold text-[#F4B323] border border-white/15">
-                      <span>For Classes Nursery to 8th</span>
+                      <span>{isAdmissionOpen ? admissionClasses : 'Session In Progress · Admissions Closed'}</span>
                     </div>
                     <p className="text-xs text-slate-300 max-w-xl pt-0.5">
-                      Empower your child with disciplined learning, modern digital education, and holistic values at our Mora Bazar campus.
+                      {isAdmissionOpen
+                        ? 'Empower your child with disciplined learning, modern digital education, and holistic values at our Mora Bazar campus.'
+                        : 'Current academic session is actively underway. You can submit advance enquiries for future enrolments or book a campus visit.'}
                     </p>
                   </div>
                 </div>
 
-                {/* Right: The 2 Action CTAs from the Banner */}
+                {/* Right: The 2 Action CTAs */}
                 <div className="flex flex-wrap items-center justify-center gap-3.5 flex-shrink-0 w-full lg:w-auto">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (setSignUpFormTab) setSignUpFormTab('student');
-                      navigate('/signup?tab=admission');
-                    }}
-                    className="flex-1 sm:flex-initial px-7 py-4 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4 text-[#091A32]" />
-                    <span>Online Admission Form &rarr;</span>
-                  </button>
+                  {isAdmissionOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (setSignUpFormTab) setSignUpFormTab('student');
+                        navigate('/signup?tab=admission');
+                      }}
+                      className="flex-1 sm:flex-initial px-7 py-4 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4 text-[#091A32]" />
+                      <span>Online Admission Form &rarr;</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (openEnquiriesModal) {
+                          openEnquiriesModal('admissions');
+                        } else if (setIsEnquiriesModalOpen) {
+                          setIsEnquiriesModalOpen(true);
+                        }
+                      }}
+                      className="flex-1 sm:flex-initial px-7 py-4 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4 text-[#091A32]" />
+                      <span>Enquire for Next Session &rarr;</span>
+                    </button>
+                  )}
 
                   <a
                     href="#contact"

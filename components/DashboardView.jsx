@@ -94,7 +94,7 @@ export default function DashboardView() {
       <div
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-amber-500/40 shadow-lg text-white relative overflow-hidden transition-all group"
         style={{
-          backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.94), rgba(10, 32, 66, 0.86), rgba(6, 20, 44, 0.95)), url('/school_hero_banner.jpg')",
+          backgroundImage: "linear-gradient(to right, rgba(6, 20, 44, 0.94), rgba(10, 32, 66, 0.86), rgba(6, 20, 44, 0.95)), url('/school_campus_banner.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center"
         }}

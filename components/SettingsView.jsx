@@ -56,6 +56,8 @@ export default function SettingsView() {
     signatureScale: settings.signatureScale !== undefined ? settings.signatureScale : 1.0,
     currentSession: settings.currentSession || settings.academicYear || '2026-27',
     academicYear: settings.academicYear || settings.currentSession || '2026-27',
+    isAdmissionOpen: settings.isAdmissionOpen !== undefined ? settings.isAdmissionOpen : true,
+    admissionClasses: settings.admissionClasses || 'For Classes Nursery to 8th',
     appLanguage: settings.appLanguage || 'en',
     classes: settings.classes || settings.schoolClasses || [],
     schoolClasses: settings.schoolClasses || settings.classes || [],
@@ -122,6 +124,8 @@ export default function SettingsView() {
         signatureScale: settings.signatureScale !== undefined ? settings.signatureScale : (prev.signatureScale !== undefined ? prev.signatureScale : 1.0),
         currentSession: settings.currentSession || settings.academicYear || prev.currentSession || '2026-27',
         academicYear: settings.academicYear || settings.currentSession || prev.academicYear || '2026-27',
+        isAdmissionOpen: settings.isAdmissionOpen !== undefined ? settings.isAdmissionOpen : (prev.isAdmissionOpen !== undefined ? prev.isAdmissionOpen : true),
+        admissionClasses: settings.admissionClasses || prev.admissionClasses || 'For Classes Nursery to 8th',
         appLanguage: settings.appLanguage || prev.appLanguage || 'en',
         classes: (settings.classes && settings.classes.length > 0) ? settings.classes : (settings.schoolClasses || prev.classes || []),
         schoolClasses: (settings.schoolClasses && settings.schoolClasses.length > 0) ? settings.schoolClasses : (settings.classes || prev.schoolClasses || []),
@@ -1499,25 +1503,115 @@ export default function SettingsView() {
                 </div>
               </div>
 
-              {/* Academic Session */}
-              <div className="p-4 rounded-2xl bg-surface2/60 border border-border/80 space-y-2">
-                <label className="text-xs font-bold text-text">Current Active Academic Session</label>
-                <div className="flex items-center gap-3">
-                  <select
-                    value={formData.currentSession || formData.academicYear || '2026-27'}
-                    onChange={(e) => {
-                      setFormData({ ...formData, currentSession: e.target.value, academicYear: e.target.value });
-                      updateSettings({ currentSession: e.target.value, academicYear: e.target.value });
-                      showToast(`Academic session set to ${e.target.value}`, 'success');
-                    }}
-                    className="px-3.5 py-2 rounded-xl border border-border bg-white dark:bg-surface text-text text-xs font-bold focus:outline-hidden focus:border-primary"
-                  >
-                    <option value="2025-26">Session 2025-26</option>
-                    <option value="2026-27">Session 2026-27 (Current)</option>
-                    <option value="2027-28">Session 2027-28</option>
-                    <option value="2028-29">Session 2028-29</option>
-                  </select>
-                  <span className="text-[11px] text-text-secondary">Used as default for new admissions & receipts</span>
+              {/* ─── Admissions & Academic Session Control ─── */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-surface to-surface2 border-2 border-primary/20 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                      <GraduationCap className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-text">Admission Banner &amp; Session Management</h3>
+                      <p className="text-[11px] text-text-secondary">Control website admission banner, active session, and target classes in real time.</p>
+                    </div>
+                  </div>
+                  {/* Live Status Badge */}
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold ${formData.isAdmissionOpen !== false ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-600 border border-rose-500/30'}`}>
+                    <span className={`w-2 h-2 rounded-full ${formData.isAdmissionOpen !== false ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                    {formData.isAdmissionOpen !== false ? 'Admissions Active on Website' : 'Admissions Closed (Evergreen Banner)'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* 1. Admission Toggle */}
+                  <div className="p-4 rounded-xl bg-white dark:bg-surface border border-border space-y-2">
+                    <label className="text-xs font-bold text-text flex items-center justify-between">
+                      <span>Admission Status</span>
+                      <span className="text-[10px] text-text-muted">Website Banner</span>
+                    </label>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextState = formData.isAdmissionOpen === false ? true : false;
+                          setFormData({ ...formData, isAdmissionOpen: nextState });
+                          updateSettings({ isAdmissionOpen: nextState });
+                          showToast(nextState ? '✓ Admissions OPEN marked on website banner' : '✓ Admissions CLOSED. Banner switched to evergreen campus mode', 'success');
+                        }}
+                        className={`w-full py-2.5 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                          formData.isAdmissionOpen !== false
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md'
+                            : 'bg-rose-600 hover:bg-rose-700 text-white shadow-md'
+                        }`}
+                      >
+                        {formData.isAdmissionOpen !== false ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Admissions: OPEN</span>
+                          </>
+                        ) : (
+                          <>
+                            <X className="w-4 h-4" />
+                            <span>Admissions: CLOSED</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-text-secondary leading-tight">
+                      {formData.isAdmissionOpen !== false
+                        ? 'Website banner par "Admissions Open" badge aur registration button dikh raha hai.'
+                        : 'Website banner se "Admissions Open" text hat gaya hai, clean school photo dikhegi.'}
+                    </p>
+                  </div>
+
+                  {/* 2. Academic Session */}
+                  <div className="p-4 rounded-xl bg-white dark:bg-surface border border-border space-y-2">
+                    <label className="text-xs font-bold text-text">Active Academic Session</label>
+                    <div className="pt-1">
+                      <select
+                        value={formData.currentSession || formData.academicYear || '2026-27'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData({ ...formData, currentSession: val, academicYear: val });
+                          updateSettings({ currentSession: val, academicYear: val });
+                          showToast(`Academic session set to ${val}`, 'success');
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-text text-xs font-bold focus:outline-hidden focus:border-primary"
+                      >
+                        <option value="2025-26">Session 2025-26</option>
+                        <option value="2026-27">Session 2026-27 (Current)</option>
+                        <option value="2027-28">Session 2027-28</option>
+                        <option value="2028-29">Session 2028-29</option>
+                        <option value="2029-30">Session 2029-30</option>
+                      </select>
+                    </div>
+                    <p className="text-[10px] text-text-secondary leading-tight">
+                      Banner, ID cards, admit cards, aur receipts par yahi session automatically aayega.
+                    </p>
+                  </div>
+
+                  {/* 3. Admission Classes Text */}
+                  <div className="p-4 rounded-xl bg-white dark:bg-surface border border-border space-y-2">
+                    <label className="text-xs font-bold text-text">Target Admission Classes</label>
+                    <div className="pt-1">
+                      <input
+                        type="text"
+                        value={formData.admissionClasses || 'For Classes Nursery to 8th'}
+                        onChange={(e) => {
+                          setFormData({ ...formData, admissionClasses: e.target.value });
+                        }}
+                        onBlur={() => {
+                          updateSettings({ admissionClasses: formData.admissionClasses });
+                          showToast('✓ Admission classes text saved', 'success');
+                        }}
+                        placeholder="e.g. For Classes Nursery to 8th"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-text text-xs font-semibold focus:outline-hidden focus:border-primary"
+                      />
+                    </div>
+                    <p className="text-[10px] text-text-secondary leading-tight">
+                      Banner par "Nursery to 8th" ki jagah yahi text display hoga.
+                    </p>
+                  </div>
                 </div>
               </div>
 
