@@ -125,10 +125,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Container(
                   width: 58,
                   height: 58,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white70, width: 2),
                   ),
                   child: Center(
                     child: settings.logoPath != null && settings.logoPath!.isNotEmpty
