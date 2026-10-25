@@ -6,7 +6,7 @@ import { translations } from '../lib/translations';
 import {
   GraduationCap, Mail, Lock, Eye, EyeOff, ShieldCheck,
   School, ArrowRight, AlertCircle, CheckCircle2,
-  User, ChevronDown, Phone, Hash, ArrowLeft, BookOpen,
+  User, ChevronDown, ChevronRight, Phone, Hash, ArrowLeft, BookOpen,
   Users, CalendarCheck, CreditCard, Shield, FileText, CheckCircle,
   Award, Heart, Compass, Sparkles, Building, Quote, Check,
   Activity, Monitor, Trophy, HelpCircle, MapPin, Clock, MessageSquare,
@@ -99,10 +99,15 @@ export default function SignInView() {
 
   const closeMobileMenuAndNavigate = (hash) => {
     setIsMobileMenuOpen(false);
-    const el = document.querySelector(hash);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+    if (isLoginModalOpen) {
+      setIsLoginModalOpen(false);
     }
+    setTimeout(() => {
+      const el = document.querySelector(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 120);
   };
 
   const handleSubmit = async (e) => {
@@ -201,11 +206,11 @@ export default function SignInView() {
       {/* 2. MAIN HEADER & INSTITUTIONAL NAVIGATION                    */}
       {/* ───────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 w-full bg-[#08182b]/85 backdrop-blur-xl border-b border-white/10 shadow-lg transition-all">
-        <div className="w-full px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between gap-4">
+        <div className="w-full px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
 
           {/* Brand Seal, School Title & Subtitle */}
-          <a href="#about" className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-shrink-0 group">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
+          <a href="#about" className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1 group">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
               <img
                 src={logoSrc}
                 alt={isHi ? "मिशन नवोदय पब्लिक स्कूल मोरा आधिकारिक मुहर" : "Mission Navodaya Public School Mora Official Seal"}
@@ -216,13 +221,15 @@ export default function SignInView() {
                 }}
               />
             </div>
-            <div className="min-w-0">
-              <div className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-white leading-tight truncate uppercase">
-                {isHi ? 'मिशन नवोदय पब्लिक स्कूल' : schoolName}
+            <div className="min-w-0 flex-1">
+              <div className="text-xs sm:text-base lg:text-lg font-black tracking-tight text-white leading-tight truncate uppercase">
+                <span className="sm:hidden">{isHi ? 'मिशन नवोदय स्कूल' : 'MNP School Mora'}</span>
+                <span className="hidden sm:inline">{isHi ? 'मिशन नवोदय पब्लिक स्कूल' : schoolName}</span>
               </div>
               <div className="text-[10px] sm:text-[11px] font-bold text-[#F4B323] tracking-wide truncate flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#F4B323] animate-pulse" />
-                <span>{isHi ? `मोरा बाजार, सीवान (बिहार) · सत्र ${currentSession}` : `Mora Bazar, Siwan (Bihar) · Session ${currentSession}`}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#F4B323] animate-pulse flex-shrink-0" />
+                <span className="sm:hidden">{isHi ? 'मोरा, सीवान · 2026-27' : 'Mora, Siwan · 2026-27'}</span>
+                <span className="hidden sm:inline">{isHi ? `मोरा बाजार, सीवान (बिहार) · सत्र ${currentSession}` : `Mora Bazar, Siwan (Bihar) · Session ${currentSession}`}</span>
               </div>
             </div>
           </a>
@@ -323,14 +330,14 @@ export default function SignInView() {
           </div>
 
           {/* Mobile Right Action Area (Admission CTA + Language + Hamburger) */}
-          <div className="flex md:hidden items-center gap-2">
+          <div className="flex md:hidden items-center gap-1.5 flex-shrink-0">
             <button
               type="button"
               onClick={() => {
                 if (setSignUpFormTab) setSignUpFormTab('student');
                 navigate('/signup?tab=admission');
               }}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F4B323] text-[#091A32] text-xs font-black shadow-xs whitespace-nowrap cursor-pointer"
+              className="hidden min-[420px]:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F4B323] text-[#091A32] text-xs font-black shadow-xs whitespace-nowrap cursor-pointer flex-shrink-0"
             >
               <Sparkles className="w-3 h-3 text-[#091A32]" />
               <span>{isHi ? 'प्रवेश' : 'Admission'}</span>
@@ -339,7 +346,7 @@ export default function SignInView() {
             <button
               type="button"
               onClick={toggleLanguage}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 text-xs font-bold text-white border border-white/20"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-white border border-white/20 flex-shrink-0 cursor-pointer"
               title="Toggle Language"
             >
               <Globe className="w-3 h-3 text-[#F4B323]" />
@@ -350,7 +357,7 @@ export default function SignInView() {
               type="button"
               onClick={() => setIsMobileMenuOpen(prev => !prev)}
               aria-label="Toggle Mobile Navigation Menu"
-              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+              className="p-1.5 sm:p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center justify-center flex-shrink-0"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5 text-[#F4B323]" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -358,83 +365,30 @@ export default function SignInView() {
 
         </div>
 
-        {/* Mobile Slide-down Drawer Menu */}
+        {/* Mobile Dropdown Navigation Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden fixed inset-x-0 top-18 sm:top-20 bottom-0 bg-[#091A32]/98 backdrop-blur-lg z-50 overflow-y-auto px-5 py-6 flex flex-col justify-between border-t border-[#1E3A60] animate-in slide-in-from-top-4 duration-200 text-white">
-            <div className="space-y-6">
-              <div className="p-3 rounded-xl bg-[#102747] border border-[#1E3A60] flex items-center gap-2.5 text-xs font-bold text-[#F4B323]">
-                <Sparkles className="w-4 h-4 flex-shrink-0 text-[#F4B323]" />
-                <span>{isHi ? 'सत्र 2026–27 · नर्सरी से 8वीं तक प्रवेश प्रारंभ' : 'Session 2026–27 · Nursery to 8th Admissions Open'}</span>
+          <>
+            {/* Backdrop for click outside */}
+            <div
+              className="md:hidden fixed inset-0 top-16 sm:top-20 bg-black/60 backdrop-blur-xs z-40 transition-opacity"
+              onClick={() => setIsMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+
+            <div className="md:hidden absolute top-full left-0 right-0 w-full max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-[#08182E] border-t border-[#1E3A60] border-b-2 border-[#F4B323]/50 shadow-2xl z-50 px-3.5 py-4 animate-in slide-in-from-top-2 duration-200 text-white space-y-4">
+              {/* Header Info Strip */}
+              <div className="p-2.5 rounded-xl bg-[#0f2442] border border-[#1E3A60] flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 font-bold text-[#F4B323]">
+                  <Sparkles className="w-4 h-4 flex-shrink-0 text-[#F4B323]" />
+                  <span>{isHi ? 'सत्र 2026–27 प्रवेश प्रारंभ' : 'Admissions Open 2026-27'}</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F4B323]/20 text-[#F4B323] font-bold border border-[#F4B323]/30">
+                  {isHi ? 'नर्सरी – 8वीं' : 'Nursery to 8th'}
+                </span>
               </div>
 
-              <div className="space-y-1 font-bold text-sm text-slate-200">
-                <button
-                  type="button"
-                  onClick={() => closeMobileMenuAndNavigate('#about')}
-                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
-                >
-                  <span>{isHi ? 'विद्यालय परिचय' : 'About School'}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-400" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => closeMobileMenuAndNavigate('#admissions')}
-                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between text-[#F4B323]"
-                >
-                  <span>{isHi ? 'प्रवेश 2026–27 (नर्सरी – 8वीं)' : 'Admissions 2026–27 (Nursery – 8th)'}</span>
-                  <ArrowRight className="w-4 h-4 text-[#F4B323]" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => closeMobileMenuAndNavigate('#features')}
-                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
-                >
-                  <span>{isHi ? '5 प्रमुख विशेषताएं' : '5 Signature Features'}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-400" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => closeMobileMenuAndNavigate('#leadership')}
-                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
-                >
-                  <span>{isHi ? 'विद्यालय नेतृत्व' : 'School Leadership'}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-400" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => closeMobileMenuAndNavigate('#facilities')}
-                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
-                >
-                  <span>{isHi ? 'परिसर सुविधाएं' : 'Campus Facilities'}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-400" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => closeMobileMenuAndNavigate('#campus-gallery')}
-                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
-                >
-                  <span>{isHi ? 'फोटो गैलरी' : 'Photo Gallery'}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-400" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => closeMobileMenuAndNavigate('#reviews')}
-                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between text-[#F4B323]"
-                >
-                  <span>{isHi ? 'अभिभावक समीक्षाएं' : 'Parent & Community Reviews'}</span>
-                  <ArrowRight className="w-4 h-4 text-[#F4B323]" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => closeMobileMenuAndNavigate('#contact')}
-                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
-                >
-                  <span>{isHi ? 'हेल्पलाइन एवं संपर्क' : 'Office Helpline & Contact'}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-400" />
-                </button>
-              </div>
-
-              <div className="space-y-3 pt-2">
+              {/* Primary Call to Actions: Online Admission & Portal Login */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -442,48 +396,230 @@ export default function SignInView() {
                     if (setSignUpFormTab) setSignUpFormTab('student');
                     navigate('/signup?tab=admission');
                   }}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-[0.98]"
                 >
                   <Sparkles className="w-4 h-4 text-[#091A32]" />
-                  <span>{isHi ? 'ऑनलाइन प्रवेश प्रपत्र' : 'Online Admission Form'}</span>
+                  <span>{isHi ? 'ऑनलाइन प्रवेश प्रपत्र 2026-27' : 'Online Admission Form 2026-27'}</span>
                 </button>
 
-                <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => openPortalLogin('parent')}
+                  className="w-full py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 cursor-pointer transition-all active:scale-[0.98]"
+                >
+                  <ShieldCheck className="w-4 h-4 text-[#F4B323]" />
+                  <span>{isHi ? 'स्कूल डिजिटल पोर्टल लॉगिन' : 'School Digital Portal Login'}</span>
+                </button>
+              </div>
+
+              {/* Section 1: Navigation Menu List */}
+              <div className="space-y-1">
+                <div className="px-2 text-[11px] font-black tracking-wider uppercase text-slate-400 flex items-center justify-between">
+                  <span>{isHi ? 'मुख्य मेन्यू सूची' : 'Navigation Menu'}</span>
+                  <span className="text-[10px] text-slate-500">{isHi ? '8 विकल्प' : '8 Items'}</span>
+                </div>
+
+                <div className="divide-y divide-white/5 rounded-2xl bg-[#0c1f38] border border-white/10 overflow-hidden shadow-sm">
                   <button
                     type="button"
-                    onClick={() => openPortalLogin('teacher')}
-                    className="py-2.5 px-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                    onClick={() => closeMobileMenuAndNavigate('#about')}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
                   >
-                    <GraduationCap className="w-4 h-4 text-[#F4B323]" />
-                    <span>{isHi ? 'शिक्षक' : 'Faculty'}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-[#F4B323] flex-shrink-0">
+                        <School className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-[#F4B323] transition-colors">{isHi ? 'विद्यालय परिचय' : 'About School'}</div>
+                        <div className="text-[10px] text-slate-400">{isHi ? 'मिशन, दृष्टि एवं इतिहास' : 'Vision, Mission & History'}</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => openPortalLogin('parent')}
-                    className="py-2.5 px-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                    onClick={() => closeMobileMenuAndNavigate('#admissions')}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group bg-amber-500/5"
                   >
-                    <Users className="w-4 h-4 text-[#F4B323]" />
-                    <span>{isHi ? 'अभिभावक' : 'Parents'}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-[#F4B323]/20 flex items-center justify-center text-[#F4B323] flex-shrink-0">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-black text-[#F4B323]">{isHi ? 'प्रवेश प्रक्रिया 2026–27' : 'Admissions 2026–27'}</div>
+                        <div className="text-[10px] text-slate-300">{isHi ? 'नर्सरी से 8वीं तक ऑनलाइन आवेदन' : 'Nursery to 8th Apply Online'}</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => closeMobileMenuAndNavigate('#features')}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-[#F4B323] flex-shrink-0">
+                        <Award className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-[#F4B323] transition-colors">{isHi ? '5 प्रमुख विशेषताएं' : '5 Signature Features'}</div>
+                        <div className="text-[10px] text-slate-400">{isHi ? 'अनुशासन, स्मार्ट क्लास, सुरक्षित कैंपस' : 'Discipline, Smart Class & Safety'}</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => closeMobileMenuAndNavigate('#leadership')}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-[#F4B323] flex-shrink-0">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-[#F4B323] transition-colors">{isHi ? 'विद्यालय नेतृत्व एवं टीम' : 'Leadership & Mentors'}</div>
+                        <div className="text-[10px] text-slate-400">{isHi ? 'प्रधानाचार्य एवं शिक्षक गण' : 'Principal & Dedicated Faculty'}</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => closeMobileMenuAndNavigate('#facilities')}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-[#F4B323] flex-shrink-0">
+                        <Building className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-[#F4B323] transition-colors">{isHi ? 'परिसर सुविधाएं' : 'Campus Facilities'}</div>
+                        <div className="text-[10px] text-slate-400">{isHi ? 'खेल मैदान, CCTV, पुस्तकालय' : 'Sports, CCTV & Activity Labs'}</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => closeMobileMenuAndNavigate('#campus-gallery')}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-[#F4B323] flex-shrink-0">
+                        <Eye className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-[#F4B323] transition-colors">{isHi ? 'फोटो गैलरी' : 'Campus Photo Gallery'}</div>
+                        <div className="text-[10px] text-slate-400">{isHi ? 'समारोह एवं विद्यालय गतिविधियां' : 'Campus Events & Student Activities'}</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => closeMobileMenuAndNavigate('#reviews')}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-[#F4B323] flex-shrink-0">
+                        <MessageSquare className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-[#F4B323] transition-colors">{isHi ? 'अभिभावक समीक्षाएं' : 'Parent Reviews'}</div>
+                        <div className="text-[10px] text-slate-400">{isHi ? 'अभिभावकों का विश्वास एवं अनुभव' : 'Parent Trust & Testimonials'}</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => closeMobileMenuAndNavigate('#contact')}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-[#F4B323] flex-shrink-0">
+                        <Phone className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-[#F4B323] transition-colors">{isHi ? 'कार्यालय एवं संपर्क' : 'Office & Contact'}</div>
+                        <div className="text-[10px] text-slate-400">{isHi ? 'पता, हेल्पलाइन एवं समय' : 'Location, Timings & Helpline'}</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Section 2: Dedicated Portal Logins List */}
+              <div className="space-y-1.5">
+                <div className="px-2 text-[11px] font-black tracking-wider uppercase text-slate-400 flex items-center justify-between">
+                  <span>{isHi ? 'पोर्टल लॉगिन' : 'Direct Portals'}</span>
+                  <span className="text-[10px] text-[#F4B323]">{isHi ? 'विद्यार्थी, शिक्षक व स्टाफ' : 'Student & Staff'}</span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('parent')}
+                    className="py-2.5 px-2 rounded-xl bg-[#0c1f38] hover:bg-[#122c4d] border border-white/15 text-white text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors active:scale-95"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-[#F4B323]/20 flex items-center justify-center text-[#F4B323]">
+                      <Users className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[11px] font-bold">{isHi ? 'अभिभावक' : 'Parents'}</span>
+                    <span className="text-[9px] text-slate-400 leading-tight">{isHi ? 'रिजल्ट / फीस' : 'Results'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('teacher')}
+                    className="py-2.5 px-2 rounded-xl bg-[#0c1f38] hover:bg-[#122c4d] border border-white/15 text-white text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors active:scale-95"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-[#F4B323]">
+                      <GraduationCap className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[11px] font-bold">{isHi ? 'शिक्षक' : 'Teacher'}</span>
+                    <span className="text-[9px] text-slate-400 leading-tight">{isHi ? 'हाजिरी व मार्क्स' : 'Marks'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => openPortalLogin('principal')}
-                    className="py-2.5 px-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                    className="py-2.5 px-2 rounded-xl bg-[#0c1f38] hover:bg-[#122c4d] border border-white/15 text-white text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors active:scale-95"
                   >
-                    <ShieldCheck className="w-4 h-4 text-[#F4B323]" />
-                    <span>{isHi ? 'प्रधानाचार्य' : 'Principal'}</span>
+                    <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-[#F4B323]">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[11px] font-bold">{isHi ? 'प्रधानाचार्य' : 'Principal'}</span>
+                    <span className="text-[9px] text-slate-400 leading-tight">{isHi ? 'प्रशासन' : 'Admin'}</span>
                   </button>
                 </div>
               </div>
-            </div>
 
-            <div className="pt-6 border-t border-white/10 text-center text-xs text-slate-400 space-y-1">
-              <div>{isHi ? 'कार्यालय कॉल/व्हाट्सएप:' : 'Office Call/WhatsApp:'} <a href={`tel:${primaryPhone}`} className="text-[#F4B323] font-bold">+91 {primaryPhone}</a></div>
-              <div>{isHi ? 'मोरा बाजार, सीवान (बिहार)' : schoolLocation}</div>
+              {/* Section 3: Contact & Help Strip */}
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+                <a
+                  href={`tel:${primaryPhone}`}
+                  className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white font-bold transition-colors"
+                >
+                  <Phone className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>+91 {primaryPhone}</span>
+                </a>
+                <span className="text-[11px] text-slate-400 truncate">
+                  {isHi ? 'मोरा बाजार, सीवान' : 'Mora, Siwan'}
+                </span>
+              </div>
+
             </div>
-          </div>
+          </>
         )}
       </header>
 
@@ -1337,8 +1473,8 @@ export default function SignInView() {
           /* ───────────────────────────────────────────────────────────── */
           /* STAGE 2: PRESERVED AUTHENTICATION MODAL (100% WORKING LOGIC)  */
           /* ───────────────────────────────────────────────────────────── */
-          <div className="w-full max-w-lg mx-auto py-10 px-4 animate-in zoom-in-95 duration-200">
-            <div className="rounded-3xl bg-white border border-[#E2E8F0] shadow-xl p-6 sm:p-8 relative">
+          <div className="w-full max-w-lg mx-auto py-4 sm:py-10 px-3 sm:px-4 animate-in zoom-in-95 duration-200">
+            <div className="rounded-3xl bg-white border border-[#E2E8F0] shadow-xl p-4 sm:p-8 relative">
 
               <button
                 type="button"
@@ -1349,8 +1485,8 @@ export default function SignInView() {
                 <span>{isHi ? '← स्कूल वेबसाइट पर वापस जाएं' : '← Back to School Website'}</span>
               </button>
 
-              <div className="text-center space-y-1.5 mb-6">
-                <div className="w-16 h-16 mx-auto flex items-center justify-center drop-shadow-md">
+              <div className="text-center space-y-1.5 mb-5 sm:mb-6">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto flex items-center justify-center drop-shadow-md">
                   <img
                     src={logoSrc}
                     alt={schoolName}
@@ -1361,14 +1497,14 @@ export default function SignInView() {
                     }}
                   />
                 </div>
-                <h2 className="text-xl font-black text-[#14243B] tracking-tight">
+                <h2 className="text-lg sm:text-xl font-black text-[#14243B] tracking-tight">
                   {role === 'parent'
                     ? (isHi ? 'अभिभावक पोर्टल लॉगिन' : 'Parent Portal Access')
                     : role === 'teacher'
                       ? (isHi ? 'शिक्षक एवं संकाय लॉगिन' : 'Faculty & Teacher Sign In')
                       : (isHi ? 'प्रधानाचार्य प्रशासन पोर्टल' : 'Principal Administration Portal')}
                 </h2>
-                <p className="text-xs text-[#65748B] font-medium">
+                <p className="text-xs text-[#65748B] font-medium max-w-sm mx-auto">
                   {role === 'parent'
                     ? (isHi ? 'छात्र प्रवेश संख्या एवं पंजीकृत मोबाइल नंबर दर्ज करें' : 'Enter student admission & registered mobile number')
                     : (isHi ? 'सत्यापित कर्मचारियों और प्रबंधन के लिए सुरक्षित संस्थागत पोर्टल' : 'Secure institutional portal for authenticated staff and administration')}
@@ -1376,41 +1512,41 @@ export default function SignInView() {
               </div>
 
               {/* Role Switcher Tabs */}
-              <div className="grid grid-cols-3 p-1 rounded-2xl bg-slate-100 border border-[#E2E8F0] mb-6">
+              <div className="grid grid-cols-3 p-1 rounded-2xl bg-slate-100 border border-[#E2E8F0] mb-5 sm:mb-6">
                 <button
                   type="button"
                   onClick={() => { setRole('parent'); setError(''); }}
-                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'parent'
+                  className={`py-2 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${role === 'parent'
                     ? 'bg-white text-[#102747] shadow-sm'
                     : 'text-[#65748B] hover:text-[#102747]'
                     }`}
                 >
-                  <Users className="w-3.5 h-3.5 text-[#F4B323]" />
-                  <span>{isHi ? 'अभिभावक' : 'Parent'}</span>
+                  <Users className="w-3.5 h-3.5 text-[#F4B323] flex-shrink-0" />
+                  <span className="truncate">{isHi ? 'अभिभावक' : 'Parent'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => { setRole('teacher'); setError(''); }}
-                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'teacher'
+                  className={`py-2 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${role === 'teacher'
                     ? 'bg-white text-[#102747] shadow-sm'
                     : 'text-[#65748B] hover:text-[#102747]'
                     }`}
                 >
-                  <GraduationCap className="w-3.5 h-3.5 text-[#102747]" />
-                  <span>{isHi ? 'शिक्षक' : 'Teacher'}</span>
+                  <GraduationCap className="w-3.5 h-3.5 text-[#102747] flex-shrink-0" />
+                  <span className="truncate">{isHi ? 'शिक्षक' : 'Teacher'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => { setRole('principal'); setError(''); }}
-                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'principal'
+                  className={`py-2 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${role === 'principal'
                     ? 'bg-white text-[#102747] shadow-sm'
                     : 'text-[#65748B] hover:text-[#102747]'
                     }`}
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{isHi ? 'प्रधानाचार्य' : 'Principal'}</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span className="truncate">{isHi ? 'प्रधानाचार्य' : 'Principal'}</span>
                 </button>
               </div>
 

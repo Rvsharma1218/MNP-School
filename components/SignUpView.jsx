@@ -222,32 +222,34 @@ export default function SignUpView() {
             e.preventDefault();
             navigate('/signin');
           }}
-          className="flex items-center gap-3 cursor-pointer group min-w-0"
+          className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0 flex-1"
         >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
             <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
           </div>
-          <div className="min-w-0">
-            <h1 className="text-sm sm:text-base font-black tracking-tight text-white uppercase group-hover:text-[#F4B323] transition-colors truncate">
-              {language === 'hi' ? 'मिशन नवोदय पब्लिक स्कूल' : schoolName}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xs sm:text-base font-black tracking-tight text-white uppercase group-hover:text-[#F4B323] transition-colors truncate">
+              <span className="sm:hidden">{language === 'hi' ? 'मिशन नवोदय' : 'MNP School'}</span>
+              <span className="hidden sm:inline">{language === 'hi' ? 'मिशन नवोदय पब्लिक स्कूल' : schoolName}</span>
             </h1>
             <p className="text-[10px] sm:text-[11px] text-[#F4B323] font-bold flex items-center gap-1.5 mt-0.5 truncate">
               <span className="w-1.5 h-1.5 rounded-full bg-[#F4B323] animate-pulse flex-shrink-0" />
-              <span>{language === 'hi' ? 'ऑनलाइन प्रवेश एवं शिक्षक भर्ती • सत्र 2026-27' : 'Online Admission & Faculty Desk • Session 2026-27'}</span>
+              <span className="sm:hidden">{language === 'hi' ? 'प्रवेश सत्र 2026-27' : 'Admission 2026-27'}</span>
+              <span className="hidden sm:inline">{language === 'hi' ? 'ऑनलाइन प्रवेश एवं शिक्षक भर्ती • सत्र 2026-27' : 'Online Admission & Faculty Desk • Session 2026-27'}</span>
             </p>
           </div>
         </a>
 
         {/* Header Right Actions */}
-        <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           {/* Language Switcher Pill */}
           <button
             type="button"
             onClick={toggleLanguage}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-slate-100 transition-all cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-slate-100 transition-all cursor-pointer shadow-2xs flex-shrink-0"
             title="Switch Language"
           >
-            <Globe className="w-3.5 h-3.5 text-[#F4B323]" />
+            <Globe className="w-3.5 h-3.5 text-[#F4B323] flex-shrink-0" />
             <span className="hidden sm:inline">{language === 'en' ? 'हिन्दी में देखें' : 'English'}</span>
             <span className="sm:hidden">{language === 'en' ? 'हिन्दी' : 'EN'}</span>
           </button>
@@ -255,10 +257,11 @@ export default function SignUpView() {
           <button
             type="button"
             onClick={() => navigate('/signin')}
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] text-xs font-black transition-all cursor-pointer shadow-md"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] text-xs font-black transition-all cursor-pointer shadow-md flex-shrink-0"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-[#091A32]" />
-            <span>{language === 'hi' ? 'मुख्य वेबसाइट' : 'Main Website'}</span>
+            <ArrowLeft className="w-3.5 h-3.5 text-[#091A32] flex-shrink-0" />
+            <span className="hidden sm:inline">{language === 'hi' ? 'मुख्य वेबसाइट' : 'Main Website'}</span>
+            <span className="sm:hidden">{language === 'hi' ? 'होम' : 'Home'}</span>
           </button>
         </div>
       </header>
