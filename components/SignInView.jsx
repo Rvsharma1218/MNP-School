@@ -11,7 +11,7 @@ import {
   Award, Heart, Compass, Sparkles, Building, Quote, Check,
   Activity, Monitor, Trophy, HelpCircle, MapPin, Clock, MessageSquare,
   Globe, Briefcase, Menu, X, ExternalLink, Calendar, Star,
-  TrendingUp, CheckCircle as CheckIcon
+  TrendingUp, QrCode, CheckCircle as CheckIcon
 } from 'lucide-react';
 
 export default function SignInView() {
@@ -112,10 +112,16 @@ export default function SignInView() {
 
     try {
       if (role === 'parent') {
-        if (!parentAdmissionNo.trim()) {
-          throw new Error(language === 'hi' ? 'कृपया छात्र प्रवेश संख्या या रोल नंबर दर्ज करें।' : "Please enter your child's Admission Number or Roll Number.");
+        const cleanAdmInput = parentAdmissionNo.trim();
+        const cleanPhoneDigits = parentMobile.replace(/\D/g, '');
+
+        if (!cleanAdmInput) {
+          throw new Error(language === 'hi' ? 'कृपया छात्र प्रवेश संख्या या स्टूडेंट आईडी दर्ज करें।' : "Please enter Admission Number or Student ID");
         }
-        await parentSignIn('', parentAdmissionNo.trim(), parentMobile.trim());
+        if (!cleanPhoneDigits || cleanPhoneDigits.length < 10) {
+          throw new Error(language === 'hi' ? 'कृपया मान्य 10 अंकों का पंजीकृत मोबाइल नंबर दर्ज करें।' : 'Please enter a valid 10-digit registered mobile number');
+        }
+        await parentSignIn('', cleanAdmInput, cleanPhoneDigits);
       } else if (role === 'teacher') {
         if (!selectedTeacherId) {
           throw new Error(language === 'hi' ? 'कृपया सूची से अपना शिक्षक नाम चुनें।' : "Please select your teacher profile from the dropdown.");
@@ -294,7 +300,7 @@ export default function SignInView() {
             {/* Unified Portal Login Button */}
             <button
               type="button"
-              onClick={() => openPortalLogin('principal')}
+              onClick={() => openPortalLogin('parent')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs flex-shrink-0"
               title={isHi ? 'स्कूल पोर्टल लॉगिन' : 'School Portal Login'}
             >
@@ -1149,7 +1155,7 @@ export default function SignInView() {
                         <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                       </div>
                       <div className="text-[10px] text-[#65748B] font-medium truncate">
-                        {isHi ? 'रेहान के पिता • कक्षा 7' : 'Father of Rehan • Grade 7'}
+                        {isHi ? 'रेहान के पिता • कक्षा 7' : 'Father of Rehan • Grade 4'}
                       </div>
                     </div>
                   </div>
@@ -1357,14 +1363,14 @@ export default function SignInView() {
                 </div>
                 <h2 className="text-xl font-black text-[#14243B] tracking-tight">
                   {role === 'parent'
-                    ? (isHi ? 'अभिभावक पोर्टल लॉगिन' : 'Parent Portal Sign In')
+                    ? (isHi ? 'अभिभावक पोर्टल लॉगिन' : 'Parent Portal Access')
                     : role === 'teacher'
                       ? (isHi ? 'शिक्षक एवं संकाय लॉगिन' : 'Faculty & Teacher Sign In')
                       : (isHi ? 'प्रधानाचार्य प्रशासन पोर्टल' : 'Principal Administration Portal')}
                 </h2>
                 <p className="text-xs text-[#65748B] font-medium">
                   {role === 'parent'
-                    ? (isHi ? 'अपने बच्चे का शुल्क विवरण, उपस्थिति रिकॉर्ड और रिपोर्ट कार्ड देखें' : 'Access your child’s fee statement, attendance records and report cards')
+                    ? (isHi ? 'छात्र प्रवेश संख्या एवं पंजीकृत मोबाइल नंबर दर्ज करें' : 'Enter student admission & registered mobile number')
                     : (isHi ? 'सत्यापित कर्मचारियों और प्रबंधन के लिए सुरक्षित संस्थागत पोर्टल' : 'Secure institutional portal for authenticated staff and administration')}
                 </p>
               </div>
@@ -1375,8 +1381,8 @@ export default function SignInView() {
                   type="button"
                   onClick={() => { setRole('parent'); setError(''); }}
                   className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'parent'
-                      ? 'bg-white text-[#102747] shadow-sm'
-                      : 'text-[#65748B] hover:text-[#102747]'
+                    ? 'bg-white text-[#102747] shadow-sm'
+                    : 'text-[#65748B] hover:text-[#102747]'
                     }`}
                 >
                   <Users className="w-3.5 h-3.5 text-[#F4B323]" />
@@ -1387,8 +1393,8 @@ export default function SignInView() {
                   type="button"
                   onClick={() => { setRole('teacher'); setError(''); }}
                   className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'teacher'
-                      ? 'bg-white text-[#102747] shadow-sm'
-                      : 'text-[#65748B] hover:text-[#102747]'
+                    ? 'bg-white text-[#102747] shadow-sm'
+                    : 'text-[#65748B] hover:text-[#102747]'
                     }`}
                 >
                   <GraduationCap className="w-3.5 h-3.5 text-[#102747]" />
@@ -1399,8 +1405,8 @@ export default function SignInView() {
                   type="button"
                   onClick={() => { setRole('principal'); setError(''); }}
                   className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'principal'
-                      ? 'bg-white text-[#102747] shadow-sm'
-                      : 'text-[#65748B] hover:text-[#102747]'
+                    ? 'bg-white text-[#102747] shadow-sm'
+                    : 'text-[#65748B] hover:text-[#102747]'
                     }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -1419,11 +1425,47 @@ export default function SignInView() {
               {/* Authentication Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {role === 'parent' ? (
-                  /* PARENT LOGIN FIELDS */
+                  /* PARENT LOGIN FIELDS - EXACTLY MATCHING FLUTTER APP UI */
                   <div className="space-y-4 animate-in fade-in">
+                    {/* 1-Tap Camera QR Scan Button matching Flutter App */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const code = prompt(
+                          isHi
+                            ? "आईडी कार्ड या रसीद से बारकोड/कॉर्ड दर्ज करें या पेस्ट करें (उदा. ADM-2026-001):"
+                            : "Scan/Enter Student QR Code or ID from Card/Receipt (e.g. ADM-2026-001):"
+                        );
+                        if (code && code.trim()) {
+                          setParentAdmissionNo(code.trim());
+                        }
+                      }}
+                      className="w-full p-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-3 cursor-pointer text-left group"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-black/15 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                        <QrCode className="w-5 h-5 text-slate-950" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-black text-slate-950 leading-tight">
+                          📷 {isHi ? 'QR Code Scan Karein' : 'Scan Student QR Code'}
+                        </div>
+                        <div className="text-[11px] font-semibold text-slate-900/80 leading-tight mt-0.5">
+                          {isHi ? 'ID Card ya Fee Receipt scan karke turant kholein' : 'Scan ID Card or Fee Receipt to fill instantly'}
+                        </div>
+                      </div>
+                    </button>
+
+                    <div className="flex items-center gap-3 my-2">
+                      <div className="h-px bg-slate-200 flex-1" />
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        {isHi ? 'OR / अथवा हाथ से लिखें' : 'OR / Enter Manually'}
+                      </span>
+                      <div className="h-px bg-slate-200 flex-1" />
+                    </div>
+
                     <div>
                       <label className="block text-xs font-bold text-[#14243B] mb-1.5">
-                        {isHi ? 'बच्चे का एडमिशन नंबर या रोल नंबर *' : 'Child Admission ID or Roll Number *'}
+                        {isHi ? 'Admission No / Student ID (प्रवेश संख्या) *' : 'Admission No / Student ID *'}
                       </label>
                       <div className="relative">
                         <Hash className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -1432,7 +1474,7 @@ export default function SignInView() {
                           required
                           value={parentAdmissionNo}
                           onChange={(e) => setParentAdmissionNo(e.target.value)}
-                          placeholder={isHi ? 'जैसे MNP-2026-0042 या रोल नंबर' : 'e.g. MNP-2026-0042 or Roll Number'}
+                          placeholder="e.g. ADM-2026-001 or STU2026001"
                           className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-medium text-[#14243B] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all"
                         />
                       </div>
@@ -1440,7 +1482,7 @@ export default function SignInView() {
 
                     <div>
                       <label className="block text-xs font-bold text-[#14243B] mb-1.5">
-                        {isHi ? 'पंजीकृत अभिभावक मोबाइल नंबर *' : 'Registered Parent Mobile Number *'}
+                        {isHi ? 'Registered Mobile Number (पंजीकृत मोबाइल नंबर) *' : 'Registered Mobile Number *'}
                       </label>
                       <div className="relative">
                         <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -1449,15 +1491,20 @@ export default function SignInView() {
                           required
                           value={parentMobile}
                           onChange={(e) => setParentMobile(e.target.value)}
-                          placeholder={isHi ? '10 अंकों का मोबाइल नंबर दर्ज करें' : 'Enter 10-digit mobile number'}
+                          placeholder="10-digit Mobile Number"
                           className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-medium text-[#14243B] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all"
                         />
                       </div>
-                      <p className="text-[10px] text-[#65748B] mt-1">
+                    </div>
+
+                    {/* Info Callout Box matching Flutter App */}
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 flex items-start gap-2.5 text-amber-900 text-xs leading-relaxed">
+                      <HelpCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <span>
                         {isHi
-                          ? 'दाखिला सत्यापन और आपके बच्चे के रिकॉर्ड की सुरक्षा के लिए उपयोग किया जाता है।'
-                          : 'Used to verify enrollment and safeguard your child’s records.'}
-                      </p>
+                          ? 'अभिभावक लाइव उपस्थिति, मासिक शुल्क विवरण, रसीद पीडीएफ और परीक्षा परिणाम देख सकते हैं।'
+                          : 'Parents can view live attendance, monthly fee particulars, receipt PDF, and exam results.'}
+                      </span>
                     </div>
                   </div>
                 ) : (
@@ -1577,9 +1624,11 @@ export default function SignInView() {
                   ) : (
                     <>
                       <span>
-                        {isHi
-                          ? `लॉगिन करें (${role === 'parent' ? 'अभिभावक डेस्क' : role === 'teacher' ? 'शिक्षक कंसोल' : 'एडमिन पोर्टल'})`
-                          : `Sign In to ${role === 'parent' ? 'Parent Desk' : role === 'teacher' ? 'Teacher Console' : 'Admin Portal'}`}
+                        {role === 'parent'
+                          ? (isHi ? 'अभिभावक पोर्टल में प्रवेश करें' : 'Enter Parent Portal')
+                          : (isHi
+                            ? `लॉगिन करें (${role === 'teacher' ? 'शिक्षक कंसोल' : 'एडमिन पोर्टल'})`
+                            : `Sign In to ${role === 'teacher' ? 'Teacher Console' : 'Admin Portal'}`)}
                       </span>
                       <ArrowRight className="w-4 h-4 text-[#F4B323]" />
                     </>
