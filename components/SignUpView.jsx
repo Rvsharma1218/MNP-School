@@ -290,34 +290,19 @@ export default function SignUpView() {
                     : 'Join the committed teaching faculty at Mission Navodaya Public School, Mora Bazar. We welcome qualified and passionate educators.')}
             </p>
 
-            {/* Form Mode Selector Tabs */}
-            <div className="mt-6 flex flex-wrap gap-2.5">
-              <button
-                type="button"
-                onClick={() => { setActiveFormTab('student'); if (setSignUpFormTab) setSignUpFormTab('student'); setSubmitted(false); setError(''); }}
-                className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
-                  activeFormTab === 'student'
-                    ? 'bg-amber-400 text-[#0c2340] shadow-sm'
-                    : 'bg-white/15 text-white hover:bg-white/25 border border-white/20'
-                }`}
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>{language === 'hi' ? '1. छात्र प्रवेश प्रपत्र (Student Admission)' : '1. Student Admission Form'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setActiveFormTab('teacher'); if (setSignUpFormTab) setSignUpFormTab('teacher'); setSubmitted(false); setError(''); }}
-                className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
-                  activeFormTab === 'teacher'
-                    ? 'bg-amber-400 text-[#0c2340] shadow-sm'
-                    : 'bg-white/15 text-white hover:bg-white/25 border border-white/20'
-                }`}
-              >
-                <GraduationCap className="w-4 h-4" />
-                <span>{language === 'hi' ? '2. शिक्षक भर्ती आवेदन (Teacher Recruitment)' : '2. Join as Faculty / Teacher'}</span>
-              </button>
-            </div>
+            {/* When viewing teacher recruitment, show return to admission button */}
+            {activeFormTab === 'teacher' && (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => { setActiveFormTab('student'); if (setSignUpFormTab) setSignUpFormTab('student'); setSubmitted(false); setError(''); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 border border-white/20 text-white inline-flex items-center gap-1.5 cursor-pointer transition-all"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>{language === 'hi' ? '← छात्र प्रवेश प्रपत्र पर जाएं' : '← Back to Student Admission Form'}</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="p-6 sm:p-8">
@@ -420,8 +405,8 @@ export default function SignUpView() {
                             {language === 'hi' ? 'माध्यम / Instruction Medium' : 'Instruction Medium *'}
                           </label>
                           <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-[#0c2340] flex items-center justify-between">
-                            <span>English Medium (CBSE Pattern)</span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">100% English</span>
+                            <span>English Medium</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">English Medium</span>
                           </div>
                         </div>
 
@@ -691,6 +676,18 @@ export default function SignUpView() {
                             <ArrowRight className="w-4 h-4" />
                           </>
                         )}
+                      </button>
+                    </div>
+
+                    {/* Alternate link for Teacher Recruitment */}
+                    <div className="pt-2 text-center text-xs text-slate-500 border-t border-slate-100">
+                      <span>{language === 'hi' ? 'शिक्षक अथवा संकाय पद हेतु आवेदन करना चाहते हैं? ' : 'Looking to join as faculty or teacher? '}</span>
+                      <button
+                        type="button"
+                        onClick={() => { setActiveFormTab('teacher'); if (setSignUpFormTab) setSignUpFormTab('teacher'); setSubmitted(false); setError(''); }}
+                        className="text-[#0c2340] font-bold hover:underline cursor-pointer"
+                      >
+                        {language === 'hi' ? 'शिक्षक भर्ती आवेदन प्रपत्र यहाँ भरें →' : 'Submit Teacher Application Here →'}
                       </button>
                     </div>
 

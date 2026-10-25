@@ -36,6 +36,7 @@ export default function SignInView() {
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNavDropdownOpen, setIsNavDropdownOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('parent'); // 'parent' | 'teacher' | 'principal'
@@ -195,7 +196,7 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 w-full bg-[#08182b]/85 backdrop-blur-xl border-b border-white/10 shadow-lg transition-all">
         <div className="w-full px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between gap-4">
-          
+
           {/* Brand Seal, School Title & Subtitle */}
           <a href="#about" className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-shrink-0 group">
             <div className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
@@ -220,8 +221,8 @@ export default function SignInView() {
             </div>
           </a>
 
-          {/* Desktop Navigation Links (Compact & Adaptive) */}
-          <nav className="hidden 2xl:flex items-center gap-5 text-xs font-bold text-slate-200">
+          {/* Desktop Navigation Links — Visible on all Laptops & Desktops (lg and above) */}
+          <nav className="hidden lg:flex items-center gap-3.5 xl:gap-5 text-xs font-bold text-slate-200">
             <a href="#about" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'परिचय' : 'About'}</a>
             <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">{isHi ? 'प्रवेश' : 'Admissions'}</a>
             <a href="#features" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'विशेषताएं' : 'Features'}</a>
@@ -231,7 +232,53 @@ export default function SignInView() {
             <a href="#contact" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'संपर्क' : 'Contact'}</a>
           </nav>
 
-          {/* Desktop Action Buttons */}
+          {/* Adaptive Navigation Dropdown for Medium Screens (md to lg) */}
+          <div className="hidden md:flex lg:hidden relative">
+            <button
+              type="button"
+              onClick={() => setIsNavDropdownOpen(prev => !prev)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-slate-100 transition-all cursor-pointer shadow-2xs"
+            >
+              <Compass className="w-3.5 h-3.5 text-[#F4B323]" />
+              <span>{isHi ? 'नेविगेशन' : 'Menu'}</span>
+              <ChevronDown className={`w-3 h-3 text-slate-300 transition-transform ${isNavDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isNavDropdownOpen && (
+              <div className="absolute left-0 top-full mt-2 w-52 rounded-2xl bg-[#091A32]/98 backdrop-blur-xl border border-white/20 shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <a href="#about" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-200 hover:text-[#F4B323] hover:bg-white/10 transition-colors">
+                  <School className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>{isHi ? 'विद्यालय परिचय' : 'About School'}</span>
+                </a>
+                <a href="#admissions" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-[#F4B323] hover:bg-white/10 transition-colors">
+                  <Sparkles className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>{isHi ? 'प्रवेश 2026-27' : 'Admissions 2026-27'}</span>
+                </a>
+                <a href="#features" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-200 hover:text-[#F4B323] hover:bg-white/10 transition-colors">
+                  <Award className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>{isHi ? 'विशेषताएं' : 'Features & Pillars'}</span>
+                </a>
+                <a href="#leadership" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-200 hover:text-[#F4B323] hover:bg-white/10 transition-colors">
+                  <Users className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>{isHi ? 'नेतृत्व' : 'Leadership Team'}</span>
+                </a>
+                <a href="#campus-gallery" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-200 hover:text-[#F4B323] hover:bg-white/10 transition-colors">
+                  <Eye className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>{isHi ? 'कैंपस गैलरी' : 'Campus Gallery'}</span>
+                </a>
+                <a href="#reviews" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-200 hover:text-[#F4B323] hover:bg-white/10 transition-colors">
+                  <MessageSquare className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>{isHi ? 'समीक्षाएं' : 'Parent Reviews'}</span>
+                </a>
+                <a href="#contact" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-200 hover:text-[#F4B323] hover:bg-white/10 transition-colors">
+                  <Phone className="w-3.5 h-3.5 text-[#F4B323]" />
+                  <span>{isHi ? 'संपर्क' : 'Contact & Office'}</span>
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Action Buttons: Language, Single Unified Portal Login, and Online Admission */}
           <div className="hidden md:flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
             {/* Language Toggle */}
             <button
@@ -244,38 +291,18 @@ export default function SignInView() {
               <span>{isHi ? 'English' : 'हिन्दी'}</span>
             </button>
 
-            {/* Faculty / Teacher Desk Button */}
-            <button
-              type="button"
-              onClick={() => openPortalLogin('teacher')}
-              className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs flex-shrink-0"
-              title="Faculty & Teacher Console"
-            >
-              <GraduationCap className="w-3.5 h-3.5 text-[#F4B323]" />
-              <span>{isHi ? 'शिक्षक पटल' : 'Faculty'}</span>
-            </button>
-
-            {/* Parent Login */}
-            <button
-              type="button"
-              onClick={() => openPortalLogin('parent')}
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs flex-shrink-0"
-            >
-              <Users className="w-3.5 h-3.5 text-[#F4B323]" />
-              <span>{isHi ? 'अभिभावक पोर्टल' : 'Parent Portal'}</span>
-            </button>
-
-            {/* Staff / Principal Login */}
+            {/* Unified Portal Login Button */}
             <button
               type="button"
               onClick={() => openPortalLogin('principal')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs flex-shrink-0"
+              title={isHi ? 'स्कूल पोर्टल लॉगिन' : 'School Portal Login'}
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#F4B323]" />
               <span>{isHi ? 'पोर्टल लॉगिन' : 'Portal Login'}</span>
             </button>
 
-            {/* Online Admission Form Button — ALWAYS Prominent and Visible in Both English & Hindi */}
+            {/* Online Admission Form Button */}
             <button
               type="button"
               onClick={() => {
@@ -463,7 +490,7 @@ export default function SignInView() {
 
             {/* ── SECTION 1: FULL-WIDTH PANORAMIC HERO BANNER (Left to Right Full Width, Balanced Height) ── */}
             <section id="about" className="w-full max-w-full relative overflow-hidden bg-[#07162C] border-b-2 border-[#1E3A60] shadow-2xl scroll-mt-24">
-              
+
               {/* Clean Campus Collage Background (No baked-in promotional text) */}
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-[1.01]"
@@ -491,7 +518,7 @@ export default function SignInView() {
 
               {/* Banner Content Container (Constrained width inside, spanning full width outside) */}
               <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-14 flex flex-col justify-between min-h-[460px] sm:min-h-[500px] lg:min-h-[530px]">
-                
+
                 {/* Top Strip: 4 Pillars Motto Badge + Academic Session Tag */}
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                   <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] sm:text-xs font-bold text-white shadow-md max-w-full">
@@ -509,7 +536,7 @@ export default function SignInView() {
 
                 {/* Middle Hero Block: Logo + School Name + Tagline + Location */}
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-5 sm:gap-6 text-center md:text-left">
-                  
+
                   {/* Official School Crest Logo */}
                   <div className="relative flex-shrink-0 group">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 flex items-center justify-center transition-transform group-hover:scale-105 drop-shadow-2xl">
@@ -531,7 +558,7 @@ export default function SignInView() {
                   {/* School Typography & Tagline */}
                   <div className="space-y-2 flex-1">
                     <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#F4B323]">
-                      <span>{isHi ? 'सीबीएसई पाठ्यक्रम प्रारूप • अंग्रेजी माध्यम सह-शिक्षा' : 'CBSE Curriculum Pattern • English Medium Co-Educational'}</span>
+                      <span>{isHi ? 'अंग्रेजी माध्यम • सह-शिक्षा' : 'English Medium • Co-Educational'}</span>
                     </div>
 
                     <h1 className="text-2xl sm:text-4xl lg:text-[46px] font-black text-white tracking-tight uppercase leading-[1.12] drop-shadow-md break-words max-w-full">
@@ -710,7 +737,7 @@ export default function SignInView() {
 
               {/* 5 Cards Row matching the Banner Ribbon */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
-                
+
                 {/* 1. Enriched Library */}
                 <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
                   <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
@@ -1001,8 +1028,8 @@ export default function SignInView() {
                 </h2>
                 <p className="text-xs sm:text-sm text-[#65748B] max-w-2xl mx-auto">
                   {isHi
-                    ? 'हमारे अनुशासित वातावरण, व्यक्तिगत ध्यान और संस्कारयुक्त सीबीएसई शिक्षा पर अभिभावकों के अनुभव।'
-                    : 'Hear directly from parents and guardians about our disciplined environment, individual attention, and values-based CBSE education.'}
+                    ? 'हमारे अनुशासित वातावरण, व्यक्तिगत ध्यान और संस्कारयुक्त अंग्रेजी माध्यम शिक्षा पर अभिभावकों के अनुभव।'
+                    : 'Hear directly from parents and guardians about our disciplined environment, individual attention, and values-based English medium education.'}
                 </p>
 
                 {/* Rating Overview Pill */}
@@ -1025,7 +1052,7 @@ export default function SignInView() {
 
               {/* 4 Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                
+
                 {/* Review 1 */}
                 <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
                   <div className="space-y-4">
@@ -1168,7 +1195,7 @@ export default function SignInView() {
             {/* ── SECTION 7: CONTACT & CAMPUS HELPLINE (Direct from Banner Footer Strip) ── */}
             <section id="contact" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
               <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-10 space-y-8">
-                
+
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-6">
                   <div>
@@ -1332,8 +1359,8 @@ export default function SignInView() {
                   {role === 'parent'
                     ? (isHi ? 'अभिभावक पोर्टल लॉगिन' : 'Parent Portal Sign In')
                     : role === 'teacher'
-                    ? (isHi ? 'शिक्षक एवं संकाय लॉगिन' : 'Faculty & Teacher Sign In')
-                    : (isHi ? 'प्रधानाचार्य प्रशासन पोर्टल' : 'Principal Administration Portal')}
+                      ? (isHi ? 'शिक्षक एवं संकाय लॉगिन' : 'Faculty & Teacher Sign In')
+                      : (isHi ? 'प्रधानाचार्य प्रशासन पोर्टल' : 'Principal Administration Portal')}
                 </h2>
                 <p className="text-xs text-[#65748B] font-medium">
                   {role === 'parent'
@@ -1347,11 +1374,10 @@ export default function SignInView() {
                 <button
                   type="button"
                   onClick={() => { setRole('parent'); setError(''); }}
-                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    role === 'parent'
+                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'parent'
                       ? 'bg-white text-[#102747] shadow-sm'
                       : 'text-[#65748B] hover:text-[#102747]'
-                  }`}
+                    }`}
                 >
                   <Users className="w-3.5 h-3.5 text-[#F4B323]" />
                   <span>{isHi ? 'अभिभावक' : 'Parent'}</span>
@@ -1360,11 +1386,10 @@ export default function SignInView() {
                 <button
                   type="button"
                   onClick={() => { setRole('teacher'); setError(''); }}
-                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    role === 'teacher'
+                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'teacher'
                       ? 'bg-white text-[#102747] shadow-sm'
                       : 'text-[#65748B] hover:text-[#102747]'
-                  }`}
+                    }`}
                 >
                   <GraduationCap className="w-3.5 h-3.5 text-[#102747]" />
                   <span>{isHi ? 'शिक्षक' : 'Teacher'}</span>
@@ -1373,11 +1398,10 @@ export default function SignInView() {
                 <button
                   type="button"
                   onClick={() => { setRole('principal'); setError(''); }}
-                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    role === 'principal'
+                  className={`py-2 px-2 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'principal'
                       ? 'bg-white text-[#102747] shadow-sm'
                       : 'text-[#65748B] hover:text-[#102747]'
-                  }`}
+                    }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   <span>{isHi ? 'प्रधानाचार्य' : 'Principal'}</span>
@@ -1593,9 +1617,9 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       <footer className="w-full max-w-full overflow-hidden border-t border-[#1E3A60] bg-[#091A32] text-white mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
-            
+
             {/* Column 1: School Identity */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -1661,11 +1685,11 @@ export default function SignInView() {
                 <li>
                   <button
                     type="button"
-                    onClick={() => openPortalLogin('teacher')}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-[#F4B323] text-white hover:text-[#091A32] font-black text-xs transition-all cursor-pointer border border-white/20 shadow-xs mb-1"
+                    onClick={() => openPortalLogin('principal')}
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left flex items-center gap-1.5"
                   >
-                    <GraduationCap className="w-3.5 h-3.5 text-[#F4B323] group-hover:text-[#091A32]" />
-                    <span>{isHi ? 'शिक्षक एवं संकाय पोर्टल →' : 'Faculty & Teacher Portal →'}</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span>{isHi ? 'स्कूल पोर्टल लॉगिन (स्टाफ एवं प्रिंसिपल) →' : 'School Portal Login →'}</span>
                   </button>
                 </li>
                 <li>
@@ -1679,16 +1703,6 @@ export default function SignInView() {
                   </button>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => openPortalLogin('principal')}
-                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left flex items-center gap-1.5"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{isHi ? 'प्रधानाचार्य एडमिन लॉगिन →' : 'Principal Admin Access →'}</span>
-                  </button>
-                </li>
-                <li>
                   <a
                     href="/signup?tab=admission"
                     onClick={(e) => {
@@ -1696,22 +1710,24 @@ export default function SignInView() {
                       if (setSignUpFormTab) setSignUpFormTab('student');
                       navigate('/signup?tab=admission');
                     }}
-                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left flex items-center gap-1.5"
                   >
-                    {isHi ? 'विद्यार्थी नामांकन डेस्क →' : 'Student Admission Desk →'}
+                    <Sparkles className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span>{isHi ? 'विद्यार्थी नामांकन डेस्क →' : 'Student Admission Desk →'}</span>
                   </a>
                 </li>
                 <li>
                   <a
-                    href="/signup?tab=faculty"
+                    href="/signup?tab=careers"
                     onClick={(e) => {
                       e.preventDefault();
                       if (setSignUpFormTab) setSignUpFormTab('teacher');
-                      navigate('/signup?tab=faculty');
+                      navigate('/signup?tab=careers');
                     }}
-                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left flex items-center gap-1.5"
                   >
-                    {isHi ? 'शिक्षक भर्ती आवेदन →' : 'Teacher Recruitment Application →'}
+                    <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{isHi ? 'कैरियर एवं शिक्षक भर्ती →' : 'Careers & Teacher Recruitment →'}</span>
                   </a>
                 </li>
               </ul>
