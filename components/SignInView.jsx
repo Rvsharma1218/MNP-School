@@ -47,13 +47,12 @@ export default function SignInView() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Institution Verified Details from Official School Banner
+  // Institution Verified Details from Official School Settings
   const schoolName = settings?.instituteName || settings?.schoolName || 'MISSION NAVODAYA PUBLIC SCHOOL';
   const schoolSubtitle = 'PUBLIC SCHOOL, MORA';
   const schoolLocation = 'Mora Bazar, Siwan (Bihar)';
   const logoSrc = settings?.logoUrl || settings?.logoPath || settings?.logo || '/logo.png';
-  const primaryPhone = '9162724680';
-  const altPhone = settings?.phone || settings?.mobile || '8603481865';
+  const primaryPhone = settings?.phone || settings?.mobile || '8603481865';
   const officialEmail = settings?.email || 'mnpschooledu@gmail.com';
   const currentSession = settings?.currentSession || settings?.academicYear || '2026-27';
   const isAdmissionOpen = settings?.isAdmissionOpen !== false;
@@ -221,14 +220,14 @@ export default function SignInView() {
             </div>
           </a>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden xl:flex items-center gap-6 text-[13px] font-bold text-slate-200">
-            <a href="#about" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'विद्यालय परिचय' : 'About School'}</a>
-            <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">{isHi ? 'प्रवेश 2026–27' : 'Admissions 2026–27'}</a>
-            <a href="#features" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'विशेषताएं' : 'Campus Features'}</a>
+          {/* Desktop Navigation Links (Compact & Adaptive) */}
+          <nav className="hidden 2xl:flex items-center gap-5 text-xs font-bold text-slate-200">
+            <a href="#about" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'परिचय' : 'About'}</a>
+            <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">{isHi ? 'प्रवेश' : 'Admissions'}</a>
+            <a href="#features" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'विशेषताएं' : 'Features'}</a>
             <a href="#leadership" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'नेतृत्व' : 'Leadership'}</a>
             <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'गैलरी' : 'Gallery'}</a>
-            <a href="#reviews" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'अभिभावक समीक्षाएं' : 'Parent Reviews'}</a>
+            <a href="#reviews" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'समीक्षाएं' : 'Reviews'}</a>
             <a href="#contact" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'संपर्क' : 'Contact'}</a>
           </nav>
 
@@ -238,7 +237,7 @@ export default function SignInView() {
             <button
               type="button"
               onClick={toggleLanguage}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-slate-100 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-slate-100 transition-all cursor-pointer flex-shrink-0"
               title="Toggle Language"
             >
               <Globe className="w-3.5 h-3.5 text-[#F4B323]" />
@@ -249,18 +248,18 @@ export default function SignInView() {
             <button
               type="button"
               onClick={() => openPortalLogin('teacher')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs"
+              className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs flex-shrink-0"
               title="Faculty & Teacher Console"
             >
               <GraduationCap className="w-3.5 h-3.5 text-[#F4B323]" />
-              <span>{isHi ? 'शिक्षक पटल' : 'Faculty Desk'}</span>
+              <span>{isHi ? 'शिक्षक पटल' : 'Faculty'}</span>
             </button>
 
             {/* Parent Login */}
             <button
               type="button"
               onClick={() => openPortalLogin('parent')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs flex-shrink-0"
             >
               <Users className="w-3.5 h-3.5 text-[#F4B323]" />
               <span>{isHi ? 'अभिभावक पोर्टल' : 'Parent Portal'}</span>
@@ -270,28 +269,40 @@ export default function SignInView() {
             <button
               type="button"
               onClick={() => openPortalLogin('principal')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs flex-shrink-0"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#F4B323]" />
               <span>{isHi ? 'पोर्टल लॉगिन' : 'Portal Login'}</span>
             </button>
 
-            {/* Online Admission Form Button */}
+            {/* Online Admission Form Button — ALWAYS Prominent and Visible in Both English & Hindi */}
             <button
               type="button"
               onClick={() => {
                 if (setSignUpFormTab) setSignUpFormTab('student');
                 navigate('/signup?tab=admission');
               }}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black text-[#091A32] bg-[#F4B323] hover:bg-[#e0a21a] shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black text-[#091A32] bg-[#F4B323] hover:bg-[#e0a21a] shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#091A32]" />
-              <span>{isHi ? 'ऑनलाइन प्रवेश' : 'Online Admission'}</span>
+              <span>{isHi ? 'ऑनलाइन प्रवेश' : 'Online Admission Form'}</span>
             </button>
           </div>
 
-          {/* Mobile Right Action Area (Language + Hamburger) */}
+          {/* Mobile Right Action Area (Admission CTA + Language + Hamburger) */}
           <div className="flex md:hidden items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (setSignUpFormTab) setSignUpFormTab('student');
+                navigate('/signup?tab=admission');
+              }}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F4B323] text-[#091A32] text-xs font-black shadow-xs whitespace-nowrap cursor-pointer"
+            >
+              <Sparkles className="w-3 h-3 text-[#091A32]" />
+              <span>{isHi ? 'प्रवेश' : 'Admission'}</span>
+            </button>
+
             <button
               type="button"
               onClick={toggleLanguage}
@@ -306,7 +317,7 @@ export default function SignInView() {
               type="button"
               onClick={() => setIsMobileMenuOpen(prev => !prev)}
               aria-label="Toggle Mobile Navigation Menu"
-              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5 text-[#F4B323]" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -1228,9 +1239,9 @@ export default function SignInView() {
                     <h3 className="text-sm font-bold text-[#14243B]">+91 {primaryPhone}</h3>
                     <p className="text-xs text-[#65748B] leading-relaxed">
                       {isHi ? (
-                        <>कॉल / व्हाट्सएप डेस्क<br />अन्य हेल्पलाइन: +91 {altPhone}<br />सोमवार से शनिवार</>
+                        <>कॉल / व्हाट्सएप डेस्क<br />आधिकारिक हेल्पलाइन: +91 {primaryPhone}<br />सोमवार से शनिवार</>
                       ) : (
-                        <>Call / WhatsApp Desk<br />Alt Helpline: +91 {altPhone}<br />Monday through Saturday</>
+                        <>Call / WhatsApp Desk<br />Official Helpline: +91 {primaryPhone}<br />Monday through Saturday</>
                       )}
                     </p>
                     <a
@@ -1720,10 +1731,6 @@ export default function SignInView() {
                   <Phone className="w-4 h-4 text-[#F4B323] flex-shrink-0" />
                   <a href={`tel:${primaryPhone}`} className="hover:underline font-bold text-white">
                     +91 {primaryPhone}
-                  </a>
-                  <span className="text-slate-500">·</span>
-                  <a href={`tel:${altPhone}`} className="hover:underline text-slate-300">
-                    +91 {altPhone}
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">

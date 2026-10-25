@@ -417,16 +417,12 @@ export default function SignUpView() {
 
                         <div>
                           <label className="block text-xs font-bold text-slate-700 mb-1">
-                            {language === 'hi' ? 'माध्यम / Preferred Medium' : 'Preferred Medium *'}
+                            {language === 'hi' ? 'माध्यम / Instruction Medium' : 'Instruction Medium *'}
                           </label>
-                          <select
-                            value={medium}
-                            onChange={(e) => setMedium(e.target.value)}
-                            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all cursor-pointer"
-                          >
-                            <option value="English">English Medium</option>
-                            <option value="Hindi">Hindi Medium (हिन्दी माध्यम)</option>
-                          </select>
+                          <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-[#0c2340] flex items-center justify-between">
+                            <span>English Medium (CBSE Pattern)</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">100% English</span>
+                          </div>
                         </div>
 
                         <div>
