@@ -214,42 +214,51 @@ export default function SignUpView() {
   return (
     <div className="min-h-screen w-full flex flex-col justify-between font-sans antialiased text-[#0f172a] bg-[#f8fafc] selection:bg-[#0c2340] selection:text-white">
       
-      {/* 🔹 Top Header with Language Switcher 🔹 */}
-      <header className="sticky top-0 z-30 w-full px-6 py-3.5 md:px-12 flex items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 p-1 flex items-center justify-center flex-shrink-0 overflow-hidden">
+      {/* 🔹 Top Header with Institutional Brand Colors (Navy #091A32 + Gold #F4B323) 🔹 */}
+      <header className="sticky top-0 z-30 w-full px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between border-b border-[#1E3A60] bg-[#091A32] text-white shadow-lg backdrop-blur-md">
+        <a
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate('/signin');
+          }}
+          className="flex items-center gap-3 cursor-pointer group min-w-0"
+        >
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white border border-[#E2E8F0] p-1 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm transition-transform group-hover:scale-105">
             <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
           </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-black tracking-tight text-[#0c2340]">
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-base font-black tracking-tight text-white uppercase group-hover:text-[#F4B323] transition-colors truncate">
               {language === 'hi' ? 'मिशन नवोदय पब्लिक स्कूल' : schoolName}
             </h1>
-            <p className="text-[11px] text-[#64748b] font-medium">
-              {language === 'hi' ? 'ऑनलाइन प्रवेश एवं शिक्षक भर्ती पटल • सत्र 2026-27' : 'Online Admission & Faculty Desk • Session 2026-27'}
+            <p className="text-[10px] sm:text-[11px] text-[#F4B323] font-bold flex items-center gap-1.5 mt-0.5 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F4B323] animate-pulse flex-shrink-0" />
+              <span>{language === 'hi' ? 'ऑनलाइन प्रवेश एवं शिक्षक भर्ती • सत्र 2026-27' : 'Online Admission & Faculty Desk • Session 2026-27'}</span>
             </p>
           </div>
-        </div>
+        </a>
 
         {/* Header Right Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
           {/* Language Switcher Pill */}
           <button
             type="button"
             onClick={toggleLanguage}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-[#0c2340] transition-all cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-slate-100 transition-all cursor-pointer shadow-2xs"
             title="Switch Language"
           >
-            <Globe className="w-3.5 h-3.5 text-blue-600" />
-            <span>{language === 'en' ? 'हिन्दी में देखें' : 'English'}</span>
+            <Globe className="w-3.5 h-3.5 text-[#F4B323]" />
+            <span className="hidden sm:inline">{language === 'en' ? 'हिन्दी में देखें' : 'English'}</span>
+            <span className="sm:hidden">{language === 'en' ? 'हिन्दी' : 'EN'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => navigate('/signin')}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] text-xs font-black transition-all cursor-pointer shadow-md"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{language === 'hi' ? 'पोर्टल लॉगिन' : 'Portal Login'}</span>
+            <ArrowLeft className="w-3.5 h-3.5 text-[#091A32]" />
+            <span>{language === 'hi' ? 'मुख्य वेबसाइट' : 'Main Website'}</span>
           </button>
         </div>
       </header>

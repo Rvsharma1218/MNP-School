@@ -147,8 +147,8 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 1. TOP ANNOUNCEMENT STRIP (Navy #102747 + Gold #F4B323)       */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="bg-[#091A32] text-white text-[11px] font-bold px-4 py-2 border-b border-[#1E3A60] hidden sm:block">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div className="bg-[#091A32] text-white text-[11px] font-bold px-4 sm:px-6 lg:px-8 py-2 border-b border-[#1E3A60] hidden sm:block">
+        <div className="w-full flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {isAdmissionOpen ? (
               <>
@@ -193,8 +193,8 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 2. MAIN HEADER & INSTITUTIONAL NAVIGATION                    */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 w-full bg-[#102747] text-white border-b border-[#1E3A60] shadow-md backdrop-blur-md">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 w-full bg-[#08182b]/85 backdrop-blur-xl border-b border-white/10 shadow-lg transition-all">
+        <div className="w-full px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between gap-4">
           
           {/* Brand Seal, School Title & Subtitle */}
           <a href="#about" className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-shrink-0 group">
@@ -226,29 +226,40 @@ export default function SignInView() {
             <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">Admissions 2026–27</a>
             <a href="#features" className="hover:text-[#F4B323] transition-colors py-1">Campus Features</a>
             <a href="#leadership" className="hover:text-[#F4B323] transition-colors py-1">Leadership</a>
-            <a href="#facilities" className="hover:text-[#F4B323] transition-colors py-1">Facilities</a>
             <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors py-1">Gallery</a>
+            <a href="#reviews" className="hover:text-[#F4B323] transition-colors py-1">Parent Reviews</a>
             <a href="#contact" className="hover:text-[#F4B323] transition-colors py-1">Contact</a>
           </nav>
 
           {/* Desktop Action Buttons */}
-          <div className="hidden md:flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
+          <div className="hidden md:flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
             {/* Language Toggle */}
             <button
               type="button"
               onClick={toggleLanguage}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-slate-100 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-slate-100 transition-all cursor-pointer"
               title="Toggle Language"
             >
               <Globe className="w-3.5 h-3.5 text-[#F4B323]" />
               <span>{language === 'hi' ? 'English' : 'हिन्दी'}</span>
             </button>
 
+            {/* Faculty / Teacher Desk Button */}
+            <button
+              type="button"
+              onClick={() => openPortalLogin('teacher')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs"
+              title="Faculty & Teacher Console"
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-[#F4B323]" />
+              <span>Faculty Desk</span>
+            </button>
+
             {/* Parent Login */}
             <button
               type="button"
               onClick={() => openPortalLogin('parent')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/25 transition-all cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs"
             >
               <Users className="w-3.5 h-3.5 text-[#F4B323]" />
               <span>Parent Portal</span>
@@ -258,7 +269,7 @@ export default function SignInView() {
             <button
               type="button"
               onClick={() => openPortalLogin('principal')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/25 transition-all cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#F4B323]" />
               <span>Portal Login</span>
@@ -271,7 +282,7 @@ export default function SignInView() {
                 if (setSignUpFormTab) setSignUpFormTab('student');
                 navigate('/signup?tab=admission');
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black text-[#091A32] bg-[#F4B323] hover:bg-[#e0a21a] shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black text-[#091A32] bg-[#F4B323] hover:bg-[#e0a21a] shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#091A32]" />
               <span>Online Admission</span>
@@ -362,6 +373,14 @@ export default function SignInView() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => closeMobileMenuAndNavigate('#reviews')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between text-[#F4B323]"
+                >
+                  <span>Parent &amp; Community Reviews</span>
+                  <ArrowRight className="w-4 h-4 text-[#F4B323]" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => closeMobileMenuAndNavigate('#contact')}
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
                 >
@@ -384,23 +403,32 @@ export default function SignInView() {
                   <span>Online Admission Form</span>
                 </button>
 
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openPortalLogin('teacher')}
+                    className="py-2.5 px-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                  >
+                    <GraduationCap className="w-4 h-4 text-[#F4B323]" />
+                    <span>Faculty</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => openPortalLogin('parent')}
-                    className="py-3 px-3 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="py-2.5 px-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
                   >
-                    <Users className="w-3.5 h-3.5 text-[#F4B323]" />
-                    <span>Parent Portal</span>
+                    <Users className="w-4 h-4 text-[#F4B323]" />
+                    <span>Parents</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => openPortalLogin('principal')}
-                    className="py-3 px-3 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="py-2.5 px-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
                   >
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#F4B323]" />
-                    <span>Portal Login</span>
+                    <ShieldCheck className="w-4 h-4 text-[#F4B323]" />
+                    <span>Principal</span>
                   </button>
                 </div>
               </div>
@@ -431,13 +459,13 @@ export default function SignInView() {
                 aria-hidden="true"
               />
 
-              {/* Rich Glassmorphism Gradient Overlays — Enhances readability of all text while keeping the campus and students visible */}
+              {/* Vibrant Campus Background Overlay — Brightened so the yellow building, palm trees, and playground are clearly visible */}
               <div
-                className="absolute inset-0 bg-gradient-to-r from-[#07172E]/96 via-[#091D38]/88 to-[#061426]/75"
+                className="absolute inset-0 bg-gradient-to-r from-[#07172E]/82 via-[#091D38]/65 to-[#061426]/50"
                 aria-hidden="true"
               />
               <div
-                className="absolute inset-0 bg-gradient-to-t from-[#07172E] via-transparent to-[#07172E]/60"
+                className="absolute inset-0 bg-gradient-to-t from-[#07172E]/95 via-transparent to-black/25"
                 aria-hidden="true"
               />
               <div
@@ -482,7 +510,7 @@ export default function SignInView() {
                       />
                     </div>
                     <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-md bg-[#102747] border border-[#F4B323] text-[9px] font-black text-[#F4B323] uppercase">
-                      ESTD 2021
+                      ESTD 2025
                     </div>
                   </div>
 
@@ -520,7 +548,7 @@ export default function SignInView() {
 
                 {/* ── DYNAMIC ADMISSION BANNER CARD (Controlled from Settings / App) ── */}
                 {isAdmissionOpen ? (
-                  <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/92 via-[#112F56]/88 to-[#0C223F]/92 border-2 border-[#F4B323]/50 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4">
+                  <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/92 via-[#112F56]/88 to-[#0C223F]/92 border-2 border-[#F4B323]/50 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
                     {/* Left: Admissions Open Title + Session + Classes */}
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F4B323] to-[#E09B10] text-[#091A32] flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -569,7 +597,7 @@ export default function SignInView() {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/92 via-[#112F56]/88 to-[#0C223F]/92 border border-white/20 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4">
+                  <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/92 via-[#112F56]/88 to-[#0C223F]/92 border border-white/20 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
                     {/* Left: Academic Session in Progress */}
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
                       <div className="w-12 h-12 rounded-xl bg-white/10 text-[#F4B323] border border-white/20 flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -636,78 +664,6 @@ export default function SignInView() {
                     <Trophy className="w-3.5 h-3.5 text-[#F4B323]" />
                     <span>Better Tomorrow</span>
                   </div>
-                </div>
-
-              </div>
-            </section>
-
-            {/* ── SECTION 2: ADMISSIONS CALLOUT & CTAS (Dynamic with Settings) ── */}
-            <section id="admissions" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28 overflow-hidden">
-              <div className="rounded-3xl bg-gradient-to-r from-[#102747] via-[#091A32] to-[#102747] border border-[#1E3A60] p-6 sm:p-8 text-white shadow-xl flex flex-col lg:flex-row items-center justify-between gap-6">
-                
-                {/* Left: Admissions Title & Classes */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-                  <div className="w-14 h-14 rounded-2xl bg-[#F4B323] text-[#091A32] flex items-center justify-center flex-shrink-0 shadow-md">
-                    <GraduationCap className="w-8 h-8 text-[#091A32]" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                      <span className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight uppercase">
-                        {isAdmissionOpen ? 'ADMISSIONS OPEN' : 'ACADEMIC SESSION'}
-                      </span>
-                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-md bg-[#F4B323] text-[#091A32] uppercase tracking-wider">
-                        SESSION {currentSession}
-                      </span>
-                    </div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-bold text-[#F4B323] border border-white/15">
-                      <span>{isAdmissionOpen ? admissionClasses : 'Session In Progress · Admissions Closed'}</span>
-                    </div>
-                    <p className="text-xs text-slate-300 max-w-xl pt-0.5">
-                      {isAdmissionOpen
-                        ? 'Empower your child with disciplined learning, modern digital education, and holistic values at our Mora Bazar campus.'
-                        : 'Current academic session is actively underway. You can submit advance enquiries for future enrolments or book a campus visit.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Right: The 2 Action CTAs */}
-                <div className="flex flex-wrap items-center justify-center gap-3.5 flex-shrink-0 w-full lg:w-auto">
-                  {isAdmissionOpen ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (setSignUpFormTab) setSignUpFormTab('student');
-                        navigate('/signup?tab=admission');
-                      }}
-                      className="flex-1 sm:flex-initial px-7 py-4 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-                    >
-                      <FileText className="w-4 h-4 text-[#091A32]" />
-                      <span>Online Admission Form &rarr;</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (openEnquiriesModal) {
-                          openEnquiriesModal('admissions');
-                        } else if (setIsEnquiriesModalOpen) {
-                          setIsEnquiriesModalOpen(true);
-                        }
-                      }}
-                      className="flex-1 sm:flex-initial px-7 py-4 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-                    >
-                      <MessageSquare className="w-4 h-4 text-[#091A32]" />
-                      <span>Enquire for Next Session &rarr;</span>
-                    </button>
-                  )}
-
-                  <a
-                    href="#contact"
-                    className="flex-1 sm:flex-initial px-6 py-4 rounded-xl bg-[#091A32] hover:bg-[#102747] text-white font-bold text-sm border border-white/20 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-                  >
-                    <Calendar className="w-4 h-4 text-[#F4B323]" />
-                    <span>Book a School Visit &rarr;</span>
-                  </a>
                 </div>
 
               </div>
@@ -989,7 +945,172 @@ export default function SignInView() {
               </div>
             </section>
 
-            {/* ── SECTION 6: CONTACT & CAMPUS HELPLINE (Direct from Banner Footer Strip) ── */}
+            {/* ── SECTION 6: PARENTS & GUARDIANS REVIEWS & TESTIMONIALS ── */}
+            <section id="reviews" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+              <div className="text-center space-y-2 mb-8 sm:mb-12">
+                <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
+                  COMMUNITY VOICES &bull; PARENT TESTIMONIALS
+                </span>
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#14243B] tracking-tight">
+                  Trusted by Parents Across Siwan &amp; Mora Bazar
+                </h2>
+                <p className="text-xs sm:text-sm text-[#65748B] max-w-2xl mx-auto">
+                  Hear directly from parents and guardians about our disciplined environment, individual attention, and values-based CBSE education.
+                </p>
+
+                {/* Rating Overview Pill */}
+                <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-black shadow-xs">
+                    <div className="flex items-center text-amber-500">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                      ))}
+                    </div>
+                    <span>4.9 / 5.0 Rating</span>
+                    <span className="text-amber-600 font-medium">&bull; 180+ Verified Parents</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>99% Recommendation Rate</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                
+                {/* Review 1 */}
+                <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-amber-500">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-current" />
+                        ))}
+                      </div>
+                      <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
+                    </div>
+                    <p className="text-xs text-[#475569] leading-relaxed italic">
+                      &ldquo;School me padhai aur discipline dono bahut badhiya hai. Aarav ki English communication aur basic maths me bohot improvement hua hai. Teachers hamesha accessible aur caring hain.&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#102747] text-[#F4B323] font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
+                      RK
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
+                        <span>Rajesh Kumar Singh</span>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                      </div>
+                      <div className="text-[10px] text-[#65748B] font-medium truncate">
+                        Father of Aarav &bull; Grade 4
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review 2 */}
+                <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-amber-500">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-current" />
+                        ))}
+                      </div>
+                      <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
+                    </div>
+                    <p className="text-xs text-[#475569] leading-relaxed italic">
+                      &ldquo;Mora Bazar area me aisa disciplined, safe aur supportive school environment milna bohot khushi ki baat hai. Bachho par personalized dhyan diya jata hai.&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#091A32] text-amber-400 font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
+                      SD
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
+                        <span>Sunita Devi</span>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                      </div>
+                      <div className="text-[10px] text-[#65748B] font-medium truncate">
+                        Mother of Priya Kumari &bull; Grade 1
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review 3 */}
+                <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-amber-500">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-current" />
+                        ))}
+                      </div>
+                      <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
+                    </div>
+                    <p className="text-xs text-[#475569] leading-relaxed italic">
+                      &ldquo;Sports playground aur computer lab bohot accha hai. Rehan football aur digital learning me active participate karta hai. Management ka vision ekdum clear aur dedicated hai.&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-800 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
+                      MS
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
+                        <span>Md. Shamim Ansari</span>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                      </div>
+                      <div className="text-[10px] text-[#65748B] font-medium truncate">
+                        Father of Rehan &bull; Grade 7
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review 4 */}
+                <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-amber-500">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-current" />
+                        ))}
+                      </div>
+                      <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
+                    </div>
+                    <p className="text-xs text-[#475569] leading-relaxed italic">
+                      &ldquo;Activity based learning aur phonics se meri beti bahut tezi se seekh rahi hai. Soni Madam aur sabhi teachers har bachhe ka pura khayal rakhte hain.&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-purple-900 text-amber-300 font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
+                      PS
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
+                        <span>Pooja Sharma</span>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                      </div>
+                      <div className="text-[10px] text-[#65748B] font-medium truncate">
+                        Mother of Ananya &bull; UKG
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            {/* ── SECTION 7: CONTACT & CAMPUS HELPLINE (Direct from Banner Footer Strip) ── */}
             <section id="contact" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
               <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-10 space-y-8">
                 
@@ -1438,6 +1559,9 @@ export default function SignInView() {
                   <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors">Photo Gallery</a>
                 </li>
                 <li>
+                  <a href="#reviews" className="hover:text-[#F4B323] transition-colors text-amber-300">Parent Reviews &amp; Ratings</a>
+                </li>
+                <li>
                   <a href="#contact" className="hover:text-[#F4B323] transition-colors">Help &amp; Office Desk</a>
                 </li>
               </ul>
@@ -1452,28 +1576,31 @@ export default function SignInView() {
                 <li>
                   <button
                     type="button"
-                    onClick={() => openPortalLogin('parent')}
-                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
+                    onClick={() => openPortalLogin('teacher')}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-[#F4B323] text-white hover:text-[#091A32] font-black text-xs transition-all cursor-pointer border border-white/20 shadow-xs mb-1"
                   >
-                    Parent Portal Login &rarr;
+                    <GraduationCap className="w-3.5 h-3.5 text-[#F4B323] group-hover:text-[#091A32]" />
+                    <span>Faculty &amp; Teacher Portal &rarr;</span>
                   </button>
                 </li>
                 <li>
                   <button
                     type="button"
-                    onClick={() => openPortalLogin('teacher')}
-                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
+                    onClick={() => openPortalLogin('parent')}
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left flex items-center gap-1.5"
                   >
-                    Faculty &amp; Teacher Console &rarr;
+                    <Users className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span>Parent Portal Login &rarr;</span>
                   </button>
                 </li>
                 <li>
                   <button
                     type="button"
                     onClick={() => openPortalLogin('principal')}
-                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left flex items-center gap-1.5"
                   >
-                    Principal Administrative Access &rarr;
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Principal Admin Access &rarr;</span>
                   </button>
                 </li>
                 <li>
