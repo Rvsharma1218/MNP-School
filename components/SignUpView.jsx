@@ -93,6 +93,8 @@ export default function SignUpView() {
   const logoSrc = settings?.logoUrl || settings?.logoPath || settings?.logo || '/logo.png';
   const phone = settings?.phone || '8603481865';
   const email = settings?.email || 'mnpschooledu@gmail.com';
+  const currentSession = settings?.currentSession || settings?.academicYear || '2026-27';
+  const isAdmissionOpen = settings?.isAdmissionOpen !== false;
 
   const handleStudentSubmit = async (e) => {
     e.preventDefault();
@@ -104,7 +106,8 @@ export default function SignUpView() {
     }
 
     setLoading(true);
-    const generatedRef = `MNP-ADM-2026-${Date.now().toString().slice(-4)}`;
+    const sessionDigits = currentSession.replace(/\D/g, '').slice(0, 4) || '2026';
+    const generatedRef = `MNP-ADM-${sessionDigits}-${Date.now().toString().slice(-4)}`;
 
     try {
       const targetSchoolId = settings?.schoolId || 'SCHOOL_001';
@@ -234,8 +237,8 @@ export default function SignUpView() {
             </h1>
             <p className="text-[10px] sm:text-[11px] text-[#F4B323] font-bold flex items-center gap-1.5 mt-0.5 truncate">
               <span className="w-1.5 h-1.5 rounded-full bg-[#F4B323] animate-pulse flex-shrink-0" />
-              <span className="sm:hidden">{language === 'hi' ? 'प्रवेश सत्र 2026-27' : 'Admission 2026-27'}</span>
-              <span className="hidden sm:inline">{language === 'hi' ? 'ऑनलाइन प्रवेश एवं शिक्षक भर्ती • सत्र 2026-27' : 'Online Admission & Faculty Desk • Session 2026-27'}</span>
+              <span className="sm:hidden">{language === 'hi' ? `प्रवेश सत्र ${currentSession}` : `Admission ${currentSession}`}</span>
+              <span className="hidden sm:inline">{language === 'hi' ? `ऑनलाइन प्रवेश एवं शिक्षक भर्ती • सत्र ${currentSession}` : `Online Admission & Faculty Desk • Session ${currentSession}`}</span>
             </p>
           </div>
         </a>
@@ -274,7 +277,7 @@ export default function SignUpView() {
           <div className="bg-gradient-to-r from-[#0c2340] via-[#153459] to-[#0c2340] p-6 sm:p-8 text-white relative">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold text-amber-300 mb-2">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{language === 'hi' ? 'सत्र 2026-27 हेतु आधिकारिक प्रपत्र' : 'Official Application Desk • Session 2026-27'}</span>
+              <span>{language === 'hi' ? `सत्र ${currentSession} हेतु आधिकारिक प्रपत्र` : `Official Application Desk • Session ${currentSession}`}</span>
             </div>
             
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
@@ -376,6 +379,39 @@ export default function SignUpView() {
                 {/*  FORM 1: PROFESSIONAL STUDENT ADMISSION FORM             */}
                 {/* ======================================================== */}
                 {activeFormTab === 'student' && (
+                  !isAdmissionOpen ? (
+                    <div className="py-12 px-4 text-center space-y-4 animate-in fade-in">
+                      <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                        <AlertCircle className="w-7 h-7" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-black text-[#0c2340]">
+                          {language === 'hi' ? `सत्र ${currentSession} हेतु ऑनलाइन प्रवेश बंद है` : `Online Admissions Paused for Session ${currentSession}`}
+                        </h3>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto">
+                          {language === 'hi'
+                            ? 'विद्यालय प्रशासन द्वारा वर्तमान में ऑनलाइन प्रवेश आवेदन रोक दिया गया है। अधिक जानकारी या सीधे दाखिले के लिए स्कूल कार्यालय से संपर्क करें।'
+                            : 'Online admission submissions are currently paused by the school administration. Please contact the school admissions desk for inquiries.'}
+                        </p>
+                      </div>
+                      <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                        <a
+                          href={`tel:${phone}`}
+                          className="px-5 py-2.5 rounded-xl bg-[#0c2340] hover:bg-[#153459] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-[#F4B323]" />
+                          <span>+91 {phone}</span>
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/signin')}
+                          className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all"
+                        >
+                          {language === 'hi' ? '← मुख्य वेबसाइट' : '← Back to Home'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                   <form onSubmit={handleStudentSubmit} className="space-y-8 animate-in fade-in">
                     
                     {/* Section 1: Academic Enrollment */}
@@ -420,7 +456,7 @@ export default function SignUpView() {
                           <input
                             type="text"
                             readOnly
-                            value="2026-27"
+                            value={currentSession}
                             className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-[#0c2340]"
                           />
                         </div>
@@ -695,7 +731,7 @@ export default function SignUpView() {
                     </div>
 
                   </form>
-                )}
+                ))}
 
                 {/* ======================================================== */}
                 {/*  FORM 2: PROFESSIONAL TEACHER RECRUITMENT FORM          */}
@@ -1015,7 +1051,7 @@ export default function SignUpView() {
         <div className="flex items-center gap-4 text-[11px] text-[#64748b]">
           <span>Mora Bazar Campus</span>
           <span>&bull;</span>
-          <span>Session 2026-27</span>
+          <span>Session {currentSession}</span>
         </div>
       </footer>
 

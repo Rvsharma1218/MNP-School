@@ -228,7 +228,7 @@ export default function SignInView() {
               </div>
               <div className="text-[10px] sm:text-[11px] font-bold text-[#F4B323] tracking-wide truncate flex items-center gap-1.5 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#F4B323] animate-pulse flex-shrink-0" />
-                <span className="sm:hidden">{isHi ? 'मोरा, सीवान · 2026-27' : 'Mora, Siwan · 2026-27'}</span>
+                <span className="sm:hidden">{isHi ? `मोरा, सीवान · सत्र ${currentSession}` : `Mora, Siwan · ${currentSession}`}</span>
                 <span className="hidden sm:inline">{isHi ? `मोरा बाजार, सीवान (बिहार) · सत्र ${currentSession}` : `Mora Bazar, Siwan (Bihar) · Session ${currentSession}`}</span>
               </div>
             </div>
@@ -237,7 +237,9 @@ export default function SignInView() {
           {/* Desktop Navigation Links — Visible on all Laptops & Desktops (lg and above) */}
           <nav className="hidden lg:flex items-center gap-3.5 xl:gap-5 text-xs font-bold text-slate-200">
             <a href="#about" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'परिचय' : 'About'}</a>
-            <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">{isHi ? 'प्रवेश' : 'Admissions'}</a>
+            {isAdmissionOpen && (
+              <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">{isHi ? 'प्रवेश' : 'Admissions'}</a>
+            )}
             <a href="#features" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'विशेषताएं' : 'Features'}</a>
             <a href="#leadership" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'नेतृत्व' : 'Leadership'}</a>
             <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'गैलरी' : 'Gallery'}</a>
@@ -263,10 +265,12 @@ export default function SignInView() {
                   <School className="w-3.5 h-3.5 text-[#F4B323]" />
                   <span>{isHi ? 'विद्यालय परिचय' : 'About School'}</span>
                 </a>
-                <a href="#admissions" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-[#F4B323] hover:bg-white/10 transition-colors">
-                  <Sparkles className="w-3.5 h-3.5 text-[#F4B323]" />
-                  <span>{isHi ? 'प्रवेश 2026-27' : 'Admissions 2026-27'}</span>
-                </a>
+                {isAdmissionOpen && (
+                  <a href="#admissions" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-[#F4B323] hover:bg-white/10 transition-colors">
+                    <Sparkles className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span>{isHi ? `प्रवेश ${currentSession}` : `Admissions ${currentSession}`}</span>
+                  </a>
+                )}
                 <a href="#features" onClick={() => setIsNavDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-200 hover:text-[#F4B323] hover:bg-white/10 transition-colors">
                   <Award className="w-3.5 h-3.5 text-[#F4B323]" />
                   <span>{isHi ? 'विशेषताएं' : 'Features & Pillars'}</span>
@@ -315,33 +319,37 @@ export default function SignInView() {
               <span>{isHi ? 'पोर्टल लॉगिन' : 'Portal Login'}</span>
             </button>
 
-            {/* Online Admission Form Button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (setSignUpFormTab) setSignUpFormTab('student');
-                navigate('/signup?tab=admission');
-              }}
-              className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black text-[#091A32] bg-[#F4B323] hover:bg-[#e0a21a] shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-[#091A32]" />
-              <span>{isHi ? 'ऑनलाइन प्रवेश' : 'Online Admission Form'}</span>
-            </button>
+            {/* Online Admission Form Button (Hidden when admission is closed) */}
+            {isAdmissionOpen && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (setSignUpFormTab) setSignUpFormTab('student');
+                  navigate('/signup?tab=admission');
+                }}
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black text-[#091A32] bg-[#F4B323] hover:bg-[#e0a21a] shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#091A32]" />
+                <span>{isHi ? 'ऑनलाइन प्रवेश' : 'Online Admission Form'}</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile Right Action Area (Admission CTA + Language + Hamburger) */}
           <div className="flex md:hidden items-center gap-1.5 flex-shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                if (setSignUpFormTab) setSignUpFormTab('student');
-                navigate('/signup?tab=admission');
-              }}
-              className="hidden min-[420px]:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F4B323] text-[#091A32] text-xs font-black shadow-xs whitespace-nowrap cursor-pointer flex-shrink-0"
-            >
-              <Sparkles className="w-3 h-3 text-[#091A32]" />
-              <span>{isHi ? 'प्रवेश' : 'Admission'}</span>
-            </button>
+            {isAdmissionOpen && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (setSignUpFormTab) setSignUpFormTab('student');
+                  navigate('/signup?tab=admission');
+                }}
+                className="hidden min-[420px]:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F4B323] text-[#091A32] text-xs font-black shadow-xs whitespace-nowrap cursor-pointer flex-shrink-0"
+              >
+                <Sparkles className="w-3 h-3 text-[#091A32]" />
+                <span>{isHi ? 'प्रवेश' : 'Admission'}</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -376,31 +384,35 @@ export default function SignInView() {
             />
 
             <div className="md:hidden absolute top-full left-0 right-0 w-full max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-[#08182E] border-t border-[#1E3A60] border-b-2 border-[#F4B323]/50 shadow-2xl z-50 px-3.5 py-4 animate-in slide-in-from-top-2 duration-200 text-white space-y-4">
-              {/* Header Info Strip */}
-              <div className="p-2.5 rounded-xl bg-[#0f2442] border border-[#1E3A60] flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 font-bold text-[#F4B323]">
-                  <Sparkles className="w-4 h-4 flex-shrink-0 text-[#F4B323]" />
-                  <span>{isHi ? 'सत्र 2026–27 प्रवेश प्रारंभ' : 'Admissions Open 2026-27'}</span>
+              {/* Header Info Strip (Visible only when admission is open) */}
+              {isAdmissionOpen && (
+                <div className="p-2.5 rounded-xl bg-[#0f2442] border border-[#1E3A60] flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 font-bold text-[#F4B323]">
+                    <Sparkles className="w-4 h-4 flex-shrink-0 text-[#F4B323]" />
+                    <span>{isHi ? `सत्र ${currentSession} प्रवेश प्रारंभ` : `Admissions Open ${currentSession}`}</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F4B323]/20 text-[#F4B323] font-bold border border-[#F4B323]/30">
+                    {isHi ? 'नर्सरी – 8वीं' : 'Nursery to 8th'}
+                  </span>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F4B323]/20 text-[#F4B323] font-bold border border-[#F4B323]/30">
-                  {isHi ? 'नर्सरी – 8वीं' : 'Nursery to 8th'}
-                </span>
-              </div>
+              )}
 
               {/* Primary Call to Actions: Online Admission & Portal Login */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    if (setSignUpFormTab) setSignUpFormTab('student');
-                    navigate('/signup?tab=admission');
-                  }}
-                  className="w-full py-2.5 px-3 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-[0.98]"
-                >
-                  <Sparkles className="w-4 h-4 text-[#091A32]" />
-                  <span>{isHi ? 'ऑनलाइन प्रवेश प्रपत्र 2026-27' : 'Online Admission Form 2026-27'}</span>
-                </button>
+              <div className={`grid ${isAdmissionOpen ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'} gap-2`}>
+                {isAdmissionOpen && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      if (setSignUpFormTab) setSignUpFormTab('student');
+                      navigate('/signup?tab=admission');
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-[0.98]"
+                  >
+                    <Sparkles className="w-4 h-4 text-[#091A32]" />
+                    <span>{isHi ? `ऑनलाइन प्रवेश प्रपत्र ${currentSession}` : `Online Admission Form ${currentSession}`}</span>
+                  </button>
+                )}
 
                 <button
                   type="button"
@@ -416,7 +428,7 @@ export default function SignInView() {
               <div className="space-y-1">
                 <div className="px-2 text-[11px] font-black tracking-wider uppercase text-slate-400 flex items-center justify-between">
                   <span>{isHi ? 'मुख्य मेन्यू सूची' : 'Navigation Menu'}</span>
-                  <span className="text-[10px] text-slate-500">{isHi ? '8 विकल्प' : '8 Items'}</span>
+                  <span className="text-[10px] text-slate-500">{isHi ? `${isAdmissionOpen ? '8' : '7'} विकल्प` : `${isAdmissionOpen ? '8' : '7'} Items`}</span>
                 </div>
 
                 <div className="divide-y divide-white/5 rounded-2xl bg-[#0c1f38] border border-white/10 overflow-hidden shadow-sm">
@@ -437,22 +449,24 @@ export default function SignInView() {
                     <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => closeMobileMenuAndNavigate('#admissions')}
-                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group bg-amber-500/5"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-[#F4B323]/20 flex items-center justify-center text-[#F4B323] flex-shrink-0">
-                        <Sparkles className="w-4 h-4" />
+                  {isAdmissionOpen && (
+                    <button
+                      type="button"
+                      onClick={() => closeMobileMenuAndNavigate('#admissions')}
+                      className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group bg-amber-500/5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-[#F4B323]/20 flex items-center justify-center text-[#F4B323] flex-shrink-0">
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-[#F4B323]">{isHi ? `प्रवेश प्रक्रिया ${currentSession}` : `Admissions ${currentSession}`}</div>
+                          <div className="text-[10px] text-slate-300">{isHi ? 'नर्सरी से 8वीं तक ऑनलाइन आवेदन' : 'Nursery to 8th Apply Online'}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-xs font-black text-[#F4B323]">{isHi ? 'प्रवेश प्रक्रिया 2026–27' : 'Admissions 2026–27'}</div>
-                        <div className="text-[10px] text-slate-300">{isHi ? 'नर्सरी से 8वीं तक ऑनलाइन आवेदन' : 'Nursery to 8th Apply Online'}</div>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
-                  </button>
+                      <ChevronRight className="w-4 h-4 text-[#F4B323] transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -736,8 +750,8 @@ export default function SignInView() {
                   </div>
                 </div>
 
-                {/* ── DYNAMIC ADMISSION BANNER CARD (Controlled from Settings / App) ── */}
-                {isAdmissionOpen ? (
+                {/* ── DYNAMIC ADMISSION BANNER CARD (Completely hidden when admission is OFF) ── */}
+                {isAdmissionOpen && (
                   <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/92 via-[#112F56]/88 to-[#0C223F]/92 border-2 border-[#F4B323]/50 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
                     {/* Left: Admissions Open Title + Session + Classes */}
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
@@ -783,56 +797,6 @@ export default function SignInView() {
                       >
                         <Calendar className="w-4 h-4 text-[#F4B323]" />
                         <span>{isHi ? 'कैंपस विज़िट बुक करें' : 'Book Campus Visit'}</span>
-                      </a>
-                    </div>
-                  </div>
-                ) : (
-                  <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/92 via-[#112F56]/88 to-[#0C223F]/92 border border-white/20 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
-                    {/* Left: Academic Session in Progress */}
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
-                      <div className="w-12 h-12 rounded-xl bg-white/10 text-[#F4B323] border border-white/20 flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <School className="w-6 h-6 text-[#F4B323]" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                          <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase">
-                            {isHi ? `शैक्षणिक सत्र ${currentSession}` : `ACADEMIC SESSION ${currentSession}`}
-                          </span>
-                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-slate-700/80 text-slate-200 border border-slate-600 tracking-wider uppercase">
-                            {isHi ? 'नामांकन बंद' : 'Admissions Closed'}
-                          </span>
-                        </div>
-                        <div className="text-xs text-slate-300 font-medium">
-                          {isHi
-                            ? 'कक्षाएं नियमित रूप से जारी हैं • आगामी सत्र या कैंपस टूर हेतु पूछताछ करें'
-                            : 'Academic curriculum in progress • Enquire now for next academic session or campus tour'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right: Action CTAs when closed */}
-                    <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (openEnquiriesModal) {
-                            openEnquiriesModal('admissions');
-                          } else if (setIsEnquiriesModalOpen) {
-                            setIsEnquiriesModalOpen(true);
-                          }
-                        }}
-                        className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <MessageSquare className="w-4 h-4 text-[#091A32]" />
-                        <span>{isHi ? 'अगले सत्र हेतु पूछताछ →' : 'Enquire for Next Session →'}</span>
-                      </button>
-
-                      <a
-                        href="#campus-gallery"
-                        className="flex-1 sm:flex-initial px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <Building className="w-4 h-4 text-[#F4B323]" />
-                        <span>{isHi ? 'कैंपस जीवन देखें' : 'Explore Campus Life'}</span>
                       </a>
                     </div>
                   </div>
