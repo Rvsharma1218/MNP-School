@@ -1,22 +1,17 @@
-# 🏫 School Management & Institution OS (Web Portal)
+# 🏫 Mission Navodaya Public School, Mora (MNP School Web Portal)
 
-> **Live Website URL:** [https://school-management-website-coral.vercel.app](https://school-management-website-coral.vercel.app)
-
-A modern, institutional School ERP and SaaS Management Web Platform built with **Next.js 16**, **React 19**, **Tailwind CSS**, and **Firebase**.
-
----
-
-## 🚀 Live Demo & Access
-
-Open the live deployed application on Vercel:
-👉 **[https://school-management-website-coral.vercel.app](https://school-management-website-coral.vercel.app)**
-
-### Quick 1-Click Demo Login
-On the Sign In page, use the **Instant 1-Click Demo Login** buttons:
-* **Principal (Admin):** Complete administrative controls, fees, faculty, student directory, notices, admit card studio, and reports.
-* **Class Teacher:** Dedicated attendance register, marks entry, and student profiles.
+Official Web Portal for **Mission Navodaya Public School (Mora Bazar, Siwan, Bihar)**.
+Built with **Next.js 16**, **React 19**, **Tailwind CSS**, and **Firebase**.
 
 ---
+
+## 🚀 Portals & Features
+* **Official School Landing Page:** Panoramic institutional campus banner, admissions Nursery–8th, 5 core pillars, campus photo gallery, parent reviews, and helpline.
+* **Online Admission Form (सत्र 2026–27):** English medium online admission application with instant registration tracking.
+* **School Digital Portals:**
+  * **Parent Portal:** Admission number & registered mobile matching, report cards, fee records, and student profile.
+  * **Teacher Portal:** Attendance register, marks grading, and classroom tools.
+  * **Principal Portal:** Administrative controls, live admissions toggle, fees management, admit card studio, and reports.
 
 ## ✨ Features & Modules
 
