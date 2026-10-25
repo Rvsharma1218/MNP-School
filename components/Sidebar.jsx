@@ -61,7 +61,8 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
     setIsAddStudentOpen, currentTeacher, currentPath, navigate,
     unreadNoticeCount,
     isTeacherPermissionsModalOpen, setIsTeacherPermissionsModalOpen,
-    isHelpFeedbackOpen, setIsHelpFeedbackOpen
+    isHelpFeedbackOpen, setIsHelpFeedbackOpen,
+    language
   } = useSchoolStore();
 
   if (!currentUser) return null;
@@ -123,7 +124,7 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
         {/* ── Scrollable Nav Menu List ── */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
           {(() => {
-            const lang = settings?.appLanguage || 'en';
+            const lang = language || settings?.appLanguage || 'en';
             return (
               <>
                 {/* Core Operations */}

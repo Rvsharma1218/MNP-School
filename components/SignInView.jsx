@@ -32,6 +32,7 @@ export default function SignInView() {
   } = useSchoolStore();
 
   const t = translations[language] || translations.en;
+  const isHi = language === 'hi';
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -153,19 +154,19 @@ export default function SignInView() {
             {isAdmissionOpen ? (
               <>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#F4B323] text-[#091A32] text-[10px] font-black uppercase tracking-wider">
-                  Admissions {currentSession}
+                  {isHi ? `प्रवेश प्रारंभ ${currentSession}` : `Admissions ${currentSession}`}
                 </span>
                 <span className="text-slate-200">
-                  Now Enrolling {admissionClasses} · {schoolLocation}
+                  {isHi ? `नर्सरी से 8वीं तक नामांकन जारी · मोरा बाजार, सीवान (बिहार)` : `Now Enrolling ${admissionClasses} · ${schoolLocation}`}
                 </span>
               </>
             ) : (
               <>
                 <span className="px-2.5 py-0.5 rounded-full bg-slate-700 text-slate-200 text-[10px] font-bold uppercase tracking-wider border border-slate-600">
-                  Session {currentSession}
+                  {isHi ? `सत्र ${currentSession}` : `Session ${currentSession}`}
                 </span>
                 <span className="text-slate-200">
-                  Academic Session in Progress · {schoolLocation}
+                  {isHi ? `शैक्षणिक सत्र प्रगति पर है · मोरा बाजार, सीवान (बिहार)` : `Academic Session in Progress · ${schoolLocation}`}
                 </span>
               </>
             )}
@@ -184,7 +185,7 @@ export default function SignInView() {
             <span className="text-slate-600">·</span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3 text-[#F4B323]" />
-              <span>Mon – Sat: 8:00 AM – 2:00 PM</span>
+              <span>{isHi ? 'सोम – शनि: 8:00 AM – 2:00 PM' : 'Mon – Sat: 8:00 AM – 2:00 PM'}</span>
             </span>
           </div>
         </div>
@@ -201,7 +202,7 @@ export default function SignInView() {
             <div className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
               <img
                 src={logoSrc}
-                alt="Mission Navodaya Public School Mora Official Seal"
+                alt={isHi ? "मिशन नवोदय पब्लिक स्कूल मोरा आधिकारिक मुहर" : "Mission Navodaya Public School Mora Official Seal"}
                 className="w-full h-full object-contain"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
@@ -211,24 +212,24 @@ export default function SignInView() {
             </div>
             <div className="min-w-0">
               <div className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-white leading-tight truncate uppercase">
-                {schoolName}
+                {isHi ? 'मिशन नवोदय पब्लिक स्कूल' : schoolName}
               </div>
               <div className="text-[10px] sm:text-[11px] font-bold text-[#F4B323] tracking-wide truncate flex items-center gap-1.5 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#F4B323] animate-pulse" />
-                <span>Mora Bazar, Siwan (Bihar) · Session 2026–27</span>
+                <span>{isHi ? `मोरा बाजार, सीवान (बिहार) · सत्र ${currentSession}` : `Mora Bazar, Siwan (Bihar) · Session ${currentSession}`}</span>
               </div>
             </div>
           </a>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden xl:flex items-center gap-6 text-[13px] font-bold text-slate-200">
-            <a href="#about" className="hover:text-[#F4B323] transition-colors py-1">About School</a>
-            <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">Admissions 2026–27</a>
-            <a href="#features" className="hover:text-[#F4B323] transition-colors py-1">Campus Features</a>
-            <a href="#leadership" className="hover:text-[#F4B323] transition-colors py-1">Leadership</a>
-            <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors py-1">Gallery</a>
-            <a href="#reviews" className="hover:text-[#F4B323] transition-colors py-1">Parent Reviews</a>
-            <a href="#contact" className="hover:text-[#F4B323] transition-colors py-1">Contact</a>
+            <a href="#about" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'विद्यालय परिचय' : 'About School'}</a>
+            <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">{isHi ? 'प्रवेश 2026–27' : 'Admissions 2026–27'}</a>
+            <a href="#features" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'विशेषताएं' : 'Campus Features'}</a>
+            <a href="#leadership" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'नेतृत्व' : 'Leadership'}</a>
+            <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'गैलरी' : 'Gallery'}</a>
+            <a href="#reviews" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'अभिभावक समीक्षाएं' : 'Parent Reviews'}</a>
+            <a href="#contact" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'संपर्क' : 'Contact'}</a>
           </nav>
 
           {/* Desktop Action Buttons */}
@@ -241,7 +242,7 @@ export default function SignInView() {
               title="Toggle Language"
             >
               <Globe className="w-3.5 h-3.5 text-[#F4B323]" />
-              <span>{language === 'hi' ? 'English' : 'हिन्दी'}</span>
+              <span>{isHi ? 'English' : 'हिन्दी'}</span>
             </button>
 
             {/* Faculty / Teacher Desk Button */}
@@ -252,7 +253,7 @@ export default function SignInView() {
               title="Faculty & Teacher Console"
             >
               <GraduationCap className="w-3.5 h-3.5 text-[#F4B323]" />
-              <span>Faculty Desk</span>
+              <span>{isHi ? 'शिक्षक पटल' : 'Faculty Desk'}</span>
             </button>
 
             {/* Parent Login */}
@@ -262,7 +263,7 @@ export default function SignInView() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs"
             >
               <Users className="w-3.5 h-3.5 text-[#F4B323]" />
-              <span>Parent Portal</span>
+              <span>{isHi ? 'अभिभावक पोर्टल' : 'Parent Portal'}</span>
             </button>
 
             {/* Staff / Principal Login */}
@@ -272,7 +273,7 @@ export default function SignInView() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all cursor-pointer shadow-2xs"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#F4B323]" />
-              <span>Portal Login</span>
+              <span>{isHi ? 'पोर्टल लॉगिन' : 'Portal Login'}</span>
             </button>
 
             {/* Online Admission Form Button */}
@@ -285,7 +286,7 @@ export default function SignInView() {
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black text-[#091A32] bg-[#F4B323] hover:bg-[#e0a21a] shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#091A32]" />
-              <span>Online Admission</span>
+              <span>{isHi ? 'ऑनलाइन प्रवेश' : 'Online Admission'}</span>
             </button>
           </div>
 
@@ -298,7 +299,7 @@ export default function SignInView() {
               title="Toggle Language"
             >
               <Globe className="w-3 h-3 text-[#F4B323]" />
-              <span className="text-[11px]">{language === 'hi' ? 'EN' : 'हिन्दी'}</span>
+              <span className="text-[11px]">{isHi ? 'EN' : 'हिन्दी'}</span>
             </button>
 
             <button
@@ -319,7 +320,7 @@ export default function SignInView() {
             <div className="space-y-6">
               <div className="p-3 rounded-xl bg-[#102747] border border-[#1E3A60] flex items-center gap-2.5 text-xs font-bold text-[#F4B323]">
                 <Sparkles className="w-4 h-4 flex-shrink-0 text-[#F4B323]" />
-                <span>Session 2026–27 · Nursery to 8th Admissions Open</span>
+                <span>{isHi ? 'सत्र 2026–27 · नर्सरी से 8वीं तक प्रवेश प्रारंभ' : 'Session 2026–27 · Nursery to 8th Admissions Open'}</span>
               </div>
 
               <div className="space-y-1 font-bold text-sm text-slate-200">
@@ -328,7 +329,7 @@ export default function SignInView() {
                   onClick={() => closeMobileMenuAndNavigate('#about')}
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
                 >
-                  <span>About School</span>
+                  <span>{isHi ? 'विद्यालय परिचय' : 'About School'}</span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
                 </button>
                 <button
@@ -336,7 +337,7 @@ export default function SignInView() {
                   onClick={() => closeMobileMenuAndNavigate('#admissions')}
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between text-[#F4B323]"
                 >
-                  <span>Admissions 2026–27 (Nursery – 8th)</span>
+                  <span>{isHi ? 'प्रवेश 2026–27 (नर्सरी – 8वीं)' : 'Admissions 2026–27 (Nursery – 8th)'}</span>
                   <ArrowRight className="w-4 h-4 text-[#F4B323]" />
                 </button>
                 <button
@@ -344,7 +345,7 @@ export default function SignInView() {
                   onClick={() => closeMobileMenuAndNavigate('#features')}
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
                 >
-                  <span>5 Signature Features</span>
+                  <span>{isHi ? '5 प्रमुख विशेषताएं' : '5 Signature Features'}</span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
                 </button>
                 <button
@@ -352,7 +353,7 @@ export default function SignInView() {
                   onClick={() => closeMobileMenuAndNavigate('#leadership')}
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
                 >
-                  <span>School Leadership</span>
+                  <span>{isHi ? 'विद्यालय नेतृत्व' : 'School Leadership'}</span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
                 </button>
                 <button
@@ -360,7 +361,7 @@ export default function SignInView() {
                   onClick={() => closeMobileMenuAndNavigate('#facilities')}
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
                 >
-                  <span>Campus Facilities</span>
+                  <span>{isHi ? 'परिसर सुविधाएं' : 'Campus Facilities'}</span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
                 </button>
                 <button
@@ -368,7 +369,7 @@ export default function SignInView() {
                   onClick={() => closeMobileMenuAndNavigate('#campus-gallery')}
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
                 >
-                  <span>Photo Gallery</span>
+                  <span>{isHi ? 'फोटो गैलरी' : 'Photo Gallery'}</span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
                 </button>
                 <button
@@ -376,7 +377,7 @@ export default function SignInView() {
                   onClick={() => closeMobileMenuAndNavigate('#reviews')}
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between text-[#F4B323]"
                 >
-                  <span>Parent &amp; Community Reviews</span>
+                  <span>{isHi ? 'अभिभावक समीक्षाएं' : 'Parent & Community Reviews'}</span>
                   <ArrowRight className="w-4 h-4 text-[#F4B323]" />
                 </button>
                 <button
@@ -384,7 +385,7 @@ export default function SignInView() {
                   onClick={() => closeMobileMenuAndNavigate('#contact')}
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
                 >
-                  <span>Office Helpline &amp; Contact</span>
+                  <span>{isHi ? 'हेल्पलाइन एवं संपर्क' : 'Office Helpline & Contact'}</span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
                 </button>
               </div>
@@ -400,7 +401,7 @@ export default function SignInView() {
                   className="w-full py-3.5 px-4 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 text-[#091A32]" />
-                  <span>Online Admission Form</span>
+                  <span>{isHi ? 'ऑनलाइन प्रवेश प्रपत्र' : 'Online Admission Form'}</span>
                 </button>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -410,7 +411,7 @@ export default function SignInView() {
                     className="py-2.5 px-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
                   >
                     <GraduationCap className="w-4 h-4 text-[#F4B323]" />
-                    <span>Faculty</span>
+                    <span>{isHi ? 'शिक्षक' : 'Faculty'}</span>
                   </button>
 
                   <button
@@ -419,7 +420,7 @@ export default function SignInView() {
                     className="py-2.5 px-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
                   >
                     <Users className="w-4 h-4 text-[#F4B323]" />
-                    <span>Parents</span>
+                    <span>{isHi ? 'अभिभावक' : 'Parents'}</span>
                   </button>
 
                   <button
@@ -428,15 +429,15 @@ export default function SignInView() {
                     className="py-2.5 px-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
                   >
                     <ShieldCheck className="w-4 h-4 text-[#F4B323]" />
-                    <span>Principal</span>
+                    <span>{isHi ? 'प्रधानाचार्य' : 'Principal'}</span>
                   </button>
                 </div>
               </div>
             </div>
 
             <div className="pt-6 border-t border-white/10 text-center text-xs text-slate-400 space-y-1">
-              <div>Office Call/WhatsApp: <a href={`tel:${primaryPhone}`} className="text-[#F4B323] font-bold">+91 {primaryPhone}</a></div>
-              <div>{schoolLocation}</div>
+              <div>{isHi ? 'कार्यालय कॉल/व्हाट्सएप:' : 'Office Call/WhatsApp:'} <a href={`tel:${primaryPhone}`} className="text-[#F4B323] font-bold">+91 {primaryPhone}</a></div>
+              <div>{isHi ? 'मोरा बाजार, सीवान (बिहार)' : schoolLocation}</div>
             </div>
           </div>
         )}
@@ -484,12 +485,14 @@ export default function SignInView() {
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                   <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] sm:text-xs font-bold text-white shadow-md max-w-full">
                     <Sparkles className="w-3.5 h-3.5 text-[#F4B323] flex-shrink-0" />
-                    <span className="tracking-wide break-words text-center">DISCIPLINE · KNOWLEDGE · EXCELLENCE · BRIGHT FUTURE</span>
+                    <span className="tracking-wide break-words text-center">
+                      {isHi ? 'अनुशासन · ज्ञान · उत्कृष्टता · उज्ज्वल भविष्य' : 'DISCIPLINE · KNOWLEDGE · EXCELLENCE · BRIGHT FUTURE'}
+                    </span>
                   </div>
 
                   <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F4B323]/15 border border-[#F4B323]/30 backdrop-blur-md text-xs font-black text-[#F4B323] shadow-xs">
                     <Calendar className="w-3.5 h-3.5" />
-                    <span>SESSION {currentSession}</span>
+                    <span>{isHi ? `सत्र ${currentSession}` : `SESSION ${currentSession}`}</span>
                   </div>
                 </div>
 
@@ -510,33 +513,40 @@ export default function SignInView() {
                       />
                     </div>
                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-[#102747] border border-[#F4B323] text-[9px] font-black text-[#F4B323] uppercase shadow-lg whitespace-nowrap">
-                      ESTD 2025
+                      {isHi ? 'स्थापना 2025' : 'ESTD 2025'}
                     </div>
                   </div>
 
                   {/* School Typography & Tagline */}
                   <div className="space-y-2 flex-1">
                     <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#F4B323]">
-                      <span>CBSE Curriculum Pattern &bull; English Medium Co-Educational</span>
+                      <span>{isHi ? 'सीबीएसई पाठ्यक्रम प्रारूप • अंग्रेजी माध्यम सह-शिक्षा' : 'CBSE Curriculum Pattern • English Medium Co-Educational'}</span>
                     </div>
 
                     <h1 className="text-2xl sm:text-4xl lg:text-[46px] font-black text-white tracking-tight uppercase leading-[1.12] drop-shadow-md break-words max-w-full">
-                      MISSION NAVODAYA <span className="text-[#F4B323]">PUBLIC SCHOOL</span>, MORA
+                      {isHi ? (
+                        <>मिशन नवोदय <span className="text-[#F4B323]">पब्लिक स्कूल</span>, मोरा</>
+                      ) : (
+                        <>MISSION NAVODAYA <span className="text-[#F4B323]">PUBLIC SCHOOL</span>, MORA</>
+                      )}
                     </h1>
 
                     <p className="text-xs sm:text-sm text-slate-300 font-medium italic max-w-2xl">
-                      &ldquo;A Safe Campus for Brighter Futures.&rdquo; &mdash; Dedicated to Academic Excellence, Moral Character, and Digital Innovation.
+                      {isHi
+                        ? '“उज्ज्वल भविष्य के लिए सुरक्षित और अनुशासित कैंपस।” — शैक्षणिक उत्कृष्टता, नैतिक चरित्र और डिजिटल नवाचार को समर्पित।'
+                        : '“A Safe Campus for Brighter Futures.” — Dedicated to Academic Excellence, Moral Character, and Digital Innovation.'
+                      }
                     </p>
 
                     {/* School Location & Timings Quick Micro-Badges */}
                     <div className="pt-1 flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 text-xs text-slate-300 font-medium">
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 backdrop-blur-xs border border-white/15">
                         <MapPin className="w-3.5 h-3.5 text-[#F4B323]" />
-                        <span>Mora Bazar, Siwan (Bihar)</span>
+                        <span>{isHi ? 'मोरा बाज़ार, सीवान (बिहार)' : 'Mora Bazar, Siwan (Bihar)'}</span>
                       </span>
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 backdrop-blur-xs border border-white/15">
                         <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Mon &ndash; Sat: 8:00 AM &ndash; 2:00 PM</span>
+                        <span>{isHi ? 'सोम – शनि: 8:00 पूर्वाह्न – 2:00 अपराह्न' : 'Mon – Sat: 8:00 AM – 2:00 PM'}</span>
                       </span>
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 backdrop-blur-xs border border-white/15">
                         <Phone className="w-3.5 h-3.5 text-blue-400" />
@@ -561,14 +571,14 @@ export default function SignInView() {
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F4B323] opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-3 w-3 bg-[#F4B323]"></span>
                             </span>
-                            ADMISSIONS OPEN
+                            {isHi ? 'नामांकन प्रारंभ' : 'ADMISSIONS OPEN'}
                           </span>
                           <span className="text-xs font-black px-2.5 py-0.5 rounded-md bg-[#F4B323] text-[#091A32] tracking-wider uppercase shadow-xs">
-                            SESSION {currentSession}
+                            {isHi ? `सत्र ${currentSession}` : `SESSION ${currentSession}`}
                           </span>
                         </div>
                         <div className="text-xs text-[#F4B323] font-bold">
-                          {admissionClasses} &bull; Limited Seats Available for New Enrolments
+                          {isHi ? `${admissionClasses} • नए दाखिले के लिए सीमित सीटें उपलब्ध` : `${admissionClasses} • Limited Seats Available for New Enrolments`}
                         </div>
                       </div>
                     </div>
@@ -584,7 +594,7 @@ export default function SignInView() {
                         className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <FileText className="w-4 h-4 text-[#091A32]" />
-                        <span>Online Admission Form &rarr;</span>
+                        <span>{isHi ? 'ऑनलाइन एडमिशन फॉर्म →' : 'Online Admission Form →'}</span>
                       </button>
 
                       <a
@@ -592,7 +602,7 @@ export default function SignInView() {
                         className="flex-1 sm:flex-initial px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Calendar className="w-4 h-4 text-[#F4B323]" />
-                        <span>Book Campus Visit</span>
+                        <span>{isHi ? 'कैंपस विज़िट बुक करें' : 'Book Campus Visit'}</span>
                       </a>
                     </div>
                   </div>
@@ -606,14 +616,16 @@ export default function SignInView() {
                       <div className="space-y-0.5">
                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                           <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase">
-                            ACADEMIC SESSION {currentSession}
+                            {isHi ? `शैक्षणिक सत्र ${currentSession}` : `ACADEMIC SESSION ${currentSession}`}
                           </span>
                           <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-slate-700/80 text-slate-200 border border-slate-600 tracking-wider uppercase">
-                            Admissions Closed
+                            {isHi ? 'नामांकन बंद' : 'Admissions Closed'}
                           </span>
                         </div>
                         <div className="text-xs text-slate-300 font-medium">
-                          Academic curriculum in progress &bull; Enquire now for next academic session or campus tour
+                          {isHi
+                            ? 'कक्षाएं नियमित रूप से जारी हैं • आगामी सत्र या कैंपस टूर हेतु पूछताछ करें'
+                            : 'Academic curriculum in progress • Enquire now for next academic session or campus tour'}
                         </div>
                       </div>
                     </div>
@@ -632,7 +644,7 @@ export default function SignInView() {
                         className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <MessageSquare className="w-4 h-4 text-[#091A32]" />
-                        <span>Enquire for Next Session &rarr;</span>
+                        <span>{isHi ? 'अगले सत्र हेतु पूछताछ →' : 'Enquire for Next Session →'}</span>
                       </button>
 
                       <a
@@ -640,7 +652,7 @@ export default function SignInView() {
                         className="flex-1 sm:flex-initial px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Building className="w-4 h-4 text-[#F4B323]" />
-                        <span>Explore Campus Life</span>
+                        <span>{isHi ? 'कैंपस जीवन देखें' : 'Explore Campus Life'}</span>
                       </a>
                     </div>
                   </div>
@@ -650,19 +662,19 @@ export default function SignInView() {
                 <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3">
                   <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15 text-xs font-bold text-white shadow-xs">
                     <BookOpen className="w-3.5 h-3.5 text-[#F4B323]" />
-                    <span>Quality Education</span>
+                    <span>{isHi ? 'गुणवत्तापूर्ण शिक्षा' : 'Quality Education'}</span>
                   </div>
                   <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15 text-xs font-bold text-white shadow-xs">
                     <Shield className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Moral Values</span>
+                    <span>{isHi ? 'नैतिक मूल्य व संस्कार' : 'Moral Values'}</span>
                   </div>
                   <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15 text-xs font-bold text-white shadow-xs">
                     <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Holistic Development</span>
+                    <span>{isHi ? 'सर्वांगीण विकास' : 'Holistic Development'}</span>
                   </div>
                   <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15 text-xs font-bold text-white shadow-xs">
                     <Trophy className="w-3.5 h-3.5 text-[#F4B323]" />
-                    <span>Better Tomorrow</span>
+                    <span>{isHi ? 'उज्ज्वल कल' : 'Better Tomorrow'}</span>
                   </div>
                 </div>
 
@@ -673,13 +685,15 @@ export default function SignInView() {
             <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
               <div className="text-center space-y-2 mb-8 sm:mb-10">
                 <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
-                  CAMPUS EXCELLENCE
+                  {isHi ? 'कैंपस विशेषताएं' : 'CAMPUS EXCELLENCE'}
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-black text-[#14243B] tracking-tight">
-                  5 Pillars of Mission Navodaya Public School
+                  {isHi ? 'मिशन नवोदय पब्लिक स्कूल के 5 मुख्य आधार' : '5 Pillars of Mission Navodaya Public School'}
                 </h2>
                 <p className="text-xs sm:text-sm text-[#65748B] max-w-xl mx-auto">
-                  Designed for safe, disciplined, and comprehensive schooling for students from Nursery to Grade 8.
+                  {isHi
+                    ? 'नर्सरी से कक्षा 8वीं तक के विद्यार्थियों के लिए सुरक्षित, अनुशासित और सर्वांगीण शिक्षा।'
+                    : 'Designed for safe, disciplined, and comprehensive schooling for students from Nursery to Grade 8.'}
                 </p>
               </div>
 
@@ -692,9 +706,11 @@ export default function SignInView() {
                     <BookOpen className="w-6 h-6 text-[#F4B323]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">Enriched Library</h3>
+                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'समृद्ध पुस्तकालय' : 'Enriched Library'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
-                      Wide range of books, NCERT textbooks, and inspiring learning resources.
+                      {isHi
+                        ? 'ज्ञानवर्धक पुस्तकों, NCERT पाठ्यपुस्तकों और प्रेरक पठन सामग्रियों का विशाल संग्रह।'
+                        : 'Wide range of books, NCERT textbooks, and inspiring learning resources.'}
                     </p>
                   </div>
                 </div>
@@ -705,9 +721,11 @@ export default function SignInView() {
                     <Monitor className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">Computer &amp; Tech Wing</h3>
+                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'कंप्यूटर व तकनीक विंग' : 'Computer & Tech Wing'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
-                      Modern digital learning, dedicated computer lab, and practical tech skills.
+                      {isHi
+                        ? 'आधुनिक डिजिटल शिक्षा, सुसज्जित कंप्यूटर लैब और प्रायोगिक तकनीकी कौशल।'
+                        : 'Modern digital learning, dedicated computer lab, and practical tech skills.'}
                     </p>
                   </div>
                 </div>
@@ -718,9 +736,11 @@ export default function SignInView() {
                     <Trophy className="w-6 h-6 text-emerald-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">Sports &amp; Physical Fitness</h3>
+                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'खेलकूद एवं शारीरिक विकास' : 'Sports & Physical Fitness'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
-                      Spacious open playground for football, athletics, and overall development.
+                      {isHi
+                        ? 'फुटबॉल, एथलेटिक्स और शारीरिक तंदुरुस्ती के लिए विशाल खुला खेल का मैदान।'
+                        : 'Spacious open playground for football, athletics, and overall development.'}
                     </p>
                   </div>
                 </div>
@@ -731,9 +751,11 @@ export default function SignInView() {
                     <ShieldCheck className="w-6 h-6 text-indigo-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">Safe &amp; Secure Campus</h3>
+                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'सुरक्षित एवं अनुशासित परिसर' : 'Safe & Secure Campus'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
-                      A disciplined, walled, and caring environment ensuring student safety.
+                      {isHi
+                        ? 'चारदीवारी से सुरक्षित, अनुशासित और स्नेहमयी वातावरण जिससे बच्चे सुरक्षित रहें।'
+                        : 'A disciplined, walled, and caring environment ensuring student safety.'}
                     </p>
                   </div>
                 </div>
@@ -744,9 +766,11 @@ export default function SignInView() {
                     <Users className="w-6 h-6 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">Dedicated Teachers</h3>
+                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'समर्पित एवं अनुभवी शिक्षक' : 'Dedicated Teachers'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
-                      Experienced, caring, and supportive faculty devoted to each child.
+                      {isHi
+                        ? 'प्रत्येक बच्चे के सर्वांगीण विकास के लिए समर्पित, अनुभवी और स्नेही शिक्षक गण।'
+                        : 'Experienced, caring, and supportive faculty devoted to each child.'}
                     </p>
                   </div>
                 </div>
@@ -758,13 +782,15 @@ export default function SignInView() {
             <section id="leadership" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
               <div className="text-center space-y-2 mb-8 sm:mb-12">
                 <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
-                  LEADERSHIP &amp; VISION
+                  {isHi ? 'मार्गदर्शन एवं नेतृत्व' : 'LEADERSHIP & VISION'}
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-black text-[#14243B] tracking-tight">
-                  Guided by Experience, Integrity &amp; Dedication
+                  {isHi ? 'अनुभव, सत्यनिष्ठा और समर्पण द्वारा निर्देशित' : 'Guided by Experience, Integrity & Dedication'}
                 </h2>
                 <p className="text-xs sm:text-sm text-[#65748B] max-w-xl mx-auto">
-                  Meet the leadership team steering Mission Navodaya Public School toward academic excellence and values-driven education.
+                  {isHi
+                    ? 'मिशन नवोदय पब्लिक स्कूल को शैक्षणिक उत्कृष्टता और संस्कारयुक्त शिक्षा की ओर ले जाने वाली नेतृत्व टीम।'
+                    : 'Meet the leadership team steering Mission Navodaya Public School toward academic excellence and values-driven education.'}
                 </p>
               </div>
 
@@ -780,23 +806,25 @@ export default function SignInView() {
                       />
                       <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-[#F4B323] text-[#091A32] font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
                         <Award className="w-3.5 h-3.5 text-[#091A32]" />
-                        <span>CHAIRMAN &amp; FOUNDER</span>
+                        <span>{isHi ? 'संस्थापक एवं अध्यक्ष' : 'CHAIRMAN & FOUNDER'}</span>
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
                       <div className="absolute bottom-3.5 left-4 right-4 text-white">
-                        <h3 className="text-lg font-black tracking-tight drop-shadow">Uday Shankar Patel</h3>
-                        <p className="text-[11px] text-[#F4B323] font-bold uppercase tracking-wider">Chairman &amp; Founder</p>
+                        <h3 className="text-lg font-black tracking-tight drop-shadow">{isHi ? 'उदय शंकर पटेल' : 'Uday Shankar Patel'}</h3>
+                        <p className="text-[11px] text-[#F4B323] font-bold uppercase tracking-wider">{isHi ? 'संस्थापक एवं अध्यक्ष' : 'Chairman & Founder'}</p>
                       </div>
                     </div>
                     <div className="p-6 space-y-3">
                       <p className="text-xs text-[#65748B] leading-relaxed italic">
-                        &ldquo;Education is not merely acquiring degrees; it is about cultivating moral character, discipline, and building a foundation that empowers every child to serve society with pride.&rdquo;
+                        {isHi
+                          ? '“शिक्षा केवल डिग्रियां हासिल करना नहीं है; यह नैतिक चरित्र, अनुशासन और एक मजबूत नींव का निर्माण है जो प्रत्येक बच्चे को गर्व से समाज की सेवा करने में सक्षम बनाती है।”'
+                          : '“Education is not merely acquiring degrees; it is about cultivating moral character, discipline, and building a foundation that empowers every child to serve society with pride.”'}
                       </p>
                     </div>
                   </div>
                   <div className="px-6 py-4 bg-slate-50 border-t border-[#E2E8F0] flex items-center gap-2 text-xs font-bold text-[#102747]">
                     <Building className="w-4 h-4 text-[#F4B323]" />
-                    <span>Chairman&apos;s Secretariat · Founder&apos;s Desk</span>
+                    <span>{isHi ? "अध्यक्षीय सचिवालय · संस्थापक डेस्क" : "Chairman's Secretariat · Founder's Desk"}</span>
                   </div>
                 </div>
 
@@ -811,23 +839,25 @@ export default function SignInView() {
                       />
                       <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-[#102747] text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5 border border-white/20">
                         <Shield className="w-3.5 h-3.5 text-[#F4B323]" />
-                        <span>MANAGING DIRECTOR</span>
+                        <span>{isHi ? 'प्रबंध निदेशक' : 'MANAGING DIRECTOR'}</span>
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
                       <div className="absolute bottom-3.5 left-4 right-4 text-white">
-                        <h3 className="text-lg font-black tracking-tight drop-shadow">Vishal Patel</h3>
-                        <p className="text-[11px] text-blue-200 font-bold uppercase tracking-wider">Managing Director</p>
+                        <h3 className="text-lg font-black tracking-tight drop-shadow">{isHi ? 'विशाल पटेल' : 'Vishal Patel'}</h3>
+                        <p className="text-[11px] text-blue-200 font-bold uppercase tracking-wider">{isHi ? 'प्रबंध निदेशक' : 'Managing Director'}</p>
                       </div>
                     </div>
                     <div className="p-6 space-y-3">
                       <p className="text-xs text-[#65748B] leading-relaxed italic">
-                        &ldquo;We combine modern educational infrastructure with deep-rooted values, ensuring that our students excel in academics, technology, and life skills.&rdquo;
+                        {isHi
+                          ? '“हम आधुनिक शैक्षणिक बुनियादी ढांचे को मजबूत मानवीय मूल्यों के साथ जोड़ते हैं, जिससे हमारे छात्र पढ़ाई, तकनीक और जीवन कौशल में अव्वल रहें।”'
+                          : '“We combine modern educational infrastructure with deep-rooted values, ensuring that our students excel in academics, technology, and life skills.”'}
                       </p>
                     </div>
                   </div>
                   <div className="px-6 py-4 bg-slate-50 border-t border-[#E2E8F0] flex items-center gap-2 text-xs font-bold text-[#102747]">
                     <Shield className="w-4 h-4 text-[#102747]" />
-                    <span>Executive Operations &amp; Administration</span>
+                    <span>{isHi ? 'कार्यकारी संचालन एवं प्रबंधन' : 'Executive Operations & Administration'}</span>
                   </div>
                 </div>
 
@@ -842,23 +872,25 @@ export default function SignInView() {
                       />
                       <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-emerald-700 text-white font-black text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5">
                         <GraduationCap className="w-3.5 h-3.5 text-white" />
-                        <span>PRINCIPAL</span>
+                        <span>{isHi ? 'प्रधानाचार्या' : 'PRINCIPAL'}</span>
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
                       <div className="absolute bottom-3.5 left-4 right-4 text-white">
-                        <h3 className="text-lg font-black tracking-tight drop-shadow">Soni Madam</h3>
-                        <p className="text-[11px] text-emerald-300 font-bold uppercase tracking-wider">Principal</p>
+                        <h3 className="text-lg font-black tracking-tight drop-shadow">{isHi ? 'सोनी मैडम' : 'Soni Madam'}</h3>
+                        <p className="text-[11px] text-emerald-300 font-bold uppercase tracking-wider">{isHi ? 'प्रधानाचार्या' : 'Principal'}</p>
                       </div>
                     </div>
                     <div className="p-6 space-y-3">
                       <p className="text-xs text-[#65748B] leading-relaxed italic">
-                        &ldquo;Every student has unique potential. Our faculty is devoted to personalized mentorship, holistic growth, and academic rigor in a nurturing atmosphere.&rdquo;
+                        {isHi
+                          ? '“प्रत्येक विद्यार्थी में असीम क्षमताएं होती हैं। हमारे शिक्षक व्यक्तिगत मार्गदर्शन, सर्वांगीण विकास और एक प्रेरक वातावरण में गुणवत्तापूर्ण शिक्षा देने के लिए समर्पित हैं।”'
+                          : '“Every student has unique potential. Our faculty is devoted to personalized mentorship, holistic growth, and academic rigor in a nurturing atmosphere.”'}
                       </p>
                     </div>
                   </div>
                   <div className="px-6 py-4 bg-slate-50 border-t border-[#E2E8F0] flex items-center gap-2 text-xs font-bold text-[#102747]">
                     <School className="w-4 h-4 text-emerald-600" />
-                    <span>Academic Administration &amp; Faculty Head</span>
+                    <span>{isHi ? 'शैक्षणिक प्रशासन एवं संकाय प्रमुख' : 'Academic Administration & Faculty Head'}</span>
                   </div>
                 </div>
               </div>
@@ -868,13 +900,15 @@ export default function SignInView() {
             <section id="campus-gallery" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
               <div className="text-center space-y-2 mb-8 sm:mb-12">
                 <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
-                  CAMPUS GALLERY
+                  {isHi ? 'कैंपस गैलरी' : 'CAMPUS GALLERY'}
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-black text-[#14243B] tracking-tight">
-                  Life at Mission Navodaya Public School, Mora
+                  {isHi ? 'मिशन नवोदय पब्लिक स्कूल, मोरा का जीवंत परिसर' : 'Life at Mission Navodaya Public School, Mora'}
                 </h2>
                 <p className="text-xs sm:text-sm text-[#65748B] max-w-xl mx-auto">
-                  A serene, green, and spacious campus built for modern learning, sports, and holistic character building.
+                  {isHi
+                    ? 'आधुनिक शिक्षा, खेलकूद और सर्वांगीण चरित्र निर्माण के लिए निर्मित शांत, हरा-भरा और विशाल परिसर।'
+                    : 'A serene, green, and spacious campus built for modern learning, sports, and holistic character building.'}
                 </p>
               </div>
 
@@ -890,8 +924,8 @@ export default function SignInView() {
                     />
                   </div>
                   <div className="p-4 space-y-1 bg-white">
-                    <h3 className="text-sm font-bold text-[#14243B]">Main Campus Entrance</h3>
-                    <p className="text-[11px] text-[#65748B]">Secure entrance with official school identification</p>
+                    <h3 className="text-sm font-bold text-[#14243B]">{isHi ? 'मुख्य कैंपस प्रवेश द्वार' : 'Main Campus Entrance'}</h3>
+                    <p className="text-[11px] text-[#65748B]">{isHi ? 'स्कूल की आधिकारिक पहचान के साथ सुरक्षित प्रवेश' : 'Secure entrance with official school identification'}</p>
                   </div>
                 </div>
 
@@ -906,8 +940,8 @@ export default function SignInView() {
                     />
                   </div>
                   <div className="p-4 space-y-1 bg-white">
-                    <h3 className="text-sm font-bold text-[#14243B]">Sports &amp; Football Arena</h3>
-                    <p className="text-[11px] text-[#65748B]">Expansive open playground for athletics and football</p>
+                    <h3 className="text-sm font-bold text-[#14243B]">{isHi ? 'खेलकूद एवं फुटबॉल मैदान' : 'Sports & Football Arena'}</h3>
+                    <p className="text-[11px] text-[#65748B]">{isHi ? 'एथलेटिक्स और फुटबॉल के लिए विशाल खुला खेल का मैदान' : 'Expansive open playground for athletics and football'}</p>
                   </div>
                 </div>
 
@@ -922,8 +956,8 @@ export default function SignInView() {
                     />
                   </div>
                   <div className="p-4 space-y-1 bg-white">
-                    <h3 className="text-sm font-bold text-[#14243B]">Academic Building Block</h3>
-                    <p className="text-[11px] text-[#65748B]">Spacious, ventilated classrooms and digital study points</p>
+                    <h3 className="text-sm font-bold text-[#14243B]">{isHi ? 'शैक्षणिक भवन ब्लॉक' : 'Academic Building Block'}</h3>
+                    <p className="text-[11px] text-[#65748B]">{isHi ? 'हवादार व बड़े क्लासरूम और डिजिटल लर्निंग पॉइंट्स' : 'Spacious, ventilated classrooms and digital study points'}</p>
                   </div>
                 </div>
 
@@ -938,8 +972,8 @@ export default function SignInView() {
                     />
                   </div>
                   <div className="p-4 space-y-1 bg-white">
-                    <h3 className="text-sm font-bold text-[#14243B]">Student Arrival &amp; Life</h3>
-                    <p className="text-[11px] text-[#65748B]">Disciplined campus gates, bicycle parking and arrival</p>
+                    <h3 className="text-sm font-bold text-[#14243B]">{isHi ? 'विद्यार्थी आगमन एवं कैंपस जीवन' : 'Student Arrival & Life'}</h3>
+                    <p className="text-[11px] text-[#65748B]">{isHi ? 'अनुशासित कैंपस गेट, साइकिल पार्किंग और आगमन' : 'Disciplined campus gates, bicycle parking and arrival'}</p>
                   </div>
                 </div>
               </div>
@@ -949,13 +983,15 @@ export default function SignInView() {
             <section id="reviews" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
               <div className="text-center space-y-2 mb-8 sm:mb-12">
                 <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
-                  COMMUNITY VOICES &bull; PARENT TESTIMONIALS
+                  {isHi ? 'अभिभावकों के विचार • अभिभावक समीक्षाएं' : 'COMMUNITY VOICES • PARENT TESTIMONIALS'}
                 </span>
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#14243B] tracking-tight">
-                  Trusted by Parents Across Siwan &amp; Mora Bazar
+                  {isHi ? 'सीवान और मोरा बाज़ार के अभिभावकों का अटूट विश्वास' : 'Trusted by Parents Across Siwan & Mora Bazar'}
                 </h2>
                 <p className="text-xs sm:text-sm text-[#65748B] max-w-2xl mx-auto">
-                  Hear directly from parents and guardians about our disciplined environment, individual attention, and values-based CBSE education.
+                  {isHi
+                    ? 'हमारे अनुशासित वातावरण, व्यक्तिगत ध्यान और संस्कारयुक्त सीबीएसई शिक्षा पर अभिभावकों के अनुभव।'
+                    : 'Hear directly from parents and guardians about our disciplined environment, individual attention, and values-based CBSE education.'}
                 </p>
 
                 {/* Rating Overview Pill */}
@@ -966,12 +1002,12 @@ export default function SignInView() {
                         <Star key={i} className="w-3.5 h-3.5 fill-current" />
                       ))}
                     </div>
-                    <span>4.9 / 5.0 Rating</span>
-                    <span className="text-amber-600 font-medium">&bull; 180+ Verified Parents</span>
+                    <span>{isHi ? '4.9 / 5.0 रेटिंग' : '4.9 / 5.0 Rating'}</span>
+                    <span className="text-amber-600 font-medium">{isHi ? '• 180+ सत्यापित अभिभावक' : '• 180+ Verified Parents'}</span>
                   </div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>99% Recommendation Rate</span>
+                    <span>{isHi ? '99% संतुष्टि दर' : '99% Recommendation Rate'}</span>
                   </div>
                 </div>
               </div>
@@ -991,7 +1027,9 @@ export default function SignInView() {
                       <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
                     </div>
                     <p className="text-xs text-[#475569] leading-relaxed italic">
-                      &ldquo;School me padhai aur discipline dono bahut badhiya hai. Aarav ki English communication aur basic maths me bohot improvement hua hai. Teachers hamesha accessible aur caring hain.&rdquo;
+                      {isHi
+                        ? '“स्कूल में पढ़ाई और अनुशासन दोनों बहुत बढ़िया है। आरव की इंग्लिश कम्युनिकेशन और बेसिक मैथ्स में बहुत सुधार हुआ है। शिक्षक हमेशा सहयोगी और स्नेही रहते हैं।”'
+                        : '“School me padhai aur discipline dono bahut badhiya hai. Aarav ki English communication aur basic maths me bohot improvement hua hai. Teachers hamesha accessible aur caring hain.”'}
                     </p>
                   </div>
 
@@ -1001,11 +1039,11 @@ export default function SignInView() {
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
-                        <span>Rajesh Kumar Singh</span>
+                        <span>{isHi ? 'राजेश कुमार सिंह' : 'Rajesh Kumar Singh'}</span>
                         <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                       </div>
                       <div className="text-[10px] text-[#65748B] font-medium truncate">
-                        Father of Aarav &bull; Grade 4
+                        {isHi ? 'आरव के पिता • कक्षा 4' : 'Father of Aarav • Grade 4'}
                       </div>
                     </div>
                   </div>
@@ -1023,7 +1061,9 @@ export default function SignInView() {
                       <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
                     </div>
                     <p className="text-xs text-[#475569] leading-relaxed italic">
-                      &ldquo;Mora Bazar area me aisa disciplined, safe aur supportive school environment milna bohot khushi ki baat hai. Bachho par personalized dhyan diya jata hai.&rdquo;
+                      {isHi
+                        ? '“मोरा बाज़ार क्षेत्र में ऐसा अनुशासित, सुरक्षित और प्रेरक स्कूल वातावरण मिलना गर्व की बात है। बच्चों पर व्यक्तिगत रूप से पूरा ध्यान दिया जाता है।”'
+                        : '“Mora Bazar area me aisa disciplined, safe aur supportive school environment milna bohot khushi ki baat hai. Bachho par personalized dhyan diya jata hai.”'}
                     </p>
                   </div>
 
@@ -1033,11 +1073,11 @@ export default function SignInView() {
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
-                        <span>Sunita Devi</span>
+                        <span>{isHi ? 'सुनीता देवी' : 'Sunita Devi'}</span>
                         <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                       </div>
                       <div className="text-[10px] text-[#65748B] font-medium truncate">
-                        Mother of Priya Kumari &bull; Grade 1
+                        {isHi ? 'प्रिया कुमारी की माता • कक्षा 1' : 'Mother of Priya Kumari • Grade 1'}
                       </div>
                     </div>
                   </div>
@@ -1055,7 +1095,9 @@ export default function SignInView() {
                       <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
                     </div>
                     <p className="text-xs text-[#475569] leading-relaxed italic">
-                      &ldquo;Sports playground aur computer lab bohot accha hai. Rehan football aur digital learning me active participate karta hai. Management ka vision ekdum clear aur dedicated hai.&rdquo;
+                      {isHi
+                        ? '“स्पोर्ट्स प्लेग्राउंड और कंप्यूटर लैब बहुत बढ़िया है। रेहान फुटबॉल और डिजिटल लर्निंग में सक्रिय रूप से भाग लेता है। प्रबंधन का विजन बहुत स्पष्ट है।”'
+                        : '“Sports playground aur computer lab bohot accha hai. Rehan football aur digital learning me active participate karta hai. Management ka vision ekdum clear aur dedicated hai.”'}
                     </p>
                   </div>
 
@@ -1065,11 +1107,11 @@ export default function SignInView() {
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
-                        <span>Md. Shamim Ansari</span>
+                        <span>{isHi ? 'मो. शमीम अंसारी' : 'Md. Shamim Ansari'}</span>
                         <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                       </div>
                       <div className="text-[10px] text-[#65748B] font-medium truncate">
-                        Father of Rehan &bull; Grade 7
+                        {isHi ? 'रेहान के पिता • कक्षा 7' : 'Father of Rehan • Grade 7'}
                       </div>
                     </div>
                   </div>
@@ -1087,7 +1129,9 @@ export default function SignInView() {
                       <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
                     </div>
                     <p className="text-xs text-[#475569] leading-relaxed italic">
-                      &ldquo;Activity based learning aur phonics se meri beti bahut tezi se seekh rahi hai. Soni Madam aur sabhi teachers har bachhe ka pura khayal rakhte hain.&rdquo;
+                      {isHi
+                        ? '“एक्टिविटी बेस्ड लर्निंग और फोनिक्स से मेरी बेटी बहुत तेजी से सीख रही है। सोनी मैडम और सभी शिक्षक हर बच्चे का पूरा ख्याल रखते हैं।”'
+                        : '“Activity based learning aur phonics se meri beti bahut tezi se seekh rahi hai. Soni Madam aur sabhi teachers har bachhe ka pura khayal rakhte hain.”'}
                     </p>
                   </div>
 
@@ -1097,11 +1141,11 @@ export default function SignInView() {
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
-                        <span>Pooja Sharma</span>
+                        <span>{isHi ? 'पूजा शर्मा' : 'Pooja Sharma'}</span>
                         <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                       </div>
                       <div className="text-[10px] text-[#65748B] font-medium truncate">
-                        Mother of Ananya &bull; UKG
+                        {isHi ? 'अनन्या की माता • यूकेजी' : 'Mother of Ananya • UKG'}
                       </div>
                     </div>
                   </div>
@@ -1118,13 +1162,15 @@ export default function SignInView() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-6">
                   <div>
                     <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
-                      REACH OUT
+                      {isHi ? 'संपर्क करें' : 'REACH OUT'}
                     </span>
                     <h2 className="text-2xl sm:text-3xl font-black text-[#14243B] tracking-tight mt-2">
-                      Reach Out to Mission Navodaya Public School
+                      {isHi ? 'मिशन नवोदय पब्लिक स्कूल से संपर्क करें' : 'Reach Out to Mission Navodaya Public School'}
                     </h2>
                     <p className="text-xs sm:text-sm text-[#65748B] mt-1">
-                      Official admission desk, phone helpline, and visiting hours for parents and guardians.
+                      {isHi
+                        ? 'अभिभावकों के लिए आधिकारिक नामांकन डेस्क, फोन हेल्पलाइन और मिलने का समय।'
+                        : 'Official admission desk, phone helpline, and visiting hours for parents and guardians.'}
                     </p>
                   </div>
 
@@ -1134,7 +1180,7 @@ export default function SignInView() {
                       className="px-5 py-3 rounded-xl bg-[#102747] hover:bg-[#091A32] text-white text-xs font-bold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer"
                     >
                       <Phone className="w-4 h-4 text-[#F4B323]" />
-                      <span>Call Helpline: +91 {primaryPhone}</span>
+                      <span>{isHi ? `हेल्पलाइन: +91 ${primaryPhone}` : `Call Helpline: +91 ${primaryPhone}`}</span>
                     </a>
                     <a
                       href={`https://wa.me/91${primaryPhone}`}
@@ -1143,7 +1189,7 @@ export default function SignInView() {
                       className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer"
                     >
                       <MessageSquare className="w-4 h-4" />
-                      <span>WhatsApp Desk</span>
+                      <span>{isHi ? 'व्हाट्सएप डेस्क' : 'WhatsApp Desk'}</span>
                     </a>
                   </div>
                 </div>
@@ -1157,9 +1203,11 @@ export default function SignInView() {
                     </div>
                     <h3 className="text-sm font-bold text-[#14243B]">{schoolLocation}</h3>
                     <p className="text-xs text-[#65748B] leading-relaxed">
-                      Our School Campus<br />
-                      Mora, Siwan District<br />
-                      Bihar, India
+                      {isHi ? (
+                        <>हमारा स्कूल परिसर<br />मोरा, सीवान जिला<br />बिहार, भारत</>
+                      ) : (
+                        <>Our School Campus<br />Mora, Siwan District<br />Bihar, India</>
+                      )}
                     </p>
                     <a
                       href="https://maps.google.com/?q=Mission+Navodaya+Public+School+Mora+Bihar"
@@ -1167,7 +1215,7 @@ export default function SignInView() {
                       rel="noopener noreferrer"
                       className="text-[11px] font-bold text-[#102747] hover:underline inline-flex items-center gap-1 pt-1"
                     >
-                      <span>Open Google Maps</span>
+                      <span>{isHi ? 'गूगल मैप्स पर देखें' : 'Open Google Maps'}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
@@ -1179,9 +1227,11 @@ export default function SignInView() {
                     </div>
                     <h3 className="text-sm font-bold text-[#14243B]">+91 {primaryPhone}</h3>
                     <p className="text-xs text-[#65748B] leading-relaxed">
-                      Call / WhatsApp Desk<br />
-                      Alt Helpline: +91 {altPhone}<br />
-                      Monday through Saturday
+                      {isHi ? (
+                        <>कॉल / व्हाट्सएप डेस्क<br />अन्य हेल्पलाइन: +91 {altPhone}<br />सोमवार से शनिवार</>
+                      ) : (
+                        <>Call / WhatsApp Desk<br />Alt Helpline: +91 {altPhone}<br />Monday through Saturday</>
+                      )}
                     </p>
                     <a
                       href={`https://wa.me/91${primaryPhone}`}
@@ -1189,7 +1239,7 @@ export default function SignInView() {
                       rel="noopener noreferrer"
                       className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1 pt-1"
                     >
-                      <span>Chat on WhatsApp</span>
+                      <span>{isHi ? 'व्हाट्सएप पर चैट करें' : 'Chat on WhatsApp'}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
@@ -1201,15 +1251,17 @@ export default function SignInView() {
                     </div>
                     <h3 className="text-sm font-bold text-[#14243B]">{officialEmail}</h3>
                     <p className="text-xs text-[#65748B] leading-relaxed">
-                      Official Institutional Email<br />
-                      Admissions &amp; Verification<br />
-                      Student Inquiries
+                      {isHi ? (
+                        <>आधिकारिक संस्थागत ईमेल<br />नामांकन एवं सत्यापन<br />विद्यार्थी पूछताछ</>
+                      ) : (
+                        <>Official Institutional Email<br />Admissions &amp; Verification<br />Student Inquiries</>
+                      )}
                     </p>
                     <a
                       href={`mailto:${officialEmail}`}
                       className="text-[11px] font-bold text-[#102747] hover:underline inline-flex items-center gap-1 pt-1"
                     >
-                      <span>Send Direct Mail</span>
+                      <span>{isHi ? 'सीधे ईमेल भेजें' : 'Send Direct Mail'}</span>
                       <ArrowRight className="w-3 h-3" />
                     </a>
                   </div>
@@ -1219,14 +1271,16 @@ export default function SignInView() {
                     <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
                       <Clock className="w-4.5 h-4.5" />
                     </div>
-                    <h3 className="text-sm font-bold text-[#14243B]">School Timings</h3>
+                    <h3 className="text-sm font-bold text-[#14243B]">{isHi ? 'स्कूल समय सारणी' : 'School Timings'}</h3>
                     <p className="text-xs text-[#65748B] leading-relaxed">
-                      Monday – Saturday<br />
-                      <strong>8:00 AM – 2:00 PM</strong><br />
-                      Sunday: Closed
+                      {isHi ? (
+                        <>सोमवार – शनिवार<br /><strong>8:00 पूर्वाह्न – 2:00 अपराह्न</strong><br />रविवार: अवकाश</>
+                      ) : (
+                        <>Monday – Saturday<br /><strong>8:00 AM – 2:00 PM</strong><br />Sunday: Closed</>
+                      )}
                     </p>
                     <div className="text-[11px] text-purple-700 font-semibold pt-1">
-                      <span>Administrative &amp; Fee Counter Open</span>
+                      <span>{isHi ? 'प्रशासनिक व शुल्क काउंटर खुला है' : 'Administrative & Fee Counter Open'}</span>
                     </div>
                   </div>
                 </div>
@@ -1248,7 +1302,7 @@ export default function SignInView() {
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-[#102747] transition-all cursor-pointer mb-5"
               >
                 <ArrowLeft className="w-3.5 h-3.5 text-[#102747]" />
-                <span>&larr; Back to School Website</span>
+                <span>{isHi ? '← स्कूल वेबसाइट पर वापस जाएं' : '← Back to School Website'}</span>
               </button>
 
               <div className="text-center space-y-1.5 mb-6">
@@ -1264,12 +1318,16 @@ export default function SignInView() {
                   />
                 </div>
                 <h2 className="text-xl font-black text-[#14243B] tracking-tight">
-                  {role === 'parent' ? 'Parent Portal Sign In' : role === 'teacher' ? 'Faculty & Teacher Sign In' : 'Principal Administration Portal'}
+                  {role === 'parent'
+                    ? (isHi ? 'अभिभावक पोर्टल लॉगिन' : 'Parent Portal Sign In')
+                    : role === 'teacher'
+                    ? (isHi ? 'शिक्षक एवं संकाय लॉगिन' : 'Faculty & Teacher Sign In')
+                    : (isHi ? 'प्रधानाचार्य प्रशासन पोर्टल' : 'Principal Administration Portal')}
                 </h2>
                 <p className="text-xs text-[#65748B] font-medium">
                   {role === 'parent'
-                    ? 'Access your child’s fee statement, attendance records and report cards'
-                    : 'Secure institutional portal for authenticated staff and administration'}
+                    ? (isHi ? 'अपने बच्चे का शुल्क विवरण, उपस्थिति रिकॉर्ड और रिपोर्ट कार्ड देखें' : 'Access your child’s fee statement, attendance records and report cards')
+                    : (isHi ? 'सत्यापित कर्मचारियों और प्रबंधन के लिए सुरक्षित संस्थागत पोर्टल' : 'Secure institutional portal for authenticated staff and administration')}
                 </p>
               </div>
 
@@ -1285,7 +1343,7 @@ export default function SignInView() {
                   }`}
                 >
                   <Users className="w-3.5 h-3.5 text-[#F4B323]" />
-                  <span>Parent</span>
+                  <span>{isHi ? 'अभिभावक' : 'Parent'}</span>
                 </button>
 
                 <button
@@ -1298,7 +1356,7 @@ export default function SignInView() {
                   }`}
                 >
                   <GraduationCap className="w-3.5 h-3.5 text-[#102747]" />
-                  <span>Teacher</span>
+                  <span>{isHi ? 'शिक्षक' : 'Teacher'}</span>
                 </button>
 
                 <button
@@ -1311,7 +1369,7 @@ export default function SignInView() {
                   }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Principal</span>
+                  <span>{isHi ? 'प्रधानाचार्य' : 'Principal'}</span>
                 </button>
               </div>
 
@@ -1330,7 +1388,7 @@ export default function SignInView() {
                   <div className="space-y-4 animate-in fade-in">
                     <div>
                       <label className="block text-xs font-bold text-[#14243B] mb-1.5">
-                        Child Admission ID or Roll Number *
+                        {isHi ? 'बच्चे का एडमिशन नंबर या रोल नंबर *' : 'Child Admission ID or Roll Number *'}
                       </label>
                       <div className="relative">
                         <Hash className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -1339,7 +1397,7 @@ export default function SignInView() {
                           required
                           value={parentAdmissionNo}
                           onChange={(e) => setParentAdmissionNo(e.target.value)}
-                          placeholder="e.g. MNP-2026-0042 or Roll Number"
+                          placeholder={isHi ? 'जैसे MNP-2026-0042 या रोल नंबर' : 'e.g. MNP-2026-0042 or Roll Number'}
                           className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-medium text-[#14243B] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all"
                         />
                       </div>
@@ -1347,7 +1405,7 @@ export default function SignInView() {
 
                     <div>
                       <label className="block text-xs font-bold text-[#14243B] mb-1.5">
-                        Registered Parent Mobile Number *
+                        {isHi ? 'पंजीकृत अभिभावक मोबाइल नंबर *' : 'Registered Parent Mobile Number *'}
                       </label>
                       <div className="relative">
                         <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -1356,12 +1414,14 @@ export default function SignInView() {
                           required
                           value={parentMobile}
                           onChange={(e) => setParentMobile(e.target.value)}
-                          placeholder="Enter 10-digit mobile number"
+                          placeholder={isHi ? '10 अंकों का मोबाइल नंबर दर्ज करें' : 'Enter 10-digit mobile number'}
                           className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-medium text-[#14243B] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all"
                         />
                       </div>
                       <p className="text-[10px] text-[#65748B] mt-1">
-                        Used to verify enrollment and safeguard your child’s records.
+                        {isHi
+                          ? 'दाखिला सत्यापन और आपके बच्चे के रिकॉर्ड की सुरक्षा के लिए उपयोग किया जाता है।'
+                          : 'Used to verify enrollment and safeguard your child’s records.'}
                       </p>
                     </div>
                   </div>
@@ -1370,7 +1430,9 @@ export default function SignInView() {
                   <div className="space-y-4 animate-in fade-in">
                     <div>
                       <label className="block text-xs font-bold text-[#14243B] mb-1.5">
-                        {role === 'teacher' ? 'Registered School Email Address *' : 'Principal / Admin Email *'}
+                        {role === 'teacher'
+                          ? (isHi ? 'पंजीकृत स्कूल ईमेल पता *' : 'Registered School Email Address *')
+                          : (isHi ? 'प्रधानाचार्य / एडमिन ईमेल *' : 'Principal / Admin Email *')}
                       </label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -1388,7 +1450,7 @@ export default function SignInView() {
                     {role === 'teacher' && (
                       <div>
                         <label className="block text-xs font-bold text-[#14243B] mb-1.5">
-                          Select Your Teacher Name *
+                          {isHi ? 'अपना शिक्षक नाम चुनें *' : 'Select Your Teacher Name *'}
                         </label>
                         <div className="relative">
                           <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -1398,7 +1460,7 @@ export default function SignInView() {
                             onChange={(e) => setSelectedTeacherId(e.target.value)}
                             className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-semibold text-[#14243B] focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all appearance-none cursor-pointer"
                           >
-                            <option value="">-- Choose Your Teacher Profile --</option>
+                            <option value="">{isHi ? '-- अपनी शिक्षक प्रोफ़ाइल चुनें --' : '-- Choose Your Teacher Profile --'}</option>
                             {teachers.map(t => (
                               <option key={t.authUid || t.id} value={t.authUid || t.id}>
                                 {t.name} (Class {t.assignedClass} - Sec {t.assignedSection || 'A'})
@@ -1413,7 +1475,9 @@ export default function SignInView() {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-bold text-[#14243B]">
-                          {role === 'teacher' ? 'Teacher Password *' : 'Admin Password *'}
+                          {role === 'teacher'
+                            ? (isHi ? 'शिक्षक पासवर्ड *' : 'Teacher Password *')
+                            : (isHi ? 'एडमिन पासवर्ड *' : 'Admin Password *')}
                         </label>
                         {role === 'principal' && (
                           <button
@@ -1421,7 +1485,7 @@ export default function SignInView() {
                             onClick={() => navigate('/forgot-password')}
                             className="text-[11px] font-bold text-[#102747] hover:underline cursor-pointer"
                           >
-                            Forgot Password?
+                            {isHi ? 'पासवर्ड भूल गए?' : 'Forgot Password?'}
                           </button>
                         )}
                       </div>
@@ -1432,7 +1496,7 @@ export default function SignInView() {
                           required
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Enter password"
+                          placeholder={isHi ? 'पासवर्ड दर्ज करें' : 'Enter password'}
                           className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] text-xs font-medium text-[#14243B] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102747]/20 focus:border-[#102747] transition-all"
                         />
                         <button
@@ -1456,11 +1520,11 @@ export default function SignInView() {
                       onChange={(e) => setRememberMe(e.target.checked)}
                       className="w-4 h-4 rounded text-[#102747] focus:ring-[#102747]/20 cursor-pointer border-[#E2E8F0]"
                     />
-                    <span>Remember this device</span>
+                    <span>{isHi ? 'इस डिवाइस को याद रखें' : 'Remember this device'}</span>
                   </label>
                   <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                    <span>256-bit Encrypted</span>
+                    <span>{isHi ? '256-बिट सुरक्षित' : '256-bit Encrypted'}</span>
                   </span>
                 </div>
 
@@ -1473,11 +1537,15 @@ export default function SignInView() {
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Authenticating Credentials...</span>
+                      <span>{isHi ? 'पहचान सत्यापित हो रही है...' : 'Authenticating Credentials...'}</span>
                     </>
                   ) : (
                     <>
-                      <span>Sign In to {role === 'parent' ? 'Parent Desk' : role === 'teacher' ? 'Teacher Console' : 'Admin Portal'}</span>
+                      <span>
+                        {isHi
+                          ? `लॉगिन करें (${role === 'parent' ? 'अभिभावक डेस्क' : role === 'teacher' ? 'शिक्षक कंसोल' : 'एडमिन पोर्टल'})`
+                          : `Sign In to ${role === 'parent' ? 'Parent Desk' : role === 'teacher' ? 'Teacher Console' : 'Admin Portal'}`}
+                      </span>
                       <ArrowRight className="w-4 h-4 text-[#F4B323]" />
                     </>
                   )}
@@ -1488,8 +1556,8 @@ export default function SignInView() {
               <div className="mt-6 pt-5 border-t border-[#E2E8F0] text-center space-y-1.5">
                 <p className="text-[11px] text-[#65748B]">
                   {role === 'parent'
-                    ? 'Need help finding your child admission ID? Contact the school helpline:'
-                    : 'For credentials assistance, contact the Principal Secretariat:'}
+                    ? (isHi ? 'बच्चे का एडमिशन आईडी ढूंढने में मदद चाहिए? स्कूल हेल्पलाइन पर संपर्क करें:' : 'Need help finding your child admission ID? Contact the school helpline:')
+                    : (isHi ? 'लॉगिन क्रेडेंशियल सहायता के लिए, प्रधानाचार्य कार्यालय से संपर्क करें:' : 'For credentials assistance, contact the Principal Secretariat:')}
                 </p>
                 <div className="flex items-center justify-center gap-3 text-xs font-bold text-[#102747]">
                   <a href={`tel:${primaryPhone}`} className="inline-flex items-center gap-1.5 hover:underline">
@@ -1524,45 +1592,51 @@ export default function SignInView() {
                   <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white tracking-tight uppercase">{schoolName}</h3>
+                  <h3 className="text-sm font-black text-white tracking-tight uppercase">
+                    {isHi ? 'मिशन नवोदय पब्लिक स्कूल' : schoolName}
+                  </h3>
                   <p className="text-[11px] text-[#F4B323] font-medium">{schoolSubtitle}</p>
                 </div>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Dedicated to nurturing young minds with knowledge, character, discipline, and life skills for a brighter future.
+                {isHi
+                  ? 'उज्ज्वल भविष्य के लिए ज्ञान, संस्कार, अनुशासन और जीवन कौशल से विद्यार्थियों के सर्वांगीण विकास हेतु समर्पित।'
+                  : 'Dedicated to nurturing young minds with knowledge, character, discipline, and life skills for a brighter future.'}
               </p>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#102747] text-[11px] font-bold text-[#F4B323] border border-[#1E3A60]">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Session 2026–27 Nursery to 8th</span>
+                <span>{isHi ? `सत्र ${currentSession} नर्सरी से 8वीं` : `Session ${currentSession} Nursery to 8th`}</span>
               </div>
             </div>
 
             {/* Column 2: Quick Links */}
             <div className="space-y-3">
               <h4 className="text-xs font-black uppercase tracking-wider text-[#F4B323]">
-                Explore Campus
+                {isHi ? 'कैंपस देखें' : 'Explore Campus'}
               </h4>
               <ul className="space-y-2 text-xs text-slate-300 font-medium">
                 <li>
-                  <a href="#about" className="hover:text-[#F4B323] transition-colors">About the School</a>
+                  <a href="#about" className="hover:text-[#F4B323] transition-colors">{isHi ? 'स्कूल के बारे में' : 'About the School'}</a>
                 </li>
                 <li>
-                  <a href="#admissions" className="hover:text-[#F4B323] transition-colors text-[#F4B323] font-bold">Admissions 2026–27 &rarr;</a>
+                  <a href="#admissions" className="hover:text-[#F4B323] transition-colors text-[#F4B323] font-bold">
+                    {isHi ? `दाखिला ${currentSession} →` : `Admissions ${currentSession} →`}
+                  </a>
                 </li>
                 <li>
-                  <a href="#features" className="hover:text-[#F4B323] transition-colors">5 Campus Pillars</a>
+                  <a href="#features" className="hover:text-[#F4B323] transition-colors">{isHi ? '5 मुख्य आधार' : '5 Campus Pillars'}</a>
                 </li>
                 <li>
-                  <a href="#leadership" className="hover:text-[#F4B323] transition-colors">Leadership &amp; Vision</a>
+                  <a href="#leadership" className="hover:text-[#F4B323] transition-colors">{isHi ? 'मार्गदर्शन एवं नेतृत्व' : 'Leadership & Vision'}</a>
                 </li>
                 <li>
-                  <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors">Photo Gallery</a>
+                  <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors">{isHi ? 'फोटो गैलरी' : 'Photo Gallery'}</a>
                 </li>
                 <li>
-                  <a href="#reviews" className="hover:text-[#F4B323] transition-colors text-amber-300">Parent Reviews &amp; Ratings</a>
+                  <a href="#reviews" className="hover:text-[#F4B323] transition-colors text-amber-300">{isHi ? 'अभिभावक समीक्षाएं' : 'Parent Reviews & Ratings'}</a>
                 </li>
                 <li>
-                  <a href="#contact" className="hover:text-[#F4B323] transition-colors">Help &amp; Office Desk</a>
+                  <a href="#contact" className="hover:text-[#F4B323] transition-colors">{isHi ? 'हेल्प एवं ऑफिस डेस्क' : 'Help & Office Desk'}</a>
                 </li>
               </ul>
             </div>
@@ -1570,7 +1644,7 @@ export default function SignInView() {
             {/* Column 3: Digital Portals */}
             <div className="space-y-3">
               <h4 className="text-xs font-black uppercase tracking-wider text-[#F4B323]">
-                Digital Portals
+                {isHi ? 'डिजिटल पोर्टल' : 'Digital Portals'}
               </h4>
               <ul className="space-y-2 text-xs text-slate-300 font-medium">
                 <li>
@@ -1580,7 +1654,7 @@ export default function SignInView() {
                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-[#F4B323] text-white hover:text-[#091A32] font-black text-xs transition-all cursor-pointer border border-white/20 shadow-xs mb-1"
                   >
                     <GraduationCap className="w-3.5 h-3.5 text-[#F4B323] group-hover:text-[#091A32]" />
-                    <span>Faculty &amp; Teacher Portal &rarr;</span>
+                    <span>{isHi ? 'शिक्षक एवं संकाय पोर्टल →' : 'Faculty & Teacher Portal →'}</span>
                   </button>
                 </li>
                 <li>
@@ -1590,7 +1664,7 @@ export default function SignInView() {
                     className="hover:text-[#F4B323] transition-colors cursor-pointer text-left flex items-center gap-1.5"
                   >
                     <Users className="w-3.5 h-3.5 text-[#F4B323]" />
-                    <span>Parent Portal Login &rarr;</span>
+                    <span>{isHi ? 'अभिभावक पोर्टल लॉगिन →' : 'Parent Portal Login →'}</span>
                   </button>
                 </li>
                 <li>
@@ -1600,7 +1674,7 @@ export default function SignInView() {
                     className="hover:text-[#F4B323] transition-colors cursor-pointer text-left flex items-center gap-1.5"
                   >
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Principal Admin Access &rarr;</span>
+                    <span>{isHi ? 'प्रधानाचार्य एडमिन लॉगिन →' : 'Principal Admin Access →'}</span>
                   </button>
                 </li>
                 <li>
@@ -1613,7 +1687,7 @@ export default function SignInView() {
                     }}
                     className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
                   >
-                    Student Admission Desk &rarr;
+                    {isHi ? 'विद्यार्थी नामांकन डेस्क →' : 'Student Admission Desk →'}
                   </a>
                 </li>
                 <li>
@@ -1626,7 +1700,7 @@ export default function SignInView() {
                     }}
                     className="hover:text-[#F4B323] transition-colors cursor-pointer text-left"
                   >
-                    Teacher Recruitment Application &rarr;
+                    {isHi ? 'शिक्षक भर्ती आवेदन →' : 'Teacher Recruitment Application →'}
                   </a>
                 </li>
               </ul>
@@ -1635,7 +1709,7 @@ export default function SignInView() {
             {/* Column 4: Contact & Office Strip */}
             <div className="space-y-3">
               <h4 className="text-xs font-black uppercase tracking-wider text-[#F4B323]">
-                Campus &amp; Office
+                {isHi ? 'कैंपस एवं कार्यालय' : 'Campus & Office'}
               </h4>
               <div className="space-y-2.5 text-xs text-slate-300">
                 <div className="flex items-start gap-2.5">
@@ -1660,7 +1734,7 @@ export default function SignInView() {
                 </div>
                 <div className="flex items-start gap-2.5 text-[11px] text-slate-400 pt-1">
                   <Clock className="w-3.5 h-3.5 text-[#F4B323] flex-shrink-0 mt-0.5" />
-                  <span>Monday – Saturday: 8:00 AM – 2:00 PM</span>
+                  <span>{isHi ? 'सोमवार – शनिवार: 8:00 पूर्वाह्न – 2:00 अपराह्न' : 'Monday – Saturday: 8:00 AM – 2:00 PM'}</span>
                 </div>
               </div>
             </div>
@@ -1670,12 +1744,12 @@ export default function SignInView() {
           {/* Bottom Navy Footer Strip (Matching Image) */}
           <div className="mt-12 pt-6 border-t border-[#1E3A60] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
             <div>
-              &copy; {new Date().getFullYear()} <strong>{schoolName}</strong>. All rights reserved.
+              &copy; {new Date().getFullYear()} <strong>{isHi ? 'मिशन नवोदय पब्लिक स्कूल' : schoolName}</strong>. {isHi ? 'सर्वाधिकार सुरक्षित।' : 'All rights reserved.'}
             </div>
             <div className="flex items-center gap-3 text-[11px]">
               <span>{schoolLocation}</span>
               <span>&bull;</span>
-              <span>Official Institutional Management System</span>
+              <span>{isHi ? 'आधिकारिक संस्थागत प्रबंधन प्रणाली' : 'Official Institutional Management System'}</span>
             </div>
           </div>
 
