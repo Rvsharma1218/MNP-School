@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/teacher_model.dart';
 import 'teacher_permissions_service.dart';
+import 'app_notification_service.dart';
 
 enum AppRole { principal, teacher, parent }
 
@@ -166,6 +167,7 @@ class SessionService {
     await prefs.remove(_kAssignedSection);
     _schoolUidController.add(_schoolId);
     unawaited(TeacherPermissionsService.instance.syncWithSchool(_schoolId!));
+    AppNotificationService.instance.startListening();
   }
 
   Future<void> setTeacherSession({
@@ -203,6 +205,7 @@ class SessionService {
     }
     _schoolUidController.add(_schoolId);
     unawaited(TeacherPermissionsService.instance.syncWithSchool(_schoolId!));
+    AppNotificationService.instance.startListening();
   }
 
   Future<void> setParentSession({
@@ -231,6 +234,7 @@ class SessionService {
     if (rollNo != null) await prefs.setString(_kParentRollNo, rollNo);
     if (mobile != null) await prefs.setString(_kParentMobile, mobile);
     _schoolUidController.add(_schoolId);
+    AppNotificationService.instance.startListening(studentId: studentId);
   }
 
   Future<void> clear() async {

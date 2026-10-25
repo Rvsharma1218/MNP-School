@@ -221,9 +221,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   title: Row(
                     children: [
-                      const Text(
-                        'Online Admissions 2026-27',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      Text(
+                        'Online Admissions (${settings.currentSession})',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                       const SizedBox(width: 8),
                       Container(

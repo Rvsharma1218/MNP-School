@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import '../../firebase_options.dart';
@@ -20,6 +21,8 @@ void backgroundNotificationDispatcher() {
           options: DefaultFirebaseOptions.currentPlatform,
         );
       }
+      // CRITICAL: Initialize local notifications plugin inside this background isolate
+      await AppNotificationService.instance.initBackgroundIsolate();
       await AppNotificationService.instance.checkBackgroundUpdates();
       return true;
     } catch (e) {
@@ -37,12 +40,62 @@ class AppNotificationService {
   bool _initialized = false;
   final List<StreamSubscription> _subscriptions = [];
 
-  // Keys for tracking latest processed timestamps to prevent duplicate alerts on re-launch
+  // Notification Channels
+  static const androidNoticeChannel = AndroidNotificationChannel(
+    'school_notices_channel',
+    'School Notices & Circulars',
+    description: 'Instant alerts for school notices, exams, holidays and circulars',
+    importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
+    showBadge: true,
+  );
+
+  static const androidComplaintChannel = AndroidNotificationChannel(
+    'parent_complaints_channel',
+    'Parent Complaints & Replies',
+    description: 'Instant messages and replies between Parents and School Administration',
+    importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
+    showBadge: true,
+  );
+
+  static const androidEnquiryChannel = AndroidNotificationChannel(
+    'admissions_enquiry_channel',
+    'Online Admissions & Enquiries',
+    description: 'Real-time alerts for new student admission applications',
+    importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
+    showBadge: true,
+  );
+
+  // Keys for tracking latest processed timestamps to prevent duplicate alerts
   static const _kLastNoticeTimeKey = 'notif_last_notice_time';
   static const _kLastComplaintTimeKey = 'notif_last_complaint_time';
 
   int _lastNoticeTimestamp = 0;
   int _lastComplaintTimestamp = 0;
+
+  /// Background Isolate initialization helper (used when app is closed / killed)
+  Future<void> initBackgroundIsolate() async {
+    try {
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const initSettings = InitializationSettings(android: androidInit);
+      await _notificationsPlugin.initialize(initSettings);
+
+      final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        await androidPlugin.createNotificationChannel(androidNoticeChannel);
+        await androidPlugin.createNotificationChannel(androidComplaintChannel);
+        await androidPlugin.createNotificationChannel(androidEnquiryChannel);
+      }
+      _initialized = true;
+    } catch (e) {
+      debugPrint('[NotificationService] Background isolate init error: $e');
+    }
+  }
 
   Future<void> init() async {
     if (_initialized) return;
@@ -50,9 +103,9 @@ class AppNotificationService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final nowMs = DateTime.now().millisecondsSinceEpoch;
-      // If never recorded before, default to current time so app open does NOT spam old notices
-      _lastNoticeTimestamp = prefs.getInt(_kLastNoticeTimeKey) ?? nowMs;
-      _lastComplaintTimestamp = prefs.getInt(_kLastComplaintTimeKey) ?? nowMs;
+      // Default to 1 hour ago on initial run to avoid missing recent background events
+      _lastNoticeTimestamp = prefs.getInt(_kLastNoticeTimeKey) ?? (nowMs - 60 * 60 * 1000);
+      _lastComplaintTimestamp = prefs.getInt(_kLastComplaintTimeKey) ?? (nowMs - 60 * 60 * 1000);
 
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const initSettings = InitializationSettings(android: androidInit);
@@ -60,44 +113,35 @@ class AppNotificationService {
       await _notificationsPlugin.initialize(
         initSettings,
         onDidReceiveNotificationResponse: (response) {
-          debugPrint('[Notification] User tapped: ${response.payload}');
+          debugPrint('[Notification] User tapped notification: ${response.payload}');
         },
-      );
-
-      // Create high-priority notification channels
-      const androidNoticeChannel = AndroidNotificationChannel(
-        'school_notices_channel',
-        'School Notices & Circulars',
-        description: 'Instant alerts for school notices, exams, holidays and circulars',
-        importance: Importance.max,
-        playSound: true,
-        enableVibration: true,
-        showBadge: true,
-      );
-
-      const androidComplaintChannel = AndroidNotificationChannel(
-        'parent_complaints_channel',
-        'Parent Complaints & Replies',
-        description: 'Instant messages and replies between Parents and School Administration',
-        importance: Importance.max,
-        playSound: true,
-        enableVibration: true,
-        showBadge: true,
       );
 
       final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         await androidPlugin.createNotificationChannel(androidNoticeChannel);
         await androidPlugin.createNotificationChannel(androidComplaintChannel);
-        // Request runtime permission for Android 13+
+        await androidPlugin.createNotificationChannel(androidEnquiryChannel);
         await androidPlugin.requestNotificationsPermission();
+      }
+
+      // Explicitly request notification permission for Android 13+ (Tiramisu, API 33+)
+      try {
+        final permStatus = await Permission.notification.status;
+        if (!permStatus.isGranted) {
+          await Permission.notification.request();
+        }
+      } catch (permErr) {
+        debugPrint('[NotificationService] Permission request note: $permErr');
       }
 
       // Initialize WorkManager for background execution when the app is completely CLOSED
       try {
         await Workmanager().initialize(
           backgroundNotificationDispatcher,
+          isInDebugMode: false,
         );
+        // Periodic background task (15 min interval)
         await Workmanager().registerPeriodicTask(
           'mnp_bg_sync_job',
           'mnp_bg_sync_task',
@@ -107,7 +151,17 @@ class AppNotificationService {
             networkType: NetworkType.connected,
           ),
         );
-        debugPrint('[NotificationService] ✅ WorkManager background sync registered (15m interval)');
+        // One-off sync task to run immediately in background
+        await Workmanager().registerOneOffTask(
+          'mnp_oneoff_sync_job',
+          'mnp_bg_sync_task',
+          initialDelay: const Duration(seconds: 10),
+          existingWorkPolicy: ExistingWorkPolicy.replace,
+          constraints: Constraints(
+            networkType: NetworkType.connected,
+          ),
+        );
+        debugPrint('[NotificationService] ✅ WorkManager background sync registered');
       } catch (wmError) {
         debugPrint('[NotificationService] WorkManager note: $wmError');
       }
@@ -136,6 +190,7 @@ class AppNotificationService {
     // 2. Role-specific listeners
     if (SessionService.instance.isPrincipal) {
       _listenForPrincipalComplaints(schoolId);
+      _listenForPrincipalEnquiries(schoolId);
     } else if (SessionService.instance.isParent || (studentId != null && studentId.isNotEmpty)) {
       final effectiveStudentId = (studentId != null && studentId.isNotEmpty)
           ? studentId
@@ -155,7 +210,6 @@ class AppNotificationService {
           .collection('notices')
           .snapshots()
           .listen((snap) async {
-        // Swallow initial burst upon opening app so we never disturb the user upon launch
         if (isInitial) {
           isInitial = false;
           for (final doc in snap.docs) {
@@ -167,7 +221,6 @@ class AppNotificationService {
           return;
         }
 
-        // Only alert on genuinely new notices posted while app is active or minimized
         for (final change in snap.docChanges) {
           if (change.type != DocumentChangeType.added) continue;
           final doc = change.doc;
@@ -187,8 +240,8 @@ class AppNotificationService {
               id: doc.id.hashCode,
               title: '📢 Notice ($category): $title',
               body: content,
-              channelId: 'school_notices_channel',
-              channelName: 'School Notices & Circulars',
+              channelId: androidNoticeChannel.id,
+              channelName: androidNoticeChannel.name,
               payload: 'notice_${doc.id}',
             );
           }
@@ -208,7 +261,6 @@ class AppNotificationService {
           .collection('feedbacks')
           .snapshots()
           .listen((snap) async {
-        // Swallow initial burst on open
         if (isInitial) {
           isInitial = false;
           for (final doc in snap.docs) {
@@ -220,7 +272,6 @@ class AppNotificationService {
           return;
         }
 
-        // Live changes
         for (final change in snap.docChanges) {
           if (change.type != DocumentChangeType.added) continue;
           final doc = change.doc;
@@ -249,8 +300,8 @@ class AppNotificationService {
               id: doc.id.hashCode,
               title: isUrgent ? '🚨 URGENT Parent Message ($category)' : '📩 Parent Message ($category)',
               body: 'From $studentName\'s Parent: $subject',
-              channelId: 'parent_complaints_channel',
-              channelName: 'Parent Complaints & Replies',
+              channelId: androidComplaintChannel.id,
+              channelName: androidComplaintChannel.name,
               payload: 'complaint_${doc.id}',
             );
           }
@@ -260,6 +311,53 @@ class AppNotificationService {
       _subscriptions.add(sub);
     } catch (e) {
       debugPrint('[NotificationService] Principal complaint listen error: $e');
+    }
+  }
+
+  void _listenForPrincipalEnquiries(String schoolId) {
+    try {
+      bool isInitial = true;
+      final sub = FirebaseFirestore.instance
+          .collection('schools')
+          .doc(schoolId)
+          .collection('enquiries')
+          .snapshots()
+          .listen((snap) async {
+        final prefs = await SharedPreferences.getInstance();
+        if (isInitial) {
+          isInitial = false;
+          for (final doc in snap.docs) {
+            await prefs.setBool('notif_enq_${doc.id}', true);
+          }
+          return;
+        }
+
+        for (final change in snap.docChanges) {
+          if (change.type != DocumentChangeType.added) continue;
+          final doc = change.doc;
+          final notifKey = 'notif_enq_${doc.id}';
+          if (prefs.getBool(notifKey) == true) continue;
+          await prefs.setBool(notifKey, true);
+
+          final data = doc.data() ?? {};
+          final studentName = data['studentName'] ?? data['name'] ?? 'New Student';
+          final admClass = data['admissionClass'] ?? data['class'] ?? '';
+          final refNo = data['refNo'] ?? '';
+
+          await showNotification(
+            id: doc.id.hashCode,
+            title: '🎓 New Admission Application ($admClass)',
+            body: '$studentName applied for Class $admClass (Ref: $refNo)',
+            channelId: androidEnquiryChannel.id,
+            channelName: androidEnquiryChannel.name,
+            payload: 'enquiry_${doc.id}',
+          );
+        }
+      }, onError: (e) => debugPrint('[NotificationService] Principal enquiry error: $e'));
+
+      _subscriptions.add(sub);
+    } catch (e) {
+      debugPrint('[NotificationService] Principal enquiry listen error: $e');
     }
   }
 
@@ -273,7 +371,6 @@ class AppNotificationService {
           .listen((snap) async {
         final prefs = await SharedPreferences.getInstance();
 
-        // Swallow initial batch
         if (isInitial) {
           isInitial = false;
           for (final doc in snap.docs) {
@@ -290,13 +387,9 @@ class AppNotificationService {
           final reply = (data['reply'] ?? data['adminReply'] ?? '').toString().trim();
           if (reply.isEmpty) continue;
 
-          // Unique key per complaint reply to prevent duplicates
           final notifKey = 'notif_reply_${doc.id}_${reply.hashCode}';
-          if (prefs.getBool(notifKey) == true) {
-            continue; // Already notified the parent
-          }
+          if (prefs.getBool(notifKey) == true) continue;
 
-          // Mark notified
           await prefs.setBool(notifKey, true);
 
           final subject = data['subject']?.toString() ?? 'Complaint';
@@ -311,11 +404,10 @@ class AppNotificationService {
             id: doc.id.hashCode,
             title: title,
             body: reply,
-            channelId: 'parent_complaints_channel',
-            channelName: 'Parent Complaints & Replies',
+            channelId: androidComplaintChannel.id,
+            channelName: androidComplaintChannel.name,
             payload: 'reply_${doc.id}',
           );
-          debugPrint('[NotificationService] 🔔 Parent notification shown for doc: ${doc.id}');
         }
       }, onError: (e) => debugPrint('[NotificationService] Parent reply error: $e'));
 
@@ -363,8 +455,8 @@ class AppNotificationService {
               id: doc.id.hashCode,
               title: '📢 Notice ($category): $title',
               body: content,
-              channelId: 'school_notices_channel',
-              channelName: 'School Notices & Circulars',
+              channelId: androidNoticeChannel.id,
+              channelName: androidNoticeChannel.name,
               payload: 'notice_${doc.id}',
             );
           }
@@ -376,7 +468,7 @@ class AppNotificationService {
         debugPrint('[NotificationService] Background notices check error: $noticeError');
       }
 
-      // 2. Check for New Parent Complaints (If role is Principal)
+      // 2. Check for New Parent Complaints (If Principal)
       if (role == 'principal') {
         try {
           final complaintsSnap = await FirebaseFirestore.instance
@@ -408,8 +500,8 @@ class AppNotificationService {
                 id: doc.id.hashCode,
                 title: isUrgent ? '🚨 URGENT Parent Message ($category)' : '📩 Parent Message ($category)',
                 body: 'From $studentName\'s Parent: $subject',
-                channelId: 'parent_complaints_channel',
-                channelName: 'Parent Complaints & Replies',
+                channelId: androidComplaintChannel.id,
+                channelName: androidComplaintChannel.name,
                 payload: 'complaint_${doc.id}',
               );
             }
@@ -420,9 +512,43 @@ class AppNotificationService {
         } catch (complaintError) {
           debugPrint('[NotificationService] Background complaints check error: $complaintError');
         }
+
+        // Check for New Admission Enquiries (If Principal)
+        try {
+          final enquiriesSnap = await FirebaseFirestore.instance
+              .collection('schools')
+              .doc(schoolId)
+              .collection('enquiries')
+              .get();
+
+          for (final doc in enquiriesSnap.docs) {
+            final data = doc.data();
+            final notifKey = 'notif_enq_${doc.id}';
+            if (prefs.getBool(notifKey) == true) continue;
+
+            final itemTime = _extractTimestamp(data['createdAt'] ?? data['timestamp']);
+            if (itemTime > lastComplaintTime) {
+              await prefs.setBool(notifKey, true);
+              final studentName = data['studentName'] ?? data['name'] ?? 'New Student';
+              final admClass = data['admissionClass'] ?? data['class'] ?? '';
+              final refNo = data['refNo'] ?? '';
+
+              await showNotification(
+                id: doc.id.hashCode,
+                title: '🎓 New Admission Application ($admClass)',
+                body: '$studentName applied for Class $admClass (Ref: $refNo)',
+                channelId: androidEnquiryChannel.id,
+                channelName: androidEnquiryChannel.name,
+                payload: 'enquiry_${doc.id}',
+              );
+            }
+          }
+        } catch (enqError) {
+          debugPrint('[NotificationService] Background enquiry check error: $enqError');
+        }
       }
 
-      // 3. Check for Principal Replies to Complaints (If role is Parent)
+      // 3. Check for Principal Replies to Complaints (If Parent)
       if (parentStudentId != null && parentStudentId.isNotEmpty) {
         try {
           final repliesSnap = await FirebaseFirestore.instance
@@ -451,8 +577,8 @@ class AppNotificationService {
               id: doc.id.hashCode,
               title: title,
               body: reply,
-              channelId: 'parent_complaints_channel',
-              channelName: 'Parent Complaints & Replies',
+              channelId: androidComplaintChannel.id,
+              channelName: androidComplaintChannel.name,
               payload: 'reply_${doc.id}',
             );
           }
@@ -492,6 +618,9 @@ class AppNotificationService {
         priority: Priority.high,
         playSound: true,
         enableVibration: true,
+        fullScreenIntent: true,
+        visibility: NotificationVisibility.public,
+        category: AndroidNotificationCategory.message,
         icon: '@mipmap/ic_launcher',
         styleInformation: BigTextStyleInformation(
           body,
