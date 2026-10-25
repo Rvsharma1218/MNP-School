@@ -142,7 +142,7 @@ export default function SignInView() {
   };
 
   return (
-    <div className="min-h-screen w-full relative flex flex-col justify-between font-sans antialiased text-[#14243B] bg-[#F7F9FC] selection:bg-[#102747] selection:text-white">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden relative flex flex-col justify-between font-sans antialiased text-[#14243B] bg-[#F7F9FC] selection:bg-[#102747] selection:text-white">
 
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 1. TOP ANNOUNCEMENT STRIP (Navy #102747 + Gold #F4B323)       */}
@@ -417,12 +417,12 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 3. HERO SECTION FEATURING THE PANORAMIC INSTITUTIONAL BANNER  */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <main className="flex-1 w-full">
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
         {!isLoginModalOpen ? (
-          <div className="w-full space-y-12 sm:space-y-16 pb-10">
+          <div className="w-full max-w-full overflow-x-hidden space-y-12 sm:space-y-16 pb-10">
 
             {/* ── SECTION 1: FULL-WIDTH PANORAMIC HERO BANNER (Left to Right Full Width, Balanced Height) ── */}
-            <section id="about" className="w-full relative overflow-hidden bg-[#07162C] border-b-2 border-[#1E3A60] shadow-2xl scroll-mt-24">
+            <section id="about" className="w-full max-w-full relative overflow-hidden bg-[#07162C] border-b-2 border-[#1E3A60] shadow-2xl scroll-mt-24">
               
               {/* Clean Campus Collage Background (No baked-in promotional text) */}
               <div
@@ -441,11 +441,11 @@ export default function SignInView() {
                 aria-hidden="true"
               />
               <div
-                className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#F4B323]/10 blur-3xl pointer-events-none"
+                className="absolute top-0 left-0 w-72 h-72 rounded-full bg-[#F4B323]/10 blur-2xl pointer-events-none"
                 aria-hidden="true"
               />
               <div
-                className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"
+                className="absolute bottom-0 right-0 w-72 h-72 rounded-full bg-blue-500/10 blur-2xl pointer-events-none"
                 aria-hidden="true"
               />
 
@@ -454,9 +454,9 @@ export default function SignInView() {
                 
                 {/* Top Strip: 4 Pillars Motto Badge + Academic Session Tag */}
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-md">
-                    <Sparkles className="w-3.5 h-3.5 text-[#F4B323]" />
-                    <span className="tracking-wide">DISCIPLINE · KNOWLEDGE · EXCELLENCE · BRIGHT FUTURE</span>
+                  <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] sm:text-xs font-bold text-white shadow-md max-w-full">
+                    <Sparkles className="w-3.5 h-3.5 text-[#F4B323] flex-shrink-0" />
+                    <span className="tracking-wide break-words text-center">DISCIPLINE · KNOWLEDGE · EXCELLENCE · BRIGHT FUTURE</span>
                   </div>
 
                   <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F4B323]/15 border border-[#F4B323]/30 backdrop-blur-md text-xs font-black text-[#F4B323] shadow-xs">
@@ -492,7 +492,7 @@ export default function SignInView() {
                       <span>CBSE Curriculum Pattern &bull; English Medium Co-Educational</span>
                     </div>
 
-                    <h1 className="text-2xl sm:text-4xl lg:text-[46px] font-black text-white tracking-tight uppercase leading-[1.12] drop-shadow-md">
+                    <h1 className="text-2xl sm:text-4xl lg:text-[46px] font-black text-white tracking-tight uppercase leading-[1.12] drop-shadow-md break-words max-w-full">
                       MISSION NAVODAYA <span className="text-[#F4B323]">PUBLIC SCHOOL</span>, MORA
                     </h1>
 
@@ -642,7 +642,7 @@ export default function SignInView() {
             </section>
 
             {/* ── SECTION 2: ADMISSIONS CALLOUT & CTAS (Dynamic with Settings) ── */}
-            <section id="admissions" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+            <section id="admissions" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28 overflow-hidden">
               <div className="rounded-3xl bg-gradient-to-r from-[#102747] via-[#091A32] to-[#102747] border border-[#1E3A60] p-6 sm:p-8 text-white shadow-xl flex flex-col lg:flex-row items-center justify-between gap-6">
                 
                 {/* Left: Admissions Title & Classes */}
@@ -1391,7 +1391,7 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 4. INSTITUTIONAL FOOTER MATCHING THE BANNER (Navy + Gold)     */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <footer className="w-full border-t border-[#1E3A60] bg-[#091A32] text-white mt-12">
+      <footer className="w-full max-w-full overflow-hidden border-t border-[#1E3A60] bg-[#091A32] text-white mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
