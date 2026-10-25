@@ -329,7 +329,7 @@ export default function IdCardView() {
                         <img
                           src={settings.logoUrl || settings.logoPath || settings.logo}
                           alt="Logo"
-                          className="w-8 h-8 object-contain rounded-md bg-white/10 p-0.5 flex-shrink-0"
+                          className="w-8 h-8 object-contain rounded-full bg-white/10 p-0.5 flex-shrink-0"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                       ) : null}

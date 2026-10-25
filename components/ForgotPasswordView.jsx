@@ -48,8 +48,8 @@ export default function ForgotPasswordView() {
       {/* Top Header */}
       <header className="w-full px-6 py-4 md:px-12 flex items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 p-1 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
+          <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 p-1 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain rounded-full" />
           </div>
           <div>
             <h1 className="text-base font-black tracking-tight text-[#0c2340]">{schoolName}</h1>

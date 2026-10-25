@@ -515,9 +515,9 @@ export default function SettingsView() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-border bg-white dark:bg-surface flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner p-1 relative group">
+                    <div className="w-24 h-24 rounded-full border-2 border-dashed border-border bg-white dark:bg-surface flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner p-1 relative group">
                       {formData.logoUrl ? (
-                        <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                        <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-contain rounded-full" />
                       ) : (
                         <School className="w-8 h-8 text-text-secondary opacity-40" />
                       )}

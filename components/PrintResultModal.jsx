@@ -134,7 +134,7 @@ export default function PrintResultModal({ result: propResult, student: propStud
             <div className="text-center border-b-2 border-indigo-950 pb-4 space-y-1">
               {logoSrc && (
                 <div className="flex justify-center mb-1.5">
-                  <img src={logoSrc} alt="School Logo" className="w-14 h-14 sm:w-16 sm:h-16 object-contain" />
+                  <img src={logoSrc} alt="School Logo" className="w-14 h-14 sm:w-16 sm:h-16 object-contain rounded-full" />
                 </div>
               )}
               <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-indigo-950 leading-tight">

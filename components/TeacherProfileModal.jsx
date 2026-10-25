@@ -280,7 +280,7 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fff; color: #1e293b; padding: 30px; }
             .voucher-card { border: 2px solid #334155; border-radius: 12px; padding: 25px; max-width: 720px; margin: 0 auto; position: relative; }
             .header-row { display: flex; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 14px; gap: 16px; }
-            .school-logo { height: 60px; max-width: 90px; object-fit: contain; }
+            .school-logo { height: 60px; width: 60px; object-fit: contain; border-radius: 50%; }
             .school-title { font-size: 20px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.5px; }
             .school-sub { font-size: 11px; color: #64748b; margin-top: 3px; }
             .badge-title { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; text-align: center; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
