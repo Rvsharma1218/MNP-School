@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSchoolStore } from '../lib/store';
+import { useSchoolStore, getActiveSchoolId } from '../lib/store';
 import { translations } from '../lib/translations';
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -110,7 +110,7 @@ export default function SignUpView() {
     const generatedRef = `MNP-ADM-${sessionDigits}-${Date.now().toString().slice(-4)}`;
 
     try {
-      const targetSchoolId = settings?.schoolId || 'SCHOOL_001';
+      const targetSchoolId = settings?.schoolId || getActiveSchoolId() || 'SCHOOL_007';
       const enquiryPayload = {
         refNo: generatedRef,
         studentName: studentName.trim(),

@@ -1802,11 +1802,13 @@ export default function SignInView() {
                 <li>
                   <a href="#about" className="hover:text-[#F4B323] transition-colors">{isHi ? 'स्कूल के बारे में' : 'About the School'}</a>
                 </li>
-                <li>
-                  <a href="#admissions" className="hover:text-[#F4B323] transition-colors text-[#F4B323] font-bold">
-                    {isHi ? `दाखिला ${currentSession} →` : `Admissions ${currentSession} →`}
-                  </a>
-                </li>
+                {isAdmissionOpen && (
+                  <li>
+                    <a href="#admissions" className="hover:text-[#F4B323] transition-colors text-[#F4B323] font-bold">
+                      {isHi ? `दाखिला ${currentSession} →` : `Admissions ${currentSession} →`}
+                    </a>
+                  </li>
+                )}
                 <li>
                   <a href="#features" className="hover:text-[#F4B323] transition-colors">{isHi ? '5 मुख्य आधार' : '5 Campus Pillars'}</a>
                 </li>
