@@ -126,14 +126,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
+                    shape: BoxShape.circle,
                     border: Border.all(color: Colors.white70, width: 2),
                   ),
                   child: Center(
                     child: settings.logoPath != null && settings.logoPath!.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
+                        ? ClipOval(
                             child: Image.network(
                               settings.logoPath!,
                               width: 54,
@@ -568,7 +567,7 @@ class _InstituteProfileSettingsScreenState extends ConsumerState<InstituteProfil
                     await ref.read(settingsProvider.notifier).save(settings.copyWith(logoPath: path));
                   },
                   size: 96,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(48),
                   placeholderIcon: Icons.add_photo_alternate_outlined,
                 ),
                 const SizedBox(height: 8),

@@ -30,8 +30,7 @@ class ResponsiveWebLayout extends ConsumerWidget {
   static Widget _buildSidebarLogo(String? logoPath) {
     if (logoPath != null && logoPath.isNotEmpty) {
       if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+        return ClipOval(
           child: Image.network(
             logoPath,
             fit: BoxFit.cover,
@@ -42,16 +41,14 @@ class ResponsiveWebLayout extends ConsumerWidget {
       if (logoPath.startsWith('data:image')) {
         try {
           final bytes = base64Decode(logoPath.split(',').last);
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+          return ClipOval(
             child: Image.memory(bytes, fit: BoxFit.cover),
           );
         } catch (_) {}
       }
       final file = File(logoPath);
       if (file.existsSync()) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+        return ClipOval(
           child: Image.file(file, fit: BoxFit.cover),
         );
       }
@@ -116,7 +113,7 @@ class ResponsiveWebLayout extends ConsumerWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(12),
+                          shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.primary.withValues(alpha: 0.4),
