@@ -46,6 +46,9 @@ export default function StudentsView() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState(isPrincipal || !assignedClass ? 'all' : assignedClass);
+  const [selectedRoll, setSelectedRoll] = useState('all');
+  const [sortOrder, setSortOrder] = useState('default'); // 'default' | 'name_asc' | 'name_desc' | 'roll_asc'
+  const [admissionType, setAdmissionType] = useState('all'); // 'all' | 'new' | 'old'
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState(null);
@@ -123,18 +126,71 @@ export default function StudentsView() {
     }
   }, [selectedStudentId, activeStudent, panelMode, students]);
 
-  // Filter students list
-  const filteredStudents = students.filter(s => {
-    const matchesSearch = !searchQuery.trim() ||
-      s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.studentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.fatherName?.toLowerCase().includes(searchQuery.toLowerCase());
+  // Roll numbers available in currently selected class
+  const classRollNumbers = React.useMemo(() => {
+    if (selectedClass === 'all') return [];
+    const rolls = students
+      .filter(s => (s.className === selectedClass || s.course === selectedClass) && s.rollNumber)
+      .map(s => String(s.rollNumber).trim())
+      .filter(Boolean);
+    const unique = Array.from(new Set(rolls));
+    unique.sort((a, b) => {
+      const nA = parseInt(a, 10);
+      const nB = parseInt(b, 10);
+      if (!isNaN(nA) && !isNaN(nB)) return nA - nB;
+      return a.localeCompare(b);
+    });
+    return unique;
+  }, [students, selectedClass]);
 
-    const matchesClass = selectedClass === 'all' || s.className === selectedClass || s.course === selectedClass;
-    const matchesStatus = selectedStatus === 'all' || s.status === selectedStatus;
+  const currentSession = (settings?.currentSession || '2026-27').toLowerCase().trim();
 
-    return matchesSearch && matchesClass && matchesStatus;
-  });
+  // Filter and sort students list
+  const filteredStudents = students
+    .filter(s => {
+      const matchesSearch = !searchQuery.trim() ||
+        s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.studentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.fatherName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (s.rollNumber && String(s.rollNumber).toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchesClass = selectedClass === 'all' || s.className === selectedClass || s.course === selectedClass;
+      const matchesStatus = selectedStatus === 'all' || s.status === selectedStatus;
+
+      // Roll Number filter (active when class is selected)
+      const matchesRoll = selectedRoll === 'all' || String(s.rollNumber || '').trim() === selectedRoll;
+
+      // New vs Old Admission filter
+      let matchesAdmission = true;
+      if (admissionType !== 'all') {
+        const sSession = String(s.session || '').toLowerCase().trim();
+        const admDate = s.admissionDate ? new Date(s.admissionDate) : null;
+        const oneYearAgo = new Date();
+        oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+        const isNew = (currentSession && sSession === currentSession) || (admDate && admDate >= oneYearAgo);
+        matchesAdmission = admissionType === 'new' ? isNew : !isNew;
+      }
+
+      return matchesSearch && matchesClass && matchesStatus && matchesRoll && matchesAdmission;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'name_asc') {
+        return (a.name || '').localeCompare(b.name || '');
+      } else if (sortOrder === 'name_desc') {
+        return (b.name || '').localeCompare(a.name || '');
+      } else if (sortOrder === 'roll_asc') {
+        const rA = String(a.rollNumber || '').trim();
+        const rB = String(b.rollNumber || '').trim();
+        const nA = parseInt(rA, 10);
+        const nB = parseInt(rB, 10);
+        if (!isNaN(nA) && !isNaN(nB)) return nA - nB;
+        if (rA && rB) return rA.localeCompare(rB);
+        if (rA) return -1;
+        if (rB) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      return 0;
+    });
 
   const handleInputChange = (field, val) => {
     setProfileForm(prev => ({ ...prev, [field]: val }));
@@ -294,15 +350,58 @@ export default function StudentsView() {
               />
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <select
                 value={selectedClass}
-                onChange={e => setSelectedClass(e.target.value)}
+                onChange={e => {
+                  setSelectedClass(e.target.value);
+                  setSelectedRoll('all');
+                }}
                 className="px-3 py-2 rounded-xl bg-white border border-border text-xs text-text font-bold focus:outline-none cursor-pointer"
               >
                 <option value="all">All Classes & Courses</option>
                 {settings.schoolClasses?.map(c => <option key={c} value={c}>Class {c}</option>)}
                 {settings.computerCourses?.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+
+              {/* Roll Number Filter (active after selecting class) */}
+              {selectedClass !== 'all' && (
+                <select
+                  value={selectedRoll}
+                  onChange={e => setSelectedRoll(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-white border border-primary/50 text-xs text-primary font-bold focus:outline-none cursor-pointer animate-in fade-in"
+                  title="Filter by Roll Number"
+                >
+                  <option value="all">All Roll Numbers</option>
+                  {classRollNumbers.map(r => (
+                    <option key={r} value={r}>Roll No. {r}</option>
+                  ))}
+                </select>
+              )}
+
+              {/* A-to-Z / Roll No Sorting */}
+              <select
+                value={sortOrder}
+                onChange={e => setSortOrder(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-white border border-border text-xs text-text font-bold focus:outline-none cursor-pointer"
+                title="Sort students"
+              >
+                <option value="default">Sort: Default</option>
+                <option value="name_asc">🔤 Name (A → Z)</option>
+                <option value="name_desc">🔤 Name (Z → A)</option>
+                <option value="roll_asc">🔢 Roll No (1 → 9)</option>
+              </select>
+
+              {/* New vs Old Admission Filter */}
+              <select
+                value={admissionType}
+                onChange={e => setAdmissionType(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-white border border-border text-xs text-text font-bold focus:outline-none cursor-pointer"
+                title="Filter by Admission Type"
+              >
+                <option value="all">All Admissions</option>
+                <option value="new">⭐ New Admission</option>
+                <option value="old">🔄 Old Admission</option>
               </select>
 
               <select
@@ -384,7 +483,14 @@ export default function StudentsView() {
                       </td>
                       <td className="py-3.5 px-4 font-mono font-medium text-text-secondary">{s.admissionNumber || 'ADM-24-001'}</td>
                       <td className="py-3.5 px-4 text-text-secondary">
-                        {s.studentType === 'school' ? `Class ${s.className || ''} - ${s.section || 'A'}` : s.course}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span>{s.studentType === 'school' ? `Class ${s.className || ''} - ${s.section || 'A'}` : s.course}</span>
+                          {s.rollNumber && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold">
+                              Roll: {s.rollNumber}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4">
                         <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${

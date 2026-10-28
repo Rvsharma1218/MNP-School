@@ -216,17 +216,37 @@ export default function ResultsView() {
     }
   };
 
-  // Filter saved results
-  const filteredResults = results.filter(r => {
-    const student = students.find(s => s.id === r.studentId);
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      r.examName?.toLowerCase().includes(q) ||
-      student?.name?.toLowerCase().includes(q) ||
-      student?.studentId?.toLowerCase().includes(q)
-    );
-  });
+  // Filter and sort saved results Roll Number wise
+  const filteredResults = results
+    .filter(r => {
+      const student = students.find(s => s.id === r.studentId);
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        r.examName?.toLowerCase().includes(q) ||
+        student?.name?.toLowerCase().includes(q) ||
+        student?.studentId?.toLowerCase().includes(q) ||
+        (student?.rollNumber && String(student.rollNumber).toLowerCase().includes(q))
+      );
+    })
+    .sort((a, b) => {
+      const sa = students.find(s => s.id === a.studentId);
+      const sb = students.find(s => s.id === b.studentId);
+      const rA = String(sa?.rollNumber || '').trim();
+      const rB = String(sb?.rollNumber || '').trim();
+      const nA = parseInt(rA, 10);
+      const nB = parseInt(rB, 10);
+      if (!isNaN(nA) && !isNaN(nB)) {
+        if (nA !== nB) return nA - nB;
+      } else if (rA && rB) {
+        if (rA !== rB) return rA.localeCompare(rB);
+      } else if (rA) {
+        return -1;
+      } else if (rB) {
+        return 1;
+      }
+      return (sa?.name || '').localeCompare(sb?.name || '');
+    });
 
   // Filter students for bulk mark entry based on selected class
   const classStudents = students.filter(s => {
@@ -625,9 +645,16 @@ export default function ResultsView() {
                       return (
                         <tr key={r.id} className="hover:bg-surface2/30 transition-colors">
                           <td className="py-3.5 px-4 font-bold text-text">
-                            <div>
-                              <div>{student?.name || 'Unknown Student'}</div>
-                              <div className="text-[9px] text-text-muted">ID: {student?.studentId || '-'} · Class: {student?.className || student?.course || '-'}</div>
+                            <div className="flex items-center gap-2">
+                              {student?.rollNumber && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-black whitespace-nowrap">
+                                  Roll {student.rollNumber}
+                                </span>
+                              )}
+                              <div>
+                                <div>{student?.name || 'Unknown Student'}</div>
+                                <div className="text-[9px] text-text-muted">ID: {student?.studentId || '-'} · Class: {student?.className || student?.course || '-'}</div>
+                              </div>
                             </div>
                           </td>
                           <td className="py-3.5 px-4">{r.examName}</td>
