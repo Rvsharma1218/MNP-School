@@ -46,8 +46,40 @@ export default function ResultsView() {
 
   const [activeTab, setActiveTab] = useState('saved'); // 'saved' | 'entry'
   const [searchQuery, setSearchQuery] = useState('');
+  const [resultsClassFilter, setResultsClassFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResult, setEditingResult] = useState(null);
+
+  // Robust matcher between a result and student document
+  const findStudent = (r) => {
+    if (!r) return null;
+    const rId = (r.studentId ? String(r.studentId) : '').trim().toLowerCase();
+    const rName = (r.studentName ? String(r.studentName) : '').trim().toLowerCase();
+    return students.find(s => {
+      if (rId) {
+        if (s.id && String(s.id).trim().toLowerCase() === rId) return true;
+        if (s.studentId && String(s.studentId).trim().toLowerCase() === rId) return true;
+        if (s.admissionNumber && String(s.admissionNumber).trim().toLowerCase() === rId) return true;
+        if (s.admissionNo && String(s.admissionNo).trim().toLowerCase() === rId) return true;
+      }
+      if (rName && s.name && String(s.name).trim().toLowerCase() === rName) return true;
+      return false;
+    }) || null;
+  };
+
+  const matchesStudent = (r, s) => {
+    if (!r || !s) return false;
+    const sId = String(s.id || '').toLowerCase();
+    const sStuId = String(s.studentId || '').toLowerCase();
+    const sAdm = String(s.admissionNumber || s.admissionNo || '').toLowerCase();
+    const sName = String(s.name || '').trim().toLowerCase();
+    const rId = String(r.studentId || '').toLowerCase();
+    const rName = String(r.studentName || '').trim().toLowerCase();
+    return (
+      (rId && (rId === sId || rId === sStuId || rId === sAdm)) ||
+      (rName && sName && rName === sName)
+    );
+  };
 
   // New/Edit Result Form State (for single modal entry)
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -146,7 +178,7 @@ export default function ResultsView() {
   const handleOpenEdit = (res) => {
     setEditingResult(res);
     setSelectedStudentId(res.studentId);
-    const targetStudent = students.find(s => s.id === res.studentId);
+    const targetStudent = findStudent(res) || students.find(s => s.id === res.studentId);
     if (targetStudent) {
       if (targetStudent.studentType) setModalStudentType(targetStudent.studentType);
       const c = targetStudent.studentType === 'school' ? targetStudent.className : targetStudent.course;
@@ -183,9 +215,19 @@ export default function ResultsView() {
     e.preventDefault();
     if (!selectedStudentId) return;
 
+    const stu = students.find(s => s.id === selectedStudentId || s.studentId === selectedStudentId);
+
     const payload = {
       id: editingResult?.id,
       studentId: selectedStudentId,
+      studentName: stu?.name || editingResult?.studentName || '',
+      rollNumber: stu?.rollNumber || editingResult?.rollNumber || '',
+      className: stu?.className || stu?.course || editingResult?.className || '',
+      section: stu?.section || editingResult?.section || 'A',
+      fatherName: stu?.fatherName || editingResult?.fatherName || '',
+      motherName: stu?.motherName || editingResult?.motherName || '',
+      admissionNumber: stu?.admissionNumber || stu?.admissionNo || editingResult?.admissionNumber || '',
+      academicYear: stu?.session || settings.currentSession || '2026-27',
       examName,
       passingMarks: Number(passingMarks) || 33,
       status: resultStatus,
@@ -219,21 +261,29 @@ export default function ResultsView() {
   // Filter and sort saved results Roll Number wise
   const filteredResults = results
     .filter(r => {
-      const student = students.find(s => s.id === r.studentId);
+      const student = findStudent(r);
+      const studentClass = student?.className || student?.course || r.className || r.class || '';
+      if (resultsClassFilter !== 'all' && String(studentClass).trim().toLowerCase() !== resultsClassFilter.toLowerCase()) {
+        return false;
+      }
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
+      const sName = (student?.name || r.studentName || '').toLowerCase();
+      const sId = (student?.studentId || r.studentId || '').toLowerCase();
+      const sRoll = String(student?.rollNumber || r.rollNumber || '').toLowerCase();
+      const sExam = (r.examName || '').toLowerCase();
       return (
-        r.examName?.toLowerCase().includes(q) ||
-        student?.name?.toLowerCase().includes(q) ||
-        student?.studentId?.toLowerCase().includes(q) ||
-        (student?.rollNumber && String(student.rollNumber).toLowerCase().includes(q))
+        sExam.includes(q) ||
+        sName.includes(q) ||
+        sId.includes(q) ||
+        sRoll.includes(q)
       );
     })
     .sort((a, b) => {
-      const sa = students.find(s => s.id === a.studentId);
-      const sb = students.find(s => s.id === b.studentId);
-      const rA = String(sa?.rollNumber || '').trim();
-      const rB = String(sb?.rollNumber || '').trim();
+      const sa = findStudent(a);
+      const sb = findStudent(b);
+      const rA = String(sa?.rollNumber || a.rollNumber || '').trim();
+      const rB = String(sb?.rollNumber || b.rollNumber || '').trim();
       const nA = parseInt(rA, 10);
       const nB = parseInt(rB, 10);
       if (!isNaN(nA) && !isNaN(nB)) {
@@ -245,7 +295,9 @@ export default function ResultsView() {
       } else if (rB) {
         return 1;
       }
-      return (sa?.name || '').localeCompare(sb?.name || '');
+      const nameA = sa?.name || a.studentName || '';
+      const nameB = sb?.name || b.studentName || '';
+      return nameA.localeCompare(nameB);
     });
 
   // Filter students for bulk mark entry based on selected class
@@ -294,7 +346,7 @@ export default function ResultsView() {
     bulkSubjects.forEach(bs => {
       initial[bs.id] = {};
       classStudents.forEach(s => {
-        const existing = results.find(r => r.studentId === s.id && r.examName === bulkExam);
+        const existing = results.find(r => matchesStudent(r, s) && r.examName === bulkExam);
         const subMark = existing?.subjects?.find(sub => sub.subjectName === bs.name);
         if (subMark) {
           const total = subMark.marks;
@@ -359,7 +411,7 @@ export default function ResultsView() {
 
   // Save a single student's marks directly from the table row
   const handleSaveSingleStudent = (student) => {
-    const existing = results.find(r => r.studentId === student.id && r.examName === bulkExam);
+    const existing = results.find(r => matchesStudent(r, student) && r.examName === bulkExam);
     let updatedSubjects = existing ? [...existing.subjects] : [];
 
     bulkSubjects.forEach(bs => {
@@ -409,6 +461,14 @@ export default function ResultsView() {
       saveResult({
         id: existing?.id,
         studentId: student.id,
+        studentName: student.name || '',
+        rollNumber: student.rollNumber || '',
+        className: student.className || student.course || bulkClass,
+        section: student.section || 'A',
+        fatherName: student.fatherName || '',
+        motherName: student.motherName || '',
+        admissionNumber: student.admissionNumber || student.admissionNo || '',
+        academicYear: student.session || settings.currentSession || '2026-27',
         examName: bulkExam,
         subjects: updatedSubjects,
         status: existing?.status || 'AUTO'
@@ -425,7 +485,7 @@ export default function ResultsView() {
     const newlySaved = new Set(savedStudentIds);
 
     classStudents.forEach(s => {
-      const existing = results.find(r => r.studentId === s.id && r.examName === bulkExam);
+      const existing = results.find(r => matchesStudent(r, s) && r.examName === bulkExam);
       let updatedSubjects = existing ? [...existing.subjects] : [];
 
       bulkSubjects.forEach(bs => {
@@ -476,6 +536,14 @@ export default function ResultsView() {
         saveResult({
           id: existing?.id,
           studentId: s.id,
+          studentName: s.name || '',
+          rollNumber: s.rollNumber || '',
+          className: s.className || s.course || bulkClass,
+          section: s.section || 'A',
+          fatherName: s.fatherName || '',
+          motherName: s.motherName || '',
+          admissionNumber: s.admissionNumber || s.admissionNo || '',
+          academicYear: s.session || settings.currentSession || '2026-27',
           examName: bulkExam,
           subjects: updatedSubjects,
           status: existing?.status || 'AUTO'
@@ -585,17 +653,30 @@ export default function ResultsView() {
             </div>
           </div>
 
-          {/* Search bar */}
-          <div className="bg-white border border-border rounded-2xl p-4 shadow-xs">
-            <div className="relative">
+          {/* Search bar & Class Filter */}
+          <div className="bg-white border border-border rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative flex-1 w-full">
               <Search className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search result records by exam, student name, or ID..."
+                placeholder="Search result records by exam, student name, roll no, or ID..."
                 className="w-full pl-10 pr-4 py-2 rounded-xl bg-surface2 border border-border text-xs text-text focus:outline-none focus:border-primary"
               />
+            </div>
+            <div className="w-full sm:w-48">
+              <select
+                value={resultsClassFilter}
+                onChange={e => setResultsClassFilter(e.target.value)}
+                aria-label="Filter results by class"
+                className="w-full px-3 py-2 rounded-xl bg-surface2 border border-border text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer"
+              >
+                <option value="all">All Classes</option>
+                {availableModalClasses.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -623,7 +704,11 @@ export default function ResultsView() {
                     </tr>
                   ) : (
                     filteredResults.map(r => {
-                      const student = students.find(s => s.id === r.studentId);
+                      const student = findStudent(r);
+                      const displayRoll = student?.rollNumber || r.rollNumber || '';
+                      const displayName = student?.name || r.studentName || 'Unknown Student';
+                      const displayId = student?.studentId || r.studentId || '-';
+                      const displayClass = student?.className ? `Class ${student.className}${student.section ? ` - ${student.section}` : ''}` : (student?.course || r.className || r.class || '-');
                       const totalMarksObt = r.subjects?.reduce((a, s) => a + (Number(s.marks) || 0), 0) || 0;
                       const totalMax = r.subjects?.reduce((a, s) => a + (Number(s.totalMarks) || 100), 0) || 1;
                       const pct = Math.round((totalMarksObt / totalMax) * 100);
@@ -642,18 +727,30 @@ export default function ResultsView() {
                       else if (failCount > 0 || pct < passCriteria || r.status === 'FAIL') finalStatus = 'FAIL';
                       else finalStatus = 'PASS';
 
+                      const targetStudentObj = student || {
+                        id: r.studentId,
+                        studentId: r.studentId,
+                        name: r.studentName,
+                        rollNumber: r.rollNumber,
+                        className: r.className,
+                        section: r.section,
+                        fatherName: r.fatherName,
+                        motherName: r.motherName,
+                        admissionNumber: r.admissionNumber
+                      };
+
                       return (
                         <tr key={r.id} className="hover:bg-surface2/30 transition-colors">
                           <td className="py-3.5 px-4 font-bold text-text">
                             <div className="flex items-center gap-2">
-                              {student?.rollNumber && (
+                              {displayRoll && (
                                 <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-black whitespace-nowrap">
-                                  Roll {student.rollNumber}
+                                  Roll {displayRoll}
                                 </span>
                               )}
                               <div>
-                                <div>{student?.name || 'Unknown Student'}</div>
-                                <div className="text-[9px] text-text-muted">ID: {student?.studentId || '-'} · Class: {student?.className || student?.course || '-'}</div>
+                                <div>{displayName}</div>
+                                <div className="text-[9px] text-text-muted">ID: {displayId} · Class: {displayClass}</div>
                               </div>
                             </div>
                           </td>
@@ -692,7 +789,7 @@ export default function ResultsView() {
                             <div className="flex items-center justify-end gap-1.5">
                               {/* Direct WhatsApp Share */}
                               <button
-                                onClick={() => handleWhatsAppShare(r, student)}
+                                onClick={() => handleWhatsAppShare(r, targetStudentObj)}
                                 className="p-1.5 rounded-lg bg-surface2 hover:bg-emerald-50 text-emerald-600 border border-border cursor-pointer transition-colors"
                                 title="Share Marksheet on WhatsApp"
                               >
@@ -700,8 +797,8 @@ export default function ResultsView() {
                               </button>
                               <button
                                 onClick={async () => {
-                                  await exportSingleResultPDF(r, student, settings);
-                                  showToast(`Downloaded marksheet PDF for ${student?.name || 'student'}!`, 'success');
+                                  await exportSingleResultPDF(r, targetStudentObj, settings);
+                                  showToast(`Downloaded marksheet PDF for ${displayName}!`, 'success');
                                 }}
                                 className="p-1.5 rounded-lg bg-surface2 hover:bg-emerald-100 text-emerald-600 border border-border cursor-pointer transition-colors"
                                 title="Download Marksheet PDF"
@@ -709,7 +806,7 @@ export default function ResultsView() {
                                 <Download className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={() => setPrintResultData({ result: r, student })}
+                                onClick={() => setPrintResultData({ result: r, student: targetStudentObj })}
                                 className="p-1.5 rounded-lg bg-surface2 hover:bg-primary/10 text-primary border border-border cursor-pointer transition-colors"
                                 title="Print Marksheet"
                               >

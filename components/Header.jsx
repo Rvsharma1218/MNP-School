@@ -162,11 +162,11 @@ export default function Header({ onMenuClick }) {
       }}
     >
       
-      {/* Left */}
-      <div className="flex items-center gap-1.5 sm:gap-4 min-w-0">
+      {/* Left: Navigation & Current View Title */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer"
+          className="lg:hidden p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex-shrink-0"
           title="Open Menu"
         >
           <Menu className="w-5 h-5" />
@@ -180,38 +180,41 @@ export default function Header({ onMenuClick }) {
                 navigate('/dashboard');
               }
             }}
-            className="p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+            className="p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center justify-center flex-shrink-0 shadow-2xs"
             title="Go Back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
         )}
-        <div className="min-w-0">
-          <h1 className="text-sm sm:text-base lg:text-lg font-black text-white truncate drop-shadow-sm max-w-[130px] xs:max-w-[180px] sm:max-w-none">{viewTitles[currentPath] || 'Dashboard'}</h1>
-          <p className="text-xs text-amber-300 font-bold tracking-wide truncate hidden sm:block drop-shadow-2xs">
+        <div className="flex flex-col justify-center min-w-0">
+          <h1 className="text-sm sm:text-base lg:text-lg font-black text-white whitespace-nowrap drop-shadow-sm">
+            {viewTitles[currentPath] || 'Dashboard'}
+          </h1>
+          <p className="text-[11px] text-amber-300 font-bold tracking-wide truncate hidden 2xl:block drop-shadow-2xs leading-none mt-0.5">
             {settings.instituteName || 'School Management'} &nbsp;·&nbsp; Session {settings.currentSession || '2026-27'}
           </p>
         </div>
       </div>
 
       {/* Right Action Cluster */}
-      <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-2.5 flex-shrink min-w-0 justify-end">
         {/* Universal Search Icon Button */}
         <button
           type="button"
           onClick={() => setIsGlobalSearchOpen(true)}
-          className="p-2 sm:p-2.5 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs flex items-center justify-center group"
+          className="p-2 sm:p-2.5 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs flex items-center justify-center group flex-shrink-0"
           title="Search (Ctrl+K)"
         >
-          <Search className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
+          <Search className="w-4 h-4 group-hover:scale-110 transition-transform" />
         </button>
-        {/* Date & Time */}
+
+        {/* Date & Time: Hidden on tighter screens to leave space for title and actions */}
         {mounted && (
-          <div className="hidden lg:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/12 border border-white/20 text-xs font-bold text-white shadow-2xs">
-            <Calendar className="w-4 h-4 text-amber-400" />
-            <span>{time.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
-            <span className="text-text-muted mx-1">·</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+          <div className="hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/12 border border-white/20 text-xs font-bold text-white shadow-2xs flex-shrink-0">
+            <Calendar className="w-3.5 h-3.5 text-amber-400" />
+            <span>{time.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+            <span className="text-white/40 mx-0.5">·</span>
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
             <span>{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()}</span>
           </div>
         )}
@@ -220,11 +223,11 @@ export default function Header({ onMenuClick }) {
         {isPrincipal && (
           <button
             onClick={() => openEnquiriesModal('admissions')}
-            className="relative hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+            className="relative hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex-shrink-0"
             title="View online student admissions and teacher applications"
           >
-            <ClipboardList className="w-4 h-4" />
-            <span className="hidden lg:inline">Online Enquiries</span>
+            <ClipboardList className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden xl:inline">Online Enquiries</span>
             {((admissionEnquiries || []).filter(e => !e.status || e.status === 'pending').length + (teacherApplications || []).filter(a => !a.status || a.status === 'pending').length) > 0 && (
               <span className="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black animate-pulse">
                 {(admissionEnquiries || []).filter(e => !e.status || e.status === 'pending').length + (teacherApplications || []).filter(a => !a.status || a.status === 'pending').length}
@@ -237,31 +240,32 @@ export default function Header({ onMenuClick }) {
         {(isPrincipal || teacherPermissions?.canAddStudents !== false) && (
           <button
             onClick={() => setIsAddStudentOpen(true)}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-md transition-all cursor-pointer flex-shrink-0"
+            title={lang === 'hi' ? 'छात्र जोड़ें' : 'Add Student'}
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden lg:inline">{lang === 'hi' ? 'छात्र जोड़ें' : 'Add Student'}</span>
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden xl:inline">{lang === 'hi' ? 'छात्र जोड़ें' : 'Add Student'}</span>
           </button>
         )}
 
         {/* Firebase Sync Status Indicator */}
         {(() => {
           const configs = {
-            synced:       { icon: CheckCircle2, label: 'Live', cls: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-            syncing:      { icon: RefreshCw,    label: 'Syncing…', cls: 'text-blue-600 bg-blue-50 border-blue-200 animate-pulse' },
-            reconnecting: { icon: WifiOff,      label: 'Reconnecting…', cls: 'text-amber-600 bg-amber-50 border-amber-200 animate-pulse' },
-            cached:       { icon: Wifi,         label: 'Cached', cls: 'text-slate-500 bg-slate-50 border-slate-200' },
-            error:        { icon: AlertCircle,  label: 'Sync Error', cls: 'text-rose-600 bg-rose-50 border-rose-200' },
+            synced:       { icon: CheckCircle2, label: 'Live', cls: 'text-emerald-400 bg-emerald-500/20 border-emerald-400/40' },
+            syncing:      { icon: RefreshCw,    label: 'Sync…', cls: 'text-blue-400 bg-blue-500/20 border-blue-400/40 animate-pulse' },
+            reconnecting: { icon: WifiOff,      label: 'Recon…', cls: 'text-amber-400 bg-amber-500/20 border-amber-400/40 animate-pulse' },
+            cached:       { icon: Wifi,         label: 'Cached', cls: 'text-slate-300 bg-white/10 border-white/20' },
+            error:        { icon: AlertCircle,  label: 'Error', cls: 'text-rose-400 bg-rose-500/20 border-rose-400/40' },
           };
           const cfg = configs[syncStatus] || configs.syncing;
           const Icon = cfg.icon;
           return (
             <div
               title={`Firebase sync: ${syncStatus}`}
-              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all ${cfg.cls}`}
+              className={`hidden md:flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-bold transition-all flex-shrink-0 ${cfg.cls}`}
             >
-              <Icon className="w-3 h-3" />
-              <span className="hidden lg:inline">{cfg.label}</span>
+              <Icon className="w-3 h-3 flex-shrink-0" />
+              <span className="hidden xl:inline">{cfg.label}</span>
             </div>
           );
         })()}
@@ -404,18 +408,18 @@ export default function Header({ onMenuClick }) {
             updateSettings({ appLanguage: nextLang });
             showToast(nextLang === 'hi' ? 'पोर्टल भाषा हिन्दी में बदल दी गई है' : 'Display language switched to English', 'success');
           }}
-          className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/12 hover:bg-white/20 text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs font-extrabold text-xs"
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-white/12 hover:bg-white/20 text-amber-300 transition-all cursor-pointer border border-white/20 shadow-2xs font-extrabold text-xs flex-shrink-0"
           title={lang === 'hi' ? 'अंग्रेज़ी भाषा में बदलें (Switch to English)' : 'Switch to Hindi (हिन्दी भाषा चुनें)'}
         >
           <Languages className="w-4 h-4 text-amber-400" />
-          <span className="font-bold text-[11px]">{lang === 'hi' ? 'हिन्दी' : 'English'}</span>
+          <span className="font-bold text-[11px] hidden xl:inline">{lang === 'hi' ? 'हिन्दी' : 'English'}</span>
         </button>
 
         {/* Quick Help and Feedback Trigger */}
         <button
           type="button"
           onClick={() => setIsHelpFeedbackOpen(true)}
-          className="hidden md:flex p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-colors relative cursor-pointer border border-white/20 shadow-2xs"
+          className="hidden md:flex p-2 rounded-xl bg-white/12 hover:bg-white/20 text-white hover:text-amber-300 transition-colors relative cursor-pointer border border-white/20 shadow-2xs flex-shrink-0"
           title="Help and feedback (FAQs, Support, Reports)"
         >
           <HelpCircle className="w-4.5 h-4.5 text-amber-300" />
@@ -425,7 +429,7 @@ export default function Header({ onMenuClick }) {
         <button
           type="button"
           onClick={toggleTheme}
-          className="hidden md:flex p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
+          className="hidden md:flex p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors cursor-pointer border border-[#c8c4d5]/50 shadow-2xs flex-shrink-0"
           title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {themeMode === 'dark' ? (
@@ -439,30 +443,30 @@ export default function Header({ onMenuClick }) {
         <button
           type="button"
           onClick={() => navigate('/complaints')}
-          className="hidden lg:flex p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors relative cursor-pointer border border-[#c8c4d5]/50 shadow-2xs"
+          className="hidden lg:flex p-2 rounded-xl bg-[#eff4ff] hover:bg-[#dce9ff] text-[#1f108e] transition-colors relative cursor-pointer border border-[#c8c4d5]/50 shadow-2xs flex-shrink-0"
           title="Parent Complaints & Messages Desk"
         >
           <MessageSquare className="w-4.5 h-4.5 text-amber-300" />
         </button>
 
         {/* User Info Profile Dropdown */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative flex-shrink-0" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(p => !p)}
             className="flex items-center gap-1.5 sm:gap-2.5 pl-1.5 sm:pl-2 border-l border-white/20 hover:opacity-85 transition-opacity cursor-pointer text-left"
           >
-            <div className="w-10 h-10 rounded-full border border-border bg-primary/10 text-primary flex items-center justify-center font-bold text-sm overflow-hidden flex-shrink-0 shadow-2xs">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-white/30 bg-primary/20 text-white flex items-center justify-center font-black text-xs sm:text-sm overflow-hidden flex-shrink-0 shadow-2xs">
               {currentUser.photoPath ? (
                 <img src={currentUser.photoPath} alt={principalDisplayName} className="w-full h-full object-cover" />
               ) : (
                 avatarInitials
               )}
             </div>
-            <div className="hidden lg:block leading-none">
-              <p className="font-bold text-xs text-white">{principalDisplayName}</p>
-              <p className="text-[10px] text-amber-300/90 font-medium mt-0.5 capitalize">{currentUser.role === 'principal' ? 'Principal / Admin' : 'Teacher'}</p>
+            <div className="hidden xl:block leading-none max-w-[120px] truncate">
+              <p className="font-bold text-xs text-white truncate">{principalDisplayName}</p>
+              <p className="text-[10px] text-amber-300/90 font-medium mt-0.5 capitalize truncate">{currentUser.role === 'principal' ? 'Principal / Admin' : 'Teacher'}</p>
             </div>
-            <ChevronDown className="w-4 h-4 text-amber-300 hidden lg:block" />
+            <ChevronDown className="w-3.5 h-3.5 text-amber-300 hidden sm:block" />
           </button>
 
           {/* Premium Dropdown menu */}

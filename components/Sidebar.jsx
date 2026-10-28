@@ -85,7 +85,7 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
       ].join(' ')}>
 
         {/* ── Brand Header ── */}
-        <div className={`flex items-center border-b border-[#c8c4d5]/40 flex-shrink-0 ${collapsed ? 'p-3 justify-center flex-col gap-2' : 'p-4 gap-3'}`}>
+        <div className={`flex items-center border-b border-[#c8c4d5]/40 flex-shrink-0 ${collapsed ? 'p-3 justify-center flex-col gap-2' : 'p-3.5 gap-2.5'}`}>
           <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 drop-shadow-sm">
             <img
               src={settings.logoUrl || settings.logoPath || settings.logo || '/logo.png'}
@@ -99,8 +99,10 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="font-bold text-sm text-[#1f108e] leading-snug truncate">{settings.instituteName || 'Mission Navodaya Public School'}</div>
-              <div className="mt-0.5 inline-flex items-center gap-1 px-2 py-0.2 rounded-md bg-[#dce9ff] text-[10px] font-bold text-[#0051d5]">
+              <div className="font-extrabold text-xs sm:text-[13px] text-[#1f108e] leading-snug line-clamp-2" title={settings.instituteName || 'Mission Navodaya Public School'}>
+                {settings.instituteName || 'Mission Navodaya Public School'}
+              </div>
+              <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#dce9ff] text-[10px] font-bold text-[#0051d5]">
                 <span>Session {settings.currentSession || '2026-27'}</span>
               </div>
             </div>
