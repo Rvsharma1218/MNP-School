@@ -1562,7 +1562,7 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> {
                         await Navigator.push(
                           ctx,
                           MaterialPageRoute(
-                            builder: (_) => ResultScreen(studentId: widget.studentId),
+                            builder: (_) => ResultScreen(student: student, studentId: widget.studentId),
                           ),
                         );
                         _refresh();
@@ -1810,7 +1810,7 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> {
                                   await Navigator.push(
                                     ctx,
                                     MaterialPageRoute(
-                                      builder: (_) => ResultScreen(studentId: widget.studentId),
+                                      builder: (_) => ResultScreen(student: student, studentId: widget.studentId),
                                     ),
                                   );
                                   _refresh();

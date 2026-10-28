@@ -19,8 +19,9 @@ import 'student_result_detail_screen.dart';
 
 class ResultDashboardScreen extends ConsumerStatefulWidget {
   final String? initialStudentId;
+  final StudentModel? initialStudent;
 
-  const ResultDashboardScreen({super.key, this.initialStudentId});
+  const ResultDashboardScreen({super.key, this.initialStudentId, this.initialStudent});
 
   @override
   ConsumerState<ResultDashboardScreen> createState() => _ResultDashboardScreenState();
@@ -33,6 +34,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
 
   late TabController _tabController;
   bool _loading = true;
+  bool _initialStudentHandled = false;
 
   String _academicYear = '2025-2026';
   final List<String> _academicYears = ['2024-2025', '2025-2026', '2026-2027'];
@@ -73,6 +75,9 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       _loading = false;
     }
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadDashboardData(isInitial: _loading);
   }
 
@@ -108,12 +113,15 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     _results = results;
     _students = students;
 
-    // If an initial student ID was supplied (e.g. from Student Profile or search)
-    if (widget.initialStudentId != null && widget.initialStudentId!.isNotEmpty) {
-      final target = students.where((s) => s.id == widget.initialStudentId).firstOrNull;
+    // If an initial student was supplied (e.g. from Student Profile or search)
+    final targetStudentId = widget.initialStudent?.id ?? widget.initialStudentId;
+    if (!_initialStudentHandled && targetStudentId != null && targetStudentId.isNotEmpty) {
+      _initialStudentHandled = true;
+      final target = widget.initialStudent ?? students.where((s) => s.id == targetStudentId).firstOrNull;
       if (target != null) {
         final existing = results.where((r) => r.studentId == target.id).firstOrNull;
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -122,7 +130,9 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                 editResult: existing,
               ),
             ),
-          ).then((_) => _loadDashboardData());
+          ).then((_) {
+            if (mounted) _loadDashboardData();
+          });
         });
       }
     }
@@ -631,16 +641,15 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
-      canPop: _tabController.index == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        if (_tabController.index != 0) {
-          _tabController.animateTo(0);
-        }
-      },
+      canPop: true,
       child: Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: const Text('Results & Exams', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: const Color(0xFF1E3A8A),
         foregroundColor: Colors.white,
@@ -739,21 +748,23 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                 _buildResultsTab(isDark),
               ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
-        onPressed: () async {
-          final res = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CreateExamScreen()),
-          );
-          if (res != null) {
-            await _loadDashboardData();
-          }
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Create New Exam', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton.extended(
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+              onPressed: () async {
+                final res = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateExamScreen()),
+                );
+                if (res != null) {
+                  await _loadDashboardData();
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Create New Exam', style: TextStyle(fontWeight: FontWeight.bold)),
+            )
+          : null,
     ),
   );
 }
@@ -962,6 +973,28 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       }).toList();
     }
 
+    // Sort strictly Roll Number-wise (numerical when available, then alphabetical/name)
+    filteredResults.sort((a, b) {
+      final sa = _students.where((s) => s.id == a.studentId).firstOrNull;
+      final sb = _students.where((s) => s.id == b.studentId).firstOrNull;
+      final rollA = sa?.rollNumber?.trim() ?? '';
+      final rollB = sb?.rollNumber?.trim() ?? '';
+      final numA = int.tryParse(rollA);
+      final numB = int.tryParse(rollB);
+      if (numA != null && numB != null) {
+        final cmp = numA.compareTo(numB);
+        if (cmp != 0) return cmp;
+      } else if (rollA.isNotEmpty && rollB.isNotEmpty) {
+        final cmp = rollA.compareTo(rollB);
+        if (cmp != 0) return cmp;
+      } else if (rollA.isNotEmpty) {
+        return -1;
+      } else if (rollB.isNotEmpty) {
+        return 1;
+      }
+      return (sa?.name ?? '').toLowerCase().compareTo((sb?.name ?? '').toLowerCase());
+    });
+
     final totalCount = filteredResults.length;
     final passCount = filteredResults.where((r) => r.isPass).length;
     final failCount = totalCount - passCount;
@@ -1118,9 +1151,28 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      student?.name ?? "Student #${r.studentId}",
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            student?.name ?? "Student #${r.studentId}",
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (student?.rollNumber != null && student!.rollNumber!.trim().isNotEmpty)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              'Roll: ${student.rollNumber!.trim()}',
+                                              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
@@ -1129,7 +1181,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      "${r.obtainedMarks.toInt()}/${r.totalMarks.toInt()} (${r.overallPercentage.toStringAsFixed(1)}%)",
+                                      "${r.obtainedMarks.toInt()}/${r.totalMarks.toInt()} (${r.overallPercentage.toStringAsFixed(1)}%) • Grade: ${r.overallGrade}",
                                       style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF1E3A8A)),
                                     ),
                                   ],

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'core/constants/app_routes.dart';
 import 'core/theme/app_theme.dart';
+import 'data/models/student_model.dart';
 import 'data/services/auth_service.dart';
 import 'data/services/firestore_service.dart';
 import 'data/services/session_service.dart';
@@ -141,12 +142,16 @@ class SchoolApp extends ConsumerWidget {
             }
             return MaterialPageRoute(builder: (_) => const FeesCollectedScreen());
           case AppRoutes.result:
-            if (settings.arguments is String) {
+            if (settings.arguments is StudentModel) {
+              return MaterialPageRoute(
+                builder: (_) => ResultScreen(student: settings.arguments as StudentModel),
+              );
+            } else if (settings.arguments is String) {
               return MaterialPageRoute(
                 builder: (_) => ResultScreen(studentId: settings.arguments as String),
               );
             }
-            return MaterialPageRoute(builder: (_) => const StudentListScreen());
+            return MaterialPageRoute(builder: (_) => const ResultScreen());
           case AppRoutes.idCard:
             if (settings.arguments is String) {
               return MaterialPageRoute(

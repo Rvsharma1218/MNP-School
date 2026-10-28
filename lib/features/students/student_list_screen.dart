@@ -92,6 +92,9 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
     ref.read(sectionFilterProvider.notifier).state = '';
     ref.read(courseFilterProvider.notifier).state = '';
     ref.read(batchFilterProvider.notifier).state = '';
+    ref.read(rollNumberFilterProvider.notifier).state = '';
+    ref.read(studentSortProvider.notifier).state = 'none';
+    ref.read(admissionTypeFilterProvider.notifier).state = 'all';
     // Re-apply teacher's working class/section
     if (_isTeacher) {
       final tc = ref.read(teacherSelectedClassProvider);
@@ -113,6 +116,9 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
       if (statusFilter != 'all') 1,
       if (ref.watch(classFilterProvider).isNotEmpty) 1,
       if (ref.watch(courseFilterProvider).isNotEmpty) 1,
+      if (ref.watch(rollNumberFilterProvider).isNotEmpty) 1,
+      if (ref.watch(admissionTypeFilterProvider) != 'all') 1,
+      if (ref.watch(studentSortProvider) != 'none') 1,
     ].length;
 
     final isDesktop = MediaQuery.of(context).size.width >= 850;
@@ -360,6 +366,9 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
   String _class = '';
   String _course = '';
   String _section = '';
+  String _roll = '';
+  String _sort = 'none';
+  String _admissionType = 'all';
 
   @override
   void initState() {
@@ -369,6 +378,9 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
     _class = ref.read(classFilterProvider);
     _course = ref.read(courseFilterProvider);
     _section = ref.read(sectionFilterProvider);
+    _roll = ref.read(rollNumberFilterProvider);
+    _sort = ref.read(studentSortProvider);
+    _admissionType = ref.read(admissionTypeFilterProvider);
   }
 
   @override
@@ -469,6 +481,8 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                         if (_class.isNotEmpty) {
                           _course = '';
                           _type = 'school';
+                        } else {
+                          _roll = '';
                         }
                       });
                     },
@@ -476,6 +490,69 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                 ),
               ),
               const SizedBox(height: 16),
+
+              // ── 🔢 Roll Number (After Class Selection) ───────────────────────
+              if (_class.isNotEmpty) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _sheetLabel('🔢 Roll Number (Class $_class)', cs),
+                    if (_roll.isNotEmpty)
+                      InkWell(
+                        onTap: () => setState(() => _roll = ''),
+                        child: const Text('Clear', style: TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.bold)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Builder(
+                  builder: (context) {
+                    final allStudents = ref.read(studentsProvider).valueOrNull ?? [];
+                    final rolls = allStudents
+                        .where((s) => s.className?.trim() == _class.trim() && s.rollNumber != null && s.rollNumber!.trim().isNotEmpty)
+                        .map((s) => s.rollNumber!.trim())
+                        .toSet()
+                        .toList();
+                    rolls.sort((a, b) {
+                      final nA = int.tryParse(a);
+                      final nB = int.tryParse(b);
+                      if (nA != null && nB != null) return nA.compareTo(nB);
+                      return a.compareTo(b);
+                    });
+
+                    if (rolls.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text('No roll numbers assigned in Class $_class yet.', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                      );
+                    }
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: cs.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: cs.outlineVariant),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: rolls.contains(_roll) ? _roll : '',
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                          items: [
+                            const DropdownMenuItem(value: '', child: Text('All Roll Numbers (Show All)')),
+                            ...rolls.map((r) => DropdownMenuItem(value: r, child: Text('Roll No: $r'))),
+                          ],
+                          onChanged: (val) {
+                            setState(() => _roll = val ?? '');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
 
               // ── 💻 Computer Courses Filter List ──────────────────────────
               Row(
@@ -560,6 +637,42 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // ── 🔤 Sort Students (A to Z / Roll No) ─────────────────────────
+              _sheetLabel('Sort Order', cs),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _sortChip('Default', 'none', cs),
+                    const SizedBox(width: 8),
+                    _sortChip('🔤 Name (A → Z)', 'name_asc', cs),
+                    const SizedBox(width: 8),
+                    _sortChip('🔤 Name (Z → A)', 'name_desc', cs),
+                    const SizedBox(width: 8),
+                    _sortChip('🔢 Roll No (1 → 9)', 'roll_asc', cs),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── 📋 Admission Type (New vs Old) ──────────────────────────
+              _sheetLabel('Admission Type', cs),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _admissionTypeChip('All Admissions', 'all', cs),
+                    const SizedBox(width: 8),
+                    _admissionTypeChip('⭐ New Admission', 'new', cs),
+                    const SizedBox(width: 8),
+                    _admissionTypeChip('🔄 Old Admission', 'old', cs),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               // ── Apply / Clear buttons ────────────────────────────────────
@@ -576,6 +689,9 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                           _class = '';
                           _course = '';
                           _section = '';
+                          _roll = '';
+                          _sort = 'none';
+                          _admissionType = 'all';
                         });
                         widget.onClear();
                       },
@@ -597,6 +713,9 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                         ref.read(classFilterProvider.notifier).state = _class.trim();
                         ref.read(courseFilterProvider.notifier).state = _course.trim();
                         ref.read(sectionFilterProvider.notifier).state = _section.trim();
+                        ref.read(rollNumberFilterProvider.notifier).state = _roll.trim();
+                        ref.read(studentSortProvider.notifier).state = _sort;
+                        ref.read(admissionTypeFilterProvider.notifier).state = _admissionType;
                         widget.onApply();
                       },
                       style: ElevatedButton.styleFrom(
@@ -683,6 +802,46 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: sel ? AppColors.secondary : cs.surfaceVariant,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: sel ? Colors.white : cs.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 13)),
+      ),
+    );
+  }
+
+  Widget _sortChip(String label, String value, ColorScheme cs) {
+    final sel = _sort == value;
+    return GestureDetector(
+      onTap: () => setState(() => _sort = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: sel ? AppColors.primary : cs.surfaceVariant,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: sel ? Colors.white : cs.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 13)),
+      ),
+    );
+  }
+
+  Widget _admissionTypeChip(String label, String value, ColorScheme cs) {
+    final sel = _admissionType == value;
+    return GestureDetector(
+      onTap: () => setState(() => _admissionType = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: sel ? const Color(0xFF0D9488) : cs.surfaceVariant,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
@@ -809,6 +968,20 @@ class _StudentCardState extends ConsumerState<_StudentCard> {
                             style: TextStyle(fontSize: 11, color: cs.onSurface),
                             overflow: TextOverflow.ellipsis),
                       ),
+                      if (s.rollNumber != null && s.rollNumber!.trim().isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Roll: ${s.rollNumber!.trim()}',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
+                          ),
+                        ),
+                      ],
                     ]),
                     const SizedBox(height: 3),
                     Row(children: [

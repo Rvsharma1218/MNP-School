@@ -3118,16 +3118,35 @@ class _WebDashboardViewState extends ConsumerState<_WebDashboardView> {
                             ),
                             // Class / Course
                             DataCell(
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  s.displayClass,
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
-                                ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      s.displayClass,
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                                    ),
+                                  ),
+                                  if (s.rollNumber != null && s.rollNumber!.trim().isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Roll ${s.rollNumber!.trim()}',
+                                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                             // Mobile
@@ -3165,7 +3184,7 @@ class _WebDashboardViewState extends ConsumerState<_WebDashboardView> {
                                   IconButton(
                                     icon: const Icon(Icons.assignment_outlined, size: 18, color: AppColors.secondary),
                                     tooltip: 'Result',
-                                    onPressed: () => Navigator.pushNamed(context, AppRoutes.result, arguments: s.id),
+                                    onPressed: () => Navigator.pushNamed(context, AppRoutes.result, arguments: s),
                                   ),
                                 ],
                               ),

@@ -19,6 +19,9 @@ final studentSearchProvider = StateProvider<String>((ref) => '');
 final studentFilterProvider = StateProvider<String>((ref) => 'all');
 final studentStatusFilterProvider = StateProvider<String>((ref) => 'all');
 final classFilterProvider = StateProvider<String>((ref) => '');
+final studentSortProvider = StateProvider<String>((ref) => 'none'); // 'none' | 'name_asc' | 'name_desc' | 'roll_asc'
+final admissionTypeFilterProvider = StateProvider<String>((ref) => 'all'); // 'all' | 'new' | 'old'
+final rollNumberFilterProvider = StateProvider<String>((ref) => ''); // '' | specific roll number
 
 // ─── FIRESTORE SYNC STATUS PROVIDER ──────────────────────────────────────────
 // Values: 'syncing' | 'synced' | 'error' | 'offline'
@@ -130,25 +133,68 @@ final filteredStudentsProvider = Provider<AsyncValue<List<StudentModel>>>((ref) 
   final sectionFilter = ref.watch(sectionFilterProvider);
   final courseFilter = ref.watch(courseFilterProvider);
   final batchFilter = ref.watch(batchFilterProvider);
+  final rollFilter = ref.watch(rollNumberFilterProvider).trim().toLowerCase();
+  final admissionType = ref.watch(admissionTypeFilterProvider);
+  final sortOrder = ref.watch(studentSortProvider);
+  final settings = ref.watch(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+  final currentSession = settings.currentSession.trim().toLowerCase();
 
   return studentsAsync.whenData((students) {
-    return students.where((s) {
+    var list = students.where((s) {
       if (typeFilter != 'all' && s.studentType != typeFilter) return false;
       if (statusFilter != 'all' && s.status != statusFilter) return false;
       if (classFilter.isNotEmpty && classFilter.toLowerCase() != 'all' && classFilter.toLowerCase() != 'none' && s.className != classFilter) return false;
       if (sectionFilter.isNotEmpty && sectionFilter.toLowerCase() != 'all' && sectionFilter.toLowerCase() != 'none' && s.section != sectionFilter) return false;
       if (courseFilter.isNotEmpty && courseFilter.toLowerCase() != 'all' && s.course != courseFilter) return false;
       if (batchFilter.isNotEmpty && batchFilter.toLowerCase() != 'all' && s.batch != batchFilter) return false;
+
+      // Roll Number filter (active especially when class is selected)
+      if (rollFilter.isNotEmpty && rollFilter != 'all') {
+        final sRoll = (s.rollNumber ?? '').trim().toLowerCase();
+        if (sRoll != rollFilter) return false;
+      }
+
+      // New vs Old Admission filter
+      if (admissionType != 'all') {
+        final sSession = (s.session ?? '').trim().toLowerCase();
+        final isNew = (currentSession.isNotEmpty && sSession == currentSession) ||
+            s.admissionDate.isAfter(DateTime.now().subtract(const Duration(days: 365)));
+        if (admissionType == 'new' && !isNew) return false;
+        if (admissionType == 'old' && isNew) return false;
+      }
+
       if (search.isNotEmpty) {
         final match = s.name.toLowerCase().contains(search) ||
             s.admissionNumber.toLowerCase().contains(search) ||
             s.studentId.toLowerCase().contains(search) ||
             s.mobile.contains(search) ||
-            s.fatherName.toLowerCase().contains(search);
+            s.fatherName.toLowerCase().contains(search) ||
+            (s.rollNumber != null && s.rollNumber!.toLowerCase().contains(search));
         if (!match) return false;
       }
       return true;
     }).toList();
+
+    // Apply sorting
+    if (sortOrder == 'name_asc') {
+      list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    } else if (sortOrder == 'name_desc') {
+      list.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+    } else if (sortOrder == 'roll_asc') {
+      list.sort((a, b) {
+        final rA = a.rollNumber?.trim() ?? '';
+        final rB = b.rollNumber?.trim() ?? '';
+        final nA = int.tryParse(rA);
+        final nB = int.tryParse(rB);
+        if (nA != null && nB != null) return nA.compareTo(nB);
+        if (rA.isNotEmpty && rB.isNotEmpty) return rA.compareTo(rB);
+        if (rA.isNotEmpty) return -1;
+        if (rB.isNotEmpty) return 1;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+    }
+
+    return list;
   });
 });
 
