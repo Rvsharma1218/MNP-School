@@ -247,10 +247,7 @@ export default function FeesView() {
         return String(cls).trim().toLowerCase() === String(collectedClass).trim().toLowerCase();
       });
 
-  const totalCollected = classStudents.reduce((acc, s) => {
-    const m = calculateStudentFeeMetrics(s, payments);
-    return acc + (Number(m.totalPaid) || 0);
-  }, 0);
+  const totalCollected = classFilteredPayments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
   const totalPending = classStudents.reduce((acc, s) => {
     const m = calculateStudentFeeMetrics(s, payments);
     return acc + (Number(m.currentDue) || 0);
