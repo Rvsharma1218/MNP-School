@@ -1261,7 +1261,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> with SingleTi
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
                 pw.Text('Generated: $timestamp', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
-                // Director Sign & Official Stamp (Signature layered inside/over stamp)
+                // Principal Sign & Official Stamp (Signature layered inside/over stamp)
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
@@ -1283,7 +1283,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> with SingleTi
                     ),
                     pw.Container(width: 120, height: 1, color: PdfColors.grey600),
                     pw.SizedBox(height: 2),
-                    pw.Text('Director Sign', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#1E3A8A'))),
+                    pw.Text('Principal Sign', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#1E3A8A'))),
                   ],
                 ),
               ],
@@ -1427,7 +1427,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> with SingleTi
               ),
               pw.Spacer(),
 
-              // Footer with Director Sign and Stamp
+              // Footer with Principal Sign and Stamp
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
@@ -1454,7 +1454,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> with SingleTi
                       ),
                       pw.Container(width: 120, height: 0.8, color: PdfColors.grey600),
                       pw.SizedBox(height: 1.5),
-                      pw.Text('Director Sign', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#1E3A8A'))),
+                      pw.Text('Principal Sign', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#1E3A8A'))),
                     ],
                   ),
                 ],

@@ -576,7 +576,7 @@ class ReceiptPdfService {
                         pw.Text('Class Teacher Sign.', style: pw.TextStyle(font: bold, fontSize: 7, color: darkText)),
                       ],
                     ),
-                    // Stamp & Director Signature Area (Signature overlaid over stamp)
+                    // Stamp & Principal Signature Area (Signature overlaid over stamp)
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
@@ -599,7 +599,7 @@ class ReceiptPdfService {
                         pw.Container(width: 100, height: 0.6, color: darkText),
                         pw.SizedBox(height: 2),
                         pw.Text(
-                          'Director Sign',
+                          'Principal Sign',
                           style: pw.TextStyle(font: bold, fontSize: 7.5, color: darkText),
                         ),
                       ],

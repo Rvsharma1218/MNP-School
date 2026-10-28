@@ -844,7 +844,7 @@ class _AdmitCardScreenState extends ConsumerState<AdmitCardScreen> {
                   pw.Text('Class Teacher Sign', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
                 ],
               ),
-              // Director Sign & Official Stamp (Signature layered inside/over stamp)
+              // Principal Sign & Official Stamp (Signature layered inside/over stamp)
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
@@ -867,7 +867,7 @@ class _AdmitCardScreenState extends ConsumerState<AdmitCardScreen> {
                   pw.Container(width: 140, height: 1.2, color: PdfColor.fromHex('#1E3A8A')),
                   pw.SizedBox(height: 3),
                   pw.Text(
-                    'Director Sign',
+                    'Principal Sign',
                     style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#1E3A8A')),
                   ),
                 ],

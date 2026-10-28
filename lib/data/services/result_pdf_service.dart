@@ -441,7 +441,7 @@ class ResultPdfService {
                     ),
                   ),
 
-                  // Director Sign & Official Stamp (Signature layered inside/over stamp)
+                  // Principal Sign & Official Stamp (Signature layered inside/over stamp)
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
@@ -463,7 +463,7 @@ class ResultPdfService {
                       ),
                       pw.Container(width: 140, height: 1.2, color: textDark),
                       pw.SizedBox(height: 3),
-                      pw.Text('Director Sign', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: textMuted)),
+                      pw.Text('Principal Sign', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: textMuted)),
                     ],
                   ),
                 ],

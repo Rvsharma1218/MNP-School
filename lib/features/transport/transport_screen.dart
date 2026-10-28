@@ -463,7 +463,7 @@ class _TransportScreenState extends ConsumerState<TransportScreen> {
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
                     pw.Text('Generated: ${DateFormat("dd-MM-yyyy hh:mm a").format(DateTime.now())}', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
-                    // Director Sign & Official Stamp (Signature layered inside/over stamp)
+                    // Principal Sign & Official Stamp (Signature layered inside/over stamp)
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
@@ -485,7 +485,7 @@ class _TransportScreenState extends ConsumerState<TransportScreen> {
                         ),
                         pw.Container(width: 120, height: 1, color: PdfColors.grey600),
                         pw.SizedBox(height: 2),
-                        pw.Text('Director Sign', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                        pw.Text('Principal Sign', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
                       ],
                     ),
                   ],

@@ -1042,7 +1042,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
                           ),
                           pw.Container(width: boxW, height: 0.8, color: PdfColors.grey700),
                           pw.SizedBox(height: 2),
-                          pw.Text('Director / Principal Sign & Stamp', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                          pw.Text('Principal Sign & Stamp', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
                         ],
                       );
                     })(),

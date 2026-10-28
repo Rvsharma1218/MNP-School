@@ -410,7 +410,7 @@ class StudentFullReportService {
                         pw.Text('CLASS INCHARGE / OFFICE', style: pw.TextStyle(font: ttfBold, fontSize: 8, color: textMuted)),
                       ],
                     ),
-                    // Director Sign & Official Stamp (Signature layered inside/over stamp)
+                    // Principal Sign & Official Stamp (Signature layered inside/over stamp)
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
@@ -432,7 +432,7 @@ class StudentFullReportService {
                         ),
                         pw.Container(width: 120, height: 1, color: textDark),
                         pw.SizedBox(height: 3),
-                        pw.Text("Director Sign", style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: textMuted)),
+                        pw.Text("Principal Sign", style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: textMuted)),
                       ],
                     ),
                   ],
