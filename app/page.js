@@ -339,6 +339,7 @@ function AppContent() {
           <PrintResultModal
             result={printResultData.result || printResultData}
             student={printResultData.student || currentUser.student || students.find(s => s.id === printResultData.studentId)}
+            data={printResultData}
             onClose={() => setPrintResultData(null)}
           />
         )}
@@ -442,7 +443,7 @@ function AppContent() {
         <PrintReceiptModal payment={printReceiptData.payment} student={printReceiptData.student} onClose={() => setPrintReceiptData(null)} />
       )}
       {printResultData && (
-        <PrintResultModal result={printResultData.result} student={printResultData.student} onClose={() => setPrintResultData(null)} />
+        <PrintResultModal result={printResultData.result || printResultData} student={printResultData.student} data={printResultData} onClose={() => setPrintResultData(null)} />
       )}
       {printIdCardsData && (
         <PrintIdCardsModal students={printIdCardsData.students} template={printIdCardsData.template} onClose={() => setPrintIdCardsData(null)} />
