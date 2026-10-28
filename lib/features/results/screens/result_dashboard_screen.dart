@@ -526,7 +526,10 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       'Roll No',
       'Student ID',
       'Student Name',
+      'Father Name',
+      'Mother Name',
       'Class',
+      'Section',
       'Exam Title',
       'Academic Year',
       'Total Marks Obtained',
@@ -542,7 +545,10 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       final s = _students.where((stu) => stu.id == r.studentId).firstOrNull;
       final rollNo = s?.rollNumber ?? s?.studentId ?? '-';
       final sName = s?.name ?? 'Student #${r.studentId}';
-      final sClass = s?.displayClass ?? _selectedClassFilter;
+      final sClass = s?.className ?? s?.course ?? s?.displayClass ?? _selectedClassFilter;
+      final sSection = s?.section ?? 'A';
+      final sFather = s?.fatherName ?? '-';
+      final sMother = s?.motherName ?? '-';
       final status = (r.status ?? (r.isPass ? 'PASS' : 'FAIL')).toUpperCase();
 
       csvRows.add([
@@ -550,7 +556,10 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
         rollNo,
         s?.studentId ?? r.studentId,
         sName,
+        sFather,
+        sMother,
         sClass,
+        sSection,
         r.examName,
         _academicYear,
         r.obtainedMarks.toStringAsFixed(1),
@@ -569,6 +578,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     final cleanClass = _selectedClassFilter.replaceAll(' ', '_');
     final filename = 'Results_${cleanClass}_${DateTime.now().millisecondsSinceEpoch}.csv';
 
+    final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
     try {
       final bytes = utf8.encode(csvContent);
       if (mounted) {
@@ -578,6 +588,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
           filename: filename,
           subject: 'Results Export CSV - $_selectedClassFilter',
           category: FileCategory.results,
+          schoolName: settings.instituteName,
           icon: Icons.table_chart_rounded,
           color: const Color(0xFF0D9488),
         );
@@ -594,6 +605,57 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
         );
       }
     }
+  }
+
+  Future<void> _exportResultsListPdf() async {
+    var filtered = _results.where((r) {
+      if (_selectedClassFilter == 'All Classes') return true;
+      final s = _students.where((stu) => stu.id == r.studentId).firstOrNull;
+      final sClass = s?.className ?? s?.course ?? '';
+      return sClass.trim().toLowerCase() == _selectedClassFilter.trim().toLowerCase();
+    }).toList();
+
+    // Sort by roll number then name
+    filtered.sort((a, b) {
+      final sa = _students.where((s) => s.id == a.studentId).firstOrNull;
+      final sb = _students.where((s) => s.id == b.studentId).firstOrNull;
+      final rA = int.tryParse(sa?.rollNumber ?? '') ?? 999999;
+      final rB = int.tryParse(sb?.rollNumber ?? '') ?? 999999;
+      if (rA != rB) return rA.compareTo(rB);
+      return (sa?.name ?? '').compareTo(sb?.name ?? '');
+    });
+
+    final items = <MapEntry<StudentModel, ResultModel>>[];
+    for (final r in filtered) {
+      final s = _students.where((stu) => stu.id == r.studentId).firstOrNull;
+      if (s != null) {
+        items.add(MapEntry(s, r));
+      }
+    }
+
+    if (items.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No results available to generate PDF list.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+    await ResultPdfService.instance.printOrExportResultsListPdf(
+      items: items,
+      settings: settings,
+      context: context,
+      className: _selectedClassFilter,
+      examName: items.first.value.examName,
+      academicYear: _academicYear,
+    );
   }
 
   Future<void> _shareResultsSummary() async {
@@ -686,6 +748,8 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
             onSelected: (val) {
               if (val == 'bulk_pdf') {
                 _downloadBulkMarksheetsPdf();
+              } else if (val == 'results_list_pdf') {
+                _exportResultsListPdf();
               } else if (val == 'bulk_csv') {
                 _exportResultsCsv();
               } else if (val == 'share_summary') {
@@ -694,10 +758,20 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
             },
             itemBuilder: (ctx) => [
               const PopupMenuItem(
+                value: 'results_list_pdf',
+                child: Row(
+                  children: [
+                    Icon(Icons.picture_as_pdf_rounded, color: Colors.blueAccent, size: 20),
+                    SizedBox(width: 10),
+                    Text('Export Results List (PDF)', style: TextStyle(fontSize: 13)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
                 value: 'bulk_pdf',
                 child: Row(
                   children: [
-                    Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent, size: 20),
+                    Icon(Icons.style_rounded, color: Colors.redAccent, size: 20),
                     SizedBox(width: 10),
                     Text('Bulk PDF Marksheets', style: TextStyle(fontSize: 13)),
                   ],

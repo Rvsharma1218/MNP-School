@@ -24,7 +24,7 @@ enum FileCategory {
 /// Handles saving files to organized device storage or sharing.
 class FileSaver {
   /// Base folder name for the school in Downloads
-  static const String mainSchoolFolder = 'SchoolManager';
+  static const String mainSchoolFolder = 'Mission_Navodaya_Public_School';
 
   /// Saves [bytes] into `Download/SchoolManager/<folderName>/<filename>`.
   /// Returns the saved absolute file path.

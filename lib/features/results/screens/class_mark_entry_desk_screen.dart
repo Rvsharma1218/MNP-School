@@ -71,11 +71,15 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     _allResults = results;
     _allExams = exams;
 
-    if (widget.initialClass != null && _availableClasses.contains(widget.initialClass)) {
-      _selectedClass = widget.initialClass!;
-    } else if (_selectedClass == 'All Classes' && _availableClasses.length > 1) {
-      // Pick first actual class if available
-      _selectedClass = _availableClasses.firstWhere((c) => c != 'All Classes', orElse: () => 'All Classes');
+    // Retain selected class if already set by user
+    if (_selectedClass.isEmpty || !_availableClasses.contains(_selectedClass)) {
+      if (widget.initialClass != null && _availableClasses.contains(widget.initialClass)) {
+        _selectedClass = widget.initialClass!;
+      } else if (widget.initialExam?.className.isNotEmpty == true && _availableClasses.contains(widget.initialExam!.className)) {
+        _selectedClass = widget.initialExam!.className;
+      } else {
+        _selectedClass = 'All Classes';
+      }
     }
 
     if (widget.initialExam != null && _selectedExam == null) {
@@ -335,7 +339,10 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
       'Roll No',
       'Student ID',
       'Student Name',
+      'Father Name',
+      'Mother Name',
       'Class',
+      'Section',
       'Exam Title',
       'Mode',
       'Total Marks Obtained',
@@ -361,7 +368,10 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
         s.rollNumber ?? '',
         s.studentId,
         s.name,
-        s.displayClass,
+        s.fatherName ?? '',
+        s.motherName ?? '',
+        s.className ?? (s.course ?? s.displayClass),
+        s.section ?? 'A',
         r?.examName ?? _examTitle,
         r != null ? (isDetailed ? 'Detailed' : 'Direct') : 'Pending',
         r != null ? r.obtainedMarks.toInt().toString() : 'N/A',
@@ -377,6 +387,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     final csvContent = csvRows.map((row) => row.map((cell) => '"${cell.replaceAll('"', '""')}"').join(',')).join('\n');
     final filename = 'Marks_Desk_${_selectedClass.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.csv';
 
+    final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
     try {
       final bytes = utf8.encode(csvContent);
       if (mounted) {
@@ -386,6 +397,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
           filename: filename,
           subject: 'Marksheet Desk CSV - $_selectedClass',
           category: FileCategory.results,
+          schoolName: settings.instituteName,
           icon: Icons.table_chart_rounded,
           color: const Color(0xFF0D9488),
         );
@@ -502,7 +514,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               key: ValueKey('desk_class_$_selectedClass'),
-                              initialValue: _availableClasses.contains(_selectedClass) ? _selectedClass : 'All Classes',
+                              value: _availableClasses.contains(_selectedClass) ? _selectedClass : 'All Classes',
                               isExpanded: true,
                               decoration: InputDecoration(
                                 labelText: 'Class',
