@@ -348,7 +348,7 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
                   ${stampSrc ? `<img src="${stampSrc}" class="stamp-img" alt="Stamp" />` : ''}
                   ${sigSrc ? `<img src="${sigSrc}" class="sig-img" alt="Principal Sign" />` : ''}
                 </div>
-                <div class="sig-line">Director / Principal Sign & Stamp</div>
+                <div class="sig-line">Principal Sign & Stamp</div>
               </div>
             </div>
 

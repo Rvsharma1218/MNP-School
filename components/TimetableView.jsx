@@ -685,7 +685,7 @@ export default function TimetableView() {
       const stampScale = Number(settings.stampScale) || 1.0;
       const sigScale = Number(settings.signatureScale) || 1.0;
 
-      // Stamp centered at Director signature position
+      // Stamp centered at Principal signature position
       if (stampData) {
         try {
           const sSize = 22 * stampScale;
@@ -709,7 +709,7 @@ export default function TimetableView() {
       doc.setTextColor(30, 58, 138);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
-      doc.text('Director Sign', rightCenterX, footerY + 5, { align: 'center' });
+      doc.text('Principal Sign', rightCenterX, footerY + 5, { align: 'center' });
 
       doc.save(`Class_${selectedClass}_Routine_Timetable.pdf`);
       showToast(`Timetable PDF downloaded for Class ${selectedClass}!`, 'success');
@@ -964,7 +964,7 @@ export default function TimetableView() {
       const stampScale = Number(settings.stampScale) || 1.0;
       const sigScale = Number(settings.signatureScale) || 1.0;
 
-      // Stamp centered at Director signature position
+      // Stamp centered at Principal signature position
       if (stampData) {
         try {
           const sSize = 20 * stampScale;
@@ -988,7 +988,7 @@ export default function TimetableView() {
       doc.setTextColor(30, 58, 138);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
-      doc.text('Director Sign', rightCenterX, footerY + 4.5, { align: 'center' });
+      doc.text('Principal Sign', rightCenterX, footerY + 4.5, { align: 'center' });
 
       doc.save(`Master_School_Timetable_All_Classes_${activeDay}.pdf`);
       showToast(`Master Timetable PDF (All Classes) downloaded for ${activeDay}!`, 'success');
@@ -1528,7 +1528,7 @@ export default function TimetableView() {
             <div className="mt-8 pt-4 border-t border-gray-300 flex items-center justify-between text-xs font-bold text-gray-700">
               <div>Class Teacher Signature</div>
               <div className="text-right text-[#1E3A8A] font-black uppercase">
-                Director Sign & Official Stamp
+                Principal Sign & Official Stamp
               </div>
             </div>
           </div>

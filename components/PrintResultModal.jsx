@@ -348,7 +348,7 @@ export default function PrintResultModal({ result: propResult, student: propStud
                 <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter mt-1">Verified Marksheet</span>
               </div>
 
-              {/* Right: Stamp & Director Sign (Dynamically Scaled via Settings) */}
+              {/* Right: Stamp & Principal Sign (Dynamically Scaled via Settings) */}
               <div className="flex flex-col items-center">
                 <div
                   className="relative flex items-center justify-center mb-1"
@@ -373,7 +373,7 @@ export default function PrintResultModal({ result: propResult, student: propStud
                   {sigSrc ? (
                     <img
                       src={sigSrc}
-                      alt="Director Signature"
+                      alt="Principal Signature"
                       className="relative z-10 object-contain mb-0.5"
                       style={{
                         width: `${sigWidthPx}px`,
@@ -386,7 +386,7 @@ export default function PrintResultModal({ result: propResult, student: propStud
                   )}
                 </div>
                 <div className="w-28 sm:w-36 border-b border-indigo-950" />
-                <div className="text-[10px] font-bold uppercase text-slate-700 tracking-tight mt-1">Director Sign</div>
+                <div className="text-[10px] font-bold uppercase text-slate-700 tracking-tight mt-1">Principal Sign</div>
               </div>
             </div>
 

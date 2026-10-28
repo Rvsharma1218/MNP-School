@@ -370,7 +370,7 @@ export default function AdmitCardView() {
         doc.setFontSize(8.5);
         doc.text('Candidate Signature', M + 37, sigLineY + 5, { align: 'center' });
 
-        // Right: Director Sign with Unified Stamp & Signature Overlay (matching app admit_card_screen.dart:755)
+        // Right: Principal Sign with Unified Stamp & Signature Overlay (matching app admit_card_screen.dart:755)
         const rightSigX = M + cardW - 70;
         const rightCenterX = rightSigX + 27.5;
         const stampScale = Number(settings.stampScale) || 1.0;
@@ -399,7 +399,7 @@ export default function AdmitCardView() {
         doc.setTextColor(30, 58, 138);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
-        doc.text('Director Sign', rightCenterX, sigLineY + 5, { align: 'center' });
+        doc.text('Principal Sign', rightCenterX, sigLineY + 5, { align: 'center' });
       }
 
       const filename = singleStudent
@@ -913,7 +913,7 @@ export default function AdmitCardView() {
                         <div className="w-28 border-b border-gray-400 mb-1" />
                         <span className="text-gray-700">Candidate Signature</span>
                       </div>
-                      {/* Right: Unified Stamp & Director Signature Stack (matching Flutter app) */}
+                      {/* Right: Unified Stamp & Principal Signature Stack (matching Flutter app) */}
                       <div className="text-center flex flex-col items-center">
                         <div className="relative flex items-center justify-center min-w-[130px] min-h-[44px] mb-1">
                           {(settings.schoolStamp || settings.stampUrl || settings.sealUrl) && (
@@ -945,7 +945,7 @@ export default function AdmitCardView() {
                         </div>
                         <div className="w-36 border-b-2 border-[#1E3A8A] mb-1" />
                         <span className="text-[#1E3A8A] font-black uppercase tracking-wider text-[8.5px]">
-                          Director Sign
+                          Principal Sign
                         </span>
                       </div>
                     </div>
@@ -1094,7 +1094,7 @@ export default function AdmitCardView() {
                         <div className="w-36 border-b border-gray-400 mb-1.5" />
                         <span className="text-gray-700">Candidate Signature</span>
                       </div>
-                      {/* Right: Unified Stamp & Director Signature Stack for Print */}
+                      {/* Right: Unified Stamp & Principal Signature Stack for Print */}
                       <div className="text-center flex flex-col items-center">
                         <div className="relative flex items-center justify-center min-w-[140px] min-h-[48px] mb-1">
                           {(settings.schoolStamp || settings.stampUrl || settings.sealUrl) && (
@@ -1118,7 +1118,7 @@ export default function AdmitCardView() {
                         </div>
                         <div className="w-44 border-b-2 border-[#1E3A8A] mb-1.5" />
                         <span className="text-[#1E3A8A] font-black uppercase tracking-wider">
-                          Director Sign
+                          Principal Sign
                         </span>
                       </div>
                     </div>

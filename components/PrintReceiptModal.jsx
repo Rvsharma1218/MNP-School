@@ -453,7 +453,7 @@ export default function PrintReceiptModal({ payment, student, onClose }) {
                   {(settings.principalSignature || settings.signatureUrl || settings.signaturePath || settings.signature) && (
                     <img
                       src={settings.principalSignature || settings.signatureUrl || settings.signaturePath || settings.signature}
-                      alt="Director Signature"
+                      alt="Principal Signature"
                       className="relative z-10 w-auto object-contain"
                       style={{
                         height: `${Math.round(32 * (Number(settings.signatureScale) || 1.0))}px`,
@@ -465,7 +465,7 @@ export default function PrintReceiptModal({ payment, student, onClose }) {
                 </div>
                 <div className="w-28 border-t border-slate-900 pt-0.5 text-center">
                   <div className="font-bold text-slate-900 tracking-tight text-[11px]">
-                    Director Sign
+                    Principal Sign
                   </div>
                 </div>
               </div>
