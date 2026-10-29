@@ -35,7 +35,15 @@ export default function AdmitCardView() {
     return students.filter(s => canAccessClass(s.className || s.course));
   }, [students, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
-  const [selectedClass, setSelectedClass] = useState('all');
+  const [selectedClass, setSelectedClass] = useState(
+    isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
+  );
+
+  useEffect(() => {
+    if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length === 1) {
+      setSelectedClass(allowedClasses[0]);
+    }
+  }, [isPrincipal, hasAllClassesAccess, allowedClasses]);
   const [examTitle, setExamTitle] = useState('ANNUAL EXAMINATION 2026');
   const [searchQuery, setSearchQuery] = useState('');
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -507,7 +515,11 @@ export default function AdmitCardView() {
               onChange={(e) => setSelectedClass(e.target.value)}
               className="mt-1 w-full px-3 py-2 bg-surface2 rounded-xl border border-border text-xs font-semibold text-text focus:outline-primary"
             >
-              <option value="all">All Classes Booklet ({students.length} Students)</option>
+              {(isPrincipal || hasAllClassesAccess || schoolClasses.length > 1) && (
+                <option value="all">
+                  {isPrincipal || hasAllClassesAccess ? `All Classes Booklet (${students.length} Students)` : `All Assigned Classes (${accessibleStudents.length} Students)`}
+                </option>
+              )}
               {schoolClasses.map(c => (
                 <option key={c} value={c}>Class {c}</option>
               ))}

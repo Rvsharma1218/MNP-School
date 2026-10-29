@@ -1533,11 +1533,16 @@ export default function SignInView() {
                       onClick={() => {
                         const code = prompt(
                           isHi
-                            ? "आईडी कार्ड या रसीद से बारकोड/कॉर्ड दर्ज करें या पेस्ट करें (उदा. ADM-2026-001):"
-                            : "Scan/Enter Student QR Code or ID from Card/Receipt (e.g. ADM-2026-001):"
+                            ? "मार्कशीट, आईडी कार्ड या रसीद का QR Code दर्ज करें (उदा. STU2026001):"
+                            : "Scan/Enter Student QR Code (from Marksheet, ID Card, or Receipt):"
                         );
                         if (code && code.trim()) {
-                          setParentAdmissionNo(code.trim());
+                          let clean = code.trim();
+                          const match = clean.match(/STUDENT:([^|]+)/i) || clean.match(/ID:([^|]+)/i) || clean.match(/ADM:([^|]+)/i);
+                          if (match && match[1]) {
+                            clean = match[1].trim();
+                          }
+                          setParentAdmissionNo(clean);
                         }
                       }}
                       className="w-full p-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-3 cursor-pointer text-left group"

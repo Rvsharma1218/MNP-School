@@ -67,6 +67,12 @@ export default function ResultsView() {
   const [resultsClassFilter, setResultsClassFilter] = useState(
     isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
   );
+
+  useEffect(() => {
+    if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length === 1) {
+      setResultsClassFilter(allowedClasses[0]);
+    }
+  }, [isPrincipal, hasAllClassesAccess, allowedClasses]);
   const [resultsExamFilter, setResultsExamFilter] = useState('all');
   const [savedViewMode, setSavedViewMode] = useState('cards'); // 'cards' | 'table'
 
@@ -125,16 +131,21 @@ export default function ResultsView() {
     });
   }, [students, settings, isPrincipal, hasAllClassesAccess, allowedClasses]);
 
+  // Teacher accessible results overall (for total counters and badge counts)
+  const scopedResults = useMemo(() => {
+    return results.filter(r => {
+      const student = findStudent(r);
+      const studentClass = student?.className || student?.course || r.className || r.class || '';
+      return isPrincipal || hasAllClassesAccess || canAccessClass(studentClass);
+    });
+  }, [results, students, isPrincipal, hasAllClassesAccess, canAccessClass]);
+
   // Filter and sort saved results Roll Number wise
   const filteredResults = useMemo(() => {
-    return results
+    return scopedResults
       .filter(r => {
         const student = findStudent(r);
         const studentClass = student?.className || student?.course || r.className || r.class || '';
-        
-        if (!isPrincipal && !hasAllClassesAccess && !canAccessClass(studentClass)) {
-          return false;
-        }
 
         if (resultsClassFilter !== 'all' && String(studentClass).trim().toLowerCase() !== resultsClassFilter.toLowerCase()) {
           return false;
@@ -556,7 +567,7 @@ export default function ResultsView() {
             <CheckSquare className="w-3.5 h-3.5" />
             <span>Results</span>
             <span className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black ${activeTab === 'saved' ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-700'}`}>
-              {results.length}
+              {scopedResults.length}
             </span>
           </button>
 
@@ -648,7 +659,9 @@ export default function ResultsView() {
                 onChange={(e) => setResultsClassFilter(e.target.value)}
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-indigo-500"
               >
-                <option value="all">All Classes</option>
+                {(isPrincipal || hasAllClassesAccess || availableClasses.length > 1) && (
+                  <option value="all">All Classes</option>
+                )}
                 {availableClasses.map(c => (
                   <option key={c} value={c}>Class {c}</option>
                 ))}
@@ -1012,7 +1025,7 @@ export default function ResultsView() {
                 className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 font-bold text-xs border border-indigo-200 flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Award className="w-3.5 h-3.5" />
-                <span>View Results ({results.length})</span>
+                <span>View Results ({scopedResults.length})</span>
               </button>
             </div>
           </div>

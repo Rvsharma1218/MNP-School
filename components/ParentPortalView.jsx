@@ -40,7 +40,8 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { exportSingleAdmitCardPDF } from '../lib/exportUtils';
+import { exportSingleAdmitCardPDF, exportIdCardsPDF, openWhatsAppIdCardShare } from '../lib/exportUtils';
+import { QRCodeSVG } from 'qrcode.react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import {
@@ -72,6 +73,9 @@ export default function ParentPortalView() {
   const [selectedExamId, setSelectedExamId] = useState('all');
   const [previewAadhaarModal, setPreviewAadhaarModal] = useState(false);
   const [downloadingAdmitCard, setDownloadingAdmitCard] = useState(false);
+  const [downloadingIdCard, setDownloadingIdCard] = useState(false);
+  const [idCardTheme, setIdCardTheme] = useState('#0A1128');
+  const [idCardBack, setIdCardBack] = useState(false);
 
   // Complaints / Message to Principal State
   const [complaintCategory, setComplaintCategory] = useState('Academic & Studies (पढ़ाई संबंधी)');
@@ -458,6 +462,18 @@ export default function ParentPortalView() {
           </button>
 
           <button
+            onClick={() => setActiveTab('idcard')}
+            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activeTab === 'idcard'
+                ? 'bg-[#1f108e] text-white shadow-md shadow-indigo-500/20'
+                : 'bg-white dark:bg-[#111c38] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
+            }`}
+          >
+            <CreditCard className="w-4 h-4 text-blue-400" />
+            <span>ID Card</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('admitcard')}
             className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'admitcard'
@@ -713,6 +729,29 @@ export default function ParentPortalView() {
                 >
                   <Phone className="w-4 h-4" />
                   <span>Contact Accounts Office</span>
+                </button>
+              </div>
+
+              {/* ID Card Quick Access Card */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-[#172554] dark:to-[#0f172a] rounded-3xl p-6 border border-blue-100 dark:border-blue-900/50 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <CreditCard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span>Student ID Card</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                    Live Card
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Official digital ID card for {student?.name || 'Student'}. View live preview and download printable PDF.
+                </p>
+                <button
+                  onClick={() => setActiveTab('idcard')}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>View & Download ID Card</span>
                 </button>
               </div>
 
@@ -1412,6 +1451,231 @@ export default function ParentPortalView() {
             </div>
           </div>
         )}
+
+        {/* ── TAB: ID CARD PREVIEW & DOWNLOAD ── */}
+        {activeTab === 'idcard' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  <span>Student Identity Card</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Official verified student identity card issued by {settings.schoolName || 'Mission Navodaya Public School'}.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      showToast('Sharing ID Card on WhatsApp...', 'info');
+                      await openWhatsAppIdCardShare(student, settings);
+                    } catch (e) {
+                      showToast('Error sharing ID Card', 'error');
+                    }
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>WhatsApp Share</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={downloadingIdCard}
+                  onClick={async () => {
+                    try {
+                      setDownloadingIdCard(true);
+                      showToast('Generating official ID Card PDF...', 'info');
+                      await exportIdCardsPDF([student], settings);
+                      showToast('ID Card PDF downloaded successfully!', 'success');
+                    } catch (e) {
+                      showToast('Failed to download ID Card PDF', 'error');
+                    } finally {
+                      setDownloadingIdCard(false);
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{downloadingIdCard ? 'Generating PDF...' : 'Download ID Card (PDF)'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Card Preview Studio */}
+            <div className="bg-white border border-border rounded-2xl p-6 shadow-sm flex flex-col items-center">
+              {/* Controls: Front/Back & Themes */}
+              <div className="w-full max-w-md flex flex-col sm:flex-row items-center justify-between gap-3 mb-6">
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setIdCardBack(false)}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${!idCardBack ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    FRONT SIDE
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIdCardBack(true)}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${idCardBack ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    BACK SIDE
+                  </button>
+                </div>
+
+                {/* Color Theme Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-500">Theme:</span>
+                  {[
+                    { color: '#0A1128', name: 'Navy' },
+                    { color: '#1E3A8A', name: 'Blue' },
+                    { color: '#064E3B', name: 'Emerald' },
+                    { color: '#831843', name: 'Maroon' },
+                    { color: '#3B0764', name: 'Purple' },
+                    { color: '#0F172A', name: 'Dark' },
+                  ].map(t => (
+                    <button
+                      key={t.color}
+                      type="button"
+                      title={t.name}
+                      onClick={() => setIdCardTheme(t.color)}
+                      className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${idCardTheme === t.color ? 'border-amber-400 scale-110 shadow-sm' : 'border-transparent opacity-80 hover:opacity-100'}`}
+                      style={{ backgroundColor: t.color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* ID Card Visual Element */}
+              <div
+                className="w-full max-w-[370px] rounded-2xl shadow-xl overflow-hidden border border-amber-400/40 select-none transition-all"
+                style={{ backgroundColor: idCardTheme }}
+              >
+                {!idCardBack ? (
+                  /* FRONT OF CARD */
+                  <div className="p-4 flex flex-col justify-between text-white min-h-[230px]">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 pb-3 border-b border-white/15">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border-2 border-amber-400 p-0.5 flex-shrink-0 flex items-center justify-center">
+                        {settings.logoUrl || settings.logoPath ? (
+                          <img
+                            src={settings.logoUrl || settings.logoPath}
+                            alt="Logo"
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          <span className="font-black text-amber-400 text-sm">MNP</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-black text-xs uppercase tracking-tight text-white leading-tight truncate">
+                          {settings.schoolName || 'MISSION NAVODAYA PUBLIC SCHOOL'}
+                        </h4>
+                        <p className="text-[10px] text-amber-300 font-bold truncate mt-0.5">
+                          {settings.tagline || 'Excellence in Education'} • {settings.currentSession || '2026-27'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Middle: Photo + Info + QR */}
+                    <div className="flex items-center gap-3 py-3">
+                      {/* Student Photo */}
+                      <div className="w-16 h-20 rounded-xl overflow-hidden bg-slate-800 border-2 border-white/20 flex-shrink-0 flex items-center justify-center">
+                        {student?.photoUrl || student?.photoPath ? (
+                          <img
+                            src={student.photoUrl || student.photoPath}
+                            alt={student.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-8 h-8 text-white/40" />
+                        )}
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex-1 min-w-0 space-y-0.5 text-[10.5px]">
+                        <h5 className="font-black text-sm uppercase text-white tracking-wide truncate">
+                          {student?.name}
+                        </h5>
+                        <div className="flex"><span className="w-14 font-extrabold text-amber-300 text-[10px]">ID NO:</span><span className="font-bold text-white text-[10.5px]">{student?.studentId}</span></div>
+                        <div className="flex"><span className="w-14 font-extrabold text-amber-300 text-[10px]">ADM NO:</span><span className="font-bold text-white text-[10.5px]">{student?.admissionNumber || student?.studentId}</span></div>
+                        <div className="flex">
+                          <span className="w-14 font-extrabold text-amber-300 text-[10px]">CLASS:</span>
+                          <span className="font-bold text-white text-[10.5px]">Class {student?.className || '10th'} - {student?.section || 'A'}</span>
+                        </div>
+                        <div className="flex"><span className="w-14 font-extrabold text-amber-300 text-[10px]">MOBILE:</span><span className="font-bold text-white text-[10.5px]">{student?.mobile || student?.phone || '—'}</span></div>
+                      </div>
+
+                      {/* QR Code */}
+                      <div className="flex flex-col items-center flex-shrink-0 bg-white/10 p-1.5 rounded-lg border border-white/15">
+                        <div className="p-0.5 bg-white rounded">
+                          <QRCodeSVG
+                            value={`ID:${student?.studentId}|Name:${student?.name}|Class:${student?.className}`}
+                            size={44}
+                            level="M"
+                          />
+                        </div>
+                        <span className="text-[6.5px] text-slate-300 mt-1 uppercase font-bold tracking-widest">
+                          VERIFIED
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Footer: Auth Signature */}
+                    <div className="pt-2 border-t border-white/15 flex items-center justify-between">
+                      <span className="text-[9px] text-slate-400 font-semibold">STUDENT IDENTITY CARD</span>
+                      <div className="flex flex-col items-center">
+                        {settings.principalSignature || settings.signatureUrl ? (
+                          <img
+                            src={settings.principalSignature || settings.signatureUrl}
+                            alt="Sign"
+                            className="h-6 max-w-[80px] object-contain mb-0.5"
+                          />
+                        ) : (
+                          <span className="font-serif italic font-bold text-amber-300 text-[10px] mb-0.5">Principal Sign</span>
+                        )}
+                        <span className="text-[#FFD700] font-black uppercase tracking-wider text-[7px]">
+                          AUTH SIGNATURE
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* BACK OF CARD */
+                  <div className="p-5 flex flex-col justify-between text-white min-h-[230px]">
+                    <div className="space-y-2">
+                      <h5 className="font-black text-xs uppercase text-[#FFD700] tracking-wider border-b border-white/15 pb-1">
+                        Terms & Instructions
+                      </h5>
+                      <ol className="list-decimal pl-4 text-[10px] text-slate-200 space-y-1.5 leading-relaxed">
+                        <li>This card is non-transferable and must be carried at all times on campus.</li>
+                        <li>If found, please immediately return to the school administration desk.</li>
+                        <li>Loss of card must be reported immediately to issue a replacement.</li>
+                      </ol>
+                    </div>
+
+                    <div className="border-t border-white/15 pt-3 space-y-1 text-center">
+                      <p className="text-[10px] font-bold text-[#FFD700] uppercase tracking-wide">
+                        {settings.schoolName || 'MISSION NAVODAYA PUBLIC SCHOOL'}
+                      </p>
+                      <p className="text-[9px] text-slate-300">
+                        {settings.address || 'Campus Road, Education Hub'} • Helpline: {settings.mobile || '8568643490'}
+                      </p>
+                      <p className="text-[8px] text-slate-400 font-semibold tracking-wider uppercase mt-1">
+                        PROPERTY OF SCHOOL • RETURN IF FOUND
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {/* ── TAB 6: COMPLAINTS & MESSAGE TO PRINCIPAL ── */}
         {activeTab === 'complaints' && (

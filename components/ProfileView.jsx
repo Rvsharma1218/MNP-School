@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useSchoolStore } from '../lib/store';
-import { User, ShieldCheck, Mail, Building, Key, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { User, ShieldCheck, Mail, Building, Key, Save, AlertCircle, CheckCircle2, BookOpen } from 'lucide-react';
 
 export default function ProfileView() {
-  const { currentUser, setCurrentUser, settings, updateSettings, resetUserPassword, showToast } = useSchoolStore();
+  const { currentUser, setCurrentUser, settings, updateSettings, resetUserPassword, showToast, hasAllClassesAccess, allowedClasses } = useSchoolStore();
   const [profileName, setProfileName] = useState(
     (currentUser?.role === 'principal' && settings?.principalName)
       ? settings.principalName
@@ -131,6 +131,31 @@ export default function ProfileView() {
               <span>Role: </span>
               <span className="text-text capitalize">{currentUser.role === 'principal' ? 'Principal / Admin' : 'Teacher'}</span>
             </div>
+            {currentUser.role !== 'principal' && (
+              <div className="flex flex-col gap-1.5 py-1">
+                <div className="flex items-center gap-2.5">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  <span>Assigned Classes: </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 pl-6 pt-0.5">
+                  {hasAllClassesAccess ? (
+                    <span className="px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-[11px] flex items-center gap-1">
+                      ★ All Classes Access
+                    </span>
+                  ) : allowedClasses.length > 0 ? (
+                    allowedClasses.map(c => (
+                      <span key={c} className="px-2 py-0.5 rounded-lg bg-teal-50 border border-teal-200 text-teal-700 font-bold text-[11px]">
+                        Class {c}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 font-bold text-[11px]">
+                      No Classes Assigned
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2.5 py-1">
               <Building className="w-4 h-4 text-primary" />
               <span>Institute: </span>
