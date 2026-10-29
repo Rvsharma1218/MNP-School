@@ -53,7 +53,7 @@ export default function ResultsView() {
   const assignedClass = currentUser?.assignedClass || '10th';
 
   // Navigation Tabs: 'saved' | 'entry' | 'exams'
-  const [activeTab, setActiveTab] = useState('saved');
+  const [activeTab, setActiveTab] = useState('exams');
 
   // Exam Creation Modal State
   const [isCreateExamOpen, setIsCreateExamOpen] = useState(false);
@@ -512,48 +512,51 @@ export default function ResultsView() {
         </div>
 
         {/* Responsive Segmented Tabs */}
-        <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 w-full md:w-auto overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('saved')}
-            className={`flex-1 md:flex-none px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'saved'
-                ? 'bg-white text-indigo-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span>Saved Results</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-50 text-indigo-700 font-black">
-              {results.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('entry')}
-            className={`flex-1 md:flex-none px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'entry'
-                ? 'bg-white text-indigo-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Edit className="w-3.5 h-3.5" />
-            <span>Mark Entry Desk</span>
-          </button>
-
+        <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 w-full md:w-auto overflow-x-auto gap-1">
           <button
             onClick={() => setActiveTab('exams')}
-            className={`flex-1 md:flex-none px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
               activeTab === 'exams'
-                ? 'bg-white text-indigo-900 shadow-xs'
+                ? 'bg-[#1E3A8A] text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>Exams & Tests</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-50 text-indigo-700 font-black">
+            <span>Exams</span>
+            <span className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black ${activeTab === 'exams' ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-700'}`}>
               {exams.length}
             </span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'saved'
+                ? 'bg-[#1E3A8A] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <CheckSquare className="w-3.5 h-3.5" />
+            <span>Results</span>
+            <span className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black ${activeTab === 'saved' ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-700'}`}>
+              {results.length}
+            </span>
+          </button>
+
+          {activeTab === 'entry' && (
+            <div className="flex items-center gap-1.5 bg-[#1E3A8A] text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs whitespace-nowrap">
+              <Edit className="w-3.5 h-3.5 text-amber-300" />
+              <span>Mark Entry Desk</span>
+              <button
+                type="button"
+                onClick={() => setActiveTab('exams')}
+                className="ml-1 p-0.5 hover:bg-white/20 rounded text-white/80 hover:text-white cursor-pointer"
+                title="Back to Exams"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -587,7 +590,7 @@ export default function ResultsView() {
 
             <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-[11px] text-rose-600 font-bold uppercase tracking-wider">Compartment / Fail</p>
+                <p className="text-[11px] text-rose-600 font-bold uppercase tracking-wider">Needs Improvement</p>
                 <h3 className="text-xl sm:text-2xl font-black text-rose-700 mt-0.5">{stats.failed}</h3>
               </div>
               <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0">
@@ -705,11 +708,11 @@ export default function ResultsView() {
                 No results match your search or filter. You can enter class marks or create a new exam right now.
               </p>
               <button
-                onClick={() => setActiveTab('entry')}
-                className="px-4 py-2 rounded-xl bg-indigo-900 hover:bg-indigo-950 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
+                onClick={() => setActiveTab('exams')}
+                className="px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#162a65] text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
               >
-                <Edit className="w-4 h-4" />
-                <span>Go to Mark Entry Desk</span>
+                <BookOpen className="w-4 h-4" />
+                <span>Go to Exams</span>
               </button>
             </div>
           ) : savedViewMode === 'cards' ? (
@@ -773,7 +776,7 @@ export default function ResultsView() {
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                             : 'bg-rose-100 text-rose-800 border border-rose-200'
                         }`}>
-                          {res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? 'PASSED' : 'FAILED'}
+                          {res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? 'PASSED' : 'NEEDS IMPROVEMENT'}
                         </span>
                       </div>
 
@@ -892,9 +895,9 @@ export default function ResultsView() {
                           <td className="p-3 text-center font-black text-indigo-900">{grade}</td>
                           <td className="p-3 text-center">
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                              isPass ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                              res.status === 'PROMOTED' ? 'bg-amber-100 text-amber-800' : isPass ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                             }`}>
-                              {res.status || (isPass ? 'PASS' : 'FAIL')}
+                              {res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? 'PASS' : 'NEEDS IMPROVEMENT'}
                             </span>
                           </td>
                           <td className="p-3 text-right">
@@ -939,6 +942,40 @@ export default function ResultsView() {
       {/* ═════════════════════════════════════════════════════════ */}
       {activeTab === 'entry' && (
         <div className="space-y-4">
+
+          {/* Desk Top Navigation Header */}
+          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('exams')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all cursor-pointer shadow-xs active:scale-95"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back to Exams</span>
+              </button>
+              <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+              <div className="min-w-0">
+                <span className="text-xs font-black text-slate-900 block truncate">
+                  Mark Entry Desk
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium truncate block">
+                  {bulkExamTitle} • Class {bulkClass}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={() => setActiveTab('saved')}
+                className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 font-bold text-xs border border-indigo-200 flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Award className="w-3.5 h-3.5" />
+                <span>View Results ({results.length})</span>
+              </button>
+            </div>
+          </div>
 
           {/* Desk Top Configuration Controls */}
           <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
@@ -1278,7 +1315,7 @@ export default function ResultsView() {
                               <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                                 livePass ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                               }`}>
-                                {livePass ? 'PASS' : 'FAIL'}
+                                {livePass ? 'PASS' : 'NEEDS IMPROVEMENT'}
                               </span>
                             ) : (
                               <span className="text-[10px] text-slate-400 font-bold">PENDING</span>
@@ -1362,7 +1399,7 @@ export default function ResultsView() {
                         <div className="text-right">
                           <span className="text-[10px] uppercase font-bold text-slate-400 block">Status</span>
                           <span className={`font-black ${existing.status === 'FAIL' ? 'text-rose-600' : 'text-emerald-700'}`}>
-                            {existing.status || 'PASS'}
+                            {existing.status === 'FAIL' ? 'NEEDS IMPROVEMENT' : (existing.status || 'PASS')}
                           </span>
                         </div>
                       </div>
@@ -1919,7 +1956,7 @@ function StudentDetailedMarkEntryModal({
                 ? 'bg-emerald-100 text-emerald-800'
                 : 'bg-rose-100 text-rose-800'
             }`}>
-              {finalStatus}
+              {finalStatus === 'FAIL' ? 'NEEDS IMPROVEMENT' : finalStatus}
             </div>
           </div>
 
@@ -1949,7 +1986,7 @@ function StudentDetailedMarkEntryModal({
               >
                 <option value="AUTO">AUTO (Calculated)</option>
                 <option value="PASS">PASS</option>
-                <option value="FAIL">FAIL</option>
+                <option value="FAIL">NEEDS IMPROVEMENT</option>
                 <option value="PROMOTED">PROMOTED</option>
               </select>
             </div>
