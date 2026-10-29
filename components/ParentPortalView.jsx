@@ -151,14 +151,21 @@ export default function ParentPortalView() {
   attLogs.sort((a, b) => b.date.localeCompare(a.date));
   const attendanceRate = totalMarkedDays > 0 ? Math.round((presentDays / totalMarkedDays) * 100) : 100;
 
-  // Filter results for this student
+  // Filter results for this student (supports doc id, studentId, admissionNo, and student name fallback)
   const studentResults = results.filter((r) => {
     if (!student) return false;
-    return (
+    const matchId =
       r.studentId === student.id ||
-      r.admissionNumber === student.admissionNo ||
-      r.admissionNo === student.admissionNo
-    );
+      (student.studentId && r.studentId === student.studentId) ||
+      (student.admissionNo && (r.studentId === student.admissionNo || r.admissionNumber === student.admissionNo || r.admissionNo === student.admissionNo)) ||
+      (student.admissionNumber && (r.studentId === student.admissionNumber || r.admissionNumber === student.admissionNumber || r.admissionNo === student.admissionNumber));
+    if (matchId) return true;
+    if (r.studentName && student.name && r.studentName.trim().toLowerCase() === student.name.trim().toLowerCase()) {
+      if (!r.className || !student.className || r.className.trim().toLowerCase() === student.className.trim().toLowerCase()) {
+        return true;
+      }
+    }
+    return false;
   });
 
   // Filter notices for students/parents
@@ -1116,8 +1123,12 @@ export default function ParentPortalView() {
                             <h4 className="font-extrabold text-base text-slate-900 dark:text-white">
                               {r.examName || r.exam || 'Terminal Examination'}
                             </h4>
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60">
-                              Grade: {grade} ({pct}%)
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${
+                              Number(pct) >= 33
+                                ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/60'
+                                : 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200/60'
+                            }`}>
+                              {Number(pct) >= 33 ? `PASSED • ${grade} (${pct}%)` : `NEEDS IMPROVEMENT • ${grade} (${pct}%)`}
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
@@ -1158,7 +1169,7 @@ export default function ParentPortalView() {
                               const sName = student?.name || 'Student';
                               const schName = settings?.instituteName || settings?.schoolName || 'School';
                               const isPass = Number(pct) >= 33;
-                              const msg = `📢 *परीक्षा परिणाम (Exam Result)*\n━━━━━━━━━━━━━━━━━━━\n👤 *छात्र:* ${sName}\n🏫 *स्कूल:* ${schName}\n📝 *परीक्षा:* ${r.examName || r.exam || 'Exam'}\n📊 *प्राप्तांक:* ${obt} / ${total}\n📈 *प्रतिशत:* ${pct}%\n🎯 *ग्रेड:* ${grade}\n🏆 *स्थिति:* ${isPass ? '✅ उत्तीर्ण (PASSED)' : '❌ अनुत्तीर्ण (FAILED)'}\n━━━━━━━━━━━━━━━━━━━\nधन्यवाद!`;
+                              const msg = `📢 *परीक्षा परिणाम (Exam Result)*\n━━━━━━━━━━━━━━━━━━━\n👤 *छात्र:* ${sName}\n🏫 *स्कूल:* ${schName}\n📝 *परीक्षा:* ${r.examName || r.exam || 'Exam'}\n📊 *प्राप्तांक:* ${obt} / ${total}\n📈 *प्रतिशत:* ${pct}%\n🎯 *ग्रेड:* ${grade}\n🏆 *स्थिति:* ${isPass ? '✅ उत्तीर्ण (PASSED)' : '⚠️ सुधार की आवश्यकता (NEEDS IMPROVEMENT)'}\n━━━━━━━━━━━━━━━━━━━\nधन्यवाद!`;
                               const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
                               window.open(url, '_blank');
                             }}
