@@ -39,6 +39,86 @@ class TeacherProfileScreen extends ConsumerStatefulWidget {
 
 class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
     with SingleTickerProviderStateMixin {
+  void _quickChangeTeacherPhoto() {
+    String? updatedPhoto = _teacher.photoUrl;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 16),
+              const Text('Change Teacher Profile Photo (DP)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              const SizedBox(height: 16),
+              StudentPhotoPicker(
+                photoPath: updatedPhoto,
+                size: 110,
+                onChanged: (val) {
+                  setSheetState(() => updatedPhoto = val);
+                },
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetCtx),
+                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          final schoolUid = SessionService.instance.activeSchoolUid;
+                          final schoolEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+                          await TeacherService.instance.updateTeacherDetails(
+                            schoolUid: schoolUid.isNotEmpty ? schoolUid : 'SCHOOL_001',
+                            schoolEmail: schoolEmail,
+                            teacher: _teacher,
+                            newName: _teacher.name,
+                            photoUrl: updatedPhoto,
+                          );
+                          setState(() => _teacher = _teacher.copyWith(photoUrl: updatedPhoto));
+                          if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Teacher profile photo updated successfully!'), backgroundColor: AppColors.success),
+                            );
+                          }
+                        } catch (e) {
+                          if (sheetCtx.mounted) {
+                            ScaffoldMessenger.of(sheetCtx).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error));
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Save Photo', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   late TabController _tabController;
   late TeacherModel _teacher;
   bool _showPassword = false;
@@ -1212,51 +1292,73 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         // Avatar Photo
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.25),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 3),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.25),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Colors.white,
-                            child: ClipOval(
-                              child: (_teacher.photoUrl != null && _teacher.photoUrl!.isNotEmpty)
-                                  ? AppUtils.buildAppImageWidget(
-                                      _teacher.photoUrl,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                      placeholder: Center(
-                                        child: Text(
-                                          _teacher.name.isNotEmpty ? _teacher.name[0].toUpperCase() : 'T',
-                                          style: const TextStyle(
-                                            fontSize: 28,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.primary,
+                              child: CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Colors.white,
+                                child: ClipOval(
+                                  child: (_teacher.photoUrl != null && _teacher.photoUrl!.isNotEmpty)
+                                      ? AppUtils.buildAppImageWidget(
+                                          _teacher.photoUrl,
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.cover,
+                                          placeholder: Center(
+                                            child: Text(
+                                              _teacher.name.isNotEmpty ? _teacher.name[0].toUpperCase() : 'T',
+                                              style: const TextStyle(
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.w800,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Text(
+                                            _teacher.name.isNotEmpty ? _teacher.name[0].toUpperCase() : 'T',
+                                            style: const TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.w800,
+                                              color: AppColors.primary,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    )
-                                  : Center(
-                                      child: Text(
-                                        _teacher.name.isNotEmpty ? _teacher.name[0].toUpperCase() : 'T',
-                                        style: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ),
+                                ),
+                              ),
                             ),
-                          ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Material(
+                                color: const Color(0xFFFFD700),
+                                shape: const CircleBorder(),
+                                elevation: 4,
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  onTap: _quickChangeTeacherPhoto,
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(6),
+                                    child: Icon(Icons.camera_alt, size: 16, color: Color(0xFF0A1128)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
 

@@ -29,34 +29,33 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
   bool _showBackSide = false;
   bool _generatingPdf = false;
   String _searchQuery = '';
+  int _selectedThemeIndex = 0;
+
+  static const List<Map<String, dynamic>> _cardThemes = [
+    {'name': 'Royal Navy', 'primary': Color(0xFF0A1128), 'accent': Color(0xFFFFD700), 'hex': '#0A1128', 'accentHex': '#FFD700'},
+    {'name': 'Classic Blue', 'primary': Color(0xFF1E3A8A), 'accent': Color(0xFF60A5FA), 'hex': '#1E3A8A', 'accentHex': '#60A5FA'},
+    {'name': 'Emerald Green', 'primary': Color(0xFF064E3B), 'accent': Color(0xFF34D399), 'hex': '#064E3B', 'accentHex': '#34D399'},
+    {'name': 'Maroon Crimson', 'primary': Color(0xFF831843), 'accent': Color(0xFFF472B6), 'hex': '#831843', 'accentHex': '#F472B6'},
+    {'name': 'Deep Purple', 'primary': Color(0xFF3B0764), 'accent': Color(0xFFC084FC), 'hex': '#3B0764', 'accentHex': '#C084FC'},
+    {'name': 'Sleek Dark', 'primary': Color(0xFF0F172A), 'accent': Color(0xFFFFD700), 'hex': '#0F172A', 'accentHex': '#FFD700'},
+  ];
 
   ColorFilter _getInkColorFilter(String mode) {
     switch (mode.toLowerCase()) {
       case 'gold':
         return const ColorFilter.mode(Color(0xFFFFD700), BlendMode.srcIn);
       case 'dark':
-        return const ColorFilter.mode(Color(0xFF0A1128), BlendMode.srcIn);
+        // High-contrast gold so dark mode never disappears on dark cards
+        return const ColorFilter.mode(Color(0xFFFFD700), BlendMode.srcIn);
       case 'blue':
-        return const ColorFilter.mode(Color(0xFF0F3E8A), BlendMode.srcIn);
+        return const ColorFilter.mode(Color(0xFF60A5FA), BlendMode.srcIn);
       case 'white':
       default:
         return const ColorFilter.mode(Colors.white, BlendMode.srcIn);
     }
   }
 
-  Color _getInkTextColor(String mode) {
-    switch (mode.toLowerCase()) {
-      case 'gold':
-        return const Color(0xFFFFD700);
-      case 'dark':
-        return const Color(0xFF0A1128);
-      case 'blue':
-        return const Color(0xFF0F3E8A);
-      case 'white':
-      default:
-        return Colors.white;
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -210,6 +209,79 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                   ),
                   const SizedBox(height: 10),
 
+                  // Card Theme Selector
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.black12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.palette_outlined, size: 16, color: Color(0xFF0A1128)),
+                            const SizedBox(width: 8),
+                            const Text('Card Theme Color:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0A1128))),
+                            const Spacer(),
+                            Text(_cardThemes[_selectedThemeIndex]['name'], style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black54)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: List.generate(_cardThemes.length, (idx) {
+                              final t = _cardThemes[idx];
+                              final isSel = idx == _selectedThemeIndex;
+                              return GestureDetector(
+                                onTap: () => setState(() => _selectedThemeIndex = idx),
+                                child: Container(
+                                  margin: const EdgeInsets.only(right: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: t['primary'] as Color,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isSel ? (t['accent'] as Color) : Colors.black26,
+                                      width: isSel ? 2.5 : 1,
+                                    ),
+                                    boxShadow: isSel ? [BoxShadow(color: (t['primary'] as Color).withOpacity(0.4), blurRadius: 4, offset: const Offset(0, 2))] : null,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                          color: t['accent'] as Color,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        t['name'],
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   // Official Ink Color Selector (Matches Website)
                   if (settings.principalSignature != null && settings.principalSignature!.isNotEmpty) ...[
                     Container(
@@ -318,6 +390,10 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
 
   // =================== IN-APP CARD FRONT (MATCHES IMAGE 3) ===================
   Widget _buildInAppCardFront(StudentModel s, SettingsModel settings) {
+    final theme = _cardThemes[_selectedThemeIndex];
+    final Color cardPrimary = theme['primary'] as Color;
+    final Color cardAccent = theme['accent'] as Color;
+
     final schoolName = settings.schoolName.isNotEmpty ? settings.schoolName : 'MISSION NAVODAYA PUBLIC SCHOOL';
     final session = settings.currentSession.isNotEmpty ? settings.currentSession : '2026-27';
     final address = settings.address.isNotEmpty ? settings.address : 'Mora Mairi, BagwaanPur hat ,Siwan,Bihar 841507';
@@ -325,10 +401,11 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
 
     return Container(
       width: 360,
+      constraints: const BoxConstraints(minHeight: 235),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A1128),
+        color: cardPrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
+        border: Border.all(color: cardAccent, width: 1.5),
         boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 10, offset: Offset(0, 4))],
       ),
       clipBehavior: Clip.antiAlias,
@@ -338,12 +415,12 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
           // Top Golden Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            color: const Color(0xFFFFD700),
+            color: cardAccent,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('OFFICIAL STUDENT ID', style: TextStyle(color: Color(0xFF0A1128), fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5)),
-                Text('SESSION $session', style: const TextStyle(color: Color(0xFF0A1128), fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5)),
+                Text('OFFICIAL STUDENT ID', style: TextStyle(color: cardPrimary, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5)),
+                Text('SESSION $session', style: TextStyle(color: cardPrimary, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5)),
               ],
             ),
           ),
@@ -353,20 +430,23 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Row(
               children: [
+                // CIRCULAR LOGO
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFFFD700), width: 1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: cardAccent, width: 1.5),
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: AppUtils.buildAppImageWidget(
-                    settings.logoPath,
-                    width: 32,
-                    height: 32,
-                    placeholder: const Center(child: Text('MN', style: TextStyle(color: Color(0xFF0A1128), fontWeight: FontWeight.bold, fontSize: 12))),
+                  child: ClipOval(
+                    child: AppUtils.buildAppImageWidget(
+                      settings.logoPath,
+                      width: 34,
+                      height: 34,
+                      fit: BoxFit.cover,
+                      placeholder: Center(child: Text('MN', style: TextStyle(color: cardPrimary, fontWeight: FontWeight.bold, fontSize: 12))),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -382,7 +462,7 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                       ),
                       Text(
                         address,
-                        style: const TextStyle(color: Color(0xFFFFD700), fontSize: 8, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: cardAccent, fontSize: 8, fontWeight: FontWeight.w600),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -392,11 +472,11 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFFFD700), thickness: 1),
+          Divider(height: 1, color: cardAccent, thickness: 1),
 
           // Body Content
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -407,9 +487,9 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                       width: 72,
                       height: 88,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0A1128),
+                        color: cardPrimary,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFFFD700), width: 1.8),
+                        border: Border.all(color: cardAccent, width: 1.8),
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: s.photoPath != null && s.photoPath!.isNotEmpty
@@ -425,10 +505,10 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFD700),
+                        color: cardAccent,
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Text('STUDENT', style: TextStyle(color: Color(0xFF0A1128), fontSize: 8.5, fontWeight: FontWeight.w900)),
+                      child: Text('STUDENT', style: TextStyle(color: cardPrimary, fontSize: 8.5, fontWeight: FontWeight.w900)),
                     ),
                   ],
                 ),
@@ -446,11 +526,11 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      _buildPreviewRow('STUDENT ID', s.id),
-                      _buildPreviewRow('ADM NO', s.admissionNumber.isNotEmpty ? s.admissionNumber : s.id),
-                      _buildPreviewRow(isComp ? 'COURSE' : 'CLASS / SEC', isComp ? (s.course ?? 'Computer') : s.displayClass),
-                      _buildPreviewRow("FATHER'S NAME", s.fatherName.isNotEmpty ? s.fatherName : '-'),
-                      _buildPreviewRow('CONTACT NO', s.mobile),
+                      _buildPreviewRow('STUDENT ID', s.id, cardAccent),
+                      _buildPreviewRow('ADM NO', s.admissionNumber.isNotEmpty ? s.admissionNumber : s.id, cardAccent),
+                      _buildPreviewRow(isComp ? 'COURSE' : 'CLASS / SEC', isComp ? (s.course ?? 'Computer') : s.displayClass, cardAccent),
+                      _buildPreviewRow("FATHER'S NAME", s.fatherName.isNotEmpty ? s.fatherName : '-', cardAccent),
+                      _buildPreviewRow('CONTACT NO', s.mobile, cardAccent),
                     ],
                   ),
                 ),
@@ -458,44 +538,33 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
             ),
           ),
 
-          // Signature Right above Bottom Bar (Image 3 layout)
+          // Bottom Auth Signature (NO dark footer bar!)
           Padding(
-            padding: const EdgeInsets.only(right: 14, bottom: 2),
+            padding: const EdgeInsets.fromLTRB(14, 2, 14, 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (settings.principalSignature != null && settings.principalSignature!.isNotEmpty) ...[
-                  ColorFiltered(
-                    colorFilter: _getInkColorFilter(settings.signatureColorMode),
-                    child: AppUtils.buildAppImageWidget(
-                      settings.principalSignature,
-                      height: 27,
-                      placeholder: const SizedBox.shrink(),
-                    ),
-                  ),
-                ] else ...[
-                  const Text('Ravi Ku', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, color: Color(0xFFFFD700), fontSize: 14, fontWeight: FontWeight.bold)),
-                ],
-              ],
-            ),
-          ),
-
-          // Bottom Footer Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            color: const Color(0xFF05091E),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'PROPERTY OF $schoolName'.toUpperCase(),
-                    style: const TextStyle(color: Colors.white70, fontSize: 7, fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (settings.principalSignature != null && settings.principalSignature!.isNotEmpty) ...[
+                      ColorFiltered(
+                        colorFilter: _getInkColorFilter(settings.signatureColorMode),
+                        child: AppUtils.buildAppImageWidget(
+                          settings.principalSignature,
+                          height: 32,
+                          fit: BoxFit.contain,
+                          placeholder: const SizedBox.shrink(),
+                        ),
+                      ),
+                    ] else ...[
+                      Text('Principal Sign', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, color: cardAccent, fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                    Container(width: 85, height: 1, color: cardAccent),
+                    const SizedBox(height: 2),
+                    Text('AUTH SIGNATURE', style: TextStyle(color: cardAccent, fontSize: 7.5, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                  ],
                 ),
-                const Text('AUTH SIGNATURE', style: TextStyle(color: Color(0xFFFFD700), fontSize: 7.5, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
               ],
             ),
           ),
@@ -506,32 +575,38 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
 
   // =================== IN-APP CARD BACK (MATCHES IMAGE 2) ===================
   Widget _buildInAppCardBack(StudentModel s, SettingsModel settings) {
+    final theme = _cardThemes[_selectedThemeIndex];
+    final Color cardPrimary = theme['primary'] as Color;
+    final Color cardAccent = theme['accent'] as Color;
+
     final schoolName = settings.schoolName.isNotEmpty ? settings.schoolName : 'MISSION NAVODAYA PUBLIC SCHOOL';
     final phone = settings.mobile.isNotEmpty ? settings.mobile : '8568643490';
     final address = settings.address.isNotEmpty ? settings.address : 'Mora Mairi, BagwaanPur hat ,Siwan,Bihar 841507';
 
     return Container(
       width: 360,
+      constraints: const BoxConstraints(minHeight: 235), // Exact height match with front
       decoration: BoxDecoration(
-        color: const Color(0xFF0A1128),
+        color: cardPrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
+        border: Border.all(color: cardAccent, width: 1.5),
         boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 10, offset: Offset(0, 4))],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Top Yellow Bar
+          // Top Golden Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-            color: const Color(0xFFFFD700),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            color: cardAccent,
             width: double.infinity,
-            child: const Text('TERMS & CONDITIONS', style: TextStyle(color: Color(0xFF0A1128), fontWeight: FontWeight.w900, fontSize: 10.5, letterSpacing: 0.5)),
+            child: Text('TERMS & CONDITIONS', style: TextStyle(color: cardPrimary, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5)),
           ),
 
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -563,11 +638,11 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFFFFD700), thickness: 1),
+          Divider(height: 1, color: cardAccent, thickness: 1),
 
           // Bottom Details & Signature
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -591,19 +666,35 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                         colorFilter: _getInkColorFilter(settings.signatureColorMode),
                         child: AppUtils.buildAppImageWidget(
                           settings.principalSignature,
-                          height: 27,
+                          height: 28,
+                          fit: BoxFit.contain,
                           placeholder: const SizedBox.shrink(),
                         ),
                       ),
                     ] else ...[
-                      const Text('Ravi Ku', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, color: Color(0xFFFFD700), fontSize: 14, fontWeight: FontWeight.bold)),
+                      Text('Principal Sign', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, color: cardAccent, fontSize: 13, fontWeight: FontWeight.bold)),
                     ],
                     Container(width: 85, height: 1, color: Colors.white),
                     const SizedBox(height: 2),
-                    const Text('PRINCIPAL SIGN', style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.w900, fontSize: 8)),
+                    Text('PRINCIPAL SIGN', style: TextStyle(color: cardAccent, fontWeight: FontWeight.w900, fontSize: 8)),
                   ],
                 ),
               ],
+            ),
+          ),
+
+          // PROPERTY OF SCHOOL NAME ON BACK SIDE
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            color: Colors.black.withOpacity(0.35),
+            child: Center(
+              child: Text(
+                'PROPERTY OF ${schoolName.toUpperCase()}',
+                style: TextStyle(color: cardAccent, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
         ],
@@ -611,7 +702,7 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
     );
   }
 
-  Widget _buildPreviewRow(String label, String value) {
+  Widget _buildPreviewRow(String label, String value, [Color accent = const Color(0xFFFFD700)]) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 2.5),
       child: Row(
@@ -619,7 +710,7 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
         children: [
           SizedBox(
             width: 86,
-            child: Text('$label:', style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Color(0xFFFFD700))),
+            child: Text('$label:', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: accent)),
           ),
           Expanded(
             child: Text(value, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -638,6 +729,10 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
 
   // =================== PDF CARD GENERATOR (MATCHES IMAGE 2 & 3) ===================
   pw.Widget _buildPdfFrontSide(StudentModel s, SettingsModel settings, pw.MemoryImage? logo, pw.MemoryImage? sig, pw.MemoryImage? photo) {
+    final theme = _cardThemes[_selectedThemeIndex];
+    final primHex = theme['hex'] as String;
+    final accHex = theme['accentHex'] as String;
+
     final schoolName = settings.schoolName.isNotEmpty ? settings.schoolName : 'MISSION NAVODAYA PUBLIC SCHOOL';
     final session = settings.currentSession.isNotEmpty ? settings.currentSession : '2026-27';
     final address = settings.address.isNotEmpty ? settings.address : 'Mora Mairi, BagwaanPur hat ,Siwan,Bihar 841507';
@@ -647,21 +742,21 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
       width: 260,
       height: 165,
       decoration: pw.BoxDecoration(
-        color: PdfColor.fromHex('#0A1128'),
+        color: PdfColor.fromHex(primHex),
         borderRadius: pw.BorderRadius.circular(8),
-        border: pw.Border.all(color: PdfColor.fromHex('#FFD700'), width: 1.5),
+        border: pw.Border.all(color: PdfColor.fromHex(accHex), width: 1.5),
       ),
       child: pw.Column(
         children: [
           // Top Golden Bar
           pw.Container(
             padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            color: PdfColor.fromHex('#FFD700'),
+            color: PdfColor.fromHex(accHex),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text('OFFICIAL STUDENT ID', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#0A1128'))),
-                pw.Text('SESSION $session', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#0A1128'))),
+                pw.Text('OFFICIAL STUDENT ID', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex(primHex))),
+                pw.Text('SESSION $session', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex(primHex))),
               ],
             ),
           ),
@@ -676,8 +771,7 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                     width: 22,
                     height: 22,
                     margin: const pw.EdgeInsets.only(right: 6),
-                    decoration: pw.BoxDecoration(color: PdfColors.white, borderRadius: pw.BorderRadius.circular(3)),
-                    child: pw.Image(logo, fit: pw.BoxFit.contain),
+                    child: pw.ClipOval(child: pw.Image(logo, fit: pw.BoxFit.cover)),
                   ),
                 ],
                 pw.Expanded(
@@ -685,14 +779,14 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(schoolName.toUpperCase(), style: pw.TextStyle(color: PdfColors.white, fontSize: 8.5, fontWeight: pw.FontWeight.bold), maxLines: 1),
-                      pw.Text(address, style: pw.TextStyle(color: PdfColor.fromHex('#FFD700'), fontSize: 5.5), maxLines: 1),
+                      pw.Text(address, style: pw.TextStyle(color: PdfColor.fromHex(accHex), fontSize: 5.5), maxLines: 1),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          pw.Divider(height: 1, color: PdfColor.fromHex('#FFD700'), thickness: 0.8),
+          pw.Divider(height: 1, color: PdfColor.fromHex(accHex), thickness: 0.8),
 
           // Content
           pw.Expanded(
@@ -708,8 +802,8 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                         width: 52,
                         height: 64,
                         decoration: pw.BoxDecoration(
-                          border: pw.Border.all(color: PdfColor.fromHex('#FFD700'), width: 1.2),
-                          color: PdfColor.fromHex('#0A1128'),
+                          border: pw.Border.all(color: PdfColor.fromHex(accHex), width: 1.2),
+                          color: PdfColor.fromHex(primHex),
                           borderRadius: pw.BorderRadius.circular(4),
                         ),
                         child: photo != null
@@ -721,8 +815,8 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                       pw.SizedBox(height: 2),
                       pw.Container(
                         padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                        decoration: pw.BoxDecoration(color: PdfColor.fromHex('#FFD700'), borderRadius: pw.BorderRadius.circular(2)),
-                        child: pw.Text('STUDENT', style: pw.TextStyle(color: PdfColor.fromHex('#0A1128'), fontSize: 5.5, fontWeight: pw.FontWeight.bold)),
+                        decoration: pw.BoxDecoration(color: PdfColor.fromHex(accHex), borderRadius: pw.BorderRadius.circular(2)),
+                        child: pw.Text('STUDENT', style: pw.TextStyle(color: PdfColor.fromHex(primHex), fontSize: 5.5, fontWeight: pw.FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -735,11 +829,11 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                       children: [
                         pw.Text(s.name.toUpperCase(), style: pw.TextStyle(color: PdfColors.white, fontSize: 9.5, fontWeight: pw.FontWeight.bold), maxLines: 1),
                         pw.SizedBox(height: 3),
-                        _buildCardDetailPdf('STUDENT ID', s.id),
-                        _buildCardDetailPdf('ADM NO', s.admissionNumber.isNotEmpty ? s.admissionNumber : s.id),
-                        _buildCardDetailPdf(isComp ? 'COURSE' : 'CLASS / SEC', isComp ? (s.course ?? 'Computer') : s.displayClass),
-                        _buildCardDetailPdf("FATHER'S NAME", s.fatherName.isNotEmpty ? s.fatherName.toUpperCase() : '-'),
-                        _buildCardDetailPdf('CONTACT NO', s.mobile),
+                        _buildCardDetailPdf('STUDENT ID', s.id, accHex),
+                        _buildCardDetailPdf('ADM NO', s.admissionNumber.isNotEmpty ? s.admissionNumber : s.id, accHex),
+                        _buildCardDetailPdf(isComp ? 'COURSE' : 'CLASS / SEC', isComp ? (s.course ?? 'Computer') : s.displayClass, accHex),
+                        _buildCardDetailPdf("FATHER'S NAME", s.fatherName.isNotEmpty ? s.fatherName.toUpperCase() : '-', accHex),
+                        _buildCardDetailPdf('CONTACT NO', s.mobile, accHex),
                       ],
                     ),
                   ),
@@ -748,32 +842,25 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
             ),
           ),
 
-          // Bottom Right Signature right above footer bar
+          // Bottom Right Signature & AUTH SIGNATURE (No dark footer bar)
           pw.Padding(
-            padding: const pw.EdgeInsets.only(right: 12, bottom: 2),
+            padding: const pw.EdgeInsets.only(right: 12, bottom: 6),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.end,
               children: [
-                if (sig != null) ...[
-                  pw.Container(height: 20, child: pw.Image(sig, fit: pw.BoxFit.contain)),
-                ] else ...[
-                  pw.Text('Ravi Ku', style: pw.TextStyle(color: PdfColor.fromHex('#FFD700'), fontSize: 11, fontWeight: pw.FontWeight.bold, fontStyle: pw.FontStyle.italic)),
-                ],
-              ],
-            ),
-          ),
-
-          // Footer bar
-          pw.Container(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-            color: PdfColor.fromHex('#05091E'),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Expanded(
-                  child: pw.Text('PROPERTY OF ${schoolName.toUpperCase()}', style: const pw.TextStyle(color: PdfColors.grey300, fontSize: 5.5), maxLines: 1),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    if (sig != null) ...[
+                      pw.Container(height: 22, child: pw.Image(sig, fit: pw.BoxFit.contain)),
+                    ] else ...[
+                      pw.Text('Principal Sign', style: pw.TextStyle(color: PdfColor.fromHex(accHex), fontSize: 10, fontWeight: pw.FontWeight.bold, fontStyle: pw.FontStyle.italic)),
+                    ],
+                    pw.Container(width: 65, height: 0.8, color: PdfColor.fromHex(accHex)),
+                    pw.SizedBox(height: 1.5),
+                    pw.Text('AUTH SIGNATURE', style: pw.TextStyle(color: PdfColor.fromHex(accHex), fontSize: 6, fontWeight: pw.FontWeight.bold)),
+                  ],
                 ),
-                pw.Text('AUTH SIGNATURE', style: pw.TextStyle(color: PdfColor.fromHex('#FFD700'), fontSize: 6, fontWeight: pw.FontWeight.bold)),
               ],
             ),
           ),
@@ -783,6 +870,10 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
   }
 
   pw.Widget _buildPdfBackSide(StudentModel s, SettingsModel settings, pw.MemoryImage? sig) {
+    final theme = _cardThemes[_selectedThemeIndex];
+    final primHex = theme['hex'] as String;
+    final accHex = theme['accentHex'] as String;
+
     final schoolName = settings.schoolName.isNotEmpty ? settings.schoolName : 'MISSION NAVODAYA PUBLIC SCHOOL';
     final phone = settings.mobile.isNotEmpty ? settings.mobile : '8568643490';
     final address = settings.address.isNotEmpty ? settings.address : 'Mora Mairi, BagwaanPur hat ,Siwan,Bihar 841507';
@@ -791,18 +882,18 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
       width: 260,
       height: 165,
       decoration: pw.BoxDecoration(
-        color: PdfColor.fromHex('#0A1128'),
+        color: PdfColor.fromHex(primHex),
         borderRadius: pw.BorderRadius.circular(8),
-        border: pw.Border.all(color: PdfColor.fromHex('#FFD700'), width: 1.5),
+        border: pw.Border.all(color: PdfColor.fromHex(accHex), width: 1.5),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Container(
             padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            color: PdfColor.fromHex('#FFD700'),
+            color: PdfColor.fromHex(accHex),
             width: double.infinity,
-            child: pw.Text('TERMS & CONDITIONS', style: pw.TextStyle(color: PdfColor.fromHex('#0A1128'), fontSize: 7, fontWeight: pw.FontWeight.bold)),
+            child: pw.Text('TERMS & CONDITIONS', style: pw.TextStyle(color: PdfColor.fromHex(primHex), fontSize: 7, fontWeight: pw.FontWeight.bold)),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -838,9 +929,9 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
             ),
           ),
           pw.Spacer(),
-          pw.Divider(height: 1, color: PdfColor.fromHex('#FFD700'), thickness: 0.8),
+          pw.Divider(height: 1, color: PdfColor.fromHex(accHex), thickness: 0.8),
           pw.Padding(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
@@ -857,16 +948,25 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                 pw.Column(
                   children: [
                     if (sig != null) ...[
-                      pw.Container(height: 20, child: pw.Image(sig, fit: pw.BoxFit.contain)),
+                      pw.Container(height: 18, child: pw.Image(sig, fit: pw.BoxFit.contain)),
                     ] else ...[
-                      pw.Text('Ravi Ku', style: pw.TextStyle(color: PdfColor.fromHex('#FFD700'), fontSize: 11, fontWeight: pw.FontWeight.bold, fontStyle: pw.FontStyle.italic)),
+                      pw.Text('Principal Sign', style: pw.TextStyle(color: PdfColor.fromHex(accHex), fontSize: 10, fontWeight: pw.FontWeight.bold, fontStyle: pw.FontStyle.italic)),
                     ],
                     pw.Container(width: 70, height: 0.8, color: PdfColors.white),
-                    pw.SizedBox(height: 2),
-                    pw.Text('PRINCIPAL SIGN', style: pw.TextStyle(color: PdfColor.fromHex('#FFD700'), fontSize: 6, fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 1.5),
+                    pw.Text('PRINCIPAL SIGN', style: pw.TextStyle(color: PdfColor.fromHex(accHex), fontSize: 6, fontWeight: pw.FontWeight.bold)),
                   ],
                 ),
               ],
+            ),
+          ),
+          // PROPERTY OF SCHOOL NAME ON BACK SIDE
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+            color: PdfColor.fromHex('#05091E'),
+            width: double.infinity,
+            child: pw.Center(
+              child: pw.Text('PROPERTY OF ${schoolName.toUpperCase()}', style: pw.TextStyle(color: PdfColor.fromHex(accHex), fontSize: 6, fontWeight: pw.FontWeight.bold), maxLines: 1),
             ),
           ),
         ],
@@ -874,12 +974,12 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
     );
   }
 
-  pw.Widget _buildCardDetailPdf(String label, String value) {
+  pw.Widget _buildCardDetailPdf(String label, String value, [String accHex = '#FFD700']) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 0.8),
       child: pw.Row(
         children: [
-          pw.SizedBox(width: 58, child: pw.Text('$label:', style: pw.TextStyle(fontSize: 6.5, color: PdfColor.fromHex('#FFD700'), fontWeight: pw.FontWeight.bold))),
+          pw.SizedBox(width: 58, child: pw.Text('$label:', style: pw.TextStyle(fontSize: 6.5, color: PdfColor.fromHex(accHex), fontWeight: pw.FontWeight.bold))),
           pw.Expanded(child: pw.Text(value, style: pw.TextStyle(fontSize: 7, color: PdfColors.white, fontWeight: pw.FontWeight.bold), maxLines: 1)),
         ],
       ),

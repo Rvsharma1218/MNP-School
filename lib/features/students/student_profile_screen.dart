@@ -1,3 +1,4 @@
+import '../../widgets/student_photo_picker.dart';
 import '../results/result_screen.dart';
 import '../results/screens/student_mark_entry_screen.dart';
 import '../results/screens/student_result_detail_screen.dart';
@@ -35,6 +36,80 @@ class StudentProfileScreen extends ConsumerStatefulWidget {
 
 class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
     with SingleTickerProviderStateMixin {
+  void _quickChangeStudentPhoto(BuildContext context, StudentModel student) {
+    String? updatedPhoto = student.photoPath;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 16),
+              const Text('Change Student Photo (DP)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              const SizedBox(height: 16),
+              StudentPhotoPicker(
+                photoPath: updatedPhoto,
+                size: 110,
+                onChanged: (val) {
+                  setSheetState(() => updatedPhoto = val);
+                },
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetCtx),
+                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          await DatabaseService.instance.updateStudent(
+                            student.copyWith(photoPath: updatedPhoto),
+                          );
+                          setState(() {});
+                          if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Student profile photo updated successfully!'), backgroundColor: AppColors.success),
+                            );
+                          }
+                        } catch (e) {
+                          if (sheetCtx.mounted) {
+                            ScaffoldMessenger.of(sheetCtx).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error));
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Save Photo', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   late TabController _tabController;
 
   @override
@@ -146,34 +221,56 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 12)],
-                          ),
-                          child: CircleAvatar(
-                            radius: 42,
-                            backgroundColor: Colors.white,
-                            child: ClipOval(
-                              child: AppUtils.buildAppImageWidget(
-                                student.photoPath,
-                                width: 84,
-                                height: 84,
-                                fit: BoxFit.cover,
-                                placeholder: Center(
-                                  child: Text(
-                                    AppUtils.getInitials(student.name),
-                                    style: const TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 3),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 12)],
+                              ),
+                              child: CircleAvatar(
+                                radius: 42,
+                                backgroundColor: Colors.white,
+                                child: ClipOval(
+                                  child: AppUtils.buildAppImageWidget(
+                                    student.photoPath,
+                                    width: 84,
+                                    height: 84,
+                                    fit: BoxFit.cover,
+                                    placeholder: Center(
+                                      child: Text(
+                                        AppUtils.getInitials(student.name),
+                                        style: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Material(
+                                color: const Color(0xFFFFD700),
+                                shape: const CircleBorder(),
+                                elevation: 4,
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  onTap: () => _quickChangeStudentPhoto(context, student),
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(7),
+                                    child: Icon(Icons.camera_alt, size: 18, color: Color(0xFF0A1128)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 10),
                         Text(student.name,
