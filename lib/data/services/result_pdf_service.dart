@@ -43,6 +43,7 @@ class ResultPdfService {
     pw.MemoryImage? logoImage,
     pw.MemoryImage? sigImage,
     pw.MemoryImage? stampImage,
+    pw.MemoryImage? studentPhoto,
   }) {
     final rawSubjects = result.subjects.isNotEmpty
         ? result.subjects
@@ -181,38 +182,62 @@ class ResultPdfService {
 
               // ─── Student Particulars Card ──────────────────────────
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: pw.BoxDecoration(
                   color: cardBg,
                   border: pw.Border.all(color: borderLight, width: 1),
                   borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
                 ),
                 child: pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
+                    // Student Photo Box
+                    pw.Container(
+                      width: 44,
+                      height: 54,
+                      margin: const pw.EdgeInsets.only(right: 12),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.white,
+                        border: pw.Border.all(color: borderLight, width: 1),
+                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                      ),
+                      child: studentPhoto != null
+                          ? pw.ClipRRect(
+                              horizontalRadius: 3,
+                              verticalRadius: 3,
+                              child: pw.Image(studentPhoto, fit: pw.BoxFit.cover),
+                            )
+                          : pw.Center(
+                              child: pw.Text('PHOTO', style: pw.TextStyle(font: ttfBold, fontSize: 8, color: textMuted)),
+                            ),
+                    ),
                     // Left Column
                     pw.Expanded(
+                      flex: 6,
                       child: pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
+                          pw.Text('STUDENT PROFILE', style: pw.TextStyle(font: ttfBold, fontSize: 6.5, color: textMuted)),
+                          pw.SizedBox(height: 2),
                           _buildInfoRow('Student Name:', studentName.toUpperCase(), ttf, ttfBold, isHighlight: true),
-                          pw.SizedBox(height: 5),
+                          pw.SizedBox(height: 4),
                           _buildInfoRow("Father's Name:", fatherName, ttf, ttfBold),
-                          pw.SizedBox(height: 5),
+                          pw.SizedBox(height: 4),
                           _buildInfoRow('Class / Course:', classStr, ttf, ttfBold),
                         ],
                       ),
                     ),
-                    pw.SizedBox(width: 16),
+                    pw.SizedBox(width: 12),
                     // Right Column
                     pw.Expanded(
+                      flex: 4,
                       child: pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           _buildInfoRow('Student ID:', stuId, ttf, ttfBold),
-                          pw.SizedBox(height: 5),
+                          pw.SizedBox(height: 4),
                           _buildInfoRow('Roll Number:', rollNo, ttf, ttfBold),
-                          pw.SizedBox(height: 5),
+                          pw.SizedBox(height: 4),
                           _buildInfoRow('Academic Session:', sessionStr, ttf, ttfBold),
                         ],
                       ),
@@ -221,9 +246,9 @@ class ResultPdfService {
                 ),
               ),
 
-              pw.SizedBox(height: 12),
+              pw.SizedBox(height: 10),
 
-              // ─── Marks Table ───────────────────────────────────────
+              // ─── Marks Table ───
               if (!hasDetailedBreakdown)
                 pw.Table(
                   border: pw.TableBorder.all(color: borderLight, width: 0.8),
@@ -374,11 +399,17 @@ class ResultPdfService {
                   children: [
                     pw.Row(
                       children: [
-                        pw.Text('Percentage: ', style: pw.TextStyle(font: ttf, fontSize: 11, color: textDark)),
-                        pw.Text('$pctStr%', style: pw.TextStyle(font: ttfBold, fontSize: 13, color: primaryNavy)),
-                        pw.SizedBox(width: 16),
-                        pw.Text('•  Overall Grade: ', style: pw.TextStyle(font: ttf, fontSize: 11, color: textDark)),
-                        pw.Text(overallGrade, style: pw.TextStyle(font: ttfBold, fontSize: 13, color: primaryNavy)),
+                        pw.Text('Percentage: ', style: pw.TextStyle(font: ttf, fontSize: 9.5, color: textDark)),
+                        pw.Text('$pctStr%', style: pw.TextStyle(font: ttfBold, fontSize: 10.5, color: primaryNavy)),
+                        pw.SizedBox(width: 8),
+                        pw.Text('Grade: ', style: pw.TextStyle(font: ttf, fontSize: 9.5, color: textDark)),
+                        pw.Text(overallGrade, style: pw.TextStyle(font: ttfBold, fontSize: 10.5, color: primaryNavy)),
+                        pw.SizedBox(width: 8),
+                        pw.Text('Division: ', style: pw.TextStyle(font: ttf, fontSize: 9.5, color: textDark)),
+                        pw.Text(
+                          !isPass ? 'Needs Improvement' : (pct >= 60 ? '1st Division' : pct >= 45 ? '2nd Division' : '3rd Division'),
+                          style: pw.TextStyle(font: ttfBold, fontSize: 9.5, color: textDark),
+                        ),
                       ],
                     ),
                     pw.Container(
@@ -412,6 +443,58 @@ class ResultPdfService {
                 ),
               ),
 
+              // Faculty / Teacher Remarks
+              pw.SizedBox(height: 6),
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                decoration: pw.BoxDecoration(
+                  color: cardBg,
+                  border: pw.Border.all(color: borderLight, width: 0.8),
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('FACULTY / TEACHER REMARKS:', style: pw.TextStyle(font: ttfBold, fontSize: 6.5, color: textMuted)),
+                    pw.SizedBox(height: 1.5),
+                    pw.Text(
+                      '"${(result.remarks != null && result.remarks!.isNotEmpty) ? result.remarks! : (isPass ? 'Excellent academic performance and consistent participation in class activities.' : isPromoted ? 'Promoted to the next standard with advisory for subject enhancement.' : 'Needs focused attention in compartment subject(s).')}"',
+                      style: pw.TextStyle(font: ttf, fontSize: 7.5, fontStyle: pw.FontStyle.italic, color: textDark),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 5),
+
+              // Grading Scale Strip
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: const pw.BoxDecoration(
+                  color: PdfColor.fromInt(0xFFF1F5F9),
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('GRADING SCALE:', style: pw.TextStyle(font: ttfBold, fontSize: 6.5, color: textDark)),
+                    pw.Text('A+ (90-100%)', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textDark)),
+                    pw.Text('•', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textMuted)),
+                    pw.Text('A (80-89%)', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textDark)),
+                    pw.Text('•', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textMuted)),
+                    pw.Text('B+ (70-79%)', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textDark)),
+                    pw.Text('•', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textMuted)),
+                    pw.Text('B (60-69%)', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textDark)),
+                    pw.Text('•', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textMuted)),
+                    pw.Text('C (50-59%)', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textDark)),
+                    pw.Text('•', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textMuted)),
+                    pw.Text('D (33-49%)', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textDark)),
+                    pw.Text('•', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textMuted)),
+                    pw.Text('F (<33%)', style: pw.TextStyle(font: ttf, fontSize: 6.5, color: textDark)),
+                  ],
+                ),
+              ),
+
               pw.Spacer(),
 
               // ─── Signatures & QR Code ──────────────────────────────
@@ -429,18 +512,24 @@ class ResultPdfService {
                   ),
 
                   // QR Code
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(3),
-                    decoration: pw.BoxDecoration(
-                      border: pw.Border.all(color: borderLight, width: 1),
-                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-                    ),
-                    child: pw.BarcodeWidget(
-                      barcode: pw.Barcode.qrCode(),
-                      data: 'RESULT:${result.examName}|STUDENT:${student.studentId}|PCT:$pctStr%|GRADE:$overallGrade|STATUS:$finalStatus',
-                      width: 50,
-                      height: 50,
-                    ),
+                  pw.Column(
+                    children: [
+                      pw.Container(
+                        padding: const pw.EdgeInsets.all(3),
+                        decoration: pw.BoxDecoration(
+                          border: pw.Border.all(color: borderLight, width: 1),
+                          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                        ),
+                        child: pw.BarcodeWidget(
+                          barcode: pw.Barcode.qrCode(),
+                          data: 'RESULT:${result.examName}|STUDENT:${student.studentId}|PCT:$pctStr%|GRADE:$overallGrade|STATUS:$finalStatus',
+                          width: 44,
+                          height: 44,
+                        ),
+                      ),
+                      pw.SizedBox(height: 2),
+                      pw.Text('VERIFIED MARKSHEET', style: pw.TextStyle(font: ttfBold, fontSize: 6.5, color: textMuted)),
+                    ],
                   ),
 
                   // Principal Sign & Official Stamp (Signature layered inside/over stamp)
@@ -465,7 +554,7 @@ class ResultPdfService {
                       ),
                       pw.Container(width: 140, height: 1.2, color: textDark),
                       pw.SizedBox(height: 3),
-                      pw.Text('Principal Sign', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: textMuted)),
+                      pw.Text('PRINCIPAL SIGN', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: textMuted)),
                     ],
                   ),
                 ],
@@ -502,6 +591,8 @@ class ResultPdfService {
 
     final stampBytes = await AppUtils.loadAppImageBytes(settings.schoolStamp);
     final stampImage = stampBytes != null ? pw.MemoryImage(stampBytes) : null;
+    final photoBytes = await AppUtils.loadAppImageBytes(student.photoPath);
+    final studentPhoto = photoBytes != null ? pw.MemoryImage(photoBytes) : null;
 
     final doc = pw.Document();
     doc.addPage(
@@ -514,6 +605,7 @@ class ResultPdfService {
         logoImage: logoImage,
         sigImage: sigImage,
         stampImage: stampImage,
+        studentPhoto: studentPhoto,
       ),
     );
     return doc;
@@ -539,6 +631,8 @@ class ResultPdfService {
     final doc = pw.Document();
 
     for (final item in items) {
+      final photoBytes = await AppUtils.loadAppImageBytes(item.key.photoPath);
+      final studentPhoto = photoBytes != null ? pw.MemoryImage(photoBytes) : null;
       doc.addPage(
         buildMarksheetPage(
           result: item.value,
@@ -549,6 +643,7 @@ class ResultPdfService {
           logoImage: logoImage,
           sigImage: sigImage,
           stampImage: stampImage,
+          studentPhoto: studentPhoto,
         ),
       );
     }
