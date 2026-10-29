@@ -24,7 +24,7 @@ import {
 import ImageCropperModal from './ImageCropperModal';
 
 export default function AddEditStudentModal({ student, isOpen, onClose }) {
-  const { students, settings, currentUser, addStudent, updateStudent, getNextAdmissionNumber, getNextStudentId, showToast } = useSchoolStore();
+  const { students, settings, currentUser, addStudent, updateStudent, getNextAdmissionNumber, getNextStudentId, showToast, isPrincipal, hasAllClassesAccess, allowedClasses } = useSchoolStore();
 
   const isEdit = !!student;
   const teacherAssignedClass = currentUser?.role === 'teacher' ? (currentUser.assignedClass || 'Class Nursery') : '';
@@ -513,7 +513,7 @@ export default function AddEditStudentModal({ student, isOpen, onClose }) {
                     onChange={(e) => setFormData({ ...formData, className: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-card border border-border text-xs text-text focus:outline-none focus:border-primary cursor-pointer"
                   >
-                    {settings.schoolClasses?.map(c => (
+                    {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : (allowedClasses?.length > 0 ? allowedClasses : settings.schoolClasses || [])).map(c => (
                       <option key={c} value={c}>Class {c}</option>
                     ))}
                   </select>

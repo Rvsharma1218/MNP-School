@@ -37,12 +37,10 @@ export default function StudentsView() {
     setWhatsAppReminderData,
     teacherPermissions,
     admissionEnquiries,
-    canAccessClass, allowedClasses, hasAllClassesAccess, isTeacher,
+    canAccessClass, allowedClasses, hasAllClassesAccess, isTeacher, isPrincipal,
     openEnquiriesModal,
     showToast
   } = useSchoolStore();
-
-  const isPrincipal = currentUser?.role === 'principal' || (!isTeacher && currentUser?.role !== 'parent');
   const assignedClass = (currentUser?.assignedClass || '').trim();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -981,7 +979,7 @@ export default function StudentsView() {
                           onChange={e => handleInputChange('className', e.target.value)}
                           className="w-full px-2.5 py-1.5 rounded bg-surface2 border border-border text-xs text-text font-semibold focus:outline-none cursor-pointer"
                         >
-                          {settings.schoolClasses?.map(c => <option key={c} value={c}>Class {c}</option>)}
+                          {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : (allowedClasses.length > 0 ? allowedClasses : settings.schoolClasses || [])).map(c => <option key={c} value={c}>Class {c}</option>)}
                         </select>
                       </div>
                       <div>
