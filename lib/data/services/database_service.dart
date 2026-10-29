@@ -3417,12 +3417,23 @@ CREATE TABLE monthly_fees (
     final db = await database;
     try {
       final results = await db.query('results', orderBy: 'createdAt DESC');
-      List<ResultModel> models = [];
-      for (final result in results) {
-        final subjects = await db.query('subject_results', where: 'resultId = ?', whereArgs: [result['id']]);
-        models.add(ResultModel.fromMap(result, subjects.map(SubjectResult.fromMap).toList()));
+      if (results.isEmpty) return [];
+
+      // Batch query: load all subject results in 1 fast query instead of N sequential roundtrips
+      final allSubjects = await db.query('subject_results');
+      final subjectsByResultId = <String, List<SubjectResult>>{};
+      for (final row in allSubjects) {
+        final rId = row['resultId']?.toString();
+        if (rId != null && rId.isNotEmpty) {
+          subjectsByResultId.putIfAbsent(rId, () => []).add(SubjectResult.fromMap(row));
+        }
       }
-      return models;
+
+      return results.map((result) {
+        final rId = result['id']?.toString() ?? '';
+        final subjects = subjectsByResultId[rId] ?? const <SubjectResult>[];
+        return ResultModel.fromMap(result, subjects);
+      }).toList();
     } catch (_) {
       return [];
     }

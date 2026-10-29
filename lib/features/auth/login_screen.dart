@@ -297,13 +297,29 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (scanned == null || scanned.trim().isEmpty) return;
 
+      String lookupKey = scanned.trim();
+      final stuMatch = RegExp(r'STUDENT:([^|]+)', caseSensitive: false).firstMatch(lookupKey);
+      if (stuMatch != null) {
+        lookupKey = stuMatch.group(1)!.trim();
+      } else {
+        final idMatch = RegExp(r'ID:([^|]+)', caseSensitive: false).firstMatch(lookupKey);
+        if (idMatch != null) {
+          lookupKey = idMatch.group(1)!.trim();
+        } else {
+          final admMatch = RegExp(r'ADM:([^|]+)', caseSensitive: false).firstMatch(lookupKey);
+          if (admMatch != null) {
+            lookupKey = admMatch.group(1)!.trim();
+          }
+        }
+      }
+
       setState(() {
         _submitting = true;
         _errorMsg = null;
       });
 
       final schoolId = SessionService.instance.activeSchoolId;
-      StudentModel? matchedStudent = await DatabaseService.instance.getStudentByQrId(scanned);
+      StudentModel? matchedStudent = await DatabaseService.instance.getStudentByQrId(lookupKey);
 
       // Fallback: check Firestore students collection if not found in local db
       if (matchedStudent == null) {
@@ -315,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen>
               .get()
               .timeout(const Duration(seconds: 7));
 
-          final cleanScanned = scanned.trim().toLowerCase();
+          final cleanScanned = lookupKey.trim().toLowerCase();
           final scannedDigits = cleanScanned.replaceAll(RegExp(r'\D'), '');
 
           for (final doc in querySnap.docs) {
@@ -345,7 +361,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (!mounted) return;
         setState(() {
           _submitting = false;
-          _errorMsg = 'QR Code se student record nahi mila ($scanned). Kripya student ka valid ID Card ya Fee Receipt scan karein.';
+          _errorMsg = 'QR Code se student record nahi mila ($lookupKey). Kripya student ka valid Marksheet, ID Card ya Fee Receipt scan karein.';
         });
         return;
       }

@@ -109,10 +109,35 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       classSet.addAll(settings.schoolClasses);
     } else {
       final allowed = SessionService.instance.filterAllowedClasses([...enrolledClasses, ...settings.schoolClasses]);
-      if (allowed.length > 1) classSet.add('All Classes');
+      if (allowed.length > 1) {
+        classSet.add('All Classes');
+      }
       classSet.addAll(allowed);
+      if (allowed.length == 1) {
+        _selectedClassFilter = allowed.first;
+      }
     }
     _availableClasses = classSet.toList()..sort(_compareClassNames);
+    if (!_availableClasses.contains(_selectedClassFilter)) {
+      _selectedClassFilter = _availableClasses.isNotEmpty ? _availableClasses.first : 'All Classes';
+    }
+  }
+
+  List<ExamModel> get _scopedExams {
+    if (SessionService.instance.hasAllClassesAccess) return _exams;
+    return _exams.where((ex) {
+      if (ex.className.isEmpty || ex.className == 'All Classes') return true;
+      return SessionService.instance.canAccessClass(ex.className);
+    }).toList();
+  }
+
+  List<ResultModel> get _scopedResults {
+    if (SessionService.instance.hasAllClassesAccess) return _results;
+    return _results.where((r) {
+      final student = _findStudent(r);
+      final cls = student?.className ?? student?.course ?? r.className ?? '';
+      return SessionService.instance.canAccessClass(cls);
+    }).toList();
   }
 
   @override
@@ -164,18 +189,6 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     _cachedExams = exams;
     _cachedResults = results;
     _populateClassFilters(students, settings);
-
-    final enrolledClasses = students
-        .map((s) => (s.className?.trim().isNotEmpty == true) ? s.className!.trim() : (s.course?.trim() ?? ''))
-        .where((c) => c.isNotEmpty)
-        .toSet()
-        .toList();
-
-    final Set<String> classSet = {'All Classes'};
-    classSet.addAll(enrolledClasses);
-    classSet.addAll(settings.schoolClasses);
-
-    _availableClasses = classSet.toList()..sort(_compareClassNames);
     _exams = exams;
     _results = results;
     _students = students;
@@ -881,8 +894,8 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
           unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           tabs: [
-            Tab(text: 'Exams (${_exams.length})'),
-            Tab(text: 'Results (${_results.length})'),
+            Tab(text: 'Exams (${_scopedExams.length})'),
+            Tab(text: 'Results (${_scopedResults.length})'),
           ],
         ),
       ),
@@ -918,7 +931,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
 
   // ─── TAB 1: EXAMS ───
   Widget _buildExamsTab(bool isDark) {
-    if (_exams.isEmpty) {
+    if (_scopedExams.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -963,10 +976,10 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 80),
-      itemCount: _exams.length,
+      itemCount: _scopedExams.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (ctx, i) {
-        final ex = _exams[i];
+        final ex = _scopedExams[i];
         final isDetailed = ex.isDetailedMode;
 
         return Card(
@@ -1098,8 +1111,8 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
 
   // ─── TAB 2: RESULTS ───
   Widget _buildResultsTab(bool isDark) {
-    // Include all created examination results
-    var filteredResults = _results.toList();
+    // Strictly scoped to authorized classes for teacher role
+    var filteredResults = _scopedResults.toList();
 
     if (_selectedClassFilter != 'All Classes') {
       filteredResults = filteredResults.where((r) {
@@ -1167,7 +1180,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
               Expanded(
                 flex: 2,
                 child: DropdownButtonFormField<String>(
-                  value: _availableClasses.contains(_selectedClassFilter) ? _selectedClassFilter : 'All Classes',
+                  value: _availableClasses.contains(_selectedClassFilter) ? _selectedClassFilter : (_availableClasses.isNotEmpty ? _availableClasses.first : null),
                   decoration: InputDecoration(
                     labelText: 'Class Filter',
                     isDense: true,

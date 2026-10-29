@@ -18,7 +18,8 @@ import '../../data/services/providers.dart';
 
 class IdCardScreen extends ConsumerStatefulWidget {
   final String? studentId;
-  const IdCardScreen({super.key, this.studentId});
+  final StudentModel? initialStudent;
+  const IdCardScreen({super.key, this.studentId, this.initialStudent});
 
   @override
   ConsumerState<IdCardScreen> createState() => _IdCardScreenState();
@@ -31,6 +32,14 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
   bool _generatingPdf = false;
   String _searchQuery = '';
   int _selectedThemeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialStudent != null) {
+      _previewStudent = widget.initialStudent;
+    }
+  }
 
   static const List<Map<String, dynamic>> _cardThemes = [
     {'name': 'Royal Navy', 'primary': Color(0xFF0A1128), 'accent': Color(0xFFFFD700), 'hex': '#0A1128', 'accentHex': '#FFD700'},
@@ -106,8 +115,15 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
             return matchClass && matchSearch;
           }).toList();
 
-          if (widget.studentId != null && widget.studentId!.isNotEmpty) {
-            final match = students.where((s) => s.id == widget.studentId).firstOrNull;
+          if (widget.initialStudent != null) {
+            _previewStudent = widget.initialStudent;
+          } else if (widget.studentId != null && widget.studentId!.isNotEmpty) {
+            final targetId = widget.studentId!.trim().toLowerCase();
+            final match = students.where((s) =>
+                s.id.toLowerCase() == targetId ||
+                s.studentId.toLowerCase() == targetId ||
+                s.admissionNumber.toLowerCase() == targetId
+            ).firstOrNull;
             if (match != null) _previewStudent = match;
           } else if (_previewStudent == null && filtered.isNotEmpty) {
             _previewStudent = filtered.first;

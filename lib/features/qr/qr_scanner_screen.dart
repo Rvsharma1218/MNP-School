@@ -40,15 +40,21 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     setState(() => _scanned = true);
     await _ctrl?.stop();
 
-    final qrValue = barcode!.rawValue!;
+    final qrValue = barcode!.rawValue!.trim();
     String lookupId = qrValue;
-    final idMatch = RegExp(r'ID:([^|]+)').firstMatch(qrValue);
-    if (idMatch != null) {
-      lookupId = idMatch.group(1)!.trim();
+    // Support Result / Marksheet QR: RESULT:...|STUDENT:STU2026001|...
+    final stuMatch = RegExp(r'STUDENT:([^|]+)', caseSensitive: false).firstMatch(qrValue);
+    if (stuMatch != null) {
+      lookupId = stuMatch.group(1)!.trim();
     } else {
-      final admMatch = RegExp(r'ADM:([^|]+)').firstMatch(qrValue);
-      if (admMatch != null) {
-        lookupId = admMatch.group(1)!.trim();
+      final idMatch = RegExp(r'ID:([^|]+)', caseSensitive: false).firstMatch(qrValue);
+      if (idMatch != null) {
+        lookupId = idMatch.group(1)!.trim();
+      } else {
+        final admMatch = RegExp(r'ADM:([^|]+)', caseSensitive: false).firstMatch(qrValue);
+        if (admMatch != null) {
+          lookupId = admMatch.group(1)!.trim();
+        }
       }
     }
 

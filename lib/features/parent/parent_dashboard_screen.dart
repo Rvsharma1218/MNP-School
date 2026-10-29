@@ -1041,7 +1041,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
             if (_student != null) {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => IdCardScreen(studentId: _student!.id)),
+                MaterialPageRoute(builder: (_) => IdCardScreen(studentId: _student!.id, initialStudent: _student)),
               );
             }
           },

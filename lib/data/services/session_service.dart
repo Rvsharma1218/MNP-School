@@ -241,6 +241,22 @@ class SessionService {
     AppNotificationService.instance.startListening();
   }
 
+  Future<void> updateTeacherAssignedClass(String newClass, {String? newName}) async {
+    _assignedClass = newClass;
+    if (newName != null && newName.isNotEmpty) _teacherName = newName;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (newClass.isNotEmpty) {
+        await prefs.setString(_kAssignedClass, newClass);
+      } else {
+        await prefs.remove(_kAssignedClass);
+      }
+      if (newName != null && newName.isNotEmpty) {
+        await prefs.setString(_kTeacherName, newName);
+      }
+    } catch (_) {}
+  }
+
   Future<void> setParentSession({
     required String schoolUid,
     required String studentId,
