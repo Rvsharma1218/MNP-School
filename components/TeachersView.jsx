@@ -54,7 +54,7 @@ const parseClassString = (val) => {
 
 export default function TeachersView() {
   const {
-    teachers,
+    teachers = [],
     settings,
     addTeacher,
     updateTeacher,

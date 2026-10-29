@@ -33,7 +33,8 @@ import {
   Printer,
   ChevronRight,
   Clock,
-  FileCheck
+  FileCheck,
+  CalendarCheck
 } from 'lucide-react';
 import ImageCropperModal from './ImageCropperModal';
 

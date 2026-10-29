@@ -61,6 +61,7 @@ function AppContent() {
     currentUser,
     isPrincipal,
     isTeacher,
+    students,
     settings,
     teacherPermissions,
     navigate,
