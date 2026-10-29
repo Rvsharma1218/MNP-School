@@ -25,7 +25,10 @@ export default function FeesView() {
     setPrintReceiptData,
     whatsAppReminderData,
     setWhatsAppReminderData,
-    deletePayment
+    deletePayment,
+    isPrincipal,
+    hasAllClassesAccess,
+    allowedClasses
   } = useSchoolStore();
 
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'ledger' | 'defaulters'
@@ -62,7 +65,7 @@ export default function FeesView() {
       if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
       return a.localeCompare(b);
     });
-  }, [students]);
+  }, [students, isPrincipal, hasAllClassesAccess, allowedClasses]);
 
   const getFilterLabel = () => {
     const classSuffix = collectedClass !== 'all' ? ` (Class ${collectedClass})` : '';

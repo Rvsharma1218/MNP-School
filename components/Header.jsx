@@ -118,8 +118,8 @@ export default function Header({ onMenuClick }) {
     '/access-denied': lang === 'hi' ? 'अनुमति अस्वीकृत' : 'Access Restrained'
   };
 
-  const isPrincipal = currentUser.role === 'principal';
-  const currentUserId = currentUser.uid || currentUser.teacherId || currentUser.id || '';
+  const isPrincipal = currentUser ? currentUser.role === 'principal' : false;
+  const currentUserId = currentUser ? (currentUser.uid || currentUser.teacherId || currentUser.id || '') : '';
 
   const principalDisplayName = (() => {
     if (!currentUser) return 'Principal';

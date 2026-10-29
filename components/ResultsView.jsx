@@ -47,10 +47,14 @@ export default function ResultsView() {
     deleteResult,
     deleteExam,
     setPrintResultData,
-    showToast
+    showToast,
+    isPrincipal,
+    isTeacher,
+    hasAllClassesAccess,
+    allowedClasses,
+    canAccessClass
   } = useSchoolStore();
 
-  const isPrincipal = currentUser?.role === 'principal' || (!isTeacher && currentUser?.role !== 'parent');
   const assignedClass = (currentUser?.assignedClass || '').trim();
 
   // Navigation Tabs: 'saved' | 'entry' | 'exams'

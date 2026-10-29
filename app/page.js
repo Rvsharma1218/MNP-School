@@ -48,10 +48,19 @@ import ParentPortalView from '../components/ParentPortalView';
 import ParentComplaintsView from '../components/ParentComplaintsView';
 import OnlineEnquiriesModal from '../components/OnlineEnquiriesModal';
 
+const KNOWN_APP_PATHS = [
+  '/', '/dashboard', '/notices', '/students', '/fees', '/attendance',
+  '/results', '/idcards', '/admitcards', '/timetable', '/classes',
+  '/teachers', '/reports', '/documents', '/import-export', '/qrscanner',
+  '/scanner', '/subscription', '/users', '/profile', '/complaints', '/access-denied'
+];
+
 function AppContent() {
   const {
     currentPath,
     currentUser,
+    isPrincipal,
+    isTeacher,
     settings,
     teacherPermissions,
     navigate,
@@ -234,8 +243,6 @@ function AppContent() {
 
     // 1. Force Sign In if unauthenticated
     if (!currentUser) {
-      const hasStoredUser = typeof window !== 'undefined' && localStorage.getItem('school_manager_logged_user_v1');
-      if (hasStoredUser) return;
       if (!['/signin', '/signup', '/forgot-password'].includes(cleanPath)) {
         navigate('/signin');
       }
@@ -250,51 +257,51 @@ function AppContent() {
 
     // 3. Dynamic teacher permission access routing
     if (currentUser.role === 'teacher') {
-      const strictlyAdmin = ['/users', '/teachers', '/settings', '/subscription'];
-      if (strictlyAdmin.includes(currentPath)) {
+      const strictlyAdmin = ['/users', '/teachers', '/subscription'];
+      if (strictlyAdmin.includes(cleanPath) || cleanPath.startsWith('/settings')) {
         navigate('/access-denied');
         return;
       }
-      if (currentPath === '/fees' && !teacherPermissions?.canCollectFees) {
+      if (cleanPath === '/fees' && !teacherPermissions?.canCollectFees) {
         navigate('/access-denied');
         return;
       }
-      if (currentPath === '/reports' && !teacherPermissions?.canExportReports) {
+      if (cleanPath === '/reports' && !teacherPermissions?.canExportReports) {
         navigate('/access-denied');
         return;
       }
-      if (currentPath === '/students' && teacherPermissions?.canViewStudents === false) {
+      if (cleanPath === '/students' && teacherPermissions?.canViewStudents === false) {
         navigate('/access-denied');
         return;
       }
-      if (currentPath === '/attendance' && teacherPermissions?.canMarkAttendance === false) {
+      if (cleanPath === '/attendance' && teacherPermissions?.canMarkAttendance === false) {
         navigate('/access-denied');
         return;
       }
-      if (currentPath === '/results' && teacherPermissions?.canEnterResults === false) {
+      if (cleanPath === '/results' && teacherPermissions?.canEnterResults === false) {
         navigate('/access-denied');
         return;
       }
-      if (currentPath === '/classes' && teacherPermissions?.canManageClasses === false) {
+      if (cleanPath === '/classes' && teacherPermissions?.canManageClasses === false) {
         navigate('/access-denied');
         return;
       }
-      if (currentPath === '/timetable' && teacherPermissions?.canManageTimetable === false) {
+      if (cleanPath === '/timetable' && teacherPermissions?.canManageTimetable === false) {
         navigate('/access-denied');
         return;
       }
-      if (currentPath === '/idcards' && teacherPermissions?.canViewIdCards === false) {
+      if (cleanPath === '/idcards' && teacherPermissions?.canViewIdCards === false) {
         navigate('/access-denied');
         return;
       }
-      if (currentPath === '/admitcards' && teacherPermissions?.canViewAdmitCards === false) {
+      if (cleanPath === '/admitcards' && teacherPermissions?.canViewAdmitCards === false) {
         navigate('/access-denied');
         return;
       }
     }
 
     // 4. Default route redirect
-    if (currentPath === '/' || currentPath === '/setup') {
+    if (cleanPath === '/' || (cleanPath === '/setup' && settings.isSetupComplete)) {
       navigate('/dashboard');
     }
   }, [currentUser, currentPath, teacherPermissions]);
@@ -310,15 +317,10 @@ function AppContent() {
 
   // ── Render 1: Public full-screen auth routes
   const cleanPath = (currentPath || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
-  const isPublicRoute = ['/signin', '/signup', '/forgot-password'].includes(cleanPath);
-  if (!currentUser && isPublicRoute) {
-    return (
-      <>
-        {cleanPath === '/signin' && <SignInView />}
-        {cleanPath === '/signup' && <SignUpView />}
-        {cleanPath === '/forgot-password' && <ForgotPasswordView />}
-      </>
-    );
+  if (!currentUser) {
+    if (cleanPath === '/signup') return <SignUpView />;
+    if (cleanPath === '/forgot-password') return <ForgotPasswordView />;
+    return <SignInView />;
   }
 
   // ── Render 2: Onboarding Setup Wizard
@@ -374,7 +376,7 @@ function AppContent() {
         <Header onMenuClick={() => setIsMobileNavOpen(true)} />
         <main className="flex-1 overflow-x-hidden px-3 py-4 sm:p-6 lg:p-8">
           <div className="w-full max-w-[1600px] mx-auto">
-            {cleanPath === '/dashboard' && <DashboardView />}
+            {(cleanPath === '/' || cleanPath === '/dashboard') && <DashboardView />}
             {cleanPath === '/notices' && (
               <NoticeBoardView
                 onOpenPublish={() => { setEditingNotice(null); setIsAddNoticeOpen(true); }}
@@ -383,24 +385,25 @@ function AppContent() {
               />
             )}
             {cleanPath === '/students' && <StudentsView />}
-            {cleanPath === '/fees' && ((currentUser.role === 'principal' || teacherPermissions?.canCollectFees) ? <FeesView /> : <AccessDeniedView />)}
+            {cleanPath === '/fees' && ((isPrincipal || teacherPermissions?.canCollectFees) ? <FeesView /> : <AccessDeniedView />)}
             {cleanPath === '/attendance' && <AttendanceView />}
             {cleanPath === '/results' && <ResultsView />}
             {cleanPath === '/idcards' && <IdCardView />}
             {cleanPath === '/admitcards' && <AdmitCardView />}
             {cleanPath === '/timetable' && <TimetableView />}
             {cleanPath === '/classes' && <ClassesView />}
-            {cleanPath === '/teachers' && <TeachersView />}
-            {cleanPath === '/reports' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
-            {cleanPath === '/documents' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
-            {cleanPath === '/import-export' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
-            {cleanPath === '/qrscanner' && <QrScannerView />}
-            {cleanPath.startsWith('/settings') && <SettingsView />}
-            {cleanPath === '/subscription' && <SubscriptionView />}
-            {cleanPath === '/users' && <UserManagementView />}
+            {cleanPath === '/teachers' && (isPrincipal ? <TeachersView /> : <AccessDeniedView />)}
+            {cleanPath === '/reports' && ((isPrincipal || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
+            {cleanPath === '/documents' && ((isPrincipal || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
+            {cleanPath === '/import-export' && ((isPrincipal || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
+            {(cleanPath === '/qrscanner' || cleanPath === '/scanner') && <QrScannerView />}
+            {cleanPath.startsWith('/settings') && (isPrincipal ? <SettingsView /> : <AccessDeniedView />)}
+            {cleanPath === '/subscription' && (isPrincipal ? <SubscriptionView /> : <AccessDeniedView />)}
+            {cleanPath === '/users' && (isPrincipal ? <UserManagementView /> : <AccessDeniedView />)}
             {cleanPath === '/profile' && <ProfileView />}
             {cleanPath === '/complaints' && <ParentComplaintsView />}
             {cleanPath === '/access-denied' && <AccessDeniedView />}
+            {!KNOWN_APP_PATHS.includes(cleanPath) && !cleanPath.startsWith('/settings') && <DashboardView />}
           </div>
         </main>
       </div>

@@ -131,7 +131,7 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
               <>
                 {/* Core Operations */}
                 <SectionLabel collapsed={collapsed}>{lang === 'hi' ? 'मुख्य मेनू' : 'Main Menu'}</SectionLabel>
-                <NavBtn icon={LayoutDashboard} label={t('dashboard', lang)} active={currentPath === '/dashboard'} onClick={() => nav('dashboard')} collapsed={collapsed} />
+                <NavBtn icon={LayoutDashboard} label={t('dashboard', lang)} active={currentPath === '/dashboard' || currentPath === '/'} onClick={() => nav('dashboard')} collapsed={collapsed} />
 
                 {/* Academic Management */}
                 <SectionLabel collapsed={collapsed}>{lang === 'hi' ? 'अकादमिक प्रबंधन' : 'Academic'}</SectionLabel>
