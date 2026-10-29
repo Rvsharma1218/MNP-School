@@ -229,10 +229,13 @@ function AppContent() {
 
   // Security route guards
   useEffect(() => {
-    const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
+    if (!mounted) return;
+    const cleanPath = (currentPath || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
 
     // 1. Force Sign In if unauthenticated
     if (!currentUser) {
+      const hasStoredUser = typeof window !== 'undefined' && localStorage.getItem('school_manager_logged_user_v1');
+      if (hasStoredUser) return;
       if (!['/signin', '/signup', '/forgot-password'].includes(cleanPath)) {
         navigate('/signin');
       }
@@ -306,7 +309,7 @@ function AppContent() {
   }
 
   // ── Render 1: Public full-screen auth routes
-  const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
+  const cleanPath = (currentPath || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
   const isPublicRoute = ['/signin', '/signup', '/forgot-password'].includes(cleanPath);
   if (!currentUser && isPublicRoute) {
     return (
@@ -371,33 +374,33 @@ function AppContent() {
         <Header onMenuClick={() => setIsMobileNavOpen(true)} />
         <main className="flex-1 overflow-x-hidden px-3 py-4 sm:p-6 lg:p-8">
           <div className="w-full max-w-[1600px] mx-auto">
-            {currentPath === '/dashboard' && <DashboardView />}
-            {currentPath === '/notices' && (
+            {cleanPath === '/dashboard' && <DashboardView />}
+            {cleanPath === '/notices' && (
               <NoticeBoardView
                 onOpenPublish={() => { setEditingNotice(null); setIsAddNoticeOpen(true); }}
                 onOpenView={(n) => setViewingNotice(n)}
                 onOpenEdit={(n) => { setEditingNotice(n); setIsAddNoticeOpen(true); }}
               />
             )}
-            {currentPath === '/students' && <StudentsView />}
-            {currentPath === '/fees' && ((currentUser.role === 'principal' || teacherPermissions?.canCollectFees) ? <FeesView /> : <AccessDeniedView />)}
-            {currentPath === '/attendance' && <AttendanceView />}
-            {currentPath === '/results' && <ResultsView />}
-            {currentPath === '/idcards' && <IdCardView />}
-            {currentPath === '/admitcards' && <AdmitCardView />}
-            {currentPath === '/timetable' && <TimetableView />}
-            {currentPath === '/classes' && <ClassesView />}
-            {currentPath === '/teachers' && <TeachersView />}
-            {currentPath === '/reports' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
-            {currentPath === '/documents' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
-            {currentPath === '/import-export' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
-            {currentPath === '/qrscanner' && <QrScannerView />}
-            {currentPath.startsWith('/settings') && <SettingsView />}
-            {currentPath === '/subscription' && <SubscriptionView />}
-            {currentPath === '/users' && <UserManagementView />}
-            {currentPath === '/profile' && <ProfileView />}
-            {currentPath === '/complaints' && <ParentComplaintsView />}
-            {currentPath === '/access-denied' && <AccessDeniedView />}
+            {cleanPath === '/students' && <StudentsView />}
+            {cleanPath === '/fees' && ((currentUser.role === 'principal' || teacherPermissions?.canCollectFees) ? <FeesView /> : <AccessDeniedView />)}
+            {cleanPath === '/attendance' && <AttendanceView />}
+            {cleanPath === '/results' && <ResultsView />}
+            {cleanPath === '/idcards' && <IdCardView />}
+            {cleanPath === '/admitcards' && <AdmitCardView />}
+            {cleanPath === '/timetable' && <TimetableView />}
+            {cleanPath === '/classes' && <ClassesView />}
+            {cleanPath === '/teachers' && <TeachersView />}
+            {cleanPath === '/reports' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
+            {cleanPath === '/documents' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
+            {cleanPath === '/import-export' && ((currentUser.role === 'principal' || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
+            {cleanPath === '/qrscanner' && <QrScannerView />}
+            {cleanPath.startsWith('/settings') && <SettingsView />}
+            {cleanPath === '/subscription' && <SubscriptionView />}
+            {cleanPath === '/users' && <UserManagementView />}
+            {cleanPath === '/profile' && <ProfileView />}
+            {cleanPath === '/complaints' && <ParentComplaintsView />}
+            {cleanPath === '/access-denied' && <AccessDeniedView />}
           </div>
         </main>
       </div>

@@ -387,8 +387,10 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
     }
   };
 
-  const rawCls = teacher.assignedClass || (Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses.join(', ') : '');
-  const isAllClasses = !rawCls || rawCls.toLowerCase() === 'all' || rawCls.toLowerCase() === 'all classes';
+  const raw = teacher.assignedClass ?? teacher.assignedClasses;
+  const rawCls = (Array.isArray(raw) ? raw.join(', ') : (typeof raw === 'string' ? raw : (raw != null ? String(raw) : ''))).trim();
+  const lower = rawCls.toLowerCase();
+  const isAllClasses = !rawCls || lower === 'all' || lower === 'all classes';
   const roleLabel = isAllClasses
     ? 'Faculty Member (All Classes Access)'
     : `Class Teacher: Class ${rawCls}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`;

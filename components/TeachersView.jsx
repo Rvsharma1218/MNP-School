@@ -45,6 +45,13 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
+const parseClassString = (val) => {
+  if (Array.isArray(val)) return val.join(', ');
+  if (typeof val === 'string') return val;
+  if (val != null) return String(val);
+  return '';
+};
+
 export default function TeachersView() {
   const {
     teachers,
@@ -153,9 +160,11 @@ export default function TeachersView() {
       mobile: t.mobile || '',
       alternateMobile: t.alternateMobile || '',
       password: t.password || '123456',
-      assignedClass: (t.assignedClass && t.assignedClass !== 'none' && t.assignedClass !== 'None')
-        ? t.assignedClass
-        : (Array.isArray(t.assignedClasses) && t.assignedClasses.length > 0 ? t.assignedClasses.join(', ') : ''),
+      assignedClass: (() => {
+        const raw = t.assignedClass ?? t.assignedClasses;
+        const str = parseClassString(raw);
+        return (str && str !== 'none' && str !== 'None') ? str : '';
+      })(),
       assignedSection: t.assignedSection || '',
       dob: t.dob ? (typeof t.dob === 'string' ? t.dob.split('T')[0] : t.dob) : '1992-05-15',
       gender: t.gender || 'Male',
@@ -407,10 +416,15 @@ export default function TeachersView() {
 
     // 2. Class Filter
     if (selectedClassFilter !== 'all') {
+      const raw = t.assignedClass ?? t.assignedClasses;
+      const str = parseClassString(raw).trim();
       if (selectedClassFilter === 'subject_only') {
-        if (t.assignedClass && t.assignedClass !== 'none' && t.assignedClass !== 'None') return false;
+        if (str && str !== 'none' && str !== 'None') return false;
       } else {
-        if (String(t.assignedClass) !== String(selectedClassFilter)) return false;
+        const list = str.split(/[,|]/).map(s => s.trim().toLowerCase().replace(/^class\s*/i, '')).filter(Boolean);
+        const isAll = list.length === 0 || list.includes('all') || list.includes('all classes');
+        const targetClean = String(selectedClassFilter).trim().toLowerCase().replace(/^class\s*/i, '');
+        if (!isAll && !list.includes(targetClean)) return false;
       }
     }
 
@@ -703,9 +717,11 @@ export default function TeachersView() {
                       <GraduationCap className="w-3.5 h-3.5 text-text-muted shrink-0" />
                       <span className="truncate">
                         {(() => {
-                          const cls = teacher.assignedClass || (Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses.join(', ') : '');
+                          const raw = teacher.assignedClass ?? teacher.assignedClasses;
+                          const cls = parseClassString(raw).trim();
                           if (cls && cls !== 'none' && cls !== 'None') {
-                            if (cls.toLowerCase() === 'all' || cls.toLowerCase() === 'all classes') {
+                            const lower = cls.toLowerCase();
+                            if (lower === 'all' || lower === 'all classes') {
                               return '★ All Classes Access';
                             }
                             return `Class ${cls}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`;
@@ -805,8 +821,10 @@ export default function TeachersView() {
                       {/* Role / Class */}
                       <td className="py-3 px-4">
                         {(() => {
-                          const cls = teacher.assignedClass || (Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses.join(', ') : '');
-                          const isAll = !cls || cls.toLowerCase() === 'all' || cls.toLowerCase() === 'all classes';
+                          const raw = teacher.assignedClass ?? teacher.assignedClasses;
+                          const cls = parseClassString(raw).trim();
+                          const lower = cls.toLowerCase();
+                          const isAll = !cls || lower === 'all' || lower === 'all classes';
                           if (isAll) {
                             return (
                               <span className="font-bold text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 text-[10.5px]">
@@ -1259,13 +1277,13 @@ export default function TeachersView() {
                         <span>Class Access & Permissions</span>
                       </label>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        formData.assignedClass === 'All Classes' || !formData.assignedClass
+                        parseClassString(formData.assignedClass) === 'All Classes' || !parseClassString(formData.assignedClass)
                           ? 'bg-primary/10 text-primary'
                           : 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300'
                       }`}>
-                        {formData.assignedClass === 'All Classes' || !formData.assignedClass
+                        {parseClassString(formData.assignedClass) === 'All Classes' || !parseClassString(formData.assignedClass)
                           ? 'Full School Access'
-                          : `${(formData.assignedClass || '').split(',').filter(s => s.trim() && s.trim() !== 'All Classes').length} Classes Selected`}
+                          : `${parseClassString(formData.assignedClass).split(',').filter(s => s.trim() && s.trim() !== 'All Classes').length} Classes Selected`}
                       </span>
                     </div>
 
@@ -1278,7 +1296,7 @@ export default function TeachersView() {
                         type="button"
                         onClick={() => setFormData({ ...formData, assignedClass: 'All Classes' })}
                         className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                          formData.assignedClass === 'All Classes' || !formData.assignedClass
+                          parseClassString(formData.assignedClass) === 'All Classes' || !parseClassString(formData.assignedClass)
                             ? 'bg-primary text-white shadow-sm'
                             : 'bg-surface border border-border text-text hover:border-primary'
                         }`}
@@ -1288,11 +1306,11 @@ export default function TeachersView() {
                       </button>
 
                       {availableClasses.map(c => {
-                        const list = (formData.assignedClass || '')
+                        const list = parseClassString(formData.assignedClass)
                           .split(/[,|]/)
                           .map(s => s.trim())
                           .filter(s => s && s !== 'All Classes');
-                        const isSel = list.includes(c) && formData.assignedClass !== 'All Classes';
+                        const isSel = list.includes(c) && parseClassString(formData.assignedClass) !== 'All Classes';
                         return (
                           <button
                             key={c}
