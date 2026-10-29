@@ -28,6 +28,7 @@ import '../admit_card/admit_card_screen.dart';
 import '../notice/notice_screen.dart';
 import '../whatsapp/whatsapp_service.dart';
 import 'parent_complaint_screen.dart';
+import '../results/screens/student_result_detail_screen.dart';
 
 class ParentDashboardScreen extends ConsumerStatefulWidget {
   const ParentDashboardScreen({super.key});
@@ -111,15 +112,15 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
   }
 
   Future<void> _loadData() async {
-    final studentId = SessionService.instance.parentStudentId;
     final schoolId = SessionService.instance.activeSchoolId;
+    final studentId = SessionService.instance.parentStudentId;
 
     if (studentId != null && studentId.isNotEmpty) {
       final db = DatabaseService.instance;
 
       // 1. Instant local SQLite load - zero waiting / zero spinner
-      var s = await db.getStudentById(studentId);
-      var p = await db.getPayments(studentId);
+      var s = await db.getStudentById(studentId) ?? await db.getStudentByQrId(studentId);
+      var p = await db.getPayments(s?.id ?? studentId);
       var a = await db.getAttendanceByStudentId(studentId);
       var r = await db.getResultsByStudentId(studentId);
       final set = await db.getSettings();
@@ -138,7 +139,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
       // 2. Background Firestore sync (non-blocking)
       unawaited(() async {
         try {
-          final doc = await FirebaseFirestore.instance
+          var cloudStudentDoc = await FirebaseFirestore.instance
               .collection('schools')
               .doc(schoolId)
               .collection('students')
@@ -146,9 +147,35 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
               .get()
               .timeout(const Duration(seconds: 5));
 
-          if (doc.exists && doc.data() != null) {
-            final cloudData = Map<String, dynamic>.from(doc.data()!);
-            cloudData['id'] = doc.id;
+          if (!cloudStudentDoc.exists || cloudStudentDoc.data() == null) {
+            final qSnap = await FirebaseFirestore.instance
+                .collection('schools')
+                .doc(schoolId)
+                .collection('students')
+                .where('studentId', isEqualTo: studentId)
+                .limit(1)
+                .get()
+                .timeout(const Duration(seconds: 5));
+            if (qSnap.docs.isNotEmpty) {
+              cloudStudentDoc = qSnap.docs.first;
+            } else {
+              final qAdm = await FirebaseFirestore.instance
+                  .collection('schools')
+                  .doc(schoolId)
+                  .collection('students')
+                  .where('admissionNumber', isEqualTo: studentId)
+                  .limit(1)
+                  .get()
+                  .timeout(const Duration(seconds: 5));
+              if (qAdm.docs.isNotEmpty) {
+                cloudStudentDoc = qAdm.docs.first;
+              }
+            }
+          }
+
+          if (cloudStudentDoc.exists && cloudStudentDoc.data() != null) {
+            final cloudData = Map<String, dynamic>.from(cloudStudentDoc.data()!);
+            cloudData['id'] = cloudStudentDoc.id;
             final cloudStudent = StudentModel.fromMap(cloudData);
             s = cloudStudent;
             await db.insertStudent(cloudStudent);
@@ -157,64 +184,87 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
           debugPrint('[ParentDashboard] Cloud student sync note: $e');
         }
 
-        try {
-          final paySnap = await FirebaseFirestore.instance
-              .collection('schools')
-              .doc(schoolId)
-              .collection('payments')
-              .where('studentId', isEqualTo: studentId)
-              .get()
-              .timeout(const Duration(seconds: 5));
+        // Exhaustive target student IDs
+        final targetIds = <String>{studentId};
+        if (s != null) {
+          if (s!.id.isNotEmpty) targetIds.add(s!.id);
+          if (s!.studentId.isNotEmpty) targetIds.add(s!.studentId);
+          if (s!.admissionNumber.isNotEmpty) targetIds.add(s!.admissionNumber);
+        }
 
-          for (final doc in paySnap.docs) {
-            final pMap = doc.data();
-            pMap['id'] = doc.id;
-            await db.upsertPaymentFromRemote(pMap);
+        // Sync Payments
+        try {
+          for (final tid in targetIds) {
+            final paySnap = await FirebaseFirestore.instance
+                .collection('schools')
+                .doc(schoolId)
+                .collection('payments')
+                .where('studentId', isEqualTo: tid)
+                .get()
+                .timeout(const Duration(seconds: 5));
+
+            for (final doc in paySnap.docs) {
+              final pMap = doc.data();
+              pMap['id'] = doc.id;
+              await db.upsertPaymentFromRemote(pMap);
+            }
           }
-          p = await db.getPayments(studentId);
+          p = await db.getPayments(s?.id ?? studentId);
         } catch (e) {
           debugPrint('[ParentDashboard] Cloud payments sync note: $e');
         }
 
-        if (r.isEmpty) {
-          try {
+        // Sync Attendance Flat
+        try {
+          for (final tid in targetIds) {
+            final attSnap = await FirebaseFirestore.instance
+                .collection('schools')
+                .doc(schoolId)
+                .collection('attendance_flat')
+                .where('studentId', isEqualTo: tid)
+                .get()
+                .timeout(const Duration(seconds: 5));
+
+            for (final doc in attSnap.docs) {
+              final data = Map<String, dynamic>.from(doc.data());
+              data['id'] = doc.id;
+              final record = AttendanceModel.fromMap(data);
+              await db.upsertAttendanceFromRemote(record);
+            }
+          }
+          a = await db.getAttendanceByStudentId(studentId);
+        } catch (e) {
+          debugPrint('[ParentDashboard] Cloud attendance sync note: $e');
+        }
+
+        // Sync Results
+        try {
+          for (final tid in targetIds) {
             final resSnap = await FirebaseFirestore.instance
                 .collection('schools')
                 .doc(schoolId)
                 .collection('results')
-                .where('studentId', isEqualTo: studentId)
+                .where('studentId', isEqualTo: tid)
                 .get()
                 .timeout(const Duration(seconds: 5));
 
-            final fetchedResults = <ResultModel>[];
             for (final doc in resSnap.docs) {
-              final data = doc.data();
+              final data = Map<String, dynamic>.from(doc.data());
               data['id'] = doc.id;
-              final res = ResultModel(
-                id: doc.id,
-                studentId: data['studentId']?.toString() ?? studentId,
-                examName: data['examName']?.toString() ?? 'Term Exam',
-                status: data['status']?.toString(),
-                createdAt: data['createdAt'] != null
-                    ? (DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now())
-                    : DateTime.now(),
-                subjects: (data['subjects'] as List? ?? [])
-                    .map((sub) => SubjectResult.fromMap(Map<String, dynamic>.from(sub)))
-                    .toList(),
-              );
-              fetchedResults.add(res);
+              final res = ResultModel.fromMap(data);
               await db.upsertResultFromRemote(res);
             }
-            if (fetchedResults.isNotEmpty) r = fetchedResults;
-          } catch (e) {
-            debugPrint('[ParentDashboard] Cloud results sync note: $e');
           }
+          r = await db.getResultsByStudentId(studentId);
+        } catch (e) {
+          debugPrint('[ParentDashboard] Cloud results sync note: $e');
         }
 
         if (mounted) {
           setState(() {
             _student = s;
             _payments = p;
+            _attendanceLogs = a;
             _results = r;
             _loading = false;
           });
@@ -2418,8 +2468,29 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
 
   // ── RESULT PDF HELPERS (DOWNLOAD & SHARE) ─────────────────────────────
 
+  StudentModel _buildFallbackStudent(ResultModel res) {
+    return _student ??
+        StudentModel(
+          id: res.studentId,
+          studentId: res.studentId,
+          name: res.studentName ?? 'Student',
+          className: res.className ?? '',
+          rollNumber: res.rollNumber ?? '',
+          fatherName: '',
+          mobile: '',
+          admissionNumber: '',
+          address: '',
+          dob: DateTime(2010, 1, 1),
+          gender: 'Male',
+          admissionDate: DateTime.now(),
+          createdAt: DateTime.now(),
+          studentType: 'school',
+          status: 'active',
+        );
+  }
+
   Future<void> _downloadResultPdf(ResultModel res) async {
-    if (_student == null) return;
+    final student = _buildFallbackStudent(res);
     try {
       final settings = _settings ??
           SettingsModel(
@@ -2429,7 +2500,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
           );
       await ResultPdfService.instance.saveResultPdfToDevice(
         result: res,
-        student: _student!,
+        student: student,
         settings: settings,
       );
       if (!mounted) return;
@@ -2464,7 +2535,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
   }
 
   Future<void> _shareResultPdf(ResultModel res) async {
-    if (_student == null) return;
+    final student = _buildFallbackStudent(res);
     try {
       final settings = _settings ??
           SettingsModel(
@@ -2474,7 +2545,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
           );
       await ResultPdfService.instance.shareResult(
         result: res,
-        student: _student!,
+        student: student,
         settings: settings,
       );
     } catch (e) {
@@ -2559,7 +2630,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                             border: Border.all(color: isPass ? Colors.green : Colors.red),
                           ),
                           child: Text(
-                            isPass ? 'PASSED ($grade)' : 'FAILED ($grade)',
+                            isPass ? 'PASSED ($grade)' : 'NEEDS IMPROVEMENT ($grade)',
                             style: TextStyle(
                               color: isPass ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
                               fontSize: 11,
@@ -2665,6 +2736,36 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
+                            // View Marksheet Button
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4338CA),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.visibility_rounded, size: 16),
+                                label: const Text(
+                                  'मार्कशीट देखें',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                onPressed: () {
+                                  final effectiveStudent = _buildFallbackStudent(res);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => StudentResultDetailScreen(
+                                        student: effectiveStudent,
+                                        result: res,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             // Download PDF Marksheet Button
                             Expanded(
                               child: ElevatedButton.icon(
@@ -2733,7 +2834,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                                       '📊 *प्राप्तांक:* ${res.obtainedMarks.toInt()} / ${res.totalMarks.toInt()}\n'
                                       '📈 *प्रतिशत:* $pct%\n'
                                       '🎯 *ग्रेड:* $grade\n'
-                                      '🏆 *स्थिति:* ${isPass ? "✅ उत्तीर्ण (PASSED)" : "❌ अनुत्तीर्ण (FAILED)"}\n'
+                                      '🏆 *स्थिति:* ${isPass ? "✅ उत्तीर्ण (PASSED)" : "⚠️ सुधार की आवश्यकता (NEEDS IMPROVEMENT)"}\n'
                                       '━━━━━━━━━━━━━━━━━━━\n'
                                       'धन्यवाद!';
                                   WhatsAppService.sendMessage(

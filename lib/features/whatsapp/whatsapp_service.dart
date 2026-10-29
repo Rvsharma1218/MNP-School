@@ -376,7 +376,7 @@ class WhatsAppService {
     buffer.writeln('🎯 *Total Marks:* ${obtainedMarks.toInt()} / ${totalMarks.toInt()}');
     buffer.writeln('📊 *Percentage:* ${percentage.toStringAsFixed(1)}%');
     buffer.writeln('🏅 *Grade:* $grade');
-    buffer.writeln('🏆 *Result Status:* *${status.toUpperCase()}*');
+    buffer.writeln('🏆 *Result Status:* *${status.toUpperCase() == 'FAIL' ? 'NEEDS IMPROVEMENT' : status.toUpperCase()}*');
     if (remarks != null && remarks.trim().isNotEmpty) {
       buffer.writeln('💬 *Remarks:* ${remarks.trim()}');
     }

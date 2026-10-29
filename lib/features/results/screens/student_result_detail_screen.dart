@@ -8,6 +8,7 @@ import '../../../data/models/student_model.dart';
 import '../../../data/services/database_service.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/result_pdf_service.dart';
+import '../../../data/services/session_service.dart';
 import '../../whatsapp/whatsapp_service.dart';
 import 'student_mark_entry_screen.dart';
 
@@ -251,11 +252,12 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
             tooltip: 'Print / Preview PDF',
             onPressed: _generatePdf,
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-            tooltip: 'Delete Result',
-            onPressed: _deleteResult,
-          ),
+          if (!SessionService.instance.isParent)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+              tooltip: 'Delete Result',
+              onPressed: _deleteResult,
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -334,7 +336,9 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          _currentResult.finalResultStatus,
+                          _currentResult.finalResultStatus == 'FAIL'
+                              ? 'NEEDS IMPROVEMENT'
+                              : _currentResult.finalResultStatus,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -421,7 +425,7 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                   Expanded(
                     child: _buildMetricItem(
                       'Result',
-                      _status,
+                      _status == 'FAIL' ? 'NEEDS IMPROVEMENT' : _status,
                       isPass ? Colors.green : Colors.red,
                     ),
                   ),
@@ -431,71 +435,96 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
             const SizedBox(height: 16),
 
             // ─── Status Override & Remarks ───
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Result Status Override:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: ['PASS', 'PROMOTED', 'FAIL'].map((st) {
-                      final selected = _status.toUpperCase() == st;
-                      final col = st == 'PASS'
-                          ? Colors.green
-                          : st == 'PROMOTED'
-                              ? Colors.orange
-                              : Colors.red;
-                      return ChoiceChip(
-                        label: Text(st, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: selected ? Colors.white : col)),
-                        selected: selected,
-                        selectedColor: col,
-                        backgroundColor: col.withValues(alpha: 0.1),
-                        side: BorderSide(color: col),
-                        onSelected: (val) {
-                          if (val) setState(() => _status = st);
-                        },
-                      );
-                    }).toList(),
+            if (SessionService.instance.isParent) ...[
+              if ((_currentResult.remarks ?? '').trim().isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  const SizedBox(height: 12),
-                  const Text('Remarks / Teacher Note:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _remarksCtrl,
-                    maxLines: 2,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Excellent performance, promoted to next class',
-                      hintStyle: const TextStyle(fontSize: 12),
-                      isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton.icon(
-                      onPressed: _isSaving ? null : _updateStatusAndRemarks,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E3A8A),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Teacher Remarks / टिप्पणी:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      Text(
+                        _currentResult.remarks!,
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF1E3A8A), fontStyle: FontStyle.italic),
                       ),
-                      icon: _isSaving
-                          ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.save_rounded, size: 16),
-                      label: const Text('Update Status & Remarks', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
+                    ],
                   ),
-                ],
+                ),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Result Status Override:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: ['PASS', 'PROMOTED', 'FAIL'].map((st) {
+                        final selected = _status.toUpperCase() == st;
+                        final col = st == 'PASS'
+                            ? Colors.green
+                            : st == 'PROMOTED'
+                                ? Colors.orange
+                                : Colors.red;
+                        final labelText = st == 'FAIL' ? 'NEEDS IMPROVEMENT' : st;
+                        return ChoiceChip(
+                          label: Text(labelText, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: selected ? Colors.white : col)),
+                          selected: selected,
+                          selectedColor: col,
+                          backgroundColor: col.withValues(alpha: 0.1),
+                          side: BorderSide(color: col),
+                          onSelected: (val) {
+                            if (val) setState(() => _status = st);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Remarks / Teacher Note:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _remarksCtrl,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Excellent performance, promoted to next class',
+                        hintStyle: const TextStyle(fontSize: 12),
+                        isDense: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton.icon(
+                        onPressed: _isSaving ? null : _updateStatusAndRemarks,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E3A8A),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: _isSaving
+                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.save_rounded, size: 16),
+                        label: const Text('Update Status & Remarks', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 20),
 
             // ─── Primary Bottom Action Buttons ───
@@ -530,38 +559,40 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF1E3A8A),
-                      side: const BorderSide(color: Color(0xFF1E3A8A), width: 1.5),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            if (!SessionService.instance.isParent) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1E3A8A),
+                        side: const BorderSide(color: Color(0xFF1E3A8A), width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: _navigateToEditMarks,
+                      icon: const Icon(Icons.edit_note_rounded, size: 18),
+                      label: const Text('Edit Marks', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                    onPressed: _navigateToEditMarks,
-                    icon: const Icon(Icons.edit_note_rounded, size: 18),
-                    label: const Text('Edit Marks', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade700,
-                      side: BorderSide(color: Colors.red.shade400, width: 1.5),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade700,
+                        side: BorderSide(color: Colors.red.shade400, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: _deleteResult,
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: const Text('Delete Result', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                    onPressed: _deleteResult,
-                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                    label: const Text('Delete Result', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -595,7 +626,6 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
         DataColumn(label: Text('Max Marks')),
         DataColumn(label: Text('Total Obt')),
         DataColumn(label: Text('Grade')),
-        DataColumn(label: Text('Status')),
       ];
     } else {
       return const [
@@ -604,7 +634,6 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
         DataColumn(label: Text('Max Marks')),
         DataColumn(label: Text('Marks Obtained')),
         DataColumn(label: Text('Grade')),
-        DataColumn(label: Text('Status')),
       ];
     }
   }
@@ -628,23 +657,6 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                 style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
               )),
               DataCell(Text(s.grade, style: const TextStyle(fontWeight: FontWeight.bold))),
-              DataCell(
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: (s.isPass ? Colors.green : Colors.red).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    s.isPass ? 'PASS' : 'FAIL',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: s.isPass ? Colors.green : Colors.red,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         );
@@ -660,23 +672,6 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                 style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
               )),
               DataCell(Text(s.grade, style: const TextStyle(fontWeight: FontWeight.bold))),
-              DataCell(
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: (s.isPass ? Colors.green : Colors.red).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    s.isPass ? 'PASS' : 'FAIL',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: s.isPass ? Colors.green : Colors.red,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         );

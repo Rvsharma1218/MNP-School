@@ -3122,13 +3122,26 @@ CREATE TABLE monthly_fees (
   }
 
   Future<List<AttendanceModel>> getAttendanceByStudentId(String studentId) async {
+    final student = await getStudentById(studentId) ?? await getStudentByQrId(studentId);
+    final targetIds = <String>{studentId};
+    if (student != null) {
+      if (student.id.isNotEmpty) targetIds.add(student.id);
+      if (student.studentId.isNotEmpty) targetIds.add(student.studentId);
+      if (student.admissionNumber.isNotEmpty) targetIds.add(student.admissionNumber);
+    }
+
     if (kIsWeb) {
       final list = await getAttendanceByDate(DateTime.now());
-      return list.where((a) => a.studentId == studentId).toList();
+      return list.where((a) => targetIds.contains(a.studentId)).toList();
     }
     final db = await database;
-    final maps = await db.query('attendance',
-        where: 'studentId = ?', whereArgs: [studentId], orderBy: 'date DESC');
+    final placeholders = targetIds.map((_) => '?').join(', ');
+    final maps = await db.query(
+      'attendance',
+      where: 'studentId IN ($placeholders)',
+      whereArgs: targetIds.toList(),
+      orderBy: 'date DESC',
+    );
     return maps.map(AttendanceModel.fromMap).toList();
   }
 
@@ -3421,25 +3434,47 @@ CREATE TABLE monthly_fees (
     if (student != null) {
       if (student.id.isNotEmpty) targetIds.add(student.id);
       if (student.studentId.isNotEmpty) targetIds.add(student.studentId);
+      if (student.admissionNumber.isNotEmpty) targetIds.add(student.admissionNumber);
     }
+
+    final sName = student?.name.trim() ?? '';
+    final sClass = student?.className?.trim() ?? '';
 
     if (kIsWeb) {
       final all = await getAllResults();
-      return all.where((r) => targetIds.contains(r.studentId)).toList();
+      return all.where((r) {
+        if (targetIds.contains(r.studentId)) return true;
+        if (sName.isNotEmpty && sClass.isNotEmpty) {
+          if (r.studentName == sName && r.className == sClass) return true;
+        }
+        return false;
+      }).toList();
     }
 
     final db = await database;
     try {
       final placeholders = targetIds.map((_) => '?').join(', ');
+      final List<dynamic> whereArgs = targetIds.toList();
+      String whereClause = 'studentId IN ($placeholders)';
+
+      if (sName.isNotEmpty && sClass.isNotEmpty) {
+        whereClause += ' OR (studentName = ? AND className = ?)';
+        whereArgs.add(sName);
+        whereArgs.add(sClass);
+      }
+
       final results = await db.query(
         'results',
-        where: 'studentId IN ($placeholders)',
-        whereArgs: targetIds.toList(),
+        where: whereClause,
+        whereArgs: whereArgs,
         orderBy: 'createdAt DESC',
       );
-      List<ResultModel> models = [];
+      final List<ResultModel> models = [];
+      final seenIds = <String>{};
       for (final result in results) {
-        final subjects = await db.query('subject_results', where: 'resultId = ?', whereArgs: [result['id']]);
+        final id = result['id'] as String? ?? '';
+        if (id.isNotEmpty && !seenIds.add(id)) continue;
+        final subjects = await db.query('subject_results', where: 'resultId = ?', whereArgs: [id]);
         models.add(ResultModel.fromMap(result, subjects.map(SubjectResult.fromMap).toList()));
       }
       return models;
