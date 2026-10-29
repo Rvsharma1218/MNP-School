@@ -51,7 +51,7 @@ export default function ResultsView() {
   } = useSchoolStore();
 
   const isPrincipal = currentUser?.role === 'principal';
-  const assignedClass = currentUser?.assignedClass || '10th';
+  const assignedClass = currentUser?.assignedClass || '';
 
   // Navigation Tabs: 'saved' | 'entry' | 'exams'
   const [activeTab, setActiveTab] = useState('exams');
@@ -64,7 +64,7 @@ export default function ResultsView() {
   // 1. SAVED RESULTS TAB STATE
   // ─────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
-  const [resultsClassFilter, setResultsClassFilter] = useState('all');
+  const [resultsClassFilter, setResultsClassFilter] = useState(!isPrincipal && assignedClass ? assignedClass : 'all');
   const [resultsExamFilter, setResultsExamFilter] = useState('all');
   const [savedViewMode, setSavedViewMode] = useState('cards'); // 'cards' | 'table'
 
@@ -279,15 +279,22 @@ export default function ResultsView() {
         setBulkClass(found.className);
       }
       if (found.subjects && found.subjects.length > 0) {
-        const loadedSubs = found.subjects.map((s, idx) => ({
-          id: `sub_${idx}_${Date.now()}`,
-          name: s.subjectName,
-          totalMarks: Number(s.totalMarks) || 100,
-          passingMarks: Number(s.passingMarks) || 33,
-          theoryMax: Number(s.theoryMax) || 100,
-          practicalMax: Number(s.practicalMax) || 0,
-          internalMax: Number(s.internalMax) || 0
-        }));
+        const seen = new Set();
+        const loadedSubs = [];
+        found.subjects.forEach((s, idx) => {
+          const name = (s.subjectName || 'Subject').trim();
+          if (seen.has(name.toLowerCase())) return;
+          seen.add(name.toLowerCase());
+          loadedSubs.push({
+            id: `sub_${idx}_${Date.now()}`,
+            name: name,
+            totalMarks: Number(s.totalMarks) || 100,
+            passingMarks: Number(s.passingMarks) || 33,
+            theoryMax: Number(s.theoryMax) || 100,
+            practicalMax: Number(s.practicalMax) || 0,
+            internalMax: Number(s.internalMax) || 0
+          });
+        });
         setDeskSubjects(loadedSubs);
         setActiveDeskSubjectId(loadedSubs[0]?.id || '');
       }
@@ -1599,18 +1606,20 @@ export default function ResultsView() {
                         <Sliders className="w-4 h-4" />
                       </button>
 
-                      <button
-                        onClick={async () => {
-                          if (window.confirm(`Delete exam "${exam.title}"? This cannot be undone.`)) {
-                            await deleteExam(exam.id);
-                            showToast('Exam deleted', 'info');
-                          }
-                        }}
-                        className="p-2 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer transition-all active:scale-95"
-                        title="Delete Exam"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {isPrincipal && (
+                        <button
+                          onClick={async () => {
+                            if (window.confirm(`Delete exam "${exam.title}"? This cannot be undone.`)) {
+                              await deleteExam(exam.id);
+                              showToast('Exam deleted', 'info');
+                            }
+                          }}
+                          className="p-2 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer transition-all active:scale-95"
+                          title="Delete Exam"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
 
                   </div>

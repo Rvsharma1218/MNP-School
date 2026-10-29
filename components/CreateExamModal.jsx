@@ -48,19 +48,27 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
   // Subjects Configuration State
   const [subjects, setSubjects] = useState(() => {
     if (editExam?.subjects && editExam.subjects.length > 0) {
-      return editExam.subjects.map((s, idx) => ({
-        id: `sub_${idx}_${Date.now()}`,
-        subjectName: s.subjectName || 'Subject',
-        isCompulsory: s.isCompulsory !== false,
-        totalMarks: Number(s.totalMarks) || 100,
-        passingMarks: Number(s.passingMarks) || 33,
-        theoryMax: Number(s.theoryMax) || 100,
-        theoryPassing: Number(s.theoryPassing) || 33,
-        practicalMax: Number(s.practicalMax) || 0,
-        practicalPassing: Number(s.practicalPassing) || 0,
-        internalMax: Number(s.internalMax) || 0,
-        internalPassing: Number(s.internalPassing) || 0
-      }));
+      const seen = new Set();
+      const deduped = [];
+      editExam.subjects.forEach((s, idx) => {
+        const name = (s.subjectName || 'Subject').trim();
+        if (seen.has(name.toLowerCase())) return;
+        seen.add(name.toLowerCase());
+        deduped.push({
+          id: `sub_${idx}_${Date.now()}`,
+          subjectName: name,
+          isCompulsory: s.isCompulsory !== false,
+          totalMarks: Number(s.totalMarks) || 100,
+          passingMarks: Number(s.passingMarks) || 33,
+          theoryMax: Number(s.theoryMax) || 100,
+          theoryPassing: Number(s.theoryPassing) || 33,
+          practicalMax: Number(s.practicalMax) || 0,
+          practicalPassing: Number(s.practicalPassing) || 0,
+          internalMax: Number(s.internalMax) || 0,
+          internalPassing: Number(s.internalPassing) || 0
+        });
+      });
+      return deduped;
     }
     // Default 5 standard subjects
     return [
@@ -77,12 +85,23 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
   const availableClasses = ['All Classes', ...(settings?.schoolClasses || ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th-Sci', '12th-Sci'])];
 
   const handleAddSubject = () => {
-    const nextIdx = subjects.length + 1;
+    const existing = new Set(subjects.map(s => (s.subjectName || '').trim().toLowerCase()));
+    const candidates = [
+      ...STANDARD_SUBJECT_OPTIONS,
+      'Sanskrit',
+      'Computer',
+      'General Knowledge',
+      'Urdu',
+      'Drawing',
+      'EVS',
+      'Moral Science'
+    ];
+    const candidate = candidates.find(c => !existing.has(c.toLowerCase())) || `Subject ${subjects.length + 1}`;
     setSubjects(prev => [
       ...prev,
       {
-        id: `sub_${Date.now()}_${nextIdx}`,
-        subjectName: STANDARD_SUBJECT_OPTIONS[nextIdx % STANDARD_SUBJECT_OPTIONS.length] || 'New Subject',
+        id: `sub_${Date.now()}_${prev.length + 1}`,
+        subjectName: candidate,
         isCompulsory: true,
         totalMarks: 100,
         passingMarks: 33,
@@ -129,17 +148,14 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
       return;
     }
 
-    const payload = {
-      id: editExam?.id || `exam_${Date.now()}`,
-      title: title.trim(),
-      term,
-      className,
-      academicYear,
-      examDate: new Date(examDate).toISOString(),
-      status,
-      isDetailedMode,
-      subjects: subjects.map(s => ({
-        subjectName: s.subjectName.trim() || 'General',
+    const seenNames = new Set();
+    const dedupedSubjects = [];
+    for (const s of subjects) {
+      const name = (s.subjectName || '').trim();
+      if (!name || seenNames.has(name.toLowerCase())) continue;
+      seenNames.add(name.toLowerCase());
+      dedupedSubjects.push({
+        subjectName: name,
         isCompulsory: s.isCompulsory !== false,
         totalMarks: Number(s.totalMarks) || 100,
         passingMarks: Number(s.passingMarks) || 33,
@@ -149,7 +165,24 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
         practicalPassing: Number(s.practicalPassing) || 0,
         internalMax: Number(s.internalMax) || 0,
         internalPassing: Number(s.internalPassing) || 0
-      }))
+      });
+    }
+
+    if (dedupedSubjects.length === 0) {
+      showToast('Please configure at least one subject', 'error');
+      return;
+    }
+
+    const payload = {
+      id: editExam?.id || `exam_${Date.now()}`,
+      title: title.trim(),
+      term,
+      className,
+      academicYear,
+      examDate: new Date(examDate).toISOString(),
+      status,
+      isDetailedMode,
+      subjects: dedupedSubjects
     };
 
     try {
