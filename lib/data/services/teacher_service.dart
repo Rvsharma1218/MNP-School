@@ -141,6 +141,30 @@ class TeacherService {
     return TeacherModel.fromMap(data);
   }
 
+  List<TeacherModel> _deduplicateAndSort(List<QueryDocumentSnapshot> docs) {
+    final Map<String, TeacherModel> map = {};
+    for (final doc in docs) {
+      final t = _parseTeacherDoc(doc);
+      if (t == null) continue;
+      final key = t.teacherId.isNotEmpty ? t.teacherId : t.id;
+      final authKey = t.authUid;
+      if (!map.containsKey(key) && (!map.containsKey(authKey) || authKey.isEmpty)) {
+        map[key] = t;
+        if (authKey.isNotEmpty) map[authKey] = t;
+      } else {
+        final existingKey = map.containsKey(key) ? key : authKey;
+        final existing = map[existingKey]!;
+        if ((t.fatherName?.isNotEmpty == true || t.dob != null) && existing.fatherName == null) {
+          map[key] = t;
+          if (authKey.isNotEmpty) map[authKey] = t;
+        }
+      }
+    }
+    final unique = map.values.toSet().toList();
+    unique.sort((a, b) => a.name.compareTo(b.name));
+    return unique;
+  }
+
   Future<List<TeacherModel>> listAllTeachers(String schoolUid, {bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedTeachers.isNotEmpty) {
       _refreshTeachersBackground(schoolUid);
@@ -160,11 +184,7 @@ class TeacherService {
       try {
         final cacheSnap = await _teachersCol(schoolUid).get(const GetOptions(source: Source.cache));
         if (cacheSnap.docs.isNotEmpty) {
-          _cachedTeachers = cacheSnap.docs
-              .map(_parseTeacherDoc)
-              .whereType<TeacherModel>()
-              .toList()
-            ..sort((a, b) => a.name.compareTo(b.name));
+          _cachedTeachers = _deduplicateAndSort(cacheSnap.docs);
           _refreshTeachersBackground(schoolUid);
           return _cachedTeachers;
         }
@@ -172,11 +192,7 @@ class TeacherService {
 
       // 2. Fetch from server and cache
       final snap = await _teachersCol(schoolUid).get().timeout(const Duration(seconds: 5));
-      _cachedTeachers = snap.docs
-          .map(_parseTeacherDoc)
-          .whereType<TeacherModel>()
-          .toList()
-        ..sort((a, b) => a.name.compareTo(b.name));
+      _cachedTeachers = _deduplicateAndSort(snap.docs);
       return _cachedTeachers;
     } catch (e) {
       if (_cachedTeachers.isNotEmpty) return _cachedTeachers;
@@ -187,11 +203,7 @@ class TeacherService {
   void _refreshTeachersBackground(String schoolUid) {
     _teachersCol(schoolUid).get(const GetOptions(source: Source.server)).then((snap) {
       if (snap.docs.isNotEmpty) {
-        _cachedTeachers = snap.docs
-            .map(_parseTeacherDoc)
-            .whereType<TeacherModel>()
-            .toList()
-          ..sort((a, b) => a.name.compareTo(b.name));
+        _cachedTeachers = _deduplicateAndSort(snap.docs);
         _saveToDisk();
       }
     }).catchError((_) {});
@@ -472,9 +484,19 @@ class TeacherService {
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
-    await _teachersCol(schoolUid).doc(teacher.teacherId).set(updates, SetOptions(merge: true));
-    if (teacher.authUid != teacher.teacherId) {
-      await _teachersCol(schoolUid).doc(teacher.authUid).set(updates, SetOptions(merge: true)).catchError((_) {});
+    final primaryDocId = teacher.id.isNotEmpty ? teacher.id : teacher.teacherId;
+    await _teachersCol(schoolUid).doc(primaryDocId).set(updates, SetOptions(merge: true));
+    if (teacher.teacherId.isNotEmpty && teacher.teacherId != primaryDocId) {
+      await _teachersCol(schoolUid).doc(teacher.teacherId).set(updates, SetOptions(merge: true)).catchError((_) {});
+    }
+    // Clean up any legacy duplicate doc created under authUid
+    if (teacher.authUid.isNotEmpty && teacher.authUid != primaryDocId && teacher.authUid != teacher.teacherId) {
+      try {
+        final duplicateDoc = await _teachersCol(schoolUid).doc(teacher.authUid).get();
+        if (duplicateDoc.exists) {
+          await _teachersCol(schoolUid).doc(teacher.authUid).delete();
+        }
+      } catch (_) {}
     }
     try {
       if (effectiveSchoolEmail.isNotEmpty) {

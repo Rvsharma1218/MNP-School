@@ -181,11 +181,22 @@ class TeacherModel {
     return TeacherModel.fromMap(map);
   }
 
+  bool canAccessClass(String? targetClass) {
+    final cls = assignedClass?.trim() ?? '';
+    if (cls.isEmpty || cls.toLowerCase() == 'none' || cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes' || cls.toLowerCase() == 'not assigned') {
+      return true;
+    }
+    if (targetClass == null || targetClass.trim().isEmpty) return true;
+    final target = targetClass.trim().toLowerCase();
+    final allowed = cls.split(',').map((c) => c.trim().toLowerCase()).where((c) => c.isNotEmpty);
+    return allowed.any((a) => a == target || target.contains(a) || a.contains(target));
+  }
+
   String get displayAssignedClass {
     final cls = assignedClass ?? '';
     final sec = assignedSection ?? '';
-    if (cls.isEmpty || cls.toLowerCase() == 'none' || cls.toLowerCase() == 'not assigned') {
-      return 'Subject Teacher (All Classes)';
+    if (cls.isEmpty || cls.toLowerCase() == 'none' || cls.toLowerCase() == 'not assigned' || cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes') {
+      return 'All Classes (Full Access)';
     }
     return '$cls${sec.isNotEmpty && sec != 'None' ? ' - Section $sec' : ''}';
   }

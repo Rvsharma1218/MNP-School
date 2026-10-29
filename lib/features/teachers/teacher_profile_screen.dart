@@ -452,8 +452,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
                       TextFormField(
                         controller: phoneCtrl,
                         keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(labelText: 'Mobile Number *', prefixIcon: Icon(Icons.phone_outlined)),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                        decoration: const InputDecoration(labelText: 'Mobile Number (Optional)', prefixIcon: Icon(Icons.phone_outlined)),
                       ),
                       const SizedBox(height: 10),
 
@@ -461,13 +460,13 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: selectedClass.isEmpty ? null : selectedClass,
-                              decoration: const InputDecoration(labelText: 'Assigned Class'),
+                              value: (selectedClass.isEmpty || selectedClass == 'All Classes') ? 'All Classes' : (availableClasses.contains(selectedClass) ? selectedClass : 'All Classes'),
+                              decoration: const InputDecoration(labelText: 'Class Access / Assignment'),
                               items: [
-                                const DropdownMenuItem(value: '', child: Text('None (Subject Teacher)')),
+                                const DropdownMenuItem(value: 'All Classes', child: Text('All Classes (Full Access)')),
                                 ...availableClasses.map((c) => DropdownMenuItem(value: c, child: Text(c))),
                               ],
-                              onChanged: (val) => setSheetState(() => selectedClass = val ?? ''),
+                              onChanged: (val) => setSheetState(() => selectedClass = val ?? 'All Classes'),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -482,6 +481,45 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
                               onChanged: (val) => setSheetState(() => selectedSection = val ?? ''),
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text('Or tap to select multiple classes:', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          FilterChip(
+                            label: const Text('All Classes', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            selected: selectedClass == 'All Classes' || selectedClass.isEmpty,
+                            onSelected: (sel) {
+                              setSheetState(() => selectedClass = 'All Classes');
+                            },
+                          ),
+                          ...availableClasses.map((c) {
+                            final currentList = selectedClass.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty && s != 'All Classes').toList();
+                            final isSel = currentList.contains(c);
+                            return FilterChip(
+                              label: Text(c, style: const TextStyle(fontSize: 11)),
+                              selected: isSel && selectedClass != 'All Classes',
+                              onSelected: (sel) {
+                                setSheetState(() {
+                                  if (selectedClass == 'All Classes') currentList.clear();
+                                  if (sel) {
+                                    currentList.add(c);
+                                  } else {
+                                    currentList.remove(c);
+                                  }
+                                  if (currentList.isEmpty) {
+                                    selectedClass = 'All Classes';
+                                  } else {
+                                    selectedClass = currentList.join(', ');
+                                  }
+                                });
+                              },
+                            );
+                          }),
                         ],
                       ),
                       const SizedBox(height: 10),

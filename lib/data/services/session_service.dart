@@ -64,10 +64,24 @@ class SessionService {
   bool get isParent => _role == AppRole.parent;
   bool get hasSession => _role != null && _schoolId != null;
 
+  bool canAccessClass(String? targetClass) {
+    if (isPrincipal) return true;
+    final cls = _assignedClass?.trim() ?? '';
+    if (cls.isEmpty || cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes' || cls.toLowerCase() == 'none') {
+      return true;
+    }
+    if (targetClass == null || targetClass.trim().isEmpty) return true;
+    final target = targetClass.trim().toLowerCase();
+    final allowed = cls.split(',').map((c) => c.trim().toLowerCase()).where((c) => c.isNotEmpty);
+    return allowed.any((a) => a == target || target.contains(a) || a.contains(target));
+  }
+
   String get assignedClassLabel {
     final cls = _assignedClass ?? '';
     final sec = _assignedSection ?? '';
-    if (cls.isEmpty) return 'Not Assigned';
+    if (cls.isEmpty || cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes' || cls.toLowerCase() == 'none') {
+      return 'All Classes (Full Access)';
+    }
     return '$cls${sec.isNotEmpty ? ' - Sec $sec' : ''}';
   }
 
