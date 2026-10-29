@@ -102,9 +102,16 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
         .toSet()
         .toList();
 
-    final Set<String> classSet = {'All Classes'};
-    classSet.addAll(enrolledClasses);
-    classSet.addAll(settings.schoolClasses);
+    final Set<String> classSet = {};
+    if (SessionService.instance.hasAllClassesAccess) {
+      classSet.add('All Classes');
+      classSet.addAll(enrolledClasses);
+      classSet.addAll(settings.schoolClasses);
+    } else {
+      final allowed = SessionService.instance.filterAllowedClasses([...enrolledClasses, ...settings.schoolClasses]);
+      if (allowed.length > 1) classSet.add('All Classes');
+      classSet.addAll(allowed);
+    }
     _availableClasses = classSet.toList()..sort(_compareClassNames);
   }
 
@@ -112,9 +119,12 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
   void initState() {
     super.initState();
     final isTeacher = SessionService.instance.isTeacher;
-    final teacherClass = SessionService.instance.assignedClass;
-    if (isTeacher && teacherClass != null && teacherClass.trim().isNotEmpty) {
-      _selectedClassFilter = teacherClass.trim();
+    if (isTeacher && !SessionService.instance.hasAllClassesAccess) {
+      final curSettings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+      final allowed = SessionService.instance.filterAllowedClasses(curSettings.schoolClasses);
+      if (allowed.isNotEmpty) {
+        _selectedClassFilter = allowed.first;
+      }
     }
     final cachedStudents = ref.read(studentsProvider).valueOrNull;
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();

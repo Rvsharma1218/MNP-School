@@ -153,7 +153,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         .toSet()
         .toList()
       ..sort();
-    return classes;
+    return SessionService.instance.filterAllowedClasses(classes);
   }
 
   List<String> get _allSections {

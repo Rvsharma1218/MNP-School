@@ -2825,12 +2825,13 @@ class _WebDashboardViewState extends ConsumerState<_WebDashboardView> {
   Widget _buildControlBar(ColorScheme cs, String selectedClass, String selectedSection) {
     final studentsAsync = ref.watch(studentsProvider);
     final students = studentsAsync.valueOrNull ?? [];
-    final classes = students
+    final rawClasses = students
         .where((s) => s.studentType == 'school' && (s.className?.isNotEmpty == true))
         .map((s) => s.className!)
         .toSet()
         .toList()
       ..sort();
+    final classes = SessionService.instance.filterAllowedClasses(rawClasses);
     final sections = students
         .where((s) => s.section?.isNotEmpty == true)
         .map((s) => s.section!)

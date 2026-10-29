@@ -141,6 +141,9 @@ final filteredStudentsProvider = Provider<AsyncValue<List<StudentModel>>>((ref) 
 
   return studentsAsync.whenData((students) {
     var list = students.where((s) {
+      if (SessionService.instance.isTeacher && !SessionService.instance.hasAllClassesAccess) {
+        if (!SessionService.instance.canAccessClass(s.className)) return false;
+      }
       if (typeFilter != 'all' && s.studentType != typeFilter) return false;
       if (statusFilter != 'all' && s.status != statusFilter) return false;
       if (classFilter.isNotEmpty && classFilter.toLowerCase() != 'all' && classFilter.toLowerCase() != 'none' && s.className != classFilter) return false;
@@ -369,10 +372,35 @@ final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
   final isTeacher = SessionService.instance.isTeacher;
 
   // ── Teacher with NO class/section selected ("All" mode) ─────────────────
-  // Return REAL unfiltered stats so teacher can see overall school picture.
-  // (If teacher should be restricted to assigned class only, the UI should
-  // hide the "All" option rather than zeroing out stats here.)
   if (isTeacher && teacherClass.isEmpty) {
+    if (!SessionService.instance.hasAllClassesAccess) {
+      // Teacher without "All Classes" access: only aggregate authorized classes
+      final allStudents = (ref.read(studentsProvider).valueOrNull ?? [])
+          .where((s) => SessionService.instance.canAccessClass(s.className))
+          .toList();
+      final byClass = <String, int>{};
+      for (final s in allStudents) {
+        if (s.className?.isNotEmpty == true) {
+          byClass[s.className!] = (byClass[s.className!] ?? 0) + 1;
+        }
+      }
+      return DashboardStats(
+        totalStudents: allStudents.length,
+        schoolStudents: allStudents.length,
+        computerStudents: 0,
+        totalCollected: 0.0,
+        totalPending: 0.0,
+        presentToday: 0,
+        absentToday: 0,
+        leaveToday: 0,
+        overdueCount: 0,
+        studentsByClass: byClass,
+        studentsByCourse: const {},
+        monthlyCollection: const [],
+        isFiltered: true,
+        filterLabel: SessionService.instance.assignedClassLabel,
+      );
+    }
     final db = DatabaseService.instance;
     final results = await Future.wait([
       db.getStudentCount(),           // 0

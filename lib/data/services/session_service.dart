@@ -64,23 +64,42 @@ class SessionService {
   bool get isParent => _role == AppRole.parent;
   bool get hasSession => _role != null && _schoolId != null;
 
+  bool get hasAllClassesAccess {
+    if (isPrincipal) return true;
+    if (!isTeacher) return true;
+    final cls = _assignedClass?.trim().toLowerCase() ?? '';
+    return cls == 'all' || cls == 'all classes';
+  }
+
   bool canAccessClass(String? targetClass) {
     if (isPrincipal) return true;
+    if (!isTeacher) return true;
     final cls = _assignedClass?.trim() ?? '';
-    if (cls.isEmpty || cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes' || cls.toLowerCase() == 'none') {
+    if (cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes') {
       return true;
     }
-    if (targetClass == null || targetClass.trim().isEmpty) return true;
-    final target = targetClass.trim().toLowerCase();
-    final allowed = cls.split(',').map((c) => c.trim().toLowerCase()).where((c) => c.isNotEmpty);
+    if (cls.isEmpty || cls.toLowerCase() == 'none' || cls.toLowerCase() == 'null') {
+      return false; // Not assigned -> strictly unauthorized
+    }
+    if (targetClass == null || targetClass.trim().isEmpty) return false;
+    final target = targetClass.trim().toLowerCase().replaceAll('class', '').trim();
+    final allowed = cls.split(',').map((c) => c.trim().toLowerCase().replaceAll('class', '').trim()).where((c) => c.isNotEmpty);
     return allowed.any((a) => a == target || target.contains(a) || a.contains(target));
   }
 
+  List<String> filterAllowedClasses(List<String> classes) {
+    if (isPrincipal || hasAllClassesAccess) return classes;
+    return classes.where((c) => canAccessClass(c)).toList();
+  }
+
   String get assignedClassLabel {
-    final cls = _assignedClass ?? '';
-    final sec = _assignedSection ?? '';
-    if (cls.isEmpty || cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes' || cls.toLowerCase() == 'none') {
+    final cls = _assignedClass?.trim() ?? '';
+    final sec = _assignedSection?.trim() ?? '';
+    if (cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes') {
       return 'All Classes (Full Access)';
+    }
+    if (cls.isEmpty || cls.toLowerCase() == 'none' || cls.toLowerCase() == 'null') {
+      return 'No Classes Assigned';
     }
     return '$cls${sec.isNotEmpty ? ' - Sec $sec' : ''}';
   }

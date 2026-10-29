@@ -68,12 +68,20 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
         .toSet()
         .toList();
 
-    final Set<String> classSet = {'All Classes'};
-    classSet.addAll(enrolledClasses);
-    classSet.addAll(settings.schoolClasses);
-
+    final Set<String> classSet = {};
+    if (SessionService.instance.hasAllClassesAccess) {
+      classSet.add('All Classes');
+      classSet.addAll(enrolledClasses);
+      classSet.addAll(settings.schoolClasses);
+    } else {
+      final allowed = SessionService.instance.filterAllowedClasses([...enrolledClasses, ...settings.schoolClasses]);
+      if (allowed.length > 1) classSet.add('All Classes');
+      classSet.addAll(allowed);
+    }
     _availableClasses = classSet.toList()..sort(_compareClassNames);
-    _allStudents = students;
+    _allStudents = SessionService.instance.hasAllClassesAccess
+        ? students
+        : students.where((s) => SessionService.instance.canAccessClass(s.className)).toList();
     _allResults = results;
     _allExams = exams;
 

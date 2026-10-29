@@ -1,3 +1,4 @@
+import '../../data/services/session_service.dart';
 import '../whatsapp/whatsapp_service.dart';
 import '../../core/utils/signature_processor.dart';
 import 'dart:io';
@@ -87,10 +88,16 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error loading students: $e')),
         data: (students) {
-          final schoolClasses = ['All', ...settings.schoolClasses];
+          final allowed = SessionService.instance.filterAllowedClasses(settings.schoolClasses);
+          final schoolClasses = SessionService.instance.hasAllClassesAccess
+              ? ['All', ...settings.schoolClasses]
+              : (allowed.length > 1 ? ['All Assigned', ...allowed] : allowed);
 
           final filtered = students.where((s) {
-            final matchClass = _selectedClass == 'All' || s.displayClass.contains(_selectedClass) || s.course == _selectedClass;
+            if (SessionService.instance.isTeacher && !SessionService.instance.hasAllClassesAccess) {
+              if (!SessionService.instance.canAccessClass(s.className)) return false;
+            }
+            final matchClass = _selectedClass == 'All' || _selectedClass == 'All Assigned' || s.displayClass.contains(_selectedClass) || s.course == _selectedClass;
             final q = _searchQuery.trim().toLowerCase();
             final matchSearch = q.isEmpty ||
                 s.name.toLowerCase().contains(q) ||
