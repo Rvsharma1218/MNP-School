@@ -13,6 +13,7 @@ import {
   exportExamResultsToExcel,
   exportExamResultsPDF,
   exportSingleResultPDF,
+  exportBulkResultMarksheetsPDF,
   openWhatsAppResultShare
 } from '../lib/exportUtils';
 import CreateExamModal from './CreateExamModal';
@@ -685,14 +686,37 @@ export default function ResultsView() {
                 <span className="hidden sm:inline">Excel</span>
               </button>
 
-              {/* Tabulation Register PDF */}
+              {/* PDF 1: Results List (Tabulation Register PDF) */}
               <button
                 onClick={() => exportExamResultsPDF(filteredResults, students, settings, resultsExamFilter !== 'all' ? resultsExamFilter : 'Annual Examination')}
-                className="p-2 sm:px-3 sm:py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-                title="Download Tabulation Register PDF"
+                className="p-2 sm:px-3 sm:py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold text-xs border border-blue-200 shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                title="Download Results List (Tabulation Register PDF)"
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">PDF</span>
+                <span className="hidden sm:inline">Results List</span>
+              </button>
+
+              {/* PDF 2: Bulk All Student Marksheets PDF */}
+              <button
+                onClick={async () => {
+                  if (filteredResults.length === 0) {
+                    showToast('No results available to download', 'info');
+                    return;
+                  }
+                  try {
+                    showToast(`Generating bulk marksheets for ${filteredResults.length} students...`, 'info');
+                    await exportBulkResultMarksheetsPDF(filteredResults, students, settings, resultsExamFilter !== 'all' ? resultsExamFilter : 'Annual Examination');
+                    showToast('Bulk marksheets PDF downloaded successfully!', 'success');
+                  } catch (e) {
+                    console.error(e);
+                    showToast('Error downloading bulk marksheets', 'error');
+                  }
+                }}
+                className="p-2 sm:px-3 sm:py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#162a65] text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                title={`Download all ${filteredResults.length} student marksheets in one combined PDF`}
+              >
+                <Printer className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden sm:inline">Bulk Marksheets</span>
               </button>
             </div>
           </div>

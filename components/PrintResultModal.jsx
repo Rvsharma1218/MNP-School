@@ -6,7 +6,7 @@ import {
   User, Calendar, Hash, ChevronLeft, ChevronRight, Search, Share2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { exportSingleResultPDF, openWhatsAppResultShare } from '../lib/exportUtils';
+import { exportSingleResultPDF, exportBulkResultMarksheetsPDF, openWhatsAppResultShare } from '../lib/exportUtils';
 import { useSchoolStore } from '../lib/store';
 
 export default function PrintResultModal({ result: propResult, student: propStudent, data, onClose }) {
@@ -261,11 +261,31 @@ export default function PrintResultModal({ result: propResult, student: propStud
             <button
               onClick={handleDownloadPDF}
               className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold text-xs border border-blue-200 shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-              title="Download Marksheet as PDF"
+              title="Download Current Marksheet as PDF"
             >
               <Download className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">PDF</span>
             </button>
+
+            {hasMultiple && (
+              <button
+                onClick={async () => {
+                  try {
+                    showToast(`Generating bulk marksheets for ${allResults.length} students...`, 'info');
+                    await exportBulkResultMarksheetsPDF(allResults, students, settings, currentResult?.examName || 'Annual Examination');
+                    showToast('All marksheets PDF downloaded successfully!', 'success');
+                  } catch (e) {
+                    console.error(e);
+                    showToast('Error downloading bulk marksheets', 'error');
+                  }
+                }}
+                className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-[#1E3A8A] hover:bg-[#162a65] text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                title={`Download all ${allResults.length} student marksheets in one combined PDF`}
+              >
+                <BookOpen className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden md:inline">Bulk PDF (${allResults.length})</span>
+              </button>
+            )}
 
             <button
               onClick={handlePrint}
