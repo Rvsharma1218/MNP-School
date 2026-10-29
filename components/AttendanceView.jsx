@@ -59,18 +59,14 @@ export default function AttendanceView() {
   const [activeTab, setActiveTab] = useState('daily'); // default directly to daily register for teacher ease
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedType, setSelectedType] = useState('all'); // 'all' | 'school' | 'computer'
-  const [selectedClass, setSelectedClass] = useState(
-    isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
-  );
+  const [selectedClass, setSelectedClass] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Ensure teacher stays strictly within authorized assigned classes
   useEffect(() => {
     if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0) {
-      if (selectedClass === 'all' && allowedClasses.length === 1) {
-        setSelectedClass(allowedClasses[0]);
-      } else if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
-        setSelectedClass(allowedClasses[0]);
+      if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
+        setSelectedClass('all');
       }
     }
   }, [allowedClasses, isPrincipal, hasAllClassesAccess, selectedClass]);
@@ -777,11 +773,9 @@ export default function AttendanceView() {
                 onChange={e => setSelectedClass(e.target.value)}
                 className="px-3 py-1.5 rounded-xl bg-surface2 border border-border text-xs font-bold text-text focus:outline-none cursor-pointer"
               >
-                {(isPrincipal || hasAllClassesAccess || allowedClasses.length > 1) && (
-                  <option value="all">
-                    {isPrincipal || hasAllClassesAccess ? 'All Classes' : 'All Assigned Classes'}
-                  </option>
-                )}
+                <option value="all">
+                  {isPrincipal || hasAllClassesAccess ? 'All Classes' : 'All Classes'}
+                </option>
                 {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : allowedClasses).map(c => (
                   <option key={c} value={c}>Class {c}</option>
                 ))}

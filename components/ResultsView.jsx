@@ -68,15 +68,15 @@ export default function ResultsView() {
   // 1. SAVED RESULTS TAB STATE
   // ─────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
-  const [resultsClassFilter, setResultsClassFilter] = useState(
-    isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
-  );
+  const [resultsClassFilter, setResultsClassFilter] = useState('all');
 
   useEffect(() => {
-    if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length === 1) {
-      setResultsClassFilter(allowedClasses[0]);
+    if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0) {
+      if (resultsClassFilter !== 'all' && !allowedClasses.includes(resultsClassFilter)) {
+        setResultsClassFilter('all');
+      }
     }
-  }, [isPrincipal, hasAllClassesAccess, allowedClasses]);
+  }, [isPrincipal, hasAllClassesAccess, allowedClasses, resultsClassFilter]);
   const [resultsExamFilter, setResultsExamFilter] = useState('all');
   const [savedViewMode, setSavedViewMode] = useState('cards'); // 'cards' | 'table'
 
@@ -663,9 +663,7 @@ export default function ResultsView() {
                 onChange={(e) => setResultsClassFilter(e.target.value)}
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-indigo-500"
               >
-                {(isPrincipal || hasAllClassesAccess || availableClasses.length > 1) && (
-                  <option value="all">All Classes</option>
-                )}
+                <option value="all">All Classes</option>
                 {availableClasses.map(c => (
                   <option key={c} value={c}>Class {c}</option>
                 ))}

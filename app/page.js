@@ -511,10 +511,67 @@ function AppContent() {
   );
 }
 
+class RootErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('RootErrorBoundary caught error:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#0b1c30] text-white flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-[#102747] border border-white/10 rounded-2xl p-6 text-center shadow-2xl">
+            <div className="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 font-black text-xl">
+              !
+            </div>
+            <h2 className="text-lg font-black text-white mb-2">School Portal Recovered</h2>
+            <p className="text-xs text-white/70 mb-5 leading-relaxed">
+              We encountered a temporary display issue. Tap reload to return to the active campus dashboard.
+            </p>
+            <div className="flex gap-2 justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/dashboard';
+                  }
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer hover:brightness-110 transition-all"
+              >
+                Go to Dashboard
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.reload();
+                  }
+                }}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs border border-white/20 cursor-pointer transition-all"
+              >
+                Reload
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function Home() {
   return (
-    <SchoolProvider>
-      <AppContent />
-    </SchoolProvider>
+    <RootErrorBoundary>
+      <SchoolProvider>
+        <AppContent />
+      </SchoolProvider>
+    </RootErrorBoundary>
   );
 }

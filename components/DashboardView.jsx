@@ -59,18 +59,14 @@ export default function DashboardView() {
   const assignedClass = (currentUser?.assignedClass || '').trim();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedClass, setSelectedClass] = useState(
-    isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
-  );
+  const [selectedClass, setSelectedClass] = useState('all');
   const [selectedSection, setSelectedSection] = useState('all');
 
   // Ensure teacher stays within allowed classes
   useEffect(() => {
     if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0) {
-      if (selectedClass === 'all' && allowedClasses.length === 1) {
-        setSelectedClass(allowedClasses[0]);
-      } else if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
-        setSelectedClass(allowedClasses[0]);
+      if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
+        setSelectedClass('all');
       }
     }
   }, [allowedClasses, isPrincipal, hasAllClassesAccess, selectedClass]);
@@ -391,11 +387,9 @@ export default function DashboardView() {
             onChange={(e) => setSelectedClass(e.target.value)}
             className="flex-1 md:flex-none px-3 py-2.5 rounded-xl bg-[#eff4ff] border border-[#c8c4d5]/40 text-xs font-bold text-[#0b1c30] focus:outline-none cursor-pointer min-w-[140px]"
           >
-            {(isPrincipal || hasAllClassesAccess || allowedClasses.length > 1) && (
-              <option value="all">
-                {isPrincipal || hasAllClassesAccess ? 'All Classes / Courses' : 'All Assigned Classes'}
-              </option>
-            )}
+            <option value="all">
+              {isPrincipal || hasAllClassesAccess ? 'All Classes / Courses' : 'All Classes'}
+            </option>
             {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : allowedClasses).map(c => (
               <option key={c} value={c}>Class {c}</option>
             ))}

@@ -44,9 +44,7 @@ export default function StudentsView() {
   const assignedClass = (currentUser?.assignedClass || '').trim();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedClass, setSelectedClass] = useState(
-    isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
-  );
+  const [selectedClass, setSelectedClass] = useState('all');
   const [selectedRoll, setSelectedRoll] = useState('all');
   const [sortOrder, setSortOrder] = useState('default'); // 'default' | 'name_asc' | 'name_desc' | 'roll_asc'
   const [admissionType, setAdmissionType] = useState('all'); // 'all' | 'new' | 'old'
@@ -59,10 +57,8 @@ export default function StudentsView() {
   // Ensure teacher stays strictly within authorized assigned classes
   useEffect(() => {
     if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0) {
-      if (selectedClass === 'all' && allowedClasses.length === 1) {
-        setSelectedClass(allowedClasses[0]);
-      } else if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
-        setSelectedClass(allowedClasses[0]);
+      if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
+        setSelectedClass('all');
       }
     }
   }, [allowedClasses, isPrincipal, hasAllClassesAccess, selectedClass]);
@@ -371,11 +367,9 @@ export default function StudentsView() {
                 }}
                 className="px-3 py-2 rounded-xl bg-white border border-border text-xs text-text font-bold focus:outline-none cursor-pointer"
               >
-                {(isPrincipal || hasAllClassesAccess || allowedClasses.length > 1) && (
-                  <option value="all">
-                    {isPrincipal || hasAllClassesAccess ? 'All Classes & Courses' : 'All Assigned Classes'}
-                  </option>
-                )}
+                <option value="all">
+                  {isPrincipal || hasAllClassesAccess ? 'All Classes & Courses' : 'All Classes'}
+                </option>
                 {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : allowedClasses).map(c => (
                   <option key={c} value={c}>Class {c}</option>
                 ))}
