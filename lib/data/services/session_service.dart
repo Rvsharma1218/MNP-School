@@ -82,9 +82,19 @@ class SessionService {
       return false; // Not assigned -> strictly unauthorized
     }
     if (targetClass == null || targetClass.trim().isEmpty) return false;
-    final target = targetClass.trim().toLowerCase().replaceAll('class', '').trim();
-    final allowed = cls.split(RegExp(r'[,|]')).map((c) => c.trim().toLowerCase().replaceAll('class', '').trim()).where((c) => c.isNotEmpty);
-    return allowed.any((a) => a == target || target.contains(a) || a.contains(target));
+    String norm(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '').trim();
+    final targetNorm = norm(targetClass);
+    final allowedList = cls.split(RegExp(r'[,|]')).map(norm).where((c) => c.isNotEmpty).toList();
+    if (allowedList.any((a) => a == 'all' || a == 'all classes')) return true;
+    return allowedList.any((a) {
+      if (a == targetNorm) return true;
+      final numA = RegExp(r'\d+').firstMatch(a)?.group(0);
+      final numTarget = RegExp(r'\d+').firstMatch(targetNorm)?.group(0);
+      if (numA != null && numTarget != null) {
+        return numA == numTarget;
+      }
+      return a == targetNorm;
+    });
   }
 
   List<String> filterAllowedClasses(List<String> classes) {

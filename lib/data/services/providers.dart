@@ -382,10 +382,28 @@ final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
   // ── Teacher with NO class/section selected ("All" mode) ─────────────────
   if (isTeacher && teacherClass.isEmpty) {
     if (!SessionService.instance.hasAllClassesAccess) {
-      // Teacher without "All Classes" access: only aggregate authorized classes
-      final allStudents = (ref.read(studentsProvider).valueOrNull ?? [])
-          .where((s) => SessionService.instance.canAccessClass(s.className))
+      // Teacher without "All Classes" access: query all students & calculate real stats for authorized classes
+      final db = DatabaseService.instance;
+      final allStudents = (await db.getAllStudents())
+          .where((s) => SessionService.instance.canAccessClass(s.className ?? s.course))
           .toList();
+      final todayAttList = await db.getAttendanceByDate(DateTime.now());
+      final attMap = {for (final a in todayAttList) a.studentId: a.status};
+
+      int present = 0;
+      int absent = 0;
+      int leave = 0;
+      for (final s in allStudents) {
+        final st = attMap[s.id];
+        if (st == 'present') {
+          present++;
+        } else if (st == 'absent') {
+          absent++;
+        } else if (st == 'leave') {
+          leave++;
+        }
+      }
+
       final byClass = <String, int>{};
       for (final s in allStudents) {
         if (s.className?.isNotEmpty == true) {
@@ -398,15 +416,15 @@ final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
         computerStudents: 0,
         totalCollected: 0.0,
         totalPending: 0.0,
-        presentToday: 0,
-        absentToday: 0,
-        leaveToday: 0,
+        presentToday: present,
+        absentToday: absent,
+        leaveToday: leave,
         overdueCount: 0,
         studentsByClass: byClass,
         studentsByCourse: const {},
         monthlyCollection: const [],
         isFiltered: true,
-        filterLabel: SessionService.instance.assignedClassLabel,
+        filterLabel: 'All Assigned Classes',
       );
     }
     final db = DatabaseService.instance;

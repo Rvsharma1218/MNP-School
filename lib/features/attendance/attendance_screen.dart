@@ -47,20 +47,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       _classFilter = widget.initialClass!;
     }
     _searchCtrl.addListener(_applyFilters);
-    // Initialize filters from teacher's selected class/section
-    if (SessionService.instance.isTeacher) {
-      // Prefer session-stored assigned class over provider (set at login)
-      final sessionClass = SessionService.instance.assignedClass ?? '';
-      final sessionSection = SessionService.instance.assignedSection ?? '';
-      final tc = sessionClass.isNotEmpty
-          ? sessionClass
-          : ref.read(teacherSelectedClassProvider);
-      final ts = sessionSection.isNotEmpty
-          ? sessionSection
-          : ref.read(teacherSelectedSectionProvider);
-      _classFilter = (tc.isNotEmpty && tc.toLowerCase() != 'all' && tc.toLowerCase() != 'none') ? tc : '';
-      _sectionFilter = (ts.isNotEmpty && ts.toLowerCase() != 'all' && ts.toLowerCase() != 'none') ? ts : '';
-    }
+    // Initialize filters: Teacher defaults to '' ('All Classes') so all assigned classes show
+    _classFilter = '';
+    _sectionFilter = '';
     _load();
   }
 
@@ -91,26 +80,39 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     final db = DatabaseService.instance;
-    final students = await db.getAllStudents();
-    final existing = await db.getAttendanceByDate(_selectedDate);
-    final summaries = await db.getAllAttendanceSummaries();
+    final results = await Future.wait([
+      db.getAllStudents(),
+      db.getAttendanceByDate(_selectedDate),
+    ]);
+    final students = results[0] as List<StudentModel>;
+    final existing = results[1] as List<AttendanceModel>;
     final map = {for (final a in existing) a.studentId: a.status};
 
     if (mounted) {
       setState(() {
         _allStudents = students;
         _statusMap = map;
-        _summaryMap = summaries;
         _loading = false;
       });
       _applyFilters();
     }
+
+    // Load full history summaries asynchronously in background without blocking screen opening
+    db.getAllAttendanceSummaries().then((summaries) {
+      if (mounted) {
+        setState(() => _summaryMap = summaries);
+      }
+    }).catchError((_) {});
   }
 
   void _applyFilters() {
     final q = _searchCtrl.text.toLowerCase().trim();
     setState(() {
       _filteredStudents = _allStudents.where((s) {
+        // Teacher role check: only show authorized classes
+        if (!SessionService.instance.isPrincipal && !SessionService.instance.hasAllClassesAccess) {
+          if (!SessionService.instance.canAccessClass(s.className ?? s.course)) return false;
+        }
         // Type filter
         if (_typeFilter != 'all' && s.studentType != _typeFilter) return false;
         // Class filter

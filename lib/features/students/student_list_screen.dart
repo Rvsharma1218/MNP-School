@@ -46,17 +46,9 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
         final ts = sessionSection.isNotEmpty
             ? sessionSection
             : ref.read(teacherSelectedSectionProvider);
-        final isMulti = tc.contains(',') || tc.contains('|');
-        if (tc.isNotEmpty && tc.toLowerCase() != 'all' && tc.toLowerCase() != 'none') {
-          if (isMulti) {
-            ref.read(classFilterProvider.notifier).state = '';
-          } else {
-            ref.read(classFilterProvider.notifier).state = tc;
-          }
-          ref.read(teacherSelectedClassProvider.notifier).state = tc;
-        } else {
-          ref.read(classFilterProvider.notifier).state = '';
-        }
+        // Always default to 'All Classes' so all assigned classes show immediately
+        ref.read(classFilterProvider.notifier).state = '';
+        ref.read(teacherSelectedClassProvider.notifier).state = '';
         if (ts.isNotEmpty && ts.toLowerCase() != 'all' && ts.toLowerCase() != 'none') {
           ref.read(sectionFilterProvider.notifier).state = ts;
           ref.read(teacherSelectedSectionProvider.notifier).state = ts;

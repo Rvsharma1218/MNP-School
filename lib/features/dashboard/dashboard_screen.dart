@@ -137,15 +137,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final assignedClass = SessionService.instance.assignedClass ?? '';
         final assignedSection = SessionService.instance.assignedSection ?? '';
-        // Only set if not already set (e.g. teacher may have changed it)
-        if (ref.read(teacherSelectedClassProvider).isEmpty && assignedClass.isNotEmpty) {
-          ref.read(teacherSelectedClassProvider.notifier).state = assignedClass;
-          ref.read(classFilterProvider.notifier).state = assignedClass;
-        }
-        if (ref.read(teacherSelectedSectionProvider).isEmpty && assignedSection.isNotEmpty) {
-          ref.read(teacherSelectedSectionProvider.notifier).state = assignedSection;
-          ref.read(sectionFilterProvider.notifier).state = assignedSection;
-        }
+        // Always default to 'All Classes' for teachers so all assigned classes show
+        ref.read(teacherSelectedClassProvider.notifier).state = '';
+        ref.read(classFilterProvider.notifier).state = '';
+        ref.read(teacherSelectedSectionProvider.notifier).state = '';
+        ref.read(sectionFilterProvider.notifier).state = '';
       });
     }
 
@@ -1002,14 +998,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(height: 16),
                       ],
 
-                      // ─── Teacher: No Class Selected Placeholder ────────
-                      if (!isPrincipal && !stats.isFiltered) ...[
-                        _NoClassSelectedPlaceholder(),
-                        const SizedBox(height: 16),
-                      ],
-
-                      // ─── Teacher: Filtered Stat Cards ──────────────────
-                      if (!isPrincipal && stats.isFiltered) ...[
+                      // ─── Teacher: Stat Cards (Always shown with All Assigned Classes by default) ──
+                      if (!isPrincipal) ...[
                         GridView.count(
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
@@ -2443,11 +2433,12 @@ class _TeacherClassSectionSelector extends ConsumerWidget {
 
     // Extract unique classes and sections from loaded students
     final students = studentsAsync.valueOrNull ?? [];
-    final classes = students
+    final rawClasses = students
         .where((s) => s.studentType == 'school' && (s.className?.isNotEmpty == true))
         .map((s) => s.className!)
         .toSet()
-        .toList()
+        .toList();
+    final classes = SessionService.instance.filterAllowedClasses(rawClasses)
       ..sort((a, b) {
         final ai = int.tryParse(a);
         final bi = int.tryParse(b);
@@ -2461,9 +2452,7 @@ class _TeacherClassSectionSelector extends ConsumerWidget {
         .toList()
       ..sort();
 
-    // If teacher has an assigned class or only 1 class available, don't show redundant selector
-    final assignedClass = SessionService.instance.assignedClass;
-    if ((assignedClass != null && assignedClass.isNotEmpty) || classes.length <= 1) {
+    if (classes.isEmpty) {
       return const SizedBox.shrink();
     }
 
