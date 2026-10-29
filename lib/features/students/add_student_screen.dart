@@ -582,7 +582,7 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
 
   Widget _buildSchoolDetails() {
     return _buildCard('School Details', Icons.school_outlined, [
-      _buildDropdown('Class *', _classes, _selectedClass,
+      _buildDropdown('Class *', SessionService.instance.filterAllowedClasses(_classes), _selectedClass,
               (v) => setState(() => _selectedClass = v!)),
       const SizedBox(height: 14),
       _buildDropdown('Section', _sections, _selectedSection,

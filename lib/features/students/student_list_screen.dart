@@ -46,8 +46,13 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
         final ts = sessionSection.isNotEmpty
             ? sessionSection
             : ref.read(teacherSelectedSectionProvider);
+        final isMulti = tc.contains(',') || tc.contains('|');
         if (tc.isNotEmpty && tc.toLowerCase() != 'all' && tc.toLowerCase() != 'none') {
-          ref.read(classFilterProvider.notifier).state = tc;
+          if (isMulti) {
+            ref.read(classFilterProvider.notifier).state = '';
+          } else {
+            ref.read(classFilterProvider.notifier).state = tc;
+          }
           ref.read(teacherSelectedClassProvider.notifier).state = tc;
         } else {
           ref.read(classFilterProvider.notifier).state = '';
@@ -388,7 +393,12 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
     final cs = Theme.of(context).colorScheme;
     final settingsAsync = ref.watch(settingsProvider);
     final settings = settingsAsync.valueOrNull ?? SettingsModel.defaultSettings();
-    final schoolClasses = settings.schoolClasses.isNotEmpty ? settings.schoolClasses : SettingsModel.defaultClasses;
+    final isTeacher = SessionService.instance.isTeacher;
+    final hasAllClasses = SessionService.instance.hasAllClassesAccess;
+    final allSchoolClasses = settings.schoolClasses.isNotEmpty ? settings.schoolClasses : SettingsModel.defaultClasses;
+    final schoolClasses = (isTeacher && !hasAllClasses)
+        ? SessionService.instance.filterAllowedClasses(allSchoolClasses)
+        : allSchoolClasses;
     final computerCourses = settings.computerCourses.isNotEmpty ? settings.computerCourses : SettingsModel.defaultCourses;
 
     return Container(
@@ -439,8 +449,10 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                     _typeChip('All', 'all', cs),
                     const SizedBox(width: 8),
                     _typeChip('🏫 School', 'school', cs),
-                    const SizedBox(width: 8),
-                    _typeChip('💻 Computer', 'computer', cs),
+                    if (!isTeacher || hasAllClasses) ...[
+                      const SizedBox(width: 8),
+                      _typeChip('💻 Computer', 'computer', cs),
+                    ],
                   ],
                 ),
               ),
@@ -472,7 +484,14 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                     isExpanded: true,
                     icon: const Icon(Icons.keyboard_arrow_down_rounded),
                     items: [
-                      const DropdownMenuItem(value: '', child: Text('All Classes (Show All)')),
+                      DropdownMenuItem(
+                        value: '',
+                        child: Text(
+                          (isTeacher && !hasAllClasses)
+                              ? (schoolClasses.length > 1 ? 'All Assigned Classes (' + schoolClasses.length.toString() + ')' : 'All My Classes')
+                              : 'All Classes (Show All)',
+                        ),
+                      ),
                       ...schoolClasses.map((cls) => DropdownMenuItem(value: cls, child: Text('Class $cls'))),
                     ],
                     onChanged: (val) {
@@ -555,47 +574,49 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
               ],
 
               // ── 💻 Computer Courses Filter List ──────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _sheetLabel('💻 Computer Courses', cs),
-                  if (_course.isNotEmpty)
-                    InkWell(
-                      onTap: () => setState(() => _course = ''),
-                      child: const Text('Clear', style: TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.bold)),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: cs.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: cs.outlineVariant),
+              if (!isTeacher || hasAllClasses) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _sheetLabel('💻 Computer Courses', cs),
+                    if (_course.isNotEmpty)
+                      InkWell(
+                        onTap: () => setState(() => _course = ''),
+                        child: const Text('Clear', style: TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.bold)),
+                      ),
+                  ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _course.isEmpty ? '' : (computerCourses.any((c) => c.toLowerCase() == _course.toLowerCase()) ? computerCourses.firstWhere((c) => c.toLowerCase() == _course.toLowerCase()) : ''),
-                    isExpanded: true,
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                    items: [
-                      const DropdownMenuItem(value: '', child: Text('All Computer Courses (Show All)')),
-                      ...computerCourses.map((crs) => DropdownMenuItem(value: crs, child: Text(crs))),
-                    ],
-                    onChanged: (val) {
-                      setState(() {
-                        _course = val ?? '';
-                        if (_course.isNotEmpty) {
-                          _class = '';
-                          _type = 'computer';
-                        }
-                      });
-                    },
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cs.outlineVariant),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _course.isEmpty ? '' : (computerCourses.any((c) => c.toLowerCase() == _course.toLowerCase()) ? computerCourses.firstWhere((c) => c.toLowerCase() == _course.toLowerCase()) : ''),
+                      isExpanded: true,
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                      items: [
+                        const DropdownMenuItem(value: '', child: Text('All Computer Courses (Show All)')),
+                        ...computerCourses.map((crs) => DropdownMenuItem(value: crs, child: Text(crs))),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          _course = val ?? '';
+                          if (_course.isNotEmpty) {
+                            _class = '';
+                            _type = 'computer';
+                          }
+                        });
+                      },
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
 
               // ── Section Filter ───────────────────────────────────────────
               _sheetLabel('Section', cs),

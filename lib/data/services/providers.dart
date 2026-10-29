@@ -146,7 +146,15 @@ final filteredStudentsProvider = Provider<AsyncValue<List<StudentModel>>>((ref) 
       }
       if (typeFilter != 'all' && s.studentType != typeFilter) return false;
       if (statusFilter != 'all' && s.status != statusFilter) return false;
-      if (classFilter.isNotEmpty && classFilter.toLowerCase() != 'all' && classFilter.toLowerCase() != 'none' && s.className != classFilter) return false;
+      if (classFilter.isNotEmpty && classFilter.toLowerCase() != 'all' && classFilter.toLowerCase() != 'none') {
+        final fList = classFilter
+            .split(RegExp(r'[,|]'))
+            .map((c) => c.trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), ''))
+            .where((c) => c.isNotEmpty)
+            .toList();
+        final sCls = (s.className ?? '').trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '');
+        if (fList.isNotEmpty && !fList.contains(sCls)) return false;
+      }
       if (sectionFilter.isNotEmpty && sectionFilter.toLowerCase() != 'all' && sectionFilter.toLowerCase() != 'none' && s.section != sectionFilter) return false;
       if (courseFilter.isNotEmpty && courseFilter.toLowerCase() != 'all' && s.course != courseFilter) return false;
       if (batchFilter.isNotEmpty && batchFilter.toLowerCase() != 'all' && s.batch != batchFilter) return false;

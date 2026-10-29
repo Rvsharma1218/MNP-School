@@ -1,3 +1,4 @@
+import '../../data/services/session_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
@@ -315,7 +316,7 @@ class _EditStudentScreenState extends ConsumerState<EditStudentScreen> {
 
             // School/Computer specific
             if (_studentType == 'school') ...[
-              _buildDropdown('Class', _classes.contains(_selectedClass) ? _classes : [_selectedClass, ..._classes], _selectedClass,
+              _buildDropdown('Class', SessionService.instance.filterAllowedClasses(_classes.contains(_selectedClass) ? _classes : [_selectedClass, ..._classes]), _selectedClass,
                       (v) => setState(() => _selectedClass = v!)),
               const SizedBox(height: 14),
               _buildDropdown('Section', _sections.contains(_selectedSection) ? _sections : [_selectedSection, ..._sections], _selectedSection,
