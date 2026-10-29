@@ -536,71 +536,125 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
                       ),
                       const SizedBox(height: 10),
 
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              value: (selectedClass.isEmpty || selectedClass == 'All Classes') ? 'All Classes' : (availableClasses.contains(selectedClass) ? selectedClass : 'All Classes'),
-                              decoration: const InputDecoration(labelText: 'Class Access / Assignment'),
-                              items: [
-                                const DropdownMenuItem(value: 'All Classes', child: Text('All Classes (Full Access)')),
-                                ...availableClasses.map((c) => DropdownMenuItem(value: c, child: Text(c))),
+                      // Class Assignment Section
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceVariant.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Class Access / Assignment',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.onSurface),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (selectedClass == 'All Classes' || selectedClass.isEmpty)
+                                        ? AppColors.primary.withValues(alpha: 0.1)
+                                        : Colors.teal.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    (selectedClass == 'All Classes' || selectedClass.isEmpty)
+                                        ? 'Full Access'
+                                        : '${selectedClass.split(',').where((s) => s.trim().isNotEmpty && s.trim() != 'All Classes').length} Selected',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: (selectedClass == 'All Classes' || selectedClass.isEmpty)
+                                          ? AppColors.primary
+                                          : Colors.teal.shade800,
+                                    ),
+                                  ),
+                                ),
                               ],
-                              onChanged: (val) => setSheetState(() => selectedClass = val ?? 'All Classes'),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              value: selectedSection.isEmpty ? null : selectedSection,
-                              decoration: const InputDecoration(labelText: 'Section'),
-                              items: [
-                                const DropdownMenuItem(value: '', child: Text('All / Any')),
-                                ...availableSections.map((s) => DropdownMenuItem(value: s, child: Text(s))),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                FilterChip(
+                                  avatar: Icon(
+                                    Icons.stars_rounded,
+                                    size: 16,
+                                    color: (selectedClass == 'All Classes' || selectedClass.isEmpty) ? Colors.white : AppColors.primary,
+                                  ),
+                                  label: const Text('All Classes (Full Access)'),
+                                  labelStyle: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: (selectedClass == 'All Classes' || selectedClass.isEmpty) ? Colors.white : cs.onSurface,
+                                  ),
+                                  selected: selectedClass == 'All Classes' || selectedClass.isEmpty,
+                                  selectedColor: AppColors.primary,
+                                  checkmarkColor: Colors.white,
+                                  onSelected: (sel) {
+                                    setSheetState(() => selectedClass = 'All Classes');
+                                  },
+                                ),
+                                ...availableClasses.map((c) {
+                                  final currentList = selectedClass
+                                      .split(',')
+                                      .map((s) => s.trim())
+                                      .where((s) => s.isNotEmpty && s != 'All Classes')
+                                      .toList();
+                                  final isSel = currentList.contains(c);
+                                  return FilterChip(
+                                    label: Text(c),
+                                    labelStyle: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: isSel && selectedClass != 'All Classes' ? FontWeight.bold : FontWeight.normal,
+                                      color: isSel && selectedClass != 'All Classes' ? Colors.white : cs.onSurface,
+                                    ),
+                                    selected: isSel && selectedClass != 'All Classes',
+                                    selectedColor: Colors.teal.shade700,
+                                    checkmarkColor: Colors.white,
+                                    onSelected: (sel) {
+                                      setSheetState(() {
+                                        if (selectedClass == 'All Classes' || selectedClass.isEmpty) {
+                                          currentList.clear();
+                                        }
+                                        if (sel) {
+                                          if (!currentList.contains(c)) currentList.add(c);
+                                        } else {
+                                          currentList.remove(c);
+                                        }
+                                        if (currentList.isEmpty) {
+                                          selectedClass = 'All Classes';
+                                        } else {
+                                          selectedClass = currentList.join(', ');
+                                        }
+                                      });
+                                    },
+                                  );
+                                }),
                               ],
-                              onChanged: (val) => setSheetState(() => selectedSection = val ?? ''),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      Text('Or tap to select multiple classes:', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          FilterChip(
-                            label: const Text('All Classes', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            selected: selectedClass == 'All Classes' || selectedClass.isEmpty,
-                            onSelected: (sel) {
-                              setSheetState(() => selectedClass = 'All Classes');
-                            },
-                          ),
-                          ...availableClasses.map((c) {
-                            final currentList = selectedClass.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty && s != 'All Classes').toList();
-                            final isSel = currentList.contains(c);
-                            return FilterChip(
-                              label: Text(c, style: const TextStyle(fontSize: 11)),
-                              selected: isSel && selectedClass != 'All Classes',
-                              onSelected: (sel) {
-                                setSheetState(() {
-                                  if (selectedClass == 'All Classes') currentList.clear();
-                                  if (sel) {
-                                    currentList.add(c);
-                                  } else {
-                                    currentList.remove(c);
-                                  }
-                                  if (currentList.isEmpty) {
-                                    selectedClass = 'All Classes';
-                                  } else {
-                                    selectedClass = currentList.join(', ');
-                                  }
-                                });
-                              },
-                            );
-                          }),
+                      const SizedBox(height: 10),
+
+                      DropdownButtonFormField<String>(
+                        value: selectedSection.isEmpty ? null : selectedSection,
+                        decoration: const InputDecoration(
+                          labelText: 'Section (Optional)',
+                          prefixIcon: Icon(Icons.meeting_room_outlined),
+                        ),
+                        items: [
+                          const DropdownMenuItem(value: '', child: Text('All / Any Section')),
+                          ...availableSections.map((s) => DropdownMenuItem(value: s, child: Text('Section $s'))),
                         ],
+                        onChanged: (val) => setSheetState(() => selectedSection = val ?? ''),
                       ),
                       const SizedBox(height: 10),
 

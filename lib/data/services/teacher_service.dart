@@ -341,6 +341,11 @@ class TeacherService {
     final teacherDocData = {
       'active': true,
       'assignedClass': teacher.assignedClass,
+      'assignedClasses': (teacher.assignedClass ?? '')
+          .split(RegExp(r'[,|]'))
+          .map((c) => c.trim())
+          .where((c) => c.isNotEmpty)
+          .toList(),
       'assignedSection': teacher.assignedSection,
       'authEmail': syntheticEmail,
       'authUid': authUid,
@@ -460,6 +465,11 @@ class TeacherService {
     final updates = <String, dynamic>{
       'name': newName.trim(),
       'assignedClass': assignedClass?.trim().isEmpty == true ? null : assignedClass?.trim(),
+      'assignedClasses': (assignedClass ?? '')
+          .split(RegExp(r'[,|]'))
+          .map((c) => c.trim())
+          .where((c) => c.isNotEmpty)
+          .toList(),
       'assignedSection': assignedSection?.trim().isEmpty == true ? null : assignedSection?.trim(),
       if (mobile != null) 'mobile': mobile.trim(),
       if (password != null && password.isNotEmpty) 'password': password.trim(),

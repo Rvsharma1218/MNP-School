@@ -76,6 +76,11 @@ class TeacherModel {
       'password': password,
       'schoolId': schoolId,
       'assignedClass': assignedClass,
+      'assignedClasses': (assignedClass ?? '')
+          .split(RegExp(r'[,|]'))
+          .map((c) => c.trim())
+          .where((c) => c.isNotEmpty)
+          .toList(),
       'assignedSection': assignedSection,
       'active': active,
       'status': status,
@@ -122,6 +127,25 @@ class TeacherModel {
       return null;
     }
 
+    String? parseAssignedClass() {
+      final raw = map['assignedClass'];
+      if (raw is String && raw.trim().isNotEmpty) {
+        return raw.trim();
+      }
+      if (raw is List && raw.isNotEmpty) {
+        final list = raw.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+        if (list.isNotEmpty) return list.join(', ');
+      }
+      final rawList = map['assignedClasses'];
+      if (rawList is List && rawList.isNotEmpty) {
+        final list = rawList.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+        if (list.isNotEmpty) return list.join(', ');
+      } else if (rawList is String && rawList.trim().isNotEmpty) {
+        return rawList.trim();
+      }
+      return null;
+    }
+
     final double? parsedSalary = map['salary'] != null ? (map['salary'] as num).toDouble() : null;
 
     return TeacherModel(
@@ -134,7 +158,7 @@ class TeacherModel {
       mobile: (map['mobile'] as String?) ?? '',
       password: (map['password'] as String?) ?? '',
       schoolId: (map['schoolId'] as String?) ?? '',
-      assignedClass: map['assignedClass'] as String?,
+      assignedClass: parseAssignedClass(),
       assignedSection: map['assignedSection'] as String?,
       active: isActive,
       status: (map['status'] as String?) ?? (isActive ? 'active' : 'disabled'),
@@ -167,6 +191,11 @@ class TeacherModel {
       'mobile': mobile,
       'password': password,
       'assignedClass': assignedClass,
+      'assignedClasses': (assignedClass ?? '')
+          .split(RegExp(r'[,|]'))
+          .map((c) => c.trim())
+          .where((c) => c.isNotEmpty)
+          .toList(),
       'assignedSection': assignedSection,
       'active': active,
       'qualification': qualification,

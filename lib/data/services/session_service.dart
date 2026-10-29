@@ -68,14 +68,14 @@ class SessionService {
     if (isPrincipal) return true;
     if (!isTeacher) return true;
     final cls = _assignedClass?.trim().toLowerCase() ?? '';
-    return cls == 'all' || cls == 'all classes';
+    return cls == 'all' || cls == 'all classes' || cls.contains('all classes');
   }
 
   bool canAccessClass(String? targetClass) {
     if (isPrincipal) return true;
     if (!isTeacher) return true;
     final cls = _assignedClass?.trim() ?? '';
-    if (cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes') {
+    if (cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes' || cls.toLowerCase().contains('all classes')) {
       return true;
     }
     if (cls.isEmpty || cls.toLowerCase() == 'none' || cls.toLowerCase() == 'null') {
@@ -83,7 +83,7 @@ class SessionService {
     }
     if (targetClass == null || targetClass.trim().isEmpty) return false;
     final target = targetClass.trim().toLowerCase().replaceAll('class', '').trim();
-    final allowed = cls.split(',').map((c) => c.trim().toLowerCase().replaceAll('class', '').trim()).where((c) => c.isNotEmpty);
+    final allowed = cls.split(RegExp(r'[,|]')).map((c) => c.trim().toLowerCase().replaceAll('class', '').trim()).where((c) => c.isNotEmpty);
     return allowed.any((a) => a == target || target.contains(a) || a.contains(target));
   }
 
@@ -242,17 +242,18 @@ class SessionService {
   }
 
   Future<void> updateTeacherAssignedClass(String newClass, {String? newName}) async {
-    _assignedClass = newClass;
-    if (newName != null && newName.isNotEmpty) _teacherName = newName;
+    final trimmed = newClass.trim();
+    if (trimmed.isNotEmpty) {
+      _assignedClass = trimmed;
+    }
+    if (newName != null && newName.trim().isNotEmpty) _teacherName = newName.trim();
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (newClass.isNotEmpty) {
-        await prefs.setString(_kAssignedClass, newClass);
-      } else {
-        await prefs.remove(_kAssignedClass);
+      if (trimmed.isNotEmpty) {
+        await prefs.setString(_kAssignedClass, trimmed);
       }
-      if (newName != null && newName.isNotEmpty) {
-        await prefs.setString(_kTeacherName, newName);
+      if (newName != null && newName.trim().isNotEmpty) {
+        await prefs.setString(_kTeacherName, newName.trim());
       }
     } catch (_) {}
   }
