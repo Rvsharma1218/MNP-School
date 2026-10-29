@@ -7,11 +7,12 @@ import {
 } from 'lucide-react';
 
 export default function ClassesView() {
-  const { students, settings, navigate, setAttendanceTargetClass } = useSchoolStore();
+  const { students, settings, navigate, setAttendanceTargetClass, allowedClasses, isTeacher, hasAllClassesAccess } = useSchoolStore();
 
-  const allClasses = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+  const allClasses = settings.classes || settings.schoolClasses || ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+  const visibleClasses = isTeacher && !hasAllClassesAccess ? allowedClasses : allClasses;
 
-  const classData = allClasses.map(className => {
+  const classData = visibleClasses.map(className => {
     const classStudents = students.filter(s => s.className === className);
     const boys = classStudents.filter(s => (s.gender || '').toLowerCase() === 'male').length;
     const girls = classStudents.filter(s => (s.gender || '').toLowerCase() === 'female').length;
@@ -37,6 +38,17 @@ export default function ClassesView() {
       </div>
 
       {/* Grid of Classes */}
+      {visibleClasses.length === 0 ? (
+        <div className="bg-card border border-border p-10 rounded-2xl text-center space-y-3">
+          <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <h3 className="font-bold text-text-primary text-base">No Classes Assigned</h3>
+          <p className="text-xs text-text-muted max-w-md mx-auto">
+            Your teacher account has not been assigned any classes yet. Please contact your principal to assign classes to your profile.
+          </p>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {classData.map(c => (
           <div
@@ -106,6 +118,7 @@ export default function ClassesView() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

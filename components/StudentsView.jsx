@@ -37,15 +37,18 @@ export default function StudentsView() {
     setWhatsAppReminderData,
     teacherPermissions,
     admissionEnquiries,
+    canAccessClass, allowedClasses, hasAllClassesAccess, isTeacher,
     openEnquiriesModal,
     showToast
   } = useSchoolStore();
 
-  const isPrincipal = currentUser?.role === 'principal';
-  const assignedClass = currentUser?.assignedClass && currentUser.assignedClass !== 'none' && currentUser.assignedClass !== 'None' ? currentUser.assignedClass : '';
+  const isPrincipal = currentUser?.role === 'principal' || (!isTeacher && currentUser?.role !== 'parent');
+  const assignedClass = (currentUser?.assignedClass || '').trim();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedClass, setSelectedClass] = useState(isPrincipal || !assignedClass ? 'all' : assignedClass);
+  const [selectedClass, setSelectedClass] = useState(
+    isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
+  );
   const [selectedRoll, setSelectedRoll] = useState('all');
   const [sortOrder, setSortOrder] = useState('default'); // 'default' | 'name_asc' | 'name_desc' | 'roll_asc'
   const [admissionType, setAdmissionType] = useState('all'); // 'all' | 'new' | 'old'
@@ -55,12 +58,16 @@ export default function StudentsView() {
   const photoInputRef = useRef(null);
   const quickPhotoInputRef = useRef(null);
   
-  // Reset to assigned class whenever teacher opens StudentsView (if assigned)
+  // Ensure teacher stays strictly within authorized assigned classes
   useEffect(() => {
-    if (!isPrincipal && assignedClass && assignedClass !== 'all') {
-      setSelectedClass(assignedClass);
+    if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0) {
+      if (selectedClass === 'all' && allowedClasses.length === 1) {
+        setSelectedClass(allowedClasses[0]);
+      } else if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
+        setSelectedClass(allowedClasses[0]);
+      }
     }
-  }, [assignedClass, isPrincipal]);
+  }, [allowedClasses, isPrincipal, hasAllClassesAccess, selectedClass]);
 
   // Right side panel states: 'quickview' | 'edit' | 'add'
   const [panelMode, setPanelMode] = useState('quickview'); 
@@ -130,7 +137,7 @@ export default function StudentsView() {
   // Roll numbers available in currently selected class
   const classRollNumbers = React.useMemo(() => {
     if (selectedClass === 'all') return [];
-    const rolls = students
+    const rolls = accessibleStudents
       .filter(s => (s.className === selectedClass || s.course === selectedClass) && s.rollNumber)
       .map(s => String(s.rollNumber).trim())
       .filter(Boolean);
@@ -146,8 +153,14 @@ export default function StudentsView() {
 
   const currentSession = (settings?.currentSession || '2026-27').toLowerCase().trim();
 
+  // Scoped accessible students for this user role
+  const accessibleStudents = React.useMemo(() => {
+    if (isPrincipal || hasAllClassesAccess) return students;
+    return students.filter(s => canAccessClass(s.className || s.course));
+  }, [students, isPrincipal, hasAllClassesAccess, canAccessClass]);
+
   // Filter and sort students list
-  const filteredStudents = students
+  const filteredStudents = accessibleStudents
     .filter(s => {
       const matchesSearch = !searchQuery.trim() ||
         s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -360,9 +373,17 @@ export default function StudentsView() {
                 }}
                 className="px-3 py-2 rounded-xl bg-white border border-border text-xs text-text font-bold focus:outline-none cursor-pointer"
               >
-                <option value="all">All Classes & Courses</option>
-                {settings.schoolClasses?.map(c => <option key={c} value={c}>Class {c}</option>)}
-                {settings.computerCourses?.map(c => <option key={c} value={c}>{c}</option>)}
+                {(isPrincipal || hasAllClassesAccess || allowedClasses.length > 1) && (
+                  <option value="all">
+                    {isPrincipal || hasAllClassesAccess ? 'All Classes & Courses' : 'All Assigned Classes'}
+                  </option>
+                )}
+                {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : allowedClasses).map(c => (
+                  <option key={c} value={c}>Class {c}</option>
+                ))}
+                {(isPrincipal || hasAllClassesAccess) && settings.computerCourses?.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
 
               {/* Roll Number Filter (active after selecting class) */}
@@ -415,13 +436,13 @@ export default function StudentsView() {
                 <option value="left">Left</option>
               </select>
 
-              {!isPrincipal && selectedClass !== assignedClass && (
+              {!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0 && selectedClass !== allowedClasses[0] && (
                 <button
-                  onClick={() => setSelectedClass(assignedClass)}
+                  onClick={() => setSelectedClass(allowedClasses[0])}
                   className="px-3 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
                   title="Return to your assigned class"
                 >
-                  <span>↩ Back to Class {assignedClass}</span>
+                  <span>↩ Back to Class {allowedClasses[0]}</span>
                 </button>
               )}
             </div>

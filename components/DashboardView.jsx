@@ -47,7 +47,7 @@ export default function DashboardView() {
     students, payments, attendance, results, settings, stats,
     setSelectedStudentId, setIsAddStudentOpen, currentUser, navigate,
     setFeeDetailStudent, setIsFeeDetailSelectorOpen, setWhatsAppReminderData,
-    teacherPermissions, openSettings,
+    teacherPermissions, openSettings, canAccessClass, allowedClasses, hasAllClassesAccess, isTeacher,
     admissionEnquiries = [], teacherApplications = [], openEnquiriesModal
   } = useSchoolStore();
 
@@ -55,21 +55,31 @@ export default function DashboardView() {
   const pendingTeachersCount = teacherApplications.filter(t => (t.status || 'pending') === 'pending').length;
   const pendingEnquiriesTotal = pendingAdmissionsCount + pendingTeachersCount;
 
-  const isPrincipal = currentUser?.role === 'principal';
-  const assignedClass = currentUser?.assignedClass || '10th';
+  const isPrincipal = currentUser?.role === 'principal' || (!isTeacher && currentUser?.role !== 'parent');
+  const assignedClass = (currentUser?.assignedClass || '').trim();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedClass, setSelectedClass] = useState(isPrincipal ? 'all' : assignedClass);
+  const [selectedClass, setSelectedClass] = useState(
+    isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
+  );
   const [selectedSection, setSelectedSection] = useState('all');
 
-  // Reset to assigned class for teacher on component mount or role change
+  // Ensure teacher stays within allowed classes
   useEffect(() => {
-    if (!isPrincipal && assignedClass) {
-      setSelectedClass(assignedClass);
+    if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0) {
+      if (selectedClass === 'all' && allowedClasses.length === 1) {
+        setSelectedClass(allowedClasses[0]);
+      } else if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
+        setSelectedClass(allowedClasses[0]);
+      }
     }
-  }, [assignedClass, isPrincipal]);
+  }, [allowedClasses, isPrincipal, hasAllClassesAccess, selectedClass]);
 
-  const filteredStudents = students.filter(s => {
+  const accessibleStudents = isPrincipal || hasAllClassesAccess
+    ? students
+    : students.filter(s => canAccessClass(s.className || s.course));
+
+  const filteredStudents = accessibleStudents.filter(s => {
     if (selectedClass !== 'all') {
       if (s.studentType === 'school' && s.className !== selectedClass) return false;
       if (s.studentType === 'computer' && s.course !== selectedClass) return false;
@@ -85,7 +95,7 @@ export default function DashboardView() {
   const collectionPercent = stats.totalFeesExpected > 0
     ? Math.round((stats.totalFeesCollected / stats.totalFeesExpected) * 100) : 0;
 
-  const teacherStudents = students.filter(s => s.className === assignedClass);
+  const teacherStudents = accessibleStudents;
 
   return (
     <div className="space-y-6 pb-16 w-full animate-in fade-in duration-300 font-sans">
@@ -272,7 +282,7 @@ export default function DashboardView() {
               iconColor="text-blue-600"
               label="Assigned Students"
               value={teacherStudents.length}
-              sub={`Class ${assignedClass} Register`}
+              sub={hasAllClassesAccess ? 'All Classes Register' : `Class ${allowedClasses.join(', ') || 'General'} Register`}
               badge="Assigned"
               badgeColor="bg-blue-50 text-blue-700 border border-blue-200/80"
               onClick={() => navigate('/students')}
@@ -381,9 +391,17 @@ export default function DashboardView() {
             onChange={(e) => setSelectedClass(e.target.value)}
             className="flex-1 md:flex-none px-3 py-2.5 rounded-xl bg-[#eff4ff] border border-[#c8c4d5]/40 text-xs font-bold text-[#0b1c30] focus:outline-none cursor-pointer min-w-[140px]"
           >
-            <option value="all">All Classes / Courses</option>
-            {settings.schoolClasses?.map(c => <option key={c} value={c}>Class {c}</option>)}
-            {settings.computerCourses?.map(c => <option key={c} value={c}>{c}</option>)}
+            {(isPrincipal || hasAllClassesAccess || allowedClasses.length > 1) && (
+              <option value="all">
+                {isPrincipal || hasAllClassesAccess ? 'All Classes / Courses' : 'All Assigned Classes'}
+              </option>
+            )}
+            {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : allowedClasses).map(c => (
+              <option key={c} value={c}>Class {c}</option>
+            ))}
+            {(isPrincipal || hasAllClassesAccess) && settings.computerCourses?.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
           </select>
           <select
             value={selectedSection}
@@ -393,13 +411,13 @@ export default function DashboardView() {
             <option value="all">All Sections</option>
             {settings.sections?.map(s => <option key={s} value={s}>Section {s}</option>)}
           </select>
-          {!isPrincipal && selectedClass !== assignedClass && (
+          {!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0 && selectedClass !== allowedClasses[0] && (
             <button
-              onClick={() => { setSelectedClass(assignedClass); setSelectedSection('all'); }}
+              onClick={() => { setSelectedClass(allowedClasses[0]); setSelectedSection('all'); }}
               className="px-3 py-2 rounded-xl bg-[#1f108e]/10 hover:bg-[#1f108e]/20 text-[#1f108e] text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
               title="Return to your assigned class"
             >
-              <span>↩ Back to Class {assignedClass}</span>
+              <span>↩ Back to Class {allowedClasses[0]}</span>
             </button>
           )}
         </div>

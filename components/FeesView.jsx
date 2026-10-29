@@ -46,6 +46,9 @@ export default function FeesView() {
 
   // Extract all distinct classes
   const availableClasses = React.useMemo(() => {
+    if (!isPrincipal && !hasAllClassesAccess) {
+      return allowedClasses;
+    }
     const set = new Set();
     students.forEach(s => {
       const cls = s.studentType === 'school' ? s.className : s.course;

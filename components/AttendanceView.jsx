@@ -32,6 +32,7 @@ export default function AttendanceView() {
     teacherPermissions,
     teacherPunchIns,
     punchInTeacherGeofence,
+    canAccessClass, allowedClasses, hasAllClassesAccess, isTeacher,
     showToast
   } = useSchoolStore();
 
@@ -52,14 +53,27 @@ export default function AttendanceView() {
     setLocalTeacherStatus(initialMap);
   }, [selectedTeacherDate, teacherAttendance, teachers]);
 
-  const isPrincipal = currentUser?.role === 'principal';
-  const assignedClass = currentUser?.assignedClass && currentUser.assignedClass !== 'none' && currentUser.assignedClass !== 'None' ? currentUser.assignedClass : '';
+  const isPrincipal = currentUser?.role === 'principal' || (!isTeacher && currentUser?.role !== 'parent');
+  const assignedClass = (currentUser?.assignedClass || '').trim();
 
   const [activeTab, setActiveTab] = useState('daily'); // default directly to daily register for teacher ease
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedType, setSelectedType] = useState('all'); // 'all' | 'school' | 'computer'
-  const [selectedClass, setSelectedClass] = useState(isPrincipal || !assignedClass ? 'all' : assignedClass);
+  const [selectedClass, setSelectedClass] = useState(
+    isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
+  );
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Ensure teacher stays strictly within authorized assigned classes
+  useEffect(() => {
+    if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0) {
+      if (selectedClass === 'all' && allowedClasses.length === 1) {
+        setSelectedClass(allowedClasses[0]);
+      } else if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
+        setSelectedClass(allowedClasses[0]);
+      }
+    }
+  }, [allowedClasses, isPrincipal, hasAllClassesAccess, selectedClass]);
 
   // Auto-switch to teachers tab if navigated from Teacher Profile or query param
   useEffect(() => {
@@ -104,8 +118,14 @@ export default function AttendanceView() {
   // Daily records for selected date
   const dayAttendance = attendance[selectedDate] || {};
 
+  // Scoped accessible students for attendance
+  const accessibleStudents = React.useMemo(() => {
+    if (isPrincipal || hasAllClassesAccess) return students;
+    return students.filter(s => canAccessClass(s.className || s.course));
+  }, [students, isPrincipal, hasAllClassesAccess, canAccessClass]);
+
   // Filter students
-  const filteredStudents = students.filter(s => {
+  const filteredStudents = accessibleStudents.filter(s => {
     if (selectedType === 'school' && s.studentType !== 'school') return false;
     if (selectedType === 'computer' && s.studentType !== 'computer') return false;
     if (selectedClass !== 'all') {
@@ -757,18 +777,26 @@ export default function AttendanceView() {
                 onChange={e => setSelectedClass(e.target.value)}
                 className="px-3 py-1.5 rounded-xl bg-surface2 border border-border text-xs font-bold text-text focus:outline-none cursor-pointer"
               >
-                <option value="all">All Classes</option>
-                {settings.schoolClasses?.map(c => <option key={c} value={c}>Class {c}</option>)}
-                {settings.computerCourses?.map(c => <option key={c} value={c}>{c}</option>)}
+                {(isPrincipal || hasAllClassesAccess || allowedClasses.length > 1) && (
+                  <option value="all">
+                    {isPrincipal || hasAllClassesAccess ? 'All Classes' : 'All Assigned Classes'}
+                  </option>
+                )}
+                {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : allowedClasses).map(c => (
+                  <option key={c} value={c}>Class {c}</option>
+                ))}
+                {(isPrincipal || hasAllClassesAccess) && settings.computerCourses?.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
 
-              {!isPrincipal && selectedClass !== assignedClass && (
+              {!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0 && selectedClass !== allowedClasses[0] && (
                 <button
-                  onClick={() => setSelectedClass(assignedClass)}
+                  onClick={() => setSelectedClass(allowedClasses[0])}
                   className="px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
                   title="Return to your assigned class"
                 >
-                  <span>↩ Back to Class {assignedClass}</span>
+                  <span>↩ Back to Class {allowedClasses[0]}</span>
                 </button>
               )}
             </div>

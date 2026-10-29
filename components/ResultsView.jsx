@@ -50,8 +50,8 @@ export default function ResultsView() {
     showToast
   } = useSchoolStore();
 
-  const isPrincipal = currentUser?.role === 'principal';
-  const assignedClass = currentUser?.assignedClass || '';
+  const isPrincipal = currentUser?.role === 'principal' || (!isTeacher && currentUser?.role !== 'parent');
+  const assignedClass = (currentUser?.assignedClass || '').trim();
 
   // Navigation Tabs: 'saved' | 'entry' | 'exams'
   const [activeTab, setActiveTab] = useState('exams');
@@ -64,7 +64,9 @@ export default function ResultsView() {
   // 1. SAVED RESULTS TAB STATE
   // ─────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
-  const [resultsClassFilter, setResultsClassFilter] = useState(!isPrincipal && assignedClass ? assignedClass : 'all');
+  const [resultsClassFilter, setResultsClassFilter] = useState(
+    isPrincipal || hasAllClassesAccess ? 'all' : (allowedClasses[0] || 'all')
+  );
   const [resultsExamFilter, setResultsExamFilter] = useState('all');
   const [savedViewMode, setSavedViewMode] = useState('cards'); // 'cards' | 'table'
 
@@ -101,6 +103,9 @@ export default function ResultsView() {
 
   // Available classes list from settings and students
   const availableClasses = useMemo(() => {
+    if (!isPrincipal && !hasAllClassesAccess) {
+      return allowedClasses;
+    }
     const set = new Set();
     if (settings?.schoolClasses && Array.isArray(settings.schoolClasses)) {
       settings.schoolClasses.forEach(c => c && set.add(String(c).trim()));
@@ -118,7 +123,7 @@ export default function ResultsView() {
       if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
       return a.localeCompare(b);
     });
-  }, [students, settings]);
+  }, [students, settings, isPrincipal, hasAllClassesAccess, allowedClasses]);
 
   // Filter and sort saved results Roll Number wise
   const filteredResults = useMemo(() => {
@@ -127,6 +132,10 @@ export default function ResultsView() {
         const student = findStudent(r);
         const studentClass = student?.className || student?.course || r.className || r.class || '';
         
+        if (!isPrincipal && !hasAllClassesAccess && !canAccessClass(studentClass)) {
+          return false;
+        }
+
         if (resultsClassFilter !== 'all' && String(studentClass).trim().toLowerCase() !== resultsClassFilter.toLowerCase()) {
           return false;
         }

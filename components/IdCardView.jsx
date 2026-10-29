@@ -9,7 +9,12 @@ import { exportIdCardPNG, exportIdCardsPDF, removeSignatureBackground, openWhats
 import ImageCropperModal from './ImageCropperModal';
 
 export default function IdCardView() {
-  const { students, settings, updateSettings, setPrintIdCardsData, showToast } = useSchoolStore();
+  const { students, settings, updateSettings, setPrintIdCardsData, showToast, canAccessClass, isPrincipal, hasAllClassesAccess } = useSchoolStore();
+
+  const accessibleStudents = React.useMemo(() => {
+    if (isPrincipal || hasAllClassesAccess) return students;
+    return students.filter(s => canAccessClass(s.className || s.course));
+  }, [students, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
   // State configurations matching mockup
   const [selectedTemplate, setSelectedTemplate] = useState('modern'); // 'modern' | 'classic' | 'minimal'
@@ -28,7 +33,7 @@ export default function IdCardView() {
 
   // Selected students for batch print
   const [selectedStudentIds, setSelectedStudentIds] = useState(
-    students.slice(0, 4).map(s => s.id) // default select first few
+    accessibleStudents.slice(0, 4).map(s => s.id) // default select first few
   );
 
   const toggleField = (field) => {
@@ -37,7 +42,7 @@ export default function IdCardView() {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedStudentIds(students.map(s => s.id));
+      setSelectedStudentIds(accessibleStudents.map(s => s.id));
     } else {
       setSelectedStudentIds([]);
     }
@@ -50,10 +55,10 @@ export default function IdCardView() {
   };
 
   // Find preview student
-  const previewStudent = students.find(s => selectedStudentIds.includes(s.id)) || students[0];
+  const previewStudent = accessibleStudents.find(s => selectedStudentIds.includes(s.id)) || accessibleStudents[0];
 
   const handleExportPDF = () => {
-    const list = students.filter(s => selectedStudentIds.includes(s.id));
+    const list = accessibleStudents.filter(s => selectedStudentIds.includes(s.id));
     if (list.length === 0) {
       showToast("Please select at least one student.", "warning");
       return;
@@ -61,7 +66,7 @@ export default function IdCardView() {
     setPrintIdCardsData({ students: list, template: selectedTemplate });
   };
 
-  const filteredStudents = students.filter(s => {
+  const filteredStudents = accessibleStudents.filter(s => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return s.name?.toLowerCase().includes(q) || s.studentId?.toLowerCase().includes(q);
@@ -473,7 +478,7 @@ export default function IdCardView() {
             <div className="w-full grid grid-cols-2 gap-3.5 mt-5">
               <button
                 onClick={async () => {
-                  const list = students.filter(s => selectedStudentIds.includes(s.id));
+                  const list = accessibleStudents.filter(s => selectedStudentIds.includes(s.id));
                   const exportList = list.length > 0 ? list : (previewStudent ? [previewStudent] : []);
                   if (exportList.length === 0) {
                     showToast("Please select at least one student.", "warning");

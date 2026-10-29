@@ -28,7 +28,12 @@ const STANDARD_ADMIT_SUBJECTS = [
 ];
 
 export default function AdmitCardView() {
-  const { students, settings, showToast } = useSchoolStore();
+  const { students, settings, showToast, canAccessClass, allowedClasses, isPrincipal, hasAllClassesAccess } = useSchoolStore();
+
+  const accessibleStudents = React.useMemo(() => {
+    if (isPrincipal || hasAllClassesAccess) return students;
+    return students.filter(s => canAccessClass(s.className || s.course));
+  }, [students, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
   const [selectedClass, setSelectedClass] = useState('all');
   const [examTitle, setExamTitle] = useState('ANNUAL EXAMINATION 2026');
