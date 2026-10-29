@@ -429,9 +429,9 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
           <div className="flex items-end gap-3.5 sm:gap-4">
             {/* Avatar with Crop / Upload overlay */}
             <div className="relative group shrink-0">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-4 border-card bg-surface2 overflow-hidden shadow-lg flex items-center justify-center text-primary font-black text-3xl">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-card bg-surface2 overflow-hidden shadow-lg flex items-center justify-center text-primary font-black text-3xl">
                 {teacher.photoUrl ? (
-                  <img src={teacher.photoUrl} alt={teacher.name} className="w-full h-full object-cover" />
+                  <img src={teacher.photoUrl} alt={teacher.name} className="w-full h-full object-cover rounded-full" />
                 ) : (
                   <span>{teacher.name?.charAt(0) || 'T'}</span>
                 )}
@@ -439,11 +439,19 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
               
               <button
                 onClick={() => photoInputRef.current?.click()}
-                className="absolute inset-0 m-auto w-full h-full rounded-2xl bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer"
+                className="absolute inset-0 m-auto w-full h-full rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer"
                 title="Change Profile Photo"
               >
                 <Camera className="w-5 h-5" />
                 <span className="text-[10px] font-bold">Change DP</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary text-white border-2 border-card flex items-center justify-center shadow-md hover:scale-110 transition-transform cursor-pointer z-10"
+                title="Change Profile Photo"
+              >
+                <Camera className="w-4 h-4" />
               </button>
               <input
                 ref={photoInputRef}

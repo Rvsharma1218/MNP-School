@@ -53,6 +53,7 @@ export default function StudentsView() {
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState(null);
   const photoInputRef = useRef(null);
+  const quickPhotoInputRef = useRef(null);
   
   // Reset to assigned class whenever teacher opens StudentsView (if assigned)
   useEffect(() => {
@@ -592,12 +593,49 @@ export default function StudentsView() {
 
               {/* Avatar and name details */}
               <div className="flex flex-col items-center text-center space-y-2 py-2">
-                <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-lg overflow-hidden shadow-sm">
-                  {activeStudent.photoPath ? (
-                    <img src={activeStudent.photoPath} alt={activeStudent.name} className="w-full h-full object-cover" />
-                  ) : (
-                    activeStudent.name?.charAt(0) || 'S'
-                  )}
+                <input
+                  ref={quickPhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        setImageToCrop(ev.target?.result);
+                        setIsCropperOpen(true);
+                      };
+                      reader.readAsDataURL(file);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <div className="relative group">
+                  <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-2xl overflow-hidden shadow-md border-2 border-primary/20">
+                    {activeStudent.photoPath ? (
+                      <img src={activeStudent.photoPath} alt={activeStudent.name} className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      activeStudent.name?.charAt(0) || 'S'
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => quickPhotoInputRef.current?.click()}
+                    className="absolute inset-0 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+                    title="Change Student Photo (DP)"
+                  >
+                    <Camera className="w-5 h-5 text-amber-300" />
+                    <span className="text-[9px] font-bold">Edit DP</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => quickPhotoInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-white border-2 border-card flex items-center justify-center shadow-sm hover:scale-110 transition-transform cursor-pointer"
+                    title="Change Student Photo (DP)"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <div>
                   <h4 className="font-black text-lg text-text leading-tight">{activeStudent.name}</h4>
@@ -1006,9 +1044,21 @@ export default function StudentsView() {
         imageSrc={imageToCrop}
         title="Crop Student Photo"
         initialAspect="3:4"
-        onCropComplete={(croppedDataUrl) => {
+        onCropComplete={async (croppedDataUrl) => {
           handleInputChange('photoPath', croppedDataUrl);
-          showToast('Photo cropped and applied!', 'success');
+          if (panelMode === 'quickview' && activeStudent) {
+            try {
+              await updateStudent(activeStudent.id, {
+                photoPath: croppedDataUrl,
+                photoUrl: croppedDataUrl
+              });
+              showToast('Student photo updated successfully!', 'success');
+            } catch (err) {
+              showToast(`Failed to update photo: ${err.message || err}`, 'error');
+            }
+          } else {
+            showToast('Photo cropped and applied!', 'success');
+          }
         }}
         onClose={() => {
           setIsCropperOpen(false);

@@ -77,12 +77,14 @@ export default function PrintIdCardsModal({ students, template, onClose }) {
                   {/* Institute Header */}
                   <div className="bg-[#0A1128] px-3 py-1.5 text-center border-b border-[#FFD700]/40 flex items-center justify-center gap-2.5">
                     {settings.logoUrl || settings.logoPath || settings.logo ? (
-                      <img
-                        src={settings.logoUrl || settings.logoPath || settings.logo}
-                        alt="Logo"
-                        className="w-8 h-8 object-contain flex-shrink-0"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-white border border-[#FFD700] flex items-center justify-center flex-shrink-0">
+                        <img
+                          src={settings.logoUrl || settings.logoPath || settings.logo}
+                          alt="Logo"
+                          className="w-full h-full object-cover rounded-full"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      </div>
                     ) : null}
                     <div className="min-w-0 flex-1">
                       <h3 className="font-black text-[13px] tracking-wide uppercase text-white leading-tight truncate">
@@ -140,20 +142,20 @@ export default function PrintIdCardsModal({ students, template, onClose }) {
                     </div>
                   </div>
 
-                  {/* Bottom Footer Bar */}
-                  <div className="bg-[#05091E] px-3.5 py-1 flex items-center justify-between text-[7.5px] border-t border-[#FFD700]/20 relative">
-                    <span className="text-slate-400 font-semibold uppercase truncate max-w-[220px]">
-                      PROPERTY OF {settings.instituteName || "MISSION NAVODAYA PUBLIC SCHOOL"}
-                    </span>
-                    <div className="relative flex items-center justify-end">
+                  {/* Signature and Auth Signature at Bottom-Right (NO dark footer bar) */}
+                  <div className="px-3.5 pb-2 pt-0.5 flex items-center justify-end">
+                    <div className="flex flex-col items-center justify-end">
                       {settings.principalSignature || settings.signatureUrl ? (
                         <img
                           src={settings.principalSignature || settings.signatureUrl}
                           alt="Sign"
-                          className="absolute -top-7 right-0 h-9 max-w-[100px] object-contain pointer-events-none"
+                          className="h-8 max-w-[100px] object-contain pointer-events-none mb-0.5"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
-                      ) : null}
+                      ) : (
+                        <span className="font-serif italic font-bold text-amber-300 text-xs mb-0.5">Principal Sign</span>
+                      )}
+                      <div className="w-20 border-t border-amber-400/80 mb-0.5" />
                       <span className="text-[#FFD700] font-black uppercase tracking-wider text-[7.5px]">
                         AUTH SIGNATURE
                       </span>
