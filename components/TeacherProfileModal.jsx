@@ -387,10 +387,11 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
     }
   };
 
-  const isClassTeacher = teacher.assignedClass && teacher.assignedClass !== 'none' && teacher.assignedClass !== 'None';
-  const roleLabel = isClassTeacher
-    ? `Class Teacher: Class ${teacher.assignedClass}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`
-    : 'Subject Teacher (All Classes)';
+  const rawCls = teacher.assignedClass || (Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses.join(', ') : '');
+  const isAllClasses = !rawCls || rawCls.toLowerCase() === 'all' || rawCls.toLowerCase() === 'all classes';
+  const roleLabel = isAllClasses
+    ? 'Faculty Member (All Classes Access)'
+    : `Class Teacher: Class ${rawCls}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`;
 
   return (
     <div
@@ -713,9 +714,9 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
                 <div className="p-3 rounded-xl bg-surface2 border border-border/70 space-y-1">
                   <span className="text-[10.5px] text-text-muted font-medium block">Assigned Class</span>
                   <span className="font-bold text-primary text-sm block">
-                    {teacher.assignedClass && teacher.assignedClass !== 'none'
-                      ? `Class ${teacher.assignedClass}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`
-                      : 'Subject Teacher (All Classes)'}
+                    {isAllClasses
+                      ? '★ All Classes Access'
+                      : `Class ${rawCls}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`}
                   </span>
                 </div>
 

@@ -153,7 +153,9 @@ export default function TeachersView() {
       mobile: t.mobile || '',
       alternateMobile: t.alternateMobile || '',
       password: t.password || '123456',
-      assignedClass: (t.assignedClass && t.assignedClass !== 'none' && t.assignedClass !== 'None') ? t.assignedClass : '',
+      assignedClass: (t.assignedClass && t.assignedClass !== 'none' && t.assignedClass !== 'None')
+        ? t.assignedClass
+        : (Array.isArray(t.assignedClasses) && t.assignedClasses.length > 0 ? t.assignedClasses.join(', ') : ''),
       assignedSection: t.assignedSection || '',
       dob: t.dob ? (typeof t.dob === 'string' ? t.dob.split('T')[0] : t.dob) : '1992-05-15',
       gender: t.gender || 'Male',
@@ -700,9 +702,16 @@ export default function TeachersView() {
                     <div className="flex items-center gap-1.5 text-[11px] text-text font-medium mt-1">
                       <GraduationCap className="w-3.5 h-3.5 text-text-muted shrink-0" />
                       <span className="truncate">
-                        {teacher.assignedClass && teacher.assignedClass !== 'none' && teacher.assignedClass !== 'None'
-                          ? `Class ${teacher.assignedClass}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`
-                          : (teacher.subject ? `Subject: ${teacher.subject}` : 'General Faculty')}
+                        {(() => {
+                          const cls = teacher.assignedClass || (Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses.join(', ') : '');
+                          if (cls && cls !== 'none' && cls !== 'None') {
+                            if (cls.toLowerCase() === 'all' || cls.toLowerCase() === 'all classes') {
+                              return '★ All Classes Access';
+                            }
+                            return `Class ${cls}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`;
+                          }
+                          return teacher.subject ? `Subject: ${teacher.subject}` : 'General Faculty';
+                        })()}
                       </span>
                     </div>
 
@@ -795,15 +804,22 @@ export default function TeachersView() {
 
                       {/* Role / Class */}
                       <td className="py-3 px-4">
-                        {isClassTch ? (
-                          <span className="font-bold text-primary px-2 py-0.5 rounded-md bg-primary/10 text-[11px]">
-                            Class {teacher.assignedClass}{teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}
-                          </span>
-                        ) : (
-                          <span className="font-bold text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 text-[10.5px]">
-                            Subject Teacher
-                          </span>
-                        )}
+                        {(() => {
+                          const cls = teacher.assignedClass || (Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses.join(', ') : '');
+                          const isAll = !cls || cls.toLowerCase() === 'all' || cls.toLowerCase() === 'all classes';
+                          if (isAll) {
+                            return (
+                              <span className="font-bold text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 text-[10.5px]">
+                                ★ All Classes Access
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="font-bold text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/40 border border-teal-200 text-[11px]">
+                              Class {cls}{teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Subject & Qual */}
@@ -1236,67 +1252,83 @@ export default function TeachersView() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-text mb-1 flex items-center justify-between">
-                      <span>Assign Class Access</span>
-                      <span className="text-[10px] text-text-muted font-normal">All Classes or Selected Class</span>
-                    </label>
-                    <select
-                      value={formData.assignedClass || 'All Classes'}
-                      onChange={(e) => setFormData({ ...formData, assignedClass: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-surface2 border border-border text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer"
-                    >
-                      <option value="All Classes">All Classes (Full School Access)</option>
-                      {availableClasses.map(c => <option key={c} value={c}>Class {c}</option>)}
-                      {settings.computerCourses?.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-
-                    <div className="mt-2 space-y-1">
-                      <span className="text-[10px] text-text-muted font-semibold">Or tap below to toggle multi-class access:</span>
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setFormData({ ...formData, assignedClass: 'All Classes' })}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                            formData.assignedClass === 'All Classes' || !formData.assignedClass
-                              ? 'bg-primary text-white shadow-sm'
-                              : 'bg-surface border border-border text-text hover:border-primary'
-                          }`}
-                        >
-                          All Classes
-                        </button>
-                        {availableClasses.map(c => {
-                          const list = (formData.assignedClass || '').split(',').map(s => s.trim()).filter(s => s && s !== 'All Classes');
-                          const isSel = list.includes(c);
-                          return (
-                            <button
-                              key={c}
-                              type="button"
-                              onClick={() => {
-                                let nextList = [...list];
-                                if (formData.assignedClass === 'All Classes') nextList = [];
-                                if (isSel) {
-                                  nextList = nextList.filter(x => x !== c);
-                                } else {
-                                  nextList.push(c);
-                                }
-                                setFormData({
-                                  ...formData,
-                                  assignedClass: nextList.length === 0 ? 'All Classes' : nextList.join(', ')
-                                });
-                              }}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                                isSel && formData.assignedClass !== 'All Classes'
-                                  ? 'bg-indigo-600 text-white shadow-sm'
-                                  : 'bg-surface border border-border text-text hover:border-primary'
-                              }`}
-                            >
-                              {c}
-                            </button>
-                          );
-                        })}
-                      </div>
+                  <div className="p-3.5 rounded-xl bg-surface2/60 border border-border/80 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-text text-xs flex items-center gap-1.5">
+                        <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                        <span>Class Access & Permissions</span>
+                      </label>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        formData.assignedClass === 'All Classes' || !formData.assignedClass
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300'
+                      }`}>
+                        {formData.assignedClass === 'All Classes' || !formData.assignedClass
+                          ? 'Full School Access'
+                          : `${(formData.assignedClass || '').split(',').filter(s => s.trim() && s.trim() !== 'All Classes').length} Classes Selected`}
+                      </span>
                     </div>
+
+                    <p className="text-[11px] text-text-muted leading-tight">
+                      Choose if this teacher can manage all school classes or select multiple specific classes:
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, assignedClass: 'All Classes' })}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          formData.assignedClass === 'All Classes' || !formData.assignedClass
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-surface border border-border text-text hover:border-primary'
+                        }`}
+                      >
+                        <span>★</span>
+                        <span>All Classes (Full Access)</span>
+                      </button>
+
+                      {availableClasses.map(c => {
+                        const list = (formData.assignedClass || '')
+                          .split(/[,|]/)
+                          .map(s => s.trim())
+                          .filter(s => s && s !== 'All Classes');
+                        const isSel = list.includes(c) && formData.assignedClass !== 'All Classes';
+                        return (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => {
+                              let nextList = [...list];
+                              if (formData.assignedClass === 'All Classes' || !formData.assignedClass) nextList = [];
+                              if (isSel) {
+                                nextList = nextList.filter(x => x !== c);
+                              } else {
+                                nextList.push(c);
+                              }
+                              setFormData({
+                                ...formData,
+                                assignedClass: nextList.length === 0 ? 'All Classes' : nextList.join(', ')
+                              });
+                            }}
+                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                              isSel
+                                ? 'bg-teal-600 text-white shadow-sm'
+                                : 'bg-surface border border-border text-text hover:border-teal-500'
+                            }`}
+                          >
+                            {isSel && <span>✓</span>}
+                            <span>Class {c}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {formData.assignedClass && formData.assignedClass !== 'All Classes' && (
+                      <div className="text-[11px] text-teal-700 dark:text-teal-300 font-semibold pt-1 flex items-center gap-1">
+                        <span>Selected:</span>
+                        <span className="font-bold underline">{formData.assignedClass}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div>
