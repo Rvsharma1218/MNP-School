@@ -116,7 +116,9 @@ class ResultPdfService {
                 child: pw.Column(
                   children: [
                     if (logoImage != null) ...[
-                      pw.Image(logoImage, width: 48, height: 48, fit: pw.BoxFit.contain),
+                      pw.ClipOval(
+                        child: pw.Image(logoImage, width: 48, height: 48, fit: pw.BoxFit.cover),
+                      ),
                       pw.SizedBox(height: 4),
                     ],
                     pw.Text(
@@ -753,7 +755,9 @@ class ResultPdfService {
                         width: 36,
                         height: 36,
                         margin: const pw.EdgeInsets.only(right: 10),
-                        child: pw.Image(logoImage),
+                        child: pw.ClipOval(
+                          child: pw.Image(logoImage, width: 36, height: 36, fit: pw.BoxFit.cover),
+                        ),
                       ),
                     pw.Expanded(
                       child: pw.Column(
