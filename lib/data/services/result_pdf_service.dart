@@ -808,6 +808,9 @@ class ResultPdfService {
     final sigBytes = await AppUtils.loadAppImageBytes(settings.principalSignature);
     final sigImage = sigBytes != null ? pw.MemoryImage(sigBytes) : null;
 
+    final stampBytes = await AppUtils.loadAppImageBytes(settings.schoolStamp);
+    final stampImage = stampBytes != null ? pw.MemoryImage(stampBytes) : null;
+
     final doc = pw.Document();
 
     final totalStudents = items.length;
@@ -933,10 +936,21 @@ class ResultPdfService {
                   ),
                   pw.Column(
                     children: [
-                      if (sigImage != null)
-                        pw.Container(width: 80, height: 32, child: pw.Image(sigImage, fit: pw.BoxFit.contain))
-                      else
-                        pw.SizedBox(height: 25),
+                      pw.Container(
+                        height: 38,
+                        child: pw.Stack(
+                          alignment: pw.Alignment.center,
+                          children: [
+                            if (stampImage != null)
+                              pw.Opacity(
+                                opacity: 0.88,
+                                child: pw.Image(stampImage, width: 38, height: 38, fit: pw.BoxFit.contain),
+                              ),
+                            if (sigImage != null)
+                              pw.Image(sigImage, width: 100, height: 34, fit: pw.BoxFit.contain),
+                          ],
+                        ),
+                      ),
                       pw.Container(width: 140, height: 1, color: borderLight),
                       pw.SizedBox(height: 4),
                       pw.Text('Principal Sign & Stamp', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: primaryNavy)),
@@ -1008,7 +1022,7 @@ class ResultPdfService {
 
                 final stuId = student.studentId.isNotEmpty ? student.studentId : result.studentId;
                 final roll = student.rollNumber ?? '-';
-                final father = student.fatherName ?? '-';
+                final father = student.fatherName.isNotEmpty ? student.fatherName : '-';
                 final mother = student.motherName ?? '-';
                 final cls = student.displayClass.isNotEmpty ? student.displayClass : className;
                 final sec = student.section ?? 'A';

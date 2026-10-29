@@ -70,6 +70,9 @@ class SubjectResult {
 class ResultModel {
   final String id;
   final String studentId;
+  final String? studentName;
+  final String? className;
+  final String? rollNumber;
   final String examName;
   final List<SubjectResult> subjects;
   final String? status; // 'PASS' | 'FAIL' | 'PROMOTED'
@@ -80,6 +83,9 @@ class ResultModel {
   ResultModel({
     required this.id,
     required this.studentId,
+    this.studentName,
+    this.className,
+    this.rollNumber,
     required this.examName,
     required this.subjects,
     this.status,
@@ -130,6 +136,9 @@ class ResultModel {
   ResultModel copyWith({
     String? id,
     String? studentId,
+    String? studentName,
+    String? className,
+    String? rollNumber,
     String? examName,
     List<SubjectResult>? subjects,
     String? status,
@@ -140,6 +149,9 @@ class ResultModel {
     return ResultModel(
       id: id ?? this.id,
       studentId: studentId ?? this.studentId,
+      studentName: studentName ?? this.studentName,
+      className: className ?? this.className,
+      rollNumber: rollNumber ?? this.rollNumber,
       examName: examName ?? this.examName,
       subjects: subjects ?? this.subjects,
       status: status ?? this.status,
@@ -153,6 +165,9 @@ class ResultModel {
     return {
       'id': id,
       'studentId': studentId,
+      'studentName': studentName,
+      'className': className,
+      'rollNumber': rollNumber,
       'examName': examName,
       'subjects': subjects.map((s) => s.toMap()).toList(),
       'status': status ?? finalResultStatus,
@@ -209,6 +224,9 @@ class ResultModel {
     return ResultModel(
       id: map['id']?.toString() ?? '',
       studentId: map['studentId']?.toString() ?? '',
+      studentName: map['studentName']?.toString() ?? map['name']?.toString(),
+      className: map['className']?.toString() ?? map['class']?.toString() ?? map['course']?.toString(),
+      rollNumber: map['rollNumber']?.toString() ?? map['roll']?.toString(),
       examName: map['examName']?.toString() ?? map['examType']?.toString() ?? 'Term Exam',
       subjects: parsedSubjects,
       status: map['status']?.toString(),

@@ -3360,10 +3360,16 @@ CREATE TABLE monthly_fees (
     final db = await database;
     try { await db.execute('ALTER TABLE results ADD COLUMN isDetailedMode INTEGER DEFAULT 0'); } catch (_) {}
     try { await db.execute('ALTER TABLE results ADD COLUMN remarks TEXT'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN studentName TEXT'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN className TEXT'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN rollNumber TEXT'); } catch (_) {}
 
     final resMap = {
       'id': result.id,
       'studentId': result.studentId,
+      'studentName': result.studentName,
+      'className': result.className,
+      'rollNumber': result.rollNumber,
       'examName': result.examName,
       'status': result.status ?? result.finalResultStatus,
       'isDetailedMode': result.isDetailedMode ? 1 : 0,

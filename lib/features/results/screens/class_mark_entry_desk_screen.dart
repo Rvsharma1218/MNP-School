@@ -10,6 +10,7 @@ import '../../../data/models/student_model.dart';
 import '../../../data/services/database_service.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/result_pdf_service.dart';
+import '../../../data/services/session_service.dart';
 import 'create_exam_screen.dart';
 import 'student_mark_entry_screen.dart';
 import 'student_result_detail_screen.dart';
@@ -51,9 +52,14 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
   Future<void> _loadData() async {
     setState(() => _loading = true);
     final db = DatabaseService.instance;
-    final students = await db.getAllStudents();
-    final results = await db.getAllResults();
-    final exams = await db.getAllExams();
+    final data = await Future.wait([
+      db.getAllStudents(),
+      db.getAllResults(),
+      db.getAllExams(),
+    ]);
+    final students = data[0] as List<StudentModel>;
+    final results = data[1] as List<ResultModel>;
+    final exams = data[2] as List<ExamModel>;
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
 
     final enrolledClasses = students
@@ -71,10 +77,14 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     _allResults = results;
     _allExams = exams;
 
-    // Retain selected class if already set by user
+    // Retain selected class if already set by user or teacher assignment
     if (_selectedClass.isEmpty || !_availableClasses.contains(_selectedClass)) {
+      final isTeacher = SessionService.instance.isTeacher;
+      final teacherClass = SessionService.instance.assignedClass;
       if (widget.initialClass != null && _availableClasses.contains(widget.initialClass)) {
         _selectedClass = widget.initialClass!;
+      } else if (isTeacher && teacherClass != null && _availableClasses.contains(teacherClass.trim())) {
+        _selectedClass = teacherClass.trim();
       } else if (widget.initialExam?.className.isNotEmpty == true && _availableClasses.contains(widget.initialExam!.className)) {
         _selectedClass = widget.initialExam!.className;
       } else {
@@ -168,9 +178,24 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     return list;
   }
 
+  bool _matchesStudent(ResultModel r, StudentModel s) {
+    final rId = r.studentId.trim().toLowerCase();
+    final rName = (r.studentName ?? '').trim().toLowerCase();
+    final sId = s.id.trim().toLowerCase();
+    final sStuId = s.studentId.trim().toLowerCase();
+    final sAdm = s.admissionNumber.trim().toLowerCase();
+    final sName = s.name.trim().toLowerCase();
+
+    if (rId.isNotEmpty) {
+      if (rId == sId || rId == sStuId || rId == sAdm) return true;
+    }
+    if (rName.isNotEmpty && sName.isNotEmpty && rName == sName) return true;
+    return false;
+  }
+
   ResultModel? _getResultForStudent(StudentModel s) {
     return _allResults.where((r) {
-      final isStud = r.studentId == s.id;
+      final isStud = _matchesStudent(r, s);
       if (!isStud) return false;
       if (_selectedExam != null) {
         return r.examName.trim().toLowerCase() == _selectedExam!.title.trim().toLowerCase();
@@ -368,7 +393,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
         s.rollNumber ?? '',
         s.studentId,
         s.name,
-        s.fatherName ?? '',
+        s.fatherName,
         s.motherName ?? '',
         s.className ?? (s.course ?? s.displayClass),
         s.section ?? 'A',

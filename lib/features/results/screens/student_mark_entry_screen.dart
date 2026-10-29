@@ -102,8 +102,10 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
         };
       }).toList();
     } else if (ex != null && ex.subjects.isNotEmpty) {
-      // Pre-fill from selected Exam's subjects
-      _subjectRows = ex.subjects.map((s) {
+      // Pre-fill from selected Exam's subjects (deduplicated)
+      final seen = <String>{};
+      final uniqueSubs = ex.subjects.where((s) => seen.add(s.subjectName.trim().toLowerCase())).toList();
+      _subjectRows = uniqueSubs.map((s) {
         final isStd = _standardSubjects.contains(s.subjectName) && s.subjectName != 'Other';
         final maxM = _isDetailedMode ? (s.theoryMax + s.practicalMax + s.internalMax) : s.totalMarks;
         return {
@@ -389,7 +391,10 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
     final resId = widget.editResult?.id ?? 'res_${widget.student.id}_${DateTime.now().millisecondsSinceEpoch}';
     final resultModel = ResultModel(
       id: resId,
-      studentId: widget.student.id,
+      studentId: widget.student.studentId.isNotEmpty ? widget.student.studentId : widget.student.id,
+      studentName: widget.student.name,
+      className: widget.student.displayClass,
+      rollNumber: widget.student.rollNumber,
       examName: _examCtrl.text.trim().isNotEmpty ? _examCtrl.text.trim() : 'Term Examination 2026',
       subjects: subs,
       status: finalStatus,

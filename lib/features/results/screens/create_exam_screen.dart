@@ -150,6 +150,26 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
 
   void _addSubject({String name = ''}) {
     final effectiveName = name.trim().isNotEmpty ? name.trim() : 'Subject ${_subjectRows.length + 1}';
+    final isAlreadyAdded = _subjectRows.any((r) {
+      final custom = (r['customCtrl'] as TextEditingController?)?.text.trim().toLowerCase() ?? '';
+      final rName = (r['name']?.toString() ?? '').trim().toLowerCase();
+      final target = effectiveName.toLowerCase();
+      return (custom.isNotEmpty && custom == target) || (rName.isNotEmpty && rName == target);
+    });
+
+    if (isAlreadyAdded) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 2),
+            content: Text('Subject "$effectiveName" is already in this exam.'),
+            backgroundColor: Colors.orange.shade800,
+          ),
+        );
+      }
+      return;
+    }
+
     final newId = 'sub_${DateTime.now().microsecondsSinceEpoch}';
     final newRow = {
       'id': newId,
@@ -309,14 +329,19 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
       return;
     }
 
-    final configs = _subjectRows.map((r) {
+    final seen = <String>{};
+    final configs = <ExamSubjectConfig>[];
+    for (final r in _subjectRows) {
       final customName = (r['customCtrl'] as TextEditingController).text.trim();
       final subName = (r['name'] == 'Other')
           ? (customName.isNotEmpty ? customName : 'Subject')
           : (r['name']?.toString() ?? 'Subject');
+      final normName = subName.trim();
+      if (seen.contains(normName.toLowerCase())) continue;
+      seen.add(normName.toLowerCase());
 
-      return ExamSubjectConfig(
-        subjectName: subName.isNotEmpty ? subName : 'Subject',
+      configs.add(ExamSubjectConfig(
+        subjectName: normName.isNotEmpty ? normName : 'Subject',
         isCompulsory: r['isCompulsory'] == true,
         theoryPassing: double.tryParse((r['theoryPass'] as TextEditingController).text) ?? 33.0,
         theoryMax: double.tryParse((r['theoryMax'] as TextEditingController).text) ?? 100.0,
@@ -326,8 +351,8 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
         internalMax: double.tryParse((r['internalMax'] as TextEditingController).text) ?? 0.0,
         passingMarks: double.tryParse((r['passingMarks'] as TextEditingController).text) ?? 33.0,
         totalMarks: double.tryParse((r['totalMarks'] as TextEditingController).text) ?? 100.0,
-      );
-    }).toList();
+      ));
+    }
 
     final exam = ExamModel(
       id: widget.editExam?.id ?? 'exam_${DateTime.now().millisecondsSinceEpoch}',

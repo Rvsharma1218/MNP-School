@@ -11,6 +11,7 @@ import '../../../data/models/student_model.dart';
 import '../../../data/services/database_service.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/result_pdf_service.dart';
+import '../../../data/services/session_service.dart';
 import '../../whatsapp/whatsapp_service.dart';
 import 'class_mark_entry_desk_screen.dart';
 import 'create_exam_screen.dart';
@@ -42,6 +43,51 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
   List<ExamModel> _exams = [];
   List<ResultModel> _results = [];
   List<StudentModel> _students = [];
+  final Map<String, StudentModel> _studentLookup = {};
+
+  void _rebuildStudentLookup() {
+    _studentLookup.clear();
+    for (final s in _students) {
+      if (s.id.isNotEmpty) _studentLookup[s.id.toLowerCase()] = s;
+      if (s.studentId.isNotEmpty) _studentLookup[s.studentId.toLowerCase()] = s;
+      if (s.admissionNumber.isNotEmpty) _studentLookup[s.admissionNumber.toLowerCase()] = s;
+      if (s.name.isNotEmpty) _studentLookup[s.name.trim().toLowerCase()] = s;
+    }
+  }
+
+  StudentModel? _findStudent(ResultModel r) {
+    final rId = r.studentId.trim().toLowerCase();
+    if (rId.isNotEmpty) {
+      final s = _studentLookup[rId];
+      if (s != null) return s;
+    }
+    final rName = (r.studentName ?? '').trim().toLowerCase();
+    if (rName.isNotEmpty) {
+      final s = _studentLookup[rName];
+      if (s != null) return s;
+    }
+    return null;
+  }
+
+  StudentModel _fallbackStudent(ResultModel r) {
+    return StudentModel(
+      id: r.studentId.isNotEmpty ? r.studentId : (r.id.isNotEmpty ? r.id : 'std_${DateTime.now().millisecondsSinceEpoch}'),
+      admissionNumber: r.rollNumber?.isNotEmpty == true ? r.rollNumber! : r.studentId,
+      studentId: r.studentId,
+      name: (r.studentName != null && r.studentName!.isNotEmpty) ? r.studentName! : 'Student #${r.studentId}',
+      fatherName: '',
+      mobile: '',
+      dob: DateTime(2010),
+      gender: 'Other',
+      address: '',
+      studentType: 'school',
+      className: r.className,
+      rollNumber: r.rollNumber,
+      status: 'active',
+      admissionDate: r.createdAt,
+      createdAt: r.createdAt,
+    );
+  }
 
   String _selectedClassFilter = 'All Classes';
   List<String> _availableClasses = ['All Classes'];
@@ -65,12 +111,18 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
   @override
   void initState() {
     super.initState();
+    final isTeacher = SessionService.instance.isTeacher;
+    final teacherClass = SessionService.instance.assignedClass;
+    if (isTeacher && teacherClass != null && teacherClass.trim().isNotEmpty) {
+      _selectedClassFilter = teacherClass.trim();
+    }
     final cachedStudents = ref.read(studentsProvider).valueOrNull;
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
     if (_cachedExams != null && _cachedResults != null && cachedStudents != null && cachedStudents.isNotEmpty) {
       _exams = _cachedExams!;
       _results = _cachedResults!;
       _students = cachedStudents;
+      _rebuildStudentLookup();
       _populateClassFilters(cachedStudents, settings);
       _loading = false;
     }
@@ -88,11 +140,16 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
   }
 
   Future<void> _loadDashboardData({bool isInitial = false}) async {
-    if (isInitial && mounted) setState(() => _loading = true);
+    if (isInitial && _exams.isEmpty && mounted) setState(() => _loading = true);
     final db = DatabaseService.instance;
-    final exams = await db.getAllExams();
-    final results = await db.getAllResults();
-    final students = await db.getAllStudents();
+    final data = await Future.wait([
+      db.getAllExams(),
+      db.getAllResults(),
+      db.getAllStudents(),
+    ]);
+    final exams = data[0] as List<ExamModel>;
+    final results = data[1] as List<ResultModel>;
+    final students = data[2] as List<StudentModel>;
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
     _cachedExams = exams;
     _cachedResults = results;
@@ -112,6 +169,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     _exams = exams;
     _results = results;
     _students = students;
+    _rebuildStudentLookup();
 
     // If an initial student was supplied (e.g. from Student Profile or search)
     final targetStudentId = widget.initialStudent?.id ?? widget.initialStudentId;
@@ -167,13 +225,12 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     return a.compareTo(b);
   }
 
-  bool _matchesClass(StudentModel s, String filterClass) {
+  static bool _matchesClassName(String c, String filterClass) {
     if (filterClass == 'All Classes') return true;
-    final c1 = (s.className ?? '').trim().toLowerCase();
-    final c2 = (s.course ?? '').trim().toLowerCase();
+    final c1 = c.trim().toLowerCase();
     final target = filterClass.trim().toLowerCase();
-
-    if (c1 == target || c2 == target) return true;
+    if (c1.isEmpty) return false;
+    if (c1 == target) return true;
 
     final n1 = c1.replaceAll('class', '').replaceAll('th', '').replaceAll('st', '').replaceAll('nd', '').replaceAll('rd', '').replaceAll(' ', '');
     final nTarget = target.replaceAll('class', '').replaceAll('th', '').replaceAll('st', '').replaceAll('nd', '').replaceAll('rd', '').replaceAll(' ', '');
@@ -182,6 +239,12 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     if (c1.contains(target) || target.contains(c1)) return true;
     return false;
   }
+
+  bool _matchesClass(StudentModel s, String filterClass) {
+    return _matchesClassName(s.className ?? s.course ?? '', filterClass);
+  }
+
+
 
   Future<void> _deleteExam(ExamModel exam) async {
     final confirm = await showDialog<bool>(
@@ -983,11 +1046,12 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                       ),
                       Row(
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                            tooltip: 'Delete Exam',
-                            onPressed: () => _deleteExam(ex),
-                          ),
+                          if (SessionService.instance.isPrincipal)
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                              tooltip: 'Delete Exam',
+                              onPressed: () => _deleteExam(ex),
+                            ),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1E3A8A),
@@ -1024,35 +1088,35 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
 
   // ─── TAB 2: RESULTS ───
   Widget _buildResultsTab(bool isDark) {
-    // Only show results where marks have actually been entered (exclude unentered 0-mark records)
-    var filteredResults = _results.where((r) {
-      return r.obtainedMarks > 0 || r.subjects.any((s) => s.marks > 0 || s.theoryMarks > 0 || s.practicalMarks > 0 || s.internalMarks > 0);
-    }).toList();
+    // Include all created examination results
+    var filteredResults = _results.toList();
 
     if (_selectedClassFilter != 'All Classes') {
       filteredResults = filteredResults.where((r) {
-        final student = _students.where((s) => s.id == r.studentId).firstOrNull;
-        return student != null && _matchesClass(student, _selectedClassFilter);
+        final student = _findStudent(r);
+        final cls = student?.className ?? student?.course ?? r.className ?? '';
+        return _matchesClassName(cls, _selectedClassFilter);
       }).toList();
     }
 
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       filteredResults = filteredResults.where((r) {
-        final student = _students.where((s) => s.id == r.studentId).firstOrNull;
-        final sName = student?.name.toLowerCase() ?? '';
-        final roll = (student?.rollNumber ?? '').toLowerCase();
+        final student = _findStudent(r);
+        final sName = (student?.name ?? r.studentName ?? '').toLowerCase();
+        final roll = (student?.rollNumber ?? r.rollNumber ?? '').toLowerCase();
+        final sId = (student?.studentId ?? r.studentId).toLowerCase();
         final exam = r.examName.toLowerCase();
-        return sName.contains(q) || roll.contains(q) || exam.contains(q);
+        return sName.contains(q) || roll.contains(q) || sId.contains(q) || exam.contains(q);
       }).toList();
     }
 
     // Sort strictly Roll Number-wise (numerical when available, then alphabetical/name)
     filteredResults.sort((a, b) {
-      final sa = _students.where((s) => s.id == a.studentId).firstOrNull;
-      final sb = _students.where((s) => s.id == b.studentId).firstOrNull;
-      final rollA = sa?.rollNumber?.trim() ?? '';
-      final rollB = sb?.rollNumber?.trim() ?? '';
+      final sa = _findStudent(a);
+      final sb = _findStudent(b);
+      final rollA = (sa?.rollNumber ?? a.rollNumber ?? '').trim();
+      final rollB = (sb?.rollNumber ?? b.rollNumber ?? '').trim();
       final numA = int.tryParse(rollA);
       final numB = int.tryParse(rollB);
       if (numA != null && numB != null) {
@@ -1066,7 +1130,9 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       } else if (rollB.isNotEmpty) {
         return 1;
       }
-      return (sa?.name ?? '').toLowerCase().compareTo((sb?.name ?? '').toLowerCase());
+      final nameA = (sa?.name ?? a.studentName ?? '').toLowerCase();
+      final nameB = (sb?.name ?? b.studentName ?? '').toLowerCase();
+      return nameA.compareTo(nameB);
     });
 
     final totalCount = filteredResults.length;
@@ -1182,7 +1248,8 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (ctx, i) {
                     final r = pagedResults[i];
-                    final student = _students.where((s) => s.id == r.studentId).firstOrNull;
+                    final student = _findStudent(r);
+                    final effectiveStudent = student ?? _fallbackStudent(r);
                     final isPass = r.isPass;
 
                     return Card(
@@ -1194,20 +1261,21 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                       ),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          if (student != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => StudentResultDetailScreen(
-                                  student: student,
-                                  result: r,
-                                ),
+                        onTap: () async {
+                          final updated = await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => StudentResultDetailScreen(
+                                student: effectiveStudent,
+                                result: r,
                               ),
-                            ).then((_) => _loadDashboardData());
+                            ),
+                          );
+                          if (updated == true && mounted) {
+                            _loadDashboardData();
                           }
                         },
-                        onLongPress: () => _showResultActionsSheet(r, student),
+                        onLongPress: () => _showResultActionsSheet(r, effectiveStudent),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Row(
@@ -1229,12 +1297,12 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                                       children: [
                                         Expanded(
                                           child: Text(
-                                            student?.name ?? "Student #${r.studentId}",
+                                            effectiveStudent.name,
                                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        if (student?.rollNumber != null && student!.rollNumber!.trim().isNotEmpty)
+                                        if (effectiveStudent.rollNumber != null && effectiveStudent.rollNumber!.trim().isNotEmpty)
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                             decoration: BoxDecoration(
@@ -1242,7 +1310,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Text(
-                                              'Roll: ${student.rollNumber!.trim()}',
+                                              'Roll: ${effectiveStudent.rollNumber!.trim()}',
                                               style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
                                             ),
                                           ),
@@ -1250,7 +1318,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      "${student?.displayClass ?? ''} • Exam: ${r.examName}",
+                                      "${effectiveStudent.displayClass} • Exam: ${r.examName}",
                                       style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                                     ),
                                     const SizedBox(height: 2),
