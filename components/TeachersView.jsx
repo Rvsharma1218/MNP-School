@@ -281,7 +281,7 @@ export default function TeachersView() {
           salary: Number(r['Salary']) || 20000,
           aadhaarNumber: String(r['Aadhaar Number'] || r['Aadhaar'] || '').replace(/[^0-9]/g, ''),
           address: r['Residential Address'] || r['Address'] || '',
-          isValid: !!(r['Teacher Name *'] || r['Teacher Name'] || r['Name']) && !!(r['Mobile Number *'] || r['Mobile Number'] || r['Mobile'])
+          isValid: !!(r['Teacher Name *'] || r['Teacher Name'] || r['Name'])
         }));
         setFacultyImportPreview(parsed);
         setIsImportModalOpen(true);
@@ -350,8 +350,13 @@ export default function TeachersView() {
         aadhaarCardUrl: formData.aadhaarDocUrl || ''
       };
       if (editingTeacher) {
-        const uid = editingTeacher.authUid || editingTeacher.id || editingTeacher.teacherId;
-        await updateTeacher(uid, payload);
+        const targetId = editingTeacher.id || editingTeacher.teacherId || editingTeacher.authUid;
+        payload.id = editingTeacher.id || editingTeacher.teacherId || targetId;
+        payload.teacherId = editingTeacher.teacherId || editingTeacher.id || targetId;
+        payload.authUid = editingTeacher.authUid || targetId;
+        payload.authEmail = editingTeacher.authEmail || editingTeacher.email || '';
+        payload.email = editingTeacher.authEmail || editingTeacher.email || '';
+        await updateTeacher(targetId, payload);
         showToast(`Teacher "${formData.name}" updated successfully!`, "success");
       } else {
         await addTeacher(payload);
@@ -1132,12 +1137,11 @@ export default function TeachersView() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-text mb-1">
-                      Primary Mobile Number <span className="text-rose-500">*</span>
+                      Primary Mobile Number <span className="text-text-muted font-normal">(Optional)</span>
                     </label>
                     <input
                       type="tel"
-                      required
-                      placeholder="e.g. 9876543210"
+                      placeholder="e.g. 9876543210 (optional)"
                       value={formData.mobile}
                       onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-surface2 border border-border text-xs text-text font-mono focus:outline-none focus:border-primary"
@@ -1234,18 +1238,65 @@ export default function TeachersView() {
 
                   <div>
                     <label className="block font-bold text-text mb-1 flex items-center justify-between">
-                      <span>Assign Class (Optional)</span>
-                      <span className="text-[10px] text-text-muted font-normal">Optional if Subject Teacher</span>
+                      <span>Assign Class Access</span>
+                      <span className="text-[10px] text-text-muted font-normal">All Classes or Selected Class</span>
                     </label>
                     <select
-                      value={formData.assignedClass}
+                      value={formData.assignedClass || 'All Classes'}
                       onChange={(e) => setFormData({ ...formData, assignedClass: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-surface2 border border-border text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer"
                     >
-                      <option value="">-- None (Subject Teacher / All Classes) --</option>
-                      {settings.schoolClasses?.map(c => <option key={c} value={c}>Class {c}</option>)}
+                      <option value="All Classes">All Classes (Full School Access)</option>
+                      {availableClasses.map(c => <option key={c} value={c}>Class {c}</option>)}
                       {settings.computerCourses?.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
+
+                    <div className="mt-2 space-y-1">
+                      <span className="text-[10px] text-text-muted font-semibold">Or tap below to toggle multi-class access:</span>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, assignedClass: 'All Classes' })}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                            formData.assignedClass === 'All Classes' || !formData.assignedClass
+                              ? 'bg-primary text-white shadow-sm'
+                              : 'bg-surface border border-border text-text hover:border-primary'
+                          }`}
+                        >
+                          All Classes
+                        </button>
+                        {availableClasses.map(c => {
+                          const list = (formData.assignedClass || '').split(',').map(s => s.trim()).filter(s => s && s !== 'All Classes');
+                          const isSel = list.includes(c);
+                          return (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => {
+                                let nextList = [...list];
+                                if (formData.assignedClass === 'All Classes') nextList = [];
+                                if (isSel) {
+                                  nextList = nextList.filter(x => x !== c);
+                                } else {
+                                  nextList.push(c);
+                                }
+                                setFormData({
+                                  ...formData,
+                                  assignedClass: nextList.length === 0 ? 'All Classes' : nextList.join(', ')
+                                });
+                              }}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                isSel && formData.assignedClass !== 'All Classes'
+                                  ? 'bg-indigo-600 text-white shadow-sm'
+                                  : 'bg-surface border border-border text-text hover:border-primary'
+                              }`}
+                            >
+                              {c}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
 
                   <div>

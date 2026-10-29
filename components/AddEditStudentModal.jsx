@@ -139,8 +139,8 @@ export default function AddEditStudentModal({ student, isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name?.trim() || !formData.mobile?.trim()) {
-      showToast("Please provide at least Student Name and Mobile Number.", "error");
+    if (!formData.name?.trim()) {
+      showToast("Please provide Student Name.", "error");
       return;
     }
 
@@ -434,12 +434,11 @@ export default function AddEditStudentModal({ student, isOpen, onClose }) {
 
               <div>
                 <label className="block text-[11px] font-bold text-text mb-1">
-                  Mobile Number (WhatsApp) <span className="text-rose-500">*</span>
+                  Mobile Number (WhatsApp) <span className="text-text-muted font-normal">(Optional)</span>
                 </label>
                 <input
                   type="tel"
-                  required
-                  placeholder="10-digit mobile"
+                  placeholder="10-digit mobile (optional)"
                   value={formData.mobile || ''}
                   onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-surface2 border border-border text-xs text-text focus:outline-none focus:border-primary"
