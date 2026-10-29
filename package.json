@@ -1,0 +1,9 @@
+{
+  "name": "mnp-school-flutter-app",
+  "version": "1.0.0",
+  "description": "Flutter mobile app — Vercel should not build this branch",
+  "scripts": {
+    "vercel-build": "echo 'Flutter app branch: no web build needed' && exit 0"
+  },
+  "private": true
+}
