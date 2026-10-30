@@ -21,6 +21,23 @@ class DatabaseService {
 
   Database? _db;
 
+  // In-Memory Cache for ultra-fast instant 0ms responses across all cards & screens
+  List<StudentModel>? _cachedStudents;
+  List<ResultModel>? _cachedResults;
+  List<ExamModel>? _cachedExams;
+  Map<String, FeeModel>? _cachedFeesMap;
+  int? _cachedStudentCount;
+  Map<String, int>? _cachedTodayAttendance;
+
+  void clearMemoryCache() {
+    _cachedStudents = null;
+    _cachedResults = null;
+    _cachedExams = null;
+    _cachedFeesMap = null;
+    _cachedStudentCount = null;
+    _cachedTodayAttendance = null;
+  }
+
   Future<void> initialize() async {
     if (kIsWeb) return; // SQLite not supported on web — Firestore is used directly
     _db = await _openDatabase();
@@ -867,6 +884,7 @@ CREATE TABLE monthly_fees (
   Future<void> insertStudent(StudentModel student) async {
     final db = await database;
     await _ensureStudentColumns(db);
+    clearMemoryCache();
     await db.insert('students', student.toDbMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     await db.insert('fees', {
       'studentId': student.id,
@@ -1374,7 +1392,10 @@ CREATE TABLE monthly_fees (
   }
 
 
-  Future<List<StudentModel>> getAllStudents() async {
+  Future<List<StudentModel>> getAllStudents({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedStudents != null) {
+      return _cachedStudents!;
+    }
     if (kIsWeb) {
       return FirestoreService.instance.fetchStudents();
     }
@@ -1387,7 +1408,7 @@ CREATE TABLE monthly_fees (
       if (sId.isNotEmpty) fsByStudent[sId] = row;
     }
 
-    return maps.map((m) {
+    final list = maps.map((m) {
       final sId = m['id']?.toString() ?? '';
       final altId = m['studentId']?.toString() ?? '';
       final structRow = fsByStudent[sId] ?? (altId.isNotEmpty ? fsByStudent[altId] : null);
@@ -1409,6 +1430,8 @@ CREATE TABLE monthly_fees (
       }
       return StudentModel.fromMap(m);
     }).toList();
+    _cachedStudents = list;
+    return list;
   }
 
   Future<StudentModel?> getStudentById(String id) async {
@@ -1537,6 +1560,7 @@ CREATE TABLE monthly_fees (
   Future<void> updateStudent(StudentModel student) async {
     final db = await database;
     await _ensureStudentColumns(db);
+    clearMemoryCache();
     await db.update('students', student.toDbMap(), where: 'id = ?', whereArgs: [student.id]);
     FirestoreService.instance.syncStudent(student).catchError((e) {
       debugPrint('[DatabaseService] Firestore updateStudent note: $e');
@@ -1652,7 +1676,10 @@ CREATE TABLE monthly_fees (
   }
 
   /// Batch-load all fees with payments — avoids N+1 queries during export and computes dynamic monthly fee demand.
-  Future<Map<String, FeeModel>> getAllFeesMap() async {
+  Future<Map<String, FeeModel>> getAllFeesMap({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedFeesMap != null) {
+      return _cachedFeesMap!;
+    }
     final db = await database;
     final students = await db.query('students');
     final feeStructures = await db.query('fee_structures');
@@ -1825,6 +1852,7 @@ CREATE TABLE monthly_fees (
       if (studentAdmNo.isNotEmpty) result[studentAdmNo] = feeModel;
     }
 
+    _cachedFeesMap = result;
     return result;
   }
 
@@ -3050,6 +3078,7 @@ CREATE TABLE monthly_fees (
     final map = attendance.toMap();
     map['date'] = '$dateStr 00:00:00.000';
     await db.insert('attendance', map);
+    _cachedTodayAttendance = null;
   }
 
   /// Imports a historical attendance SUMMARY from Excel/PDF (total/present/
@@ -3410,7 +3439,10 @@ CREATE TABLE monthly_fees (
 
   Future<void> insertResult(ResultModel result) => saveResult(result);
 
-  Future<List<ResultModel>> getAllResults() async {
+  Future<List<ResultModel>> getAllResults({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedResults != null) {
+      return _cachedResults!;
+    }
     if (kIsWeb) {
       return FirestoreService.instance.fetchResults();
     }
@@ -3429,11 +3461,13 @@ CREATE TABLE monthly_fees (
         }
       }
 
-      return results.map((result) {
+      final list = results.map((result) {
         final rId = result['id']?.toString() ?? '';
         final subjects = subjectsByResultId[rId] ?? const <SubjectResult>[];
         return ResultModel.fromMap(result, subjects);
       }).toList();
+      _cachedResults = list;
+      return list;
     } catch (_) {
       return [];
     }
@@ -3502,7 +3536,8 @@ CREATE TABLE monthly_fees (
     }
     final db = await database;
     try {
-      await db.delete('results', where: 'id = ?', whereArgs: [id]);
+      _cachedResults = null;
+    await db.delete('results', where: 'id = ?', whereArgs: [id]);
       await db.delete('subject_results', where: 'resultId = ?', whereArgs: [id]);
     } catch (_) {}
     try {
@@ -3556,7 +3591,10 @@ CREATE TABLE monthly_fees (
     } catch (_) {}
   }
 
-  Future<List<ExamModel>> getAllExams() async {
+  Future<List<ExamModel>> getAllExams({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedExams != null) {
+      return _cachedExams!;
+    }
     if (kIsWeb) {
       return await FirestoreService.instance.fetchExamsRemote();
     }
@@ -3565,13 +3603,17 @@ CREATE TABLE monthly_fees (
     try {
       final rows = await db.query('exams', orderBy: 'createdAt DESC');
       final local = rows.map(ExamModel.fromMap).toList();
-      if (local.isNotEmpty) return local;
+      if (local.isNotEmpty) {
+        _cachedExams = local;
+        return local;
+      }
 
       // Fallback: try remote
       final remote = await FirestoreService.instance.fetchExamsRemote();
       for (final ex in remote) {
         await saveExam(ex);
       }
+      _cachedExams = remote;
       return remote;
     } catch (_) {
       return [];

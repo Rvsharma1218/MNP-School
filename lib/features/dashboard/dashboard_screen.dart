@@ -2486,12 +2486,12 @@ class _TeacherClassSectionSelector extends ConsumerWidget {
                   child: _buildDropdown(
                     context: context,
                     label: 'Class',
-                    value: selectedClass.isEmpty ? null : selectedClass,
-                    items: classes,
+                    value: selectedClass.isEmpty ? 'All Classes' : selectedClass,
+                    items: ['All Classes', ...classes],
                     onChanged: (v) {
-                      ref.read(teacherSelectedClassProvider.notifier).state = v ?? '';
-                      // Also sync the global filter provider
-                      ref.read(classFilterProvider.notifier).state = v ?? '';
+                      final val = (v == null || v == 'All Classes') ? '' : v;
+                      ref.read(teacherSelectedClassProvider.notifier).state = val;
+                      ref.read(classFilterProvider.notifier).state = val;
                     },
                   ),
                 ),
@@ -2500,11 +2500,12 @@ class _TeacherClassSectionSelector extends ConsumerWidget {
                   child: _buildDropdown(
                     context: context,
                     label: 'Section',
-                    value: selectedSection.isEmpty ? null : selectedSection,
-                    items: sections,
+                    value: selectedSection.isEmpty ? 'All Sec' : selectedSection,
+                    items: ['All Sec', ...sections],
                     onChanged: (v) {
-                      ref.read(teacherSelectedSectionProvider.notifier).state = v ?? '';
-                      ref.read(sectionFilterProvider.notifier).state = v ?? '';
+                      final val = (v == null || v == 'All Sec') ? '' : v;
+                      ref.read(teacherSelectedSectionProvider.notifier).state = val;
+                      ref.read(sectionFilterProvider.notifier).state = val;
                     },
                   ),
                 ),

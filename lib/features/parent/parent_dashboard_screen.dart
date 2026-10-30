@@ -38,6 +38,11 @@ class ParentDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
+  static StudentModel? _cachedParentStudent;
+  static List<PaymentModel>? _cachedParentPayments;
+  static List<AttendanceModel>? _cachedParentAttendanceLogs;
+  static List<ResultModel>? _cachedParentResults;
+  static SettingsModel? _cachedParentSettings;
   int _currentTab = 0; // 0: Overview, 1: Profile, 2: Attendance, 3: Fees, 4: Results, 5: Notices, 6: Complaints
   bool _isDarkMode = false; // Default: Light Mode
 
@@ -53,6 +58,14 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    if (_cachedParentStudent != null) {
+      _student = _cachedParentStudent;
+      _payments = _cachedParentPayments ?? [];
+      _attendanceLogs = _cachedParentAttendanceLogs ?? [];
+      _results = _cachedParentResults ?? [];
+      _settings = _cachedParentSettings;
+      _loading = false;
+    }
     _loadThemePreference();
     _loadData();
     _listenRealtimeNotices();
@@ -133,6 +146,13 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
           _results = r;
           _settings = set;
           _loading = (s == null); // Instant display if student already cached
+          if (s != null) {
+            _cachedParentStudent = s;
+            _cachedParentPayments = p;
+            _cachedParentAttendanceLogs = a;
+            _cachedParentResults = r;
+            _cachedParentSettings = set;
+          }
         });
       }
 
@@ -178,6 +198,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
             cloudData['id'] = cloudStudentDoc.id;
             final cloudStudent = StudentModel.fromMap(cloudData);
             s = cloudStudent;
+            _cachedParentStudent = s;
             await db.insertStudent(cloudStudent);
           }
         } catch (e) {
