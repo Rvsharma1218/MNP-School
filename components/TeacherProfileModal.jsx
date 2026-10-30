@@ -238,13 +238,14 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
 
   // ─── OFFICIAL PRINTABLE SALARY SLIP (STAMP + SIGN + LOGO + DATE/TIME) ─────────────
   const printSalarySlip = (record) => {
-    const schoolName = settings.instituteName || settings.schoolName || 'SMART HIGH SCHOOL';
-    const schoolAddress = settings.address || 'Main Campus';
-    const schoolPhone = settings.phone || settings.mobile || 'Support Line';
-    const schoolEmail = settings.email || 'info@school.com';
-    const rawLogo = settings.logoUrl || settings.logoPath || settings.logo || '';
-    const rawStamp = settings.schoolStamp || settings.stamp || '';
-    const rawSig = settings.principalSignature || settings.rawSignature || settings.signature || '';
+    const safeSettings = settings || {};
+    const schoolName = safeSettings.instituteName || safeSettings.schoolName || 'SMART HIGH SCHOOL';
+    const schoolAddress = safeSettings.address || 'Main Campus';
+    const schoolPhone = safeSettings.phone || safeSettings.mobile || 'Support Line';
+    const schoolEmail = safeSettings.email || 'info@school.com';
+    const rawLogo = safeSettings.logoUrl || safeSettings.logoPath || safeSettings.logo || '';
+    const rawStamp = safeSettings.schoolStamp || safeSettings.stamp || '';
+    const rawSig = safeSettings.principalSignature || safeSettings.rawSignature || safeSettings.signature || '';
     const printDate = record.timestampFormatted || new Date().toLocaleString();
 
     const formatImgSrc = (val) => {
@@ -258,8 +259,8 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
     const stampSrc = formatImgSrc(rawStamp);
     const sigSrc = formatImgSrc(rawSig);
 
-    const stampScale = Number(settings.stampScale) || 1.0;
-    const signatureScale = Number(settings.signatureScale) || 1.0;
+    const stampScale = Number(safeSettings.stampScale) || 1.0;
+    const signatureScale = Number(safeSettings.signatureScale) || 1.0;
     const stampHeight = Math.round(68 * stampScale);
     const sigHeight = Math.round(44 * signatureScale);
     const boxHeight = Math.max(stampHeight, sigHeight) + 12;

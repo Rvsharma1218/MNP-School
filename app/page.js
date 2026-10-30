@@ -325,7 +325,7 @@ function AppContent() {
   }
 
   // ── Render 2: Onboarding Setup Wizard
-  if (currentUser && currentPath === '/setup' && !settings.isSetupComplete) {
+  if (currentUser && currentPath === '/setup' && !settings?.isSetupComplete) {
     return <SetupWizardView />;
   }
 
@@ -393,7 +393,7 @@ function AppContent() {
             {cleanPath === '/admitcards' && <AdmitCardView />}
             {cleanPath === '/timetable' && <TimetableView />}
             {cleanPath === '/classes' && <ClassesView />}
-            {cleanPath === '/teachers' && (isPrincipal ? <TeachersView /> : <AccessDeniedView />)}
+            {cleanPath === '/teachers' && (isPrincipal ? <SafeView><TeachersView /></SafeView> : <AccessDeniedView />)}
             {cleanPath === '/reports' && ((isPrincipal || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
             {cleanPath === '/documents' && ((isPrincipal || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
             {cleanPath === '/import-export' && ((isPrincipal || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
@@ -511,6 +511,39 @@ function AppContent() {
   );
 }
 
+
+class SafeView extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('SafeView caught sub-view error:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 bg-card border border-rose-500/20 rounded-2xl text-center space-y-3 my-4">
+          <div className="w-10 h-10 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto font-black text-lg">!</div>
+          <p className="text-sm font-bold text-text">Display update recovered</p>
+          <p className="text-xs text-text-muted">{this.state.error?.message || 'Temporary display glitch'}</p>
+          <button
+            type="button"
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold cursor-pointer transition-all"
+          >
+            Retry View
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 class RootErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -538,6 +571,7 @@ class RootErrorBoundary extends React.Component {
               <button
                 type="button"
                 onClick={() => {
+                  this.setState({ hasError: false, error: null });
                   if (typeof window !== 'undefined') {
                     window.location.href = '/dashboard';
                   }

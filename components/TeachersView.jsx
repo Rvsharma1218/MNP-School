@@ -389,17 +389,18 @@ export default function TeachersView() {
   const schoolPart = (activeSchoolId || 'school001').toLowerCase().replace(/[^a-z0-9]/g, '');
   const previewEmail = `${namePart || 'name'}.${(editingTeacher?.teacherId || nextTeacherId).toLowerCase()}@${schoolPart}.teachers`;
 
-  const totalFaculty = teachers.length;
-  const classTeachersCount = teachers.filter(t => t.assignedClass && t.assignedClass !== 'none' && t.assignedClass !== 'None').length;
+  const totalFaculty = (teachers || []).length;
+  const classTeachersCount = (teachers || []).filter(t => t && t.assignedClass && t.assignedClass !== 'none' && t.assignedClass !== 'None').length;
   const subjectTeachersCount = totalFaculty - classTeachersCount;
-  const activeStaffCount = teachers.filter(t => t.active !== false && t.status !== 'inactive').length;
+  const activeStaffCount = (teachers || []).filter(t => t && t.active !== false && t.status !== 'inactive').length;
 
-  const availableClasses = settings.classes || settings.schoolClasses || [
+  const availableClasses = settings?.classes || settings?.schoolClasses || [
     'Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th',
     '6th', '7th', '8th', '9th', '10th', '11th-Sci', '12th-Sci'
   ];
 
-  const filteredTeachers = teachers.filter(t => {
+  const filteredTeachers = (teachers || []).filter(t => {
+    if (!t) return false;
     // 1. Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -477,7 +478,7 @@ export default function TeachersView() {
           {teachers.length > 0 && (
             <>
               <button
-                onClick={() => exportFacultyToExcel(teachers, settings.instituteName || 'School')}
+                onClick={() => exportFacultyToExcel(teachers, settings?.instituteName || 'School')}
                 className="px-3 py-2 rounded-xl bg-surface2 hover:bg-border text-text font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                 title="Export Faculty List to Excel"
               >
@@ -485,7 +486,7 @@ export default function TeachersView() {
                 <span className="hidden sm:inline">Export Excel</span>
               </button>
               <button
-                onClick={() => exportFacultyPDF(teachers, settings)}
+                onClick={() => exportFacultyPDF(teachers, settings || {})}
                 className="px-3 py-2 rounded-xl bg-surface2 hover:bg-border text-text font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                 title="Export Faculty List to PDF"
               >
