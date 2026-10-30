@@ -184,7 +184,7 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children:
+        children: [
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Icon(icon, size: 18, color: cs.onSurfaceVariant),
