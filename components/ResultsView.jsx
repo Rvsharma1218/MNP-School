@@ -84,15 +84,24 @@ export default function ResultsView() {
   const findStudent = (r) => {
     if (!r) return null;
     const rId = (r.studentId ? String(r.studentId) : '').trim().toLowerCase();
+    const rRoll = (r.rollNumber ? String(r.rollNumber) : '').trim().toLowerCase();
     const rName = (r.studentName ? String(r.studentName) : '').trim().toLowerCase();
+    const rClass = (r.className || r.class || r.studentClass || '').trim().toLowerCase();
     return students.find(s => {
-      if (rId) {
-        if (s.id && String(s.id).trim().toLowerCase() === rId) return true;
-        if (s.studentId && String(s.studentId).trim().toLowerCase() === rId) return true;
-        if (s.admissionNumber && String(s.admissionNumber).trim().toLowerCase() === rId) return true;
-        if (s.admissionNo && String(s.admissionNo).trim().toLowerCase() === rId) return true;
+      const sId = (s.id ? String(s.id) : '').trim().toLowerCase();
+      const sStuId = (s.studentId ? String(s.studentId) : '').trim().toLowerCase();
+      const sAdm = (s.admissionNumber || s.admissionNo ? String(s.admissionNumber || s.admissionNo) : '').trim().toLowerCase();
+      const sRoll = (s.rollNumber ? String(s.rollNumber) : '').trim().toLowerCase();
+      const sName = (s.name ? String(s.name) : '').trim().toLowerCase();
+      const sClass = (s.className || s.course || '').trim().toLowerCase();
+
+      if (rId && (rId === sId || rId === sStuId || rId === sAdm)) return true;
+      if (rName && sName && rName === sName) {
+        if (!rRoll || !sRoll || rRoll === sRoll) return true;
       }
-      if (rName && s.name && String(s.name).trim().toLowerCase() === rName) return true;
+      if (rRoll && sRoll && rRoll === sRoll) {
+        if (!rClass || !sClass || rClass === sClass) return true;
+      }
       return false;
     }) || null;
   };
@@ -138,9 +147,10 @@ export default function ResultsView() {
   // Teacher accessible results overall (for total counters and badge counts)
   const scopedResults = useMemo(() => {
     return results.filter(r => {
+      if (isPrincipal || hasAllClassesAccess) return true;
       const student = findStudent(r);
-      const studentClass = student?.className || student?.course || r.className || r.class || '';
-      return isPrincipal || hasAllClassesAccess || canAccessClass(studentClass);
+      const studentClass = student?.className || student?.course || r.className || r.class || r.studentClass || '';
+      return canAccessClass(studentClass);
     });
   }, [results, students, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
@@ -263,7 +273,15 @@ export default function ResultsView() {
   // ─────────────────────────────────────────────────────────────
   const [selectedExamId, setSelectedExamId] = useState('');
   const [bulkExamTitle, setBulkExamTitle] = useState('Term Examination 2026');
-  const [bulkClass, setBulkClass] = useState(isPrincipal ? (settings.schoolClasses?.[0] || '10th') : assignedClass);
+  const [bulkClass, setBulkClass] = useState('All Classes');
+
+  useEffect(() => {
+    if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0) {
+      if (bulkClass !== 'All Classes' && !allowedClasses.includes(bulkClass)) {
+        setBulkClass(allowedClasses[0]);
+      }
+    }
+  }, [isPrincipal, hasAllClassesAccess, allowedClasses, bulkClass]);
   const [bulkPassingMarks, setBulkPassingMarks] = useState(33);
   const [isDetailedBreakdownMode, setIsDetailedBreakdownMode] = useState(false);
   const [deskStatusFilter, setDeskStatusFilter] = useState('All'); // 'All' | 'Pending' | 'Completed'
@@ -335,16 +353,19 @@ export default function ResultsView() {
   // Students in selected class
   const classStudents = useMemo(() => {
     return students.filter(s => {
-      const sClass = s.studentType === 'school' ? s.className : s.course;
+      const sClass = (s.studentType === 'school' ? s.className : s.course) || '';
+      if (!isPrincipal && !hasAllClassesAccess && !canAccessClass(sClass)) {
+        return false;
+      }
       if (!bulkClass || bulkClass === 'All Classes') return true;
-      return String(sClass || '').trim().toLowerCase() === String(bulkClass).trim().toLowerCase();
+      return String(sClass).trim().toLowerCase() === String(bulkClass).trim().toLowerCase();
     }).sort((a, b) => {
       const rA = parseInt(a.rollNumber, 10);
       const rB = parseInt(b.rollNumber, 10);
       if (!isNaN(rA) && !isNaN(rB)) return rA - rB;
       return (a.name || '').localeCompare(b.name || '');
     });
-  }, [students, bulkClass]);
+  }, [students, bulkClass, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
   // Filtered students for mark entry desk (status + search)
   const deskFilteredStudents = useMemo(() => {
@@ -1093,7 +1114,11 @@ export default function ResultsView() {
                   onChange={(e) => setBulkClass(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-indigo-950 focus:outline-hidden focus:border-indigo-500"
                 >
-                  <option value="All Classes">All Classes ({students.length})</option>
+                  <option value="All Classes">
+                    {isPrincipal || hasAllClassesAccess
+                      ? `All Classes (${students.length})`
+                      : `All Assigned Classes (${students.filter(s => canAccessClass(s.className || s.course)).length})`}
+                  </option>
                   {availableClasses.map(c => {
                     const cCount = students.filter(s => (s.className === c || s.course === c)).length;
                     return (

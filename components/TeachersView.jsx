@@ -380,7 +380,7 @@ export default function TeachersView() {
   };
 
   // Preview generated email in the modal
-  const nextTeacherId = getNextTeacherId(teachers);
+  const nextTeacherId = getNextTeacherId(teachers, settings?.instituteName || settings?.schoolName);
   const namePart = (formData.name || '')
     .trim()
     .toLowerCase()

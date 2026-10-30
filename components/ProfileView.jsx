@@ -103,9 +103,13 @@ export default function ProfileView() {
   return (
     <div className="space-y-6 pb-12 max-w-4xl animate-in fade-in duration-200">
       <div>
-        <h2 className="text-xl lg:text-2xl font-bold text-text tracking-tight">My Profile & Account</h2>
+        <h2 className="text-xl lg:text-2xl font-bold text-text tracking-tight">
+          {currentUser.role === 'principal' ? 'My Profile & Account' : 'Faculty Profile & Account'}
+        </h2>
         <p className="text-xs text-text-secondary mt-0.5 font-medium font-sans">
-          Manage your Principal display name and security credentials.
+          {currentUser.role === 'principal'
+            ? 'Manage your Principal display name and security credentials.'
+            : 'Manage your Faculty profile and security credentials.'}
         </p>
       </div>
 
@@ -176,13 +180,13 @@ export default function ProfileView() {
           <div className="bg-white border border-border rounded-2xl p-6 shadow-sm space-y-4">
             <h3 className="font-bold text-base text-text flex items-center gap-2 border-b border-border pb-2">
               <User className="w-5 h-5 text-primary" />
-              <span>{currentUser.role === 'principal' ? "Principal's Full Name" : 'Display Name'}</span>
+              <span>{currentUser.role === 'principal' ? "Principal's Full Name" : 'Faculty Display Name'}</span>
             </h3>
 
             <form onSubmit={handleUpdateName} className="space-y-3 text-xs font-semibold text-text-secondary">
               <div>
                 <label className="block mb-1 text-text font-bold">
-                  {currentUser.role === 'principal' ? 'Principal Name (Shown on header, reports & notices)' : 'Your Name'}
+                  {currentUser.role === 'principal' ? 'Principal Name (Shown on header, reports & notices)' : 'Faculty Full Name'}
                 </label>
                 <input
                   type="text"
