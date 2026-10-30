@@ -393,6 +393,7 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
   const rawCls = (Array.isArray(raw) ? raw.join(', ') : (typeof raw === 'string' ? raw : (raw != null ? String(raw) : ''))).trim();
   const lower = rawCls.toLowerCase();
   const isAllClasses = !rawCls || lower === 'all' || lower === 'all classes';
+  const isClassTeacher = !isAllClasses && rawCls !== 'none' && rawCls !== 'None';
   const roleLabel = isAllClasses
     ? 'Faculty Member (All Classes Access)'
     : `Class Teacher: Class ${rawCls}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`;
