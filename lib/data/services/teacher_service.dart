@@ -215,7 +215,23 @@ class TeacherService {
     return List.generate(8, (_) => chars[rnd.nextInt(chars.length)]).join();
   }
 
-  Future<String> getNextSequentialTeacherId(String schoolUid) async {
+  static String getSchoolCode(String schoolName) {
+    final clean = schoolName.trim();
+    if (clean.isEmpty) return 'SCH';
+    final stopwords = {'of', 'the', 'and', '&', 'in', 'at', 'for'};
+    final words = clean.split(RegExp(r'[\s\-_\/]+')).where((w) => w.isNotEmpty && !stopwords.contains(w.toLowerCase())).toList();
+    if (words.length >= 2) {
+      final acronym = words.map((w) => w.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')).where((w) => w.isNotEmpty).map((w) => w[0].toUpperCase()).join();
+      if (acronym.length >= 2) {
+        return acronym.length > 5 ? acronym.substring(0, 5) : acronym;
+      }
+    }
+    final single = clean.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
+    return single.length >= 3 ? (single.length > 4 ? single.substring(0, 4) : single) : (single.isNotEmpty ? single : 'SCH');
+  }
+
+  Future<String> getNextSequentialTeacherId(String schoolUid, [String? schoolName]) async {
+    final prefix = getSchoolCode(schoolName ?? '');
     try {
       final snap = await _teachersCol(schoolUid).get();
       int maxSeq = 0;
@@ -224,7 +240,7 @@ class TeacherService {
         final docId = doc.id;
         final tId = (data['teacherId'] as String?) ?? (data['id'] as String?) ?? docId;
         
-        final match = RegExp(r'T(?:CH)?(\d+)', caseSensitive: false).firstMatch(tId);
+        final match = RegExp(r'(?:_T|T(?:CH)?|-T)?(\d+)$', caseSensitive: false).firstMatch(tId);
         if (match != null && match.group(1) != null) {
           final n = int.tryParse(match.group(1)!);
           if (n != null && n > maxSeq) {
@@ -232,9 +248,9 @@ class TeacherService {
           }
         }
       }
-      return 'T${(maxSeq + 1).toString().padLeft(3, '0')}';
+      return '${prefix}_T${(maxSeq + 1).toString().padLeft(3, '0')}';
     } catch (_) {
-      return 'T001';
+      return '${prefix}_T001';
     }
   }
 
@@ -283,8 +299,9 @@ class TeacherService {
     double? salary,
     String? photoUrl,
     String? aadhaarDocUrl,
+    String? schoolName,
   }) async {
-    final teacherId = await getNextSequentialTeacherId(schoolUid);
+    final teacherId = await getNextSequentialTeacherId(schoolUid, schoolName);
     final effectiveSchoolEmail = schoolEmail.isNotEmpty ? schoolEmail : '${schoolUid.toLowerCase()}@school.com';
     
     // Format: firstname.teacherid@schoolid.teachers

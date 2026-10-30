@@ -91,8 +91,6 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
       final teacherClass = SessionService.instance.assignedClass;
       if (widget.initialClass != null && _availableClasses.contains(widget.initialClass)) {
         _selectedClass = widget.initialClass!;
-      } else if (isTeacher && teacherClass != null && _availableClasses.contains(teacherClass.trim())) {
-        _selectedClass = teacherClass.trim();
       } else if (widget.initialExam?.className.isNotEmpty == true && _availableClasses.contains(widget.initialExam!.className)) {
         _selectedClass = widget.initialExam!.className;
       } else {

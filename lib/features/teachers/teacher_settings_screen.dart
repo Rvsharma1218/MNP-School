@@ -181,18 +181,29 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
   Widget _infoRow(BuildContext context, IconData icon, String label, String value) {
     final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        children: [
-          Icon(icon, size: 18, color: cs.onSurfaceVariant),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children:
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, size: 18, color: cs.onSurfaceVariant),
+          ),
           const SizedBox(width: 10),
-          Text(label, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, fontWeight: FontWeight.w500)),
-          const Spacer(),
-          Flexible(
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, fontWeight: FontWeight.w500),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
             child: Text(
               value,
               textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
+              softWrap: true,
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface),
             ),
           ),

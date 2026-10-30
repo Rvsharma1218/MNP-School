@@ -152,10 +152,9 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
     final formKey = GlobalKey<FormState>();
     bool saving = false;
 
-    final schoolUid = _schoolUid ?? 'SCHOOL_001';
-    final nextSeqTeacherId = await TeacherService.instance.getNextSequentialTeacherId(schoolUid);
-
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+    final schoolUid = _schoolUid ?? 'SCHOOL_001';
+    final nextSeqTeacherId = await TeacherService.instance.getNextSequentialTeacherId(schoolUid, settings.instituteName);
     final availableClasses = <String>{...settings.schoolClasses, ...settings.computerCourses}.toList();
     final availableSections = settings.sections.isNotEmpty ? settings.sections : ['A', 'B', 'C', 'D'];
 
@@ -554,7 +553,8 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                     salary: salVal,
                                     photoUrl: photoUrl,
                                     aadhaarDocUrl: aadhaarDocUrl,
-                                  );
+                                  schoolName: settings.instituteName,
+                                );
 
                                   _teacherSalaries[newT.teacherId] = salVal;
                                   try {

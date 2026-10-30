@@ -66,6 +66,18 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       final s = _studentLookup[rName];
       if (s != null) return s;
     }
+    final rRoll = (r.rollNumber ?? '').trim().toLowerCase();
+    if (rRoll.isNotEmpty) {
+      final rClass = (r.className ?? '').trim().toLowerCase();
+      final match = _students.where((s) {
+        final sRoll = (s.rollNumber ?? '').trim().toLowerCase();
+        if (sRoll != rRoll) return false;
+        final sClass = (s.className ?? s.course ?? '').trim().toLowerCase();
+        if (rClass.isNotEmpty && sClass.isNotEmpty && rClass != sClass) return false;
+        return true;
+      }).firstOrNull;
+      if (match != null) return match;
+    }
     return null;
   }
 
