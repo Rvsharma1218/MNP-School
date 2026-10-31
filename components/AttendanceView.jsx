@@ -33,6 +33,7 @@ export default function AttendanceView() {
     teacherPunchIns,
     punchInTeacherGeofence,
     canAccessClass, allowedClasses, hasAllClassesAccess, isTeacher,
+    holidays = {}, declareHoliday, deleteHoliday, getHolidayInfo,
     showToast
   } = useSchoolStore();
 
@@ -58,6 +59,11 @@ export default function AttendanceView() {
 
   const [activeTab, setActiveTab] = useState('daily'); // default directly to daily register for teacher ease
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isDeclareHolidayOpen, setIsDeclareHolidayOpen] = useState(false);
+  const [holidayDate, setHolidayDate] = useState(new Date().toISOString().split('T')[0]);
+  const [holidayTitle, setHolidayTitle] = useState('');
+  const [holidayReason, setHolidayReason] = useState('');
+  const [holidayType, setHolidayType] = useState('declared');
   const [selectedType, setSelectedType] = useState('all'); // 'all' | 'school' | 'computer'
   const [selectedClass, setSelectedClass] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,6 +119,7 @@ export default function AttendanceView() {
 
   // Daily records for selected date
   const dayAttendance = attendance[selectedDate] || {};
+  const holidayInfo = getHolidayInfo ? getHolidayInfo(selectedDate, holidays) : null;
 
   // Scoped accessible students for attendance
   const accessibleStudents = React.useMemo(() => {
@@ -160,7 +167,8 @@ export default function AttendanceView() {
   let totalAllPresents = 0;
 
   if (students.length > 0) {
-    Object.values(attendance).forEach(dayMap => {
+    Object.entries(attendance).forEach(([dateStr, dayMap]) => {
+      if (getHolidayInfo && getHolidayInfo(dateStr, holidays)?.isHoliday) return;
       Object.entries(dayMap).forEach(([stuId, status]) => {
         if (activeStudentIdSet.has(stuId)) {
           totalAllLogs++;
@@ -685,52 +693,62 @@ export default function AttendanceView() {
                             {t.mobile || '—'}
                           </td>
                           <td className="py-3 px-4 text-center">
-                            <div className="inline-flex items-center gap-1.5 p-1 bg-surface2 rounded-xl border border-border">
-                              <button
-                                type="button"
-                                onClick={() => setLocalTeacherStatus(prev => ({ ...prev, [tKey]: 'present' }))}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                  status === 'present'
-                                    ? 'bg-emerald-600 text-white shadow-2xs'
-                                    : 'text-slate-600 hover:bg-white'
-                                }`}
-                              >
-                                Present
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setLocalTeacherStatus(prev => ({ ...prev, [tKey]: 'absent' }))}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                  status === 'absent'
-                                    ? 'bg-rose-600 text-white shadow-2xs'
-                                    : 'text-slate-600 hover:bg-white'
-                                }`}
-                              >
-                                Absent
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setLocalTeacherStatus(prev => ({ ...prev, [tKey]: 'half_day' }))}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                  status === 'half_day'
-                                    ? 'bg-amber-600 text-white shadow-2xs'
-                                    : 'text-slate-600 hover:bg-white'
-                                }`}
-                              >
-                                Half Day
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setLocalTeacherStatus(prev => ({ ...prev, [tKey]: 'leave' }))}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                  status === 'leave'
-                                    ? 'bg-blue-600 text-white shadow-2xs'
-                                    : 'text-slate-600 hover:bg-white'
-                                }`}
-                              >
-                                Leave
-                              </button>
-                            </div>
+                            {holidayInfo ? (
+                              <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
+                                holidayInfo.isSunday
+                                  ? 'bg-amber-50 text-amber-800 border border-amber-300'
+                                  : 'bg-indigo-50 text-indigo-800 border border-indigo-300'
+                              }`}>
+                                <span>{holidayInfo.isSunday ? '☀️ Sunday Off' : `🏖️ ${holidayInfo.title}`}</span>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1.5 p-1 bg-surface2 rounded-xl border border-border">
+                                <button
+                                  type="button"
+                                  onClick={() => setLocalTeacherStatus(prev => ({ ...prev, [tKey]: 'present' }))}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    status === 'present'
+                                      ? 'bg-emerald-600 text-white shadow-2xs'
+                                      : 'text-slate-600 hover:bg-white'
+                                  }`}
+                                >
+                                  Present
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setLocalTeacherStatus(prev => ({ ...prev, [tKey]: 'absent' }))}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    status === 'absent'
+                                      ? 'bg-rose-600 text-white shadow-2xs'
+                                      : 'text-slate-600 hover:bg-white'
+                                  }`}
+                                >
+                                  Absent
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setLocalTeacherStatus(prev => ({ ...prev, [tKey]: 'half_day' }))}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    status === 'half_day'
+                                      ? 'bg-amber-600 text-white shadow-2xs'
+                                      : 'text-slate-600 hover:bg-white'
+                                  }`}
+                                >
+                                  Half Day
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setLocalTeacherStatus(prev => ({ ...prev, [tKey]: 'leave' }))}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    status === 'leave'
+                                      ? 'bg-blue-600 text-white shadow-2xs'
+                                      : 'text-slate-600 hover:bg-white'
+                                  }`}
+                                >
+                                  Leave
+                                </button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       );
@@ -817,8 +835,66 @@ export default function AttendanceView() {
               >
                 Save Register
               </button>
+
+              {/* Holiday Note button */}
+              {isPrincipal && !holidayInfo && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHolidayDate(selectedDate);
+                    setHolidayTitle('');
+                    setHolidayReason('');
+                    setIsDeclareHolidayOpen(true);
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
+                  title="Mark this date as School Closed / Holiday with a reason"
+                >
+                  <span>🏖️ Note Holiday / छुट्टी</span>
+                </button>
+              )}
+
+              {isPrincipal && holidayInfo?.isCustom && (
+                <button
+                  type="button"
+                  onClick={() => deleteHoliday && deleteHoliday(selectedDate)}
+                  className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
+                  title="Remove custom holiday for this date"
+                >
+                  <span>❌ Remove Holiday</span>
+                </button>
+              )}
             </div>
           </div>
+
+          {/* SUNDAY / HOLIDAY BANNER */}
+          {holidayInfo && (
+            <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in ${
+              holidayInfo.isSunday
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-200'
+                : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-950 dark:text-indigo-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 ${
+                  holidayInfo.isSunday ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
+                }`}>
+                  {holidayInfo.isSunday ? '☀️' : '🏖️'}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold flex items-center gap-2">
+                    <span>{holidayInfo.title}</span>
+                    <span className={`text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-md ${
+                      holidayInfo.isSunday ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300' : 'bg-indigo-500/20 text-indigo-800 dark:text-indigo-300'
+                    }`}>
+                      {holidayInfo.isSunday ? 'Weekly Off (साप्ताहिक अवकाश)' : (holidayInfo.type === 'festival' ? 'Festival Holiday' : 'School Closed')}
+                    </span>
+                  </h4>
+                  <p className="text-xs opacity-85 mt-0.5">
+                    Kaaran / Reason: <strong>{holidayInfo.reason}</strong> &nbsp;·&nbsp; Regular classes suspended. Excluded from working days (Attendance % safe).
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Student attendance table */}
           <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col">
@@ -859,6 +935,15 @@ export default function AttendanceView() {
                           <td className="py-3.5 px-4 text-text-secondary">{s.studentType === 'school' ? `Class ${s.className}` : s.course}</td>
                           <td className="py-3.5 px-4 font-mono">{s.rollNumber || '-'}</td>
                           <td className="py-3.5 px-4 text-center">
+                            {holidayInfo ? (
+                              <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
+                                holidayInfo.isSunday
+                                  ? 'bg-amber-50 text-amber-800 border border-amber-300'
+                                  : 'bg-indigo-50 text-indigo-800 border border-indigo-300'
+                              }`}>
+                                <span>{holidayInfo.isSunday ? '☀️ Sunday Off' : `🏖️ ${holidayInfo.title}`}</span>
+                              </div>
+                            ) : (
                             <div className="inline-flex items-center gap-1.5 p-1 bg-surface2 rounded-xl border border-border">
                               <button
                                 onClick={() => markStudentAttendance(s.id, selectedDate, 'present')}
@@ -893,6 +978,7 @@ export default function AttendanceView() {
                                 Leave
                               </button>
                             </div>
+                            )}
                           </td>
                           <td className="py-3.5 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
@@ -972,6 +1058,121 @@ export default function AttendanceView() {
             >
               Close Window
             </button>
+          </div>
+        </div>
+      )}
+      {/* DECLARE SCHOOL HOLIDAY MODAL */}
+      {isDeclareHolidayOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white border border-border rounded-2xl w-full max-w-md p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🏖️</span>
+                <h3 className="font-bold text-base text-text">Declare School Holiday / छुट्टी नोट करें</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeclareHolidayOpen(false)}
+                className="p-1 rounded-lg hover:bg-surface2 text-text-muted"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!holidayTitle.trim()) {
+                  showToast('Please enter holiday name/title', 'error');
+                  return;
+                }
+                if (declareHoliday) {
+                  await declareHoliday({
+                    date: holidayDate,
+                    title: holidayTitle.trim(),
+                    reason: holidayReason.trim() || 'School Closed',
+                    type: holidayType
+                  });
+                }
+                setIsDeclareHolidayOpen(false);
+              }}
+              className="space-y-3.5 text-xs font-semibold text-text-secondary"
+            >
+              <div>
+                <label className="block mb-1 text-text font-bold">Holiday Date (तारीख)</label>
+                <input
+                  type="date"
+                  required
+                  value={holidayDate}
+                  onChange={e => setHolidayDate(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface2 border border-border text-text font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-text font-bold">Holiday Name / Festival (छुट्टी का नाम)</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Diwali Break, Heavy Rain Alert, Winter Vacation"
+                  value={holidayTitle}
+                  onChange={e => setHolidayTitle(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface2 border border-border text-text font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-text font-bold">Cause / Reason (छुट्टी का कारण / आदेश)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. DM Order / Heavy Rain / Festival Celebration"
+                  value={holidayReason}
+                  onChange={e => setHolidayReason(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface2 border border-border text-text"
+                />
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div>
+                <label className="block mb-1 text-[11px] text-text-muted">Quick Presets (जल्दी चुनें):</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { t: 'Heavy Rain Alert', r: 'DM Order / Severe Weather' },
+                    { t: 'Winter Vacation', r: 'Severe Cold Wave' },
+                    { t: 'Local Election', r: 'District Administration Order' },
+                    { t: 'Annual Sports Day Off', r: 'Post-Sports Celebration' }
+                  ].map(p => (
+                    <button
+                      key={p.t}
+                      type="button"
+                      onClick={() => {
+                        setHolidayTitle(p.t);
+                        setHolidayReason(p.r);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-surface2 hover:bg-border text-[11px] font-bold text-text-secondary transition-colors"
+                    >
+                      {p.t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsDeclareHolidayOpen(false)}
+                  className="px-4 py-2 rounded-xl hover:bg-surface2 text-text font-bold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-md"
+                >
+                  Save Holiday / दर्ज करें
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
