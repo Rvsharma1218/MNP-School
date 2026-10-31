@@ -26,7 +26,6 @@ class DatabaseService {
   List<ResultModel>? _cachedResults;
   List<ExamModel>? _cachedExams;
   Map<String, FeeModel>? _cachedFeesMap;
-  int? _cachedStudentCount;
   Map<String, int>? _cachedTodayAttendance;
 
   void clearMemoryCache() {
@@ -34,7 +33,6 @@ class DatabaseService {
     _cachedResults = null;
     _cachedExams = null;
     _cachedFeesMap = null;
-    _cachedStudentCount = null;
     _cachedTodayAttendance = null;
   }
 
@@ -2722,7 +2720,7 @@ CREATE TABLE monthly_fees (
     final toStr = to.toIso8601String().substring(0, 10);
     final rows = await db.rawQuery('''
       SELECT studentId,
-        COUNT(*) as total,
+        COUNT(CASE WHEN status != 'holiday' THEN 1 END) as total,
         SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present,
         SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent,
         SUM(CASE WHEN status = 'leave' THEN 1 ELSE 0 END) as leaveCount
@@ -3185,7 +3183,7 @@ CREATE TABLE monthly_fees (
     final db = await database;
     final rows = await db.rawQuery('''
       SELECT studentId,
-        COUNT(*) as total,
+        COUNT(CASE WHEN status != 'holiday' THEN 1 END) as total,
         SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present,
         SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent,
         SUM(CASE WHEN status = 'leave' THEN 1 ELSE 0 END) as leaveCount

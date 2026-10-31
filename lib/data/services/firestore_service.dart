@@ -86,6 +86,92 @@ class FirestoreService {
   CollectionReference? get _results => _root?.collection('results');
   DocumentReference? get _schoolSettings => _root?.collection('settings').doc('school');
   DocumentReference? get _configSettings => _root?.collection('settings').doc('config');
+  CollectionReference? get _holidays => _root?.collection('holidays');
+
+  // ─── Holidays ─────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> fetchHolidays() async {
+    final cached = await _loadCachedHolidays();
+    if (!_enabled || _holidays == null) {
+      return cached;
+    }
+    try {
+      final snap = await _holidays!.get();
+      final map = <String, dynamic>{};
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        if (data is Map) {
+          map[doc.id] = Map<String, dynamic>.from(data);
+        }
+      }
+      await _cacheHolidays(map);
+      return map;
+    } catch (e) {
+      debugPrint('[Firestore] fetchHolidays note: $e');
+      return cached;
+    }
+  }
+
+  Future<void> declareHoliday({
+    required String date,
+    required String title,
+    required String reason,
+    String type = 'declared',
+    String? declaredBy,
+  }) async {
+    final payload = {
+      'date': date,
+      'title': title,
+      'reason': reason,
+      'type': type,
+      'declaredBy': declaredBy ?? 'Principal',
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+    final cached = await _loadCachedHolidays();
+    cached[date] = payload;
+    await _cacheHolidays(cached);
+
+    if (_holidays != null) {
+      try {
+        await _holidays!.doc(date).set(payload, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('[Firestore] declareHoliday remote error: $e');
+      }
+    }
+  }
+
+  Future<void> deleteHoliday(String date) async {
+    final cached = await _loadCachedHolidays();
+    cached.remove(date);
+    await _cacheHolidays(cached);
+
+    if (_holidays != null) {
+      try {
+        await _holidays!.doc(date).delete();
+      } catch (e) {
+        debugPrint('[Firestore] deleteHoliday remote error: $e');
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> _loadCachedHolidays() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('cached_holidays_map') ?? '{}';
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  Future<void> _cacheHolidays(Map<String, dynamic> holidays) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_holidays_map', jsonEncode(holidays));
+    } catch (_) {}
+  }
 
   // ─── Real-time Streams (Firestore → App) ────────────────────────────────
 
