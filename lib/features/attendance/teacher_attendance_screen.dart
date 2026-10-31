@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_utils.dart';
+import '../../core/utils/holiday_utils.dart';
 import '../../data/models/teacher_model.dart';
 import '../../data/services/auth_service.dart';
+import '../../data/services/firestore_service.dart';
 import '../../data/services/session_service.dart';
 import '../../data/services/teacher_service.dart';
 
@@ -20,9 +22,13 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
   DateTime _selectedDate = DateTime.now();
   List<TeacherModel> _teachers = [];
   Map<String, String> _statusMap = {}; // teacherId -> 'present' | 'absent' | 'half_day' | 'leave'
+  Map<String, dynamic> _customHolidays = {};
   bool _loading = true;
   bool _saving = false;
   String? _schoolUid;
+
+  HolidayInfo? get _currentHoliday =>
+      HolidayUtils.getHolidayInfo(_selectedDate, _customHolidays);
 
   String get _dateStr => DateFormat('yyyy-MM-dd').format(_selectedDate);
 
@@ -41,6 +47,11 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
       final user = AuthService.instance.currentUser;
       _schoolUid = user?.uid;
     }
+
+    try {
+      final holidays = await FirestoreService.instance.fetchHolidays();
+      if (mounted) _customHolidays = holidays;
+    } catch (_) {}
 
     if (_schoolUid != null && _schoolUid!.isNotEmpty) {
       try {
@@ -74,6 +85,11 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
   }
 
   Future<void> _loadAttendanceForDate() async {
+    try {
+      final holidays = await FirestoreService.instance.fetchHolidays();
+      if (mounted) setState(() => _customHolidays = holidays);
+    } catch (_) {}
+
     if (_schoolUid == null || _schoolUid!.isEmpty) return;
     try {
       final snap = await FirebaseFirestore.instance
@@ -125,7 +141,7 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
+      lastDate: DateTime(2030),
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
@@ -134,6 +150,7 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
   }
 
   Future<void> _saveAttendance() async {
+    if (_currentHoliday != null) return;
     if (_schoolUid == null || _schoolUid!.isEmpty) {
       _schoolUid = SessionService.instance.activeSchoolUid;
       if (_schoolUid!.isEmpty) {
@@ -204,6 +221,242 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
     }
   }
 
+  void _showHolidayDialog() {
+    final cur = _currentHoliday;
+    final isCustom = cur?.isCustom == true;
+    final titleCtrl = TextEditingController(text: isCustom ? cur!.title : '');
+    final reasonCtrl = TextEditingController(text: isCustom ? cur!.reason : '');
+    final dateStr = AppUtils.formatDate(_selectedDate);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Text('🏖️ ', style: TextStyle(fontSize: 22)),
+              Expanded(
+                child: Text(
+                  cur != null ? 'अवकाश विवरण (Holiday Info)' : 'स्कूल अवकाश दर्ज करें (Declare Holiday)',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_month, size: 18, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'दिनांक: $dateStr',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (cur != null && !isCustom) ...[
+                  Text(
+                    cur.title,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'कारण: ${cur.reason}',
+                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'नोट: यह दिन स्वतः अवकाश (Weekly Off / Calendar Holiday) है। छात्र व शिक्षक दोनों की उपस्थिति प्रभावित नहीं होगी।',
+                    style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
+                  ),
+                ] else ...[
+                  const Text('अवकाश का नाम / शीर्षक:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: titleCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'उदा. भारी बारिश / DM आदेश',
+                      isDense: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      'भारी बारिश (Heavy Rain)',
+                      'DM आदेश (District Order)',
+                      'शीतकालीन अवकाश (Winter Break)',
+                      'स्थानीय त्योहार (Local Festival)',
+                    ].map((opt) => ActionChip(
+                      label: Text(opt, style: const TextStyle(fontSize: 10)),
+                      onPressed: () {
+                        setDlgState(() {
+                          titleCtrl.text = opt;
+                          reasonCtrl.text = 'Declared due to $opt';
+                        });
+                      },
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('कारण / Cause (Reason):', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: reasonCtrl,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'अवकाश का कारण लिखें (जैसे: जलभराव या प्रशासनिक आदेश)',
+                      isDense: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            if (isCustom)
+              TextButton(
+                onPressed: () async {
+                  final key = DateFormat('yyyy-MM-dd').format(_selectedDate);
+                  Navigator.pop(ctx);
+                  await FirestoreService.instance.deleteHoliday(key);
+                  final holidays = await FirestoreService.instance.fetchHolidays();
+                  if (mounted) {
+                    setState(() => _customHolidays = holidays);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('छुट्टी हटा दी गई है')),
+                    );
+                  }
+                },
+                child: const Text('छुट्टी हटाएं', style: TextStyle(color: Colors.red)),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('बंद करें'),
+            ),
+            if (cur == null || isCustom)
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () async {
+                  final title = titleCtrl.text.trim();
+                  if (title.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('कृपया अवकाश का शीर्षक लिखें')),
+                    );
+                    return;
+                  }
+                  final key = DateFormat('yyyy-MM-dd').format(_selectedDate);
+                  final reason = reasonCtrl.text.trim().isNotEmpty
+                      ? reasonCtrl.text.trim()
+                      : 'School Holiday';
+                  Navigator.pop(ctx);
+                  await FirestoreService.instance.declareHoliday(
+                    date: key,
+                    title: title,
+                    reason: reason,
+                  );
+                  final holidays = await FirestoreService.instance.fetchHolidays();
+                  if (mounted) {
+                    setState(() => _customHolidays = holidays);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('छुट्टी दर्ज की गई: $title (छात्र व शिक्षक दोनों उपस्थिति में लागू)'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('सेव करें (Save)'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHolidayBanner(HolidayInfo holiday) {
+    final isSunday = holiday.isSunday;
+    final bg = isSunday ? const Color(0xFFFFFBEB) : const Color(0xFFEEF2FF);
+    final border = isSunday ? const Color(0xFFFDE68A) : const Color(0xFFC7D2FE);
+    final textCol = isSunday ? const Color(0xFF92400E) : const Color(0xFF3730A3);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          Text(isSunday ? '☀️' : '🏖️', style: const TextStyle(fontSize: 22)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  holiday.title,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textCol),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'कारण (Cause): ${holiday.reason} • आज स्कूल बंद है (Working day नहीं गिना जाएगा)',
+                  style: TextStyle(fontSize: 11, color: textCol.withValues(alpha: 0.9)),
+                ),
+              ],
+            ),
+          ),
+          if (holiday.isCustom && SessionService.instance.isPrincipal)
+            TextButton(
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('छुट्टी हटाएं?'),
+                    content: Text('क्या आप ${holiday.dateKey} की छुट्टी हटाना चाहते हैं?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('नहीं')),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('हटाएं', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await FirestoreService.instance.deleteHoliday(holiday.dateKey);
+                  final holidays = await FirestoreService.instance.fetchHolidays();
+                  if (mounted) setState(() => _customHolidays = holidays);
+                }
+              },
+              child: const Text('हटाएं', style: TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -225,6 +478,14 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: Icon(
+              _currentHoliday != null ? Icons.beach_access_rounded : Icons.event_busy_outlined,
+              color: _currentHoliday != null ? Colors.amberAccent : Colors.white,
+            ),
+            tooltip: _currentHoliday != null ? 'Holiday Active: ${_currentHoliday!.title}' : 'Note Holiday / अवकाश दर्ज करें',
+            onPressed: _showHolidayDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_today_rounded),
             onPressed: _pickDate,
@@ -269,8 +530,42 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
                   ),
                 ),
 
-                // Quick Action All
-                if (_teachers.isNotEmpty)
+                // 🏖️ Holiday Banner
+                if (_currentHoliday != null) _buildHolidayBanner(_currentHoliday!),
+
+                // Quick Action All / Holiday Status
+                if (_currentHoliday != null)
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _currentHoliday!.isSunday ? const Color(0xFFFEF3C7) : const Color(0xFFE0E7FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _currentHoliday!.isSunday ? Icons.wb_sunny_rounded : Icons.beach_access_rounded,
+                          size: 16,
+                          color: _currentHoliday!.isSunday ? const Color(0xFF92400E) : const Color(0xFF3730A3),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _currentHoliday!.isSunday
+                                ? 'आज रविवार (साप्ताहिक अवकाश) है — उपस्थिति दर्ज करने की आवश्यकता नहीं है।'
+                                : 'आज ${_currentHoliday!.title} है — स्कूल बंद है। स्टाफ व छात्रों दोनों के लिए अवकाश मान्य है।',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: _currentHoliday!.isSunday ? const Color(0xFF92400E) : const Color(0xFF3730A3),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (_teachers.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
@@ -373,18 +668,35 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
                                       ],
                                     ),
                                   ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _buildStatusBtn('P', 'present', status, const Color(0xFF10B981), key),
-                                      const SizedBox(width: 4),
-                                      _buildStatusBtn('A', 'absent', status, const Color(0xFFEF4444), key),
-                                      const SizedBox(width: 4),
-                                      _buildStatusBtn('HD', 'half_day', status, Colors.purple, key),
-                                      const SizedBox(width: 4),
-                                      _buildStatusBtn('L', 'leave', status, const Color(0xFFF59E0B), key),
-                                    ],
-                                  ),
+                                  if (_currentHoliday != null)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: _currentHoliday!.isSunday ? const Color(0xFFFEF3C7) : const Color(0xFFE0E7FF),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        _currentHoliday!.isSunday ? '☀️ Sunday Off' : '🏖️ Holiday Off',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: _currentHoliday!.isSunday ? const Color(0xFF92400E) : const Color(0xFF3730A3),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        _buildStatusBtn('P', 'present', status, const Color(0xFF10B981), key),
+                                        const SizedBox(width: 4),
+                                        _buildStatusBtn('A', 'absent', status, const Color(0xFFEF4444), key),
+                                        const SizedBox(width: 4),
+                                        _buildStatusBtn('HD', 'half_day', status, Colors.purple, key),
+                                        const SizedBox(width: 4),
+                                        _buildStatusBtn('L', 'leave', status, const Color(0xFFF59E0B), key),
+                                      ],
+                                    ),
                                 ],
                               ),
                             );
@@ -393,15 +705,17 @@ class _TeacherAttendanceScreenState extends ConsumerState<TeacherAttendanceScree
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _saving ? null : _saveAttendance,
-        backgroundColor: const Color(0xFF10B981),
-        foregroundColor: Colors.white,
-        icon: _saving
-            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-            : const Icon(Icons.check_circle_outline),
-        label: const Text('Save Attendance', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      floatingActionButton: _currentHoliday != null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _saving ? null : _saveAttendance,
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              icon: _saving
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Icon(Icons.check_circle_outline),
+              label: const Text('Save Attendance', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
     );
   }
 
