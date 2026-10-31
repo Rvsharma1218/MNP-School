@@ -1116,7 +1116,7 @@ class FirestoreService {
   Future<List<ResultModel>> fetchResults() async {
     if (!_enabled || _results == null) return [];
     try {
-      final snap = await _results!.get();
+      final snap = await _results!.get().timeout(const Duration(seconds: 3));
       return snap.docs.map((d) {
         final data = Map<String, dynamic>.from(d.data() as Map);
         if (data['id'] == null || data['id'].toString().isEmpty) data['id'] = d.id;
@@ -1592,7 +1592,7 @@ class FirestoreService {
   Future<List<ExamModel>> fetchExamsRemote() async {
     if (!_enabled || _root == null) return [];
     try {
-      final snap = await _root!.collection('exams').get();
+      final snap = await _root!.collection('exams').get().timeout(const Duration(seconds: 3));
       return snap.docs
           .map((d) => ExamModel.fromMap(d.data()))
           .toList();

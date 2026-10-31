@@ -46,14 +46,17 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadData(forceRefresh: false);
   }
 
-  Future<void> _loadData({bool forceRefresh = true}) async {
+  Future<void> _loadData({bool forceRefresh = false}) async {
     setState(() => _loading = true);
     final db = DatabaseService.instance;
+    final cachedStudents = ref.read(studentsProvider).valueOrNull;
     final data = await Future.wait([
-      db.getAllStudents(forceRefresh: forceRefresh),
+      (cachedStudents != null && cachedStudents.isNotEmpty && !forceRefresh)
+          ? Future.value(cachedStudents)
+          : db.getAllStudents(forceRefresh: forceRefresh),
       db.getAllResults(forceRefresh: forceRefresh),
       db.getAllExams(forceRefresh: forceRefresh),
     ]);
@@ -87,8 +90,6 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
 
     // Retain selected class if already set by user or teacher assignment
     if (_selectedClass.isEmpty || !_availableClasses.contains(_selectedClass)) {
-      final isTeacher = SessionService.instance.isTeacher;
-      final teacherClass = SessionService.instance.assignedClass;
       if (widget.initialClass != null && _availableClasses.contains(widget.initialClass)) {
         _selectedClass = widget.initialClass!;
       } else if (widget.initialExam?.className.isNotEmpty == true && _availableClasses.contains(widget.initialExam!.className)) {

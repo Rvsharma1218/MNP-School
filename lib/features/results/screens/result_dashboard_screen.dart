@@ -169,7 +169,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
-    _loadDashboardData(isInitial: true, forceRefresh: true);
+    _loadDashboardData(isInitial: true, forceRefresh: false);
   }
 
   @override
@@ -178,13 +178,16 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     super.dispose();
   }
 
-  Future<void> _loadDashboardData({bool isInitial = false, bool forceRefresh = true}) async {
+  Future<void> _loadDashboardData({bool isInitial = false, bool forceRefresh = false}) async {
     if (isInitial && _exams.isEmpty && mounted) setState(() => _loading = true);
     final db = DatabaseService.instance;
+    final cachedStudents = ref.read(studentsProvider).valueOrNull;
     final data = await Future.wait([
       db.getAllExams(forceRefresh: forceRefresh),
       db.getAllResults(forceRefresh: forceRefresh),
-      db.getAllStudents(forceRefresh: forceRefresh),
+      (cachedStudents != null && cachedStudents.isNotEmpty && !forceRefresh)
+          ? Future.value(cachedStudents)
+          : db.getAllStudents(forceRefresh: forceRefresh),
     ]);
     final exams = data[0] as List<ExamModel>;
     final results = data[1] as List<ResultModel>;

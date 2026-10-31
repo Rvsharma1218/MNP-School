@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
@@ -12,7 +13,6 @@ import '../models/result_model.dart';
 import '../models/exam_model.dart';
 import '../models/settings_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/utils/image_compress_util.dart';
 import 'firestore_service.dart';
 
 class DatabaseService {
@@ -1218,6 +1218,102 @@ CREATE TABLE monthly_fees (
   }
 
   /// Bulk upserts remote monthly fees into local SQLite
+  /// Bulk upserts remote attendance records in a single fast SQLite batch
+  Future<void> bulkUpsertAttendanceFromRemote(List<AttendanceModel> records) async {
+    if (records.isEmpty) return;
+    final db = await database;
+    final students = await db.query('students', columns: ['id', 'studentId']);
+    final idMap = <String, String>{};
+    for (final s in students) {
+      final canonical = s['id']?.toString() ?? '';
+      if (canonical.isEmpty) continue;
+      idMap[canonical] = canonical;
+      final alt = s['studentId']?.toString() ?? '';
+      if (alt.isNotEmpty) idMap[alt] = canonical;
+    }
+
+    final batch = db.batch();
+    for (final record in records) {
+      final resolvedId = idMap[record.studentId] ?? record.studentId;
+      final dateStr = record.date.toIso8601String().substring(0, 10);
+      final id = record.id.isNotEmpty ? record.id : 'att_${resolvedId}_$dateStr';
+      batch.insert('attendance', {
+        'id': id,
+        'studentId': resolvedId,
+        'date': dateStr,
+        'status': record.status,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
+    _cachedTodayAttendance = null;
+  }
+
+  /// Bulk upserts remote results in a single fast SQLite batch
+  Future<void> bulkUpsertResultsFromRemote(List<ResultModel> results) async {
+    _cachedResults = null;
+    if (kIsWeb || results.isEmpty) return;
+    final db = await database;
+    try { await db.execute('ALTER TABLE results ADD COLUMN isDetailedMode INTEGER DEFAULT 0'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN remarks TEXT'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN studentName TEXT'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN className TEXT'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN rollNumber TEXT'); } catch (_) {}
+
+    final students = await db.query('students', columns: ['id', 'studentId', 'name', 'className', 'course', 'rollNumber']);
+    final studentMap = <String, Map<String, dynamic>>{};
+    for (final s in students) {
+      final id = s['id']?.toString() ?? '';
+      if (id.isNotEmpty) studentMap[id] = s;
+      final altId = s['studentId']?.toString() ?? '';
+      if (altId.isNotEmpty) studentMap[altId] = s;
+    }
+
+    final batch = db.batch();
+    for (final result in results) {
+      final matching = studentMap[result.studentId];
+      final resolvedStudentId = matching != null ? (matching['id'] as String) : result.studentId;
+      final sName = (result.studentName != null && result.studentName!.isNotEmpty)
+          ? result.studentName
+          : matching?['name'] as String?;
+      final sClass = (result.className != null && result.className!.isNotEmpty)
+          ? result.className
+          : (matching?['className'] as String? ?? matching?['course'] as String?);
+      final sRoll = (result.rollNumber != null && result.rollNumber!.isNotEmpty)
+          ? result.rollNumber
+          : matching?['rollNumber'] as String?;
+
+      final resMap = {
+        'id': result.id,
+        'studentId': resolvedStudentId,
+        'studentName': sName,
+        'className': sClass,
+        'rollNumber': sRoll,
+        'examName': result.examName,
+        'status': result.status ?? result.finalResultStatus,
+        'isDetailedMode': result.isDetailedMode ? 1 : 0,
+        'remarks': result.remarks,
+        'subjects': jsonEncode(result.subjects.map((s) => s.toMap()).toList()),
+        'createdAt': result.createdAt.toIso8601String(),
+      };
+      batch.insert('results', resMap, conflictAlgorithm: ConflictAlgorithm.replace);
+      batch.delete('subject_results', where: 'resultId = ?', whereArgs: [result.id]);
+      for (final subject in result.subjects) {
+        batch.insert('subject_results', {
+          'resultId': result.id,
+          'subjectName': subject.subjectName,
+          'marks': subject.marks,
+          'totalMarks': subject.totalMarks,
+          'passingMarks': subject.passingMarks,
+          'theoryMarks': subject.theoryMarks,
+          'practicalMarks': subject.practicalMarks,
+          'internalMarks': subject.internalMarks,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    }
+    await batch.commit(noResult: true);
+    _cachedResults = null;
+  }
+
   Future<void> bulkUpsertMonthlyFeesFromRemote(List<MonthlyFeeModel> monthlyFees) async {
     if (monthlyFees.isEmpty) return;
     final db = await database;
@@ -3247,7 +3343,10 @@ CREATE TABLE monthly_fees (
 
   /// Returns today's full attendance summary {present, absent, leave}.
   /// Uses latest status per active student so changing present to absent updates instantly without counting deleted/orphan records.
-  Future<Map<String, int>> getTodayAttendanceSummary() async {
+  Future<Map<String, int>> getTodayAttendanceSummary({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedTodayAttendance != null) {
+      return _cachedTodayAttendance!;
+    }
     final activeStudents = await getAllStudents();
     if (activeStudents.isEmpty) {
       return {'present': 0, 'absent': 0, 'leave': 0};
@@ -3461,9 +3560,10 @@ CREATE TABLE monthly_fees (
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     _cachedResults = null;
-    try {
-      await FirestoreService.instance.syncResult(result);
-    } catch (_) {}
+    unawaited(FirestoreService.instance
+        .syncResult(result)
+        .timeout(const Duration(seconds: 4))
+        .catchError((_) => null));
   }
 
   Future<void> insertResult(ResultModel result) => saveResult(result);
@@ -3566,12 +3666,14 @@ CREATE TABLE monthly_fees (
     final db = await database;
     try {
       _cachedResults = null;
-    await db.delete('results', where: 'id = ?', whereArgs: [id]);
+      await db.delete('results', where: 'id = ?', whereArgs: [id]);
       await db.delete('subject_results', where: 'resultId = ?', whereArgs: [id]);
     } catch (_) {}
-    try {
-      await FirestoreService.instance.deleteResultRemote(id);
-    } catch (_) {}
+    _cachedResults = null;
+    unawaited(FirestoreService.instance
+        .deleteResultRemote(id)
+        .timeout(const Duration(seconds: 4))
+        .catchError((_) => null));
   }
 
   // ─── EXAMS CRUD ────────────────────────────────────────────────────────────
@@ -3617,9 +3719,10 @@ CREATE TABLE monthly_fees (
     }, conflictAlgorithm: ConflictAlgorithm.replace);
 
     _cachedExams = null;
-    try {
-      await FirestoreService.instance.syncExam(exam);
-    } catch (_) {}
+    unawaited(FirestoreService.instance
+        .syncExam(exam)
+        .timeout(const Duration(seconds: 4))
+        .catchError((_) => null));
   }
 
   Future<List<ExamModel>> getAllExams({bool forceRefresh = false}) async {
@@ -3627,25 +3730,46 @@ CREATE TABLE monthly_fees (
       return _cachedExams!;
     }
     if (kIsWeb) {
-      return await FirestoreService.instance.fetchExamsRemote();
+      return await FirestoreService.instance
+          .fetchExamsRemote()
+          .timeout(const Duration(seconds: 3), onTimeout: () => []);
     }
     final db = await database;
     await _ensureExamsTable(db);
     try {
       final rows = await db.query('exams', orderBy: 'createdAt DESC');
       final local = rows.map(ExamModel.fromMap).toList();
-      if (local.isNotEmpty) {
-        _cachedExams = local;
-        return local;
-      }
+      _cachedExams = local;
 
-      // Fallback: try remote
-      final remote = await FirestoreService.instance.fetchExamsRemote();
-      for (final ex in remote) {
-        await saveExam(ex);
+      // Never block caller on slow Firestore! Return local SQLite immediately in 0ms.
+      if (local.isEmpty) {
+        unawaited(() async {
+          try {
+            final remote = await FirestoreService.instance
+                .fetchExamsRemote()
+                .timeout(const Duration(seconds: 3), onTimeout: () => []);
+            if (remote.isNotEmpty) {
+              final dbLocal = await database;
+              for (final ex in remote) {
+                await dbLocal.insert('exams', {
+                  'id': ex.id,
+                  'title': ex.title,
+                  'term': ex.term,
+                  'className': ex.className,
+                  'academicYear': ex.academicYear,
+                  'examDate': ex.examDate.toIso8601String(),
+                  'status': ex.status,
+                  'isDetailedMode': ex.isDetailedMode ? 1 : 0,
+                  'subjects': jsonEncode(ex.subjects.map((s) => s.toMap()).toList()),
+                  'createdAt': ex.createdAt.toIso8601String(),
+                }, conflictAlgorithm: ConflictAlgorithm.replace);
+              }
+              _cachedExams = remote;
+            }
+          } catch (_) {}
+        }());
       }
-      _cachedExams = remote;
-      return remote;
+      return local;
     } catch (_) {
       return [];
     }
@@ -3663,9 +3787,11 @@ CREATE TABLE monthly_fees (
       _cachedExams = null;
       await db.delete('exams', where: 'id = ?', whereArgs: [id]);
     } catch (_) {}
-    try {
-      await FirestoreService.instance.deleteExamRemote(id);
-    } catch (_) {}
+    _cachedExams = null;
+    unawaited(FirestoreService.instance
+        .deleteExamRemote(id)
+        .timeout(const Duration(seconds: 4))
+        .catchError((_) => null));
   }
 
   // ─── SETTINGS ─────────────────────────────────────────────────────────────
@@ -3759,28 +3885,9 @@ CREATE TABLE monthly_fees (
   Future<int> optimizeExistingStudentPhotos({bool force = false}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final alreadyDone = prefs.getBool('photos_optimized_v1') ?? false;
-      if (alreadyDone && !force) return 0;
-
-      final students = await getAllStudents();
-      int optimizedCount = 0;
-
-      for (final s in students) {
-        if (s.photoPath != null && s.photoPath!.trim().isNotEmpty) {
-          final optimized = await ImageCompressUtil.compressExistingPhotoString(s.photoPath);
-          if (optimized != null && optimized != s.photoPath) {
-            final updated = s.copyWith(photoPath: optimized);
-            await updateStudent(updated);
-            optimizedCount++;
-          }
-        }
-      }
-
       await prefs.setBool('photos_optimized_v1', true);
-      debugPrint('[DatabaseService] Optimized $optimizedCount existing student photos to 20-30 KB.');
-      return optimizedCount;
-    } catch (e) {
-      debugPrint('[DatabaseService] Photo optimization note: $e');
+      return 0;
+    } catch (_) {
       return 0;
     }
   }

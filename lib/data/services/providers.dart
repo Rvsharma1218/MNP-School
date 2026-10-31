@@ -866,9 +866,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
       final resultsStream = FirestoreService.instance.watchResults();
       if (resultsStream != null) {
         dataSubs.add(resultsStream.listen((results) async {
-          for (final res in results) {
-            await DatabaseService.instance.upsertResultFromRemote(res);
-          }
+          await DatabaseService.instance.bulkUpsertResultsFromRemote(results);
           DatabaseService.instance.clearMemoryCache();
           ref.invalidate(dashboardStatsProvider);
         }, onError: (e) => debugPrint('[FirestoreSync] results error: $e')));
@@ -898,9 +896,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
       final paymentsStream = FirestoreService.instance.watchPayments();
       if (paymentsStream != null) {
         dataSubs.add(paymentsStream.listen((payments) async {
-          for (final p in payments) {
-            await DatabaseService.instance.upsertPaymentFromRemote(p.toMap());
-          }
+          await DatabaseService.instance.bulkUpsertPaymentsFromRemote(payments);
           triggerSyncSettled(stats: true);
           final ids = payments.map((p) => p.studentId).toSet();
           for (final id in ids) {
@@ -913,9 +909,7 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
       final attendanceStream = FirestoreService.instance.watchAttendance();
       if (attendanceStream != null) {
         dataSubs.add(attendanceStream.listen((records) async {
-          for (final record in records) {
-            await DatabaseService.instance.upsertAttendanceFromRemote(record);
-          }
+          await DatabaseService.instance.bulkUpsertAttendanceFromRemote(records);
           triggerSyncSettled(stats: true);
           final dates = records.map((r) => DateTime(r.date.year, r.date.month, r.date.day)).toSet();
           final ids = records.map((r) => r.studentId).toSet();
