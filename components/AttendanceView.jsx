@@ -120,6 +120,7 @@ export default function AttendanceView() {
   // Daily records for selected date
   const dayAttendance = attendance[selectedDate] || {};
   const holidayInfo = getHolidayInfo ? getHolidayInfo(selectedDate, holidays) : null;
+  const teacherHolidayInfo = getHolidayInfo ? getHolidayInfo(selectedTeacherDate, holidays) : null;
 
   // Scoped accessible students for attendance
   const accessibleStudents = React.useMemo(() => {
@@ -580,30 +581,106 @@ export default function AttendanceView() {
               <button
                 type="button"
                 onClick={() => {
-                  const m = {};
-                  (teachers || []).forEach(t => { m[t.id || t.teacherId] = 'present'; });
-                  setLocalTeacherStatus(m);
-                  showToast('All teachers marked Present for today', 'info');
+                  setHolidayForm({
+                    date: selectedTeacherDate,
+                    title: '',
+                    reason: '',
+                    type: 'declared',
+                  });
+                  setShowHolidayModal(true);
                 }}
-                className="px-3.5 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer ${
+                  teacherHolidayInfo
+                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                    : 'bg-white border border-border hover:bg-surface2 text-text'
+                }`}
+                title="Declare School Holiday (Staff & Students)"
               >
-                Mark All Present
+                <span>🏖️</span>
+                <span>{teacherHolidayInfo ? 'Holiday Active' : 'Note Holiday / छुट्टी'}</span>
               </button>
-              <button
-                type="button"
-                disabled={isSavingTeacherAtt}
-                onClick={async () => {
-                  setIsSavingTeacherAtt(true);
-                  await bulkMarkTeacherAttendance(selectedTeacherDate, localTeacherStatus);
-                  setIsSavingTeacherAtt(false);
-                }}
-                className="px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#152865] text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                <Check className="w-4 h-4" />
-                <span>{isSavingTeacherAtt ? 'Saving...' : 'Save Attendance'}</span>
-              </button>
+              {teacherHolidayInfo?.isCustom && (
+                <button
+                  type="button"
+                  onClick={() => deleteHoliday && deleteHoliday(teacherHolidayInfo.dateKey)}
+                  className="px-3 py-2 rounded-xl bg-rose-50 border border-rose-300 text-rose-700 hover:bg-rose-100 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                  title="Remove Declared Holiday"
+                >
+                  <Trash2 className="w-3.5 h-3.5 inline mr-1" />
+                  <span>छुट्टी हटाएं</span>
+                </button>
+              )}
+              {!teacherHolidayInfo && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const m = {};
+                      (teachers || []).forEach(t => { m[t.id || t.teacherId] = 'present'; });
+                      setLocalTeacherStatus(m);
+                      showToast('All teachers marked Present for today', 'info');
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                  >
+                    Mark All Present
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSavingTeacherAtt}
+                    onClick={async () => {
+                      setIsSavingTeacherAtt(true);
+                      await bulkMarkTeacherAttendance(selectedTeacherDate, localTeacherStatus);
+                      setIsSavingTeacherAtt(false);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#152865] text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>{isSavingTeacherAtt ? 'Saving...' : 'Save Attendance'}</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
+
+          {/* Sunday / Holiday Alert Banner for Teachers */}
+          {teacherHolidayInfo && (
+            <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs ${
+              teacherHolidayInfo.isSunday
+                ? 'bg-amber-50/80 border-amber-300 text-amber-950'
+                : 'bg-indigo-50/80 border-indigo-200 text-indigo-950'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-2xs ${
+                  teacherHolidayInfo.isSunday ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-700'
+                }`}>
+                  {teacherHolidayInfo.isSunday ? '☀️' : '🏖️'}
+                </div>
+                <div>
+                  <div className="font-bold text-sm flex items-center gap-2">
+                    <span>{teacherHolidayInfo.title}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                      teacherHolidayInfo.isSunday ? 'bg-amber-200 text-amber-900' : 'bg-indigo-200 text-indigo-900'
+                    }`}>
+                      {teacherHolidayInfo.isSunday ? 'Weekly Off' : 'School Holiday'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    कारण (Cause): <span className="font-semibold">{teacherHolidayInfo.reason}</span> • आज स्कूल बंद है (Staff & Student attendance not required).
+                  </p>
+                </div>
+              </div>
+
+              {teacherHolidayInfo.isCustom && (
+                <button
+                  type="button"
+                  onClick={() => deleteHoliday && deleteHoliday(teacherHolidayInfo.dateKey)}
+                  className="px-3 py-1.5 rounded-xl bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-bold transition-all self-start sm:self-auto cursor-pointer"
+                >
+                  छुट्टी हटाएं (Remove Holiday)
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Metrics summary */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -693,13 +770,13 @@ export default function AttendanceView() {
                             {t.mobile || '—'}
                           </td>
                           <td className="py-3 px-4 text-center">
-                            {holidayInfo ? (
+                            {teacherHolidayInfo ? (
                               <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
-                                holidayInfo.isSunday
+                                teacherHolidayInfo.isSunday
                                   ? 'bg-amber-50 text-amber-800 border border-amber-300'
                                   : 'bg-indigo-50 text-indigo-800 border border-indigo-300'
                               }`}>
-                                <span>{holidayInfo.isSunday ? '☀️ Sunday Off' : `🏖️ ${holidayInfo.title}`}</span>
+                                <span>{teacherHolidayInfo.isSunday ? '☀️ Sunday Off' : `🏖️ ${teacherHolidayInfo.title}`}</span>
                               </div>
                             ) : (
                               <div className="inline-flex items-center gap-1.5 p-1 bg-surface2 rounded-xl border border-border">
