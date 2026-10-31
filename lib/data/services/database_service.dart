@@ -770,19 +770,42 @@ CREATE TABLE monthly_fees (
   }
 
   Future<void> upsertResultFromRemote(ResultModel result) async {
+    _cachedResults = null;
     if (kIsWeb) return;
     final db = await database;
+    try { await db.execute('ALTER TABLE results ADD COLUMN isDetailedMode INTEGER DEFAULT 0'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN remarks TEXT'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN studentName TEXT'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN className TEXT'); } catch (_) {}
+    try { await db.execute('ALTER TABLE results ADD COLUMN rollNumber TEXT'); } catch (_) {}
+
     final matching = await db.query(
       'students',
       where: 'id = ? OR studentId = ?',
       whereArgs: [result.studentId, result.studentId],
     );
     final resolvedStudentId = matching.isNotEmpty ? (matching.first['id'] as String) : result.studentId;
+    final sName = (result.studentName != null && result.studentName!.isNotEmpty)
+        ? result.studentName
+        : (matching.isNotEmpty ? matching.first['name'] as String? : null);
+    final sClass = (result.className != null && result.className!.isNotEmpty)
+        ? result.className
+        : (matching.isNotEmpty ? (matching.first['className'] as String? ?? matching.first['course'] as String?) : null);
+    final sRoll = (result.rollNumber != null && result.rollNumber!.isNotEmpty)
+        ? result.rollNumber
+        : (matching.isNotEmpty ? matching.first['rollNumber'] as String? : null);
 
     final resMap = {
       'id': result.id,
       'studentId': resolvedStudentId,
+      'studentName': sName,
+      'className': sClass,
+      'rollNumber': sRoll,
       'examName': result.examName,
+      'status': result.status ?? result.finalResultStatus,
+      'isDetailedMode': result.isDetailedMode ? 1 : 0,
+      'remarks': result.remarks,
+      'subjects': jsonEncode(result.subjects.map((s) => s.toMap()).toList()),
       'createdAt': result.createdAt.toIso8601String(),
     };
     await db.insert('results', resMap, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -793,8 +816,13 @@ CREATE TABLE monthly_fees (
         'subjectName': subject.subjectName,
         'marks': subject.marks,
         'totalMarks': subject.totalMarks,
+        'passingMarks': subject.passingMarks,
+        'theoryMarks': subject.theoryMarks,
+        'practicalMarks': subject.practicalMarks,
+        'internalMarks': subject.internalMarks,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
+    _cachedResults = null;
   }
 
   Future<void> replaceRemotePayments(List<PaymentModel> payments) async {
@@ -1638,6 +1666,7 @@ CREATE TABLE monthly_fees (
       }
       await txn.delete('results', where: 'studentId = ?', whereArgs: [id]);
     });
+    clearMemoryCache();
   }
 
   Future<int> getStudentCount() async {
@@ -3393,6 +3422,7 @@ CREATE TABLE monthly_fees (
   // ─── RESULT CRUD ──────────────────────────────────────────────────────────
 
   Future<void> saveResult(ResultModel result) async {
+    _cachedResults = null;
     if (kIsWeb) {
       await FirestoreService.instance.syncResult(result);
       return;
@@ -3430,6 +3460,7 @@ CREATE TABLE monthly_fees (
         'internalMarks': subject.internalMarks,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
+    _cachedResults = null;
     try {
       await FirestoreService.instance.syncResult(result);
     } catch (_) {}
@@ -3565,6 +3596,7 @@ CREATE TABLE monthly_fees (
   }
 
   Future<void> saveExam(ExamModel exam) async {
+    _cachedExams = null;
     if (kIsWeb) {
       await FirestoreService.instance.syncExam(exam);
       return;
@@ -3584,6 +3616,7 @@ CREATE TABLE monthly_fees (
       'createdAt': exam.createdAt.toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
 
+    _cachedExams = null;
     try {
       await FirestoreService.instance.syncExam(exam);
     } catch (_) {}
@@ -3619,6 +3652,7 @@ CREATE TABLE monthly_fees (
   }
 
   Future<void> deleteExam(String id) async {
+    _cachedExams = null;
     if (kIsWeb) {
       await FirestoreService.instance.deleteExamRemote(id);
       return;
@@ -3626,6 +3660,7 @@ CREATE TABLE monthly_fees (
     final db = await database;
     await _ensureExamsTable(db);
     try {
+      _cachedExams = null;
       await db.delete('exams', where: 'id = ?', whereArgs: [id]);
     } catch (_) {}
     try {

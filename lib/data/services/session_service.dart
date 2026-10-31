@@ -82,7 +82,12 @@ class SessionService {
       return false; // Not assigned -> strictly unauthorized
     }
     if (targetClass == null || targetClass.trim().isEmpty) return false;
-    String norm(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '').trim();
+    String norm(String s) => s
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'^class\s*', caseSensitive: false), '')
+        .replaceAll('.', '')
+        .trim();
     final targetNorm = norm(targetClass);
     final allowedList = cls.split(RegExp(r'[,|]')).map(norm).where((c) => c.isNotEmpty).toList();
     if (allowedList.any((a) => a == 'all' || a == 'all classes')) return true;
@@ -92,6 +97,12 @@ class SessionService {
       final numTarget = RegExp(r'\d+').firstMatch(targetNorm)?.group(0);
       if (numA != null && numTarget != null) {
         return numA == numTarget;
+      }
+      final cleanA = a.replaceAll(RegExp(r'\s+'), '');
+      final cleanTarget = targetNorm.replaceAll(RegExp(r'\s+'), '');
+      if (cleanA.isNotEmpty && cleanTarget.isNotEmpty) {
+        if (cleanA == cleanTarget) return true;
+        if (cleanTarget.contains(cleanA) || cleanA.contains(cleanTarget)) return true;
       }
       return a == targetNorm;
     });

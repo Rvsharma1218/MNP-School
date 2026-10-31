@@ -30,8 +30,7 @@ class ResultDashboardScreen extends ConsumerStatefulWidget {
 
 class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     with SingleTickerProviderStateMixin {
-  static List<ExamModel>? _cachedExams;
-  static List<ResultModel>? _cachedResults;
+
 
   late TabController _tabController;
   bool _loading = true;
@@ -143,7 +142,14 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     return _results.where((r) {
       final student = _findStudent(r);
       final cls = student?.className ?? student?.course ?? r.className ?? '';
-      return SessionService.instance.canAccessClass(cls);
+      if (cls.isNotEmpty) {
+        return SessionService.instance.canAccessClass(cls);
+      }
+      if (student != null) {
+        final sCls = student.className ?? student.course ?? '';
+        return SessionService.instance.canAccessClass(sCls);
+      }
+      return true;
     }).toList();
   }
 
@@ -154,19 +160,16 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     _selectedClassFilter = 'All Classes';
     final cachedStudents = ref.read(studentsProvider).valueOrNull;
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
-    if (_cachedExams != null && _cachedResults != null && cachedStudents != null && cachedStudents.isNotEmpty) {
-      _exams = _cachedExams!;
-      _results = _cachedResults!;
+    if (cachedStudents != null && cachedStudents.isNotEmpty) {
       _students = cachedStudents;
       _rebuildStudentLookup();
       _populateClassFilters(cachedStudents, settings);
-      _loading = false;
     }
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
-    _loadDashboardData(isInitial: _loading);
+    _loadDashboardData(isInitial: true, forceRefresh: true);
   }
 
   @override
@@ -175,20 +178,18 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     super.dispose();
   }
 
-  Future<void> _loadDashboardData({bool isInitial = false}) async {
+  Future<void> _loadDashboardData({bool isInitial = false, bool forceRefresh = true}) async {
     if (isInitial && _exams.isEmpty && mounted) setState(() => _loading = true);
     final db = DatabaseService.instance;
     final data = await Future.wait([
-      db.getAllExams(),
-      db.getAllResults(),
-      db.getAllStudents(),
+      db.getAllExams(forceRefresh: forceRefresh),
+      db.getAllResults(forceRefresh: forceRefresh),
+      db.getAllStudents(forceRefresh: forceRefresh),
     ]);
     final exams = data[0] as List<ExamModel>;
     final results = data[1] as List<ResultModel>;
     final students = data[2] as List<StudentModel>;
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
-    _cachedExams = exams;
-    _cachedResults = results;
     _populateClassFilters(students, settings);
     _exams = exams;
     _results = results;
@@ -804,6 +805,11 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh Results',
+            onPressed: () => _loadDashboardData(forceRefresh: true),
+          ),
           // Academic Year Dropdown
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -919,7 +925,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                   MaterialPageRoute(builder: (_) => const CreateExamScreen()),
                 );
                 if (res != null) {
-                  await _loadDashboardData();
+                  await _loadDashboardData(forceRefresh: true);
                 }
               },
               icon: const Icon(Icons.add),
@@ -1001,7 +1007,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                     initialClass: ex.className.isNotEmpty ? ex.className : null,
                   ),
                 ),
-              ).then((_) => _loadDashboardData());
+              ).then((_) => _loadDashboardData(forceRefresh: true));
             },
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -1092,7 +1098,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                                     initialClass: ex.className.isNotEmpty ? ex.className : null,
                                   ),
                                 ),
-                              ).then((_) => _loadDashboardData());
+                              ).then((_) => _loadDashboardData(forceRefresh: true));
                             },
                             icon: const Icon(Icons.edit_note_rounded, size: 16),
                             label: const Text('Mark Entry Desk', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
@@ -1296,7 +1302,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                             ),
                           );
                           if (updated == true && mounted) {
-                            _loadDashboardData();
+                            _loadDashboardData(forceRefresh: true);
                           }
                         },
                         onLongPress: () => _showResultActionsSheet(r, effectiveStudent),

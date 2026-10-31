@@ -345,7 +345,9 @@ class ResultNotifier extends StateNotifier<void> {
   // FIX: Explicitly defined parameter 'ResultModel result'
   Future<void> add(ResultModel result) async {
     await DatabaseService.instance.insertResult(result);
+    DatabaseService.instance.clearMemoryCache();
     _ref.invalidate(resultsProvider(studentId));
+    _ref.invalidate(dashboardStatsProvider);
     // FIXED: await Firestore write
     try {
       await FirestoreService.instance.syncResult(result);
@@ -356,7 +358,9 @@ class ResultNotifier extends StateNotifier<void> {
 
   Future<void> remove(String resultId) async {
     await DatabaseService.instance.deleteResult(resultId);
+    DatabaseService.instance.clearMemoryCache();
     _ref.invalidate(resultsProvider(studentId));
+    _ref.invalidate(dashboardStatsProvider);
     // FIXED: await Firestore delete
     try {
       await FirestoreService.instance.deleteResultRemote(resultId);
@@ -865,6 +869,8 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
           for (final res in results) {
             await DatabaseService.instance.upsertResultFromRemote(res);
           }
+          DatabaseService.instance.clearMemoryCache();
+          ref.invalidate(dashboardStatsProvider);
         }, onError: (e) => debugPrint('[FirestoreSync] results error: $e')));
       }
 

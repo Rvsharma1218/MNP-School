@@ -49,13 +49,13 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     _loadData();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool forceRefresh = true}) async {
     setState(() => _loading = true);
     final db = DatabaseService.instance;
     final data = await Future.wait([
-      db.getAllStudents(),
-      db.getAllResults(),
-      db.getAllExams(),
+      db.getAllStudents(forceRefresh: forceRefresh),
+      db.getAllResults(forceRefresh: forceRefresh),
+      db.getAllExams(forceRefresh: forceRefresh),
     ]);
     final students = data[0] as List<StudentModel>;
     final results = data[1] as List<ResultModel>;
@@ -469,6 +469,11 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh',
+            onPressed: () => _loadData(forceRefresh: true),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             tooltip: 'Options',
