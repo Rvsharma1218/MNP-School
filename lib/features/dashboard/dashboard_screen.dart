@@ -123,6 +123,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Timer? _clockTimer;
   DateTime _now = DateTime.now();
   StreamSubscription? _securityRevokeSub;
+  StreamSubscription? _sessionSub;
 
   @override
   void initState() {
@@ -151,12 +152,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         SecurityVerificationDialog.showIfNeeded(context);
       }
     });
+
+    // Listen for live teacher assigned class / profile change made by Principal
+    _sessionSub = SessionService.instance.onSessionChanged.listen((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   @override
   void dispose() {
     _clockTimer?.cancel();
     _securityRevokeSub?.cancel();
+    _sessionSub?.cancel();
     super.dispose();
   }
 

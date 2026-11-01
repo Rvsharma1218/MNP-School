@@ -19,6 +19,9 @@ class DatabaseService {
   static final DatabaseService instance = DatabaseService._internal();
   DatabaseService._internal();
 
+  /// Global broadcast stream triggered on any result insert, update, or delete
+  static final StreamController<void> onResultsChanged = StreamController<void>.broadcast();
+
   Database? _db;
 
   // In-Memory Cache for ultra-fast instant 0ms responses across all cards & screens
@@ -1312,6 +1315,7 @@ CREATE TABLE monthly_fees (
     }
     await batch.commit(noResult: true);
     _cachedResults = null;
+    onResultsChanged.add(null);
   }
 
   Future<void> bulkUpsertMonthlyFeesFromRemote(List<MonthlyFeeModel> monthlyFees) async {
@@ -3524,6 +3528,7 @@ CREATE TABLE monthly_fees (
     _cachedResults = null;
     if (kIsWeb) {
       await FirestoreService.instance.syncResult(result);
+      onResultsChanged.add(null);
       return;
     }
     final db = await database;
@@ -3560,6 +3565,7 @@ CREATE TABLE monthly_fees (
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     _cachedResults = null;
+    onResultsChanged.add(null);
     unawaited(FirestoreService.instance
         .syncResult(result)
         .timeout(const Duration(seconds: 4))
@@ -3659,8 +3665,10 @@ CREATE TABLE monthly_fees (
   }
 
   Future<void> deleteResult(String id) async {
+    _cachedResults = null;
     if (kIsWeb) {
       await FirestoreService.instance.deleteResultRemote(id);
+      onResultsChanged.add(null);
       return;
     }
     final db = await database;
@@ -3670,6 +3678,7 @@ CREATE TABLE monthly_fees (
       await db.delete('subject_results', where: 'resultId = ?', whereArgs: [id]);
     } catch (_) {}
     _cachedResults = null;
+    onResultsChanged.add(null);
     unawaited(FirestoreService.instance
         .deleteResultRemote(id)
         .timeout(const Duration(seconds: 4))

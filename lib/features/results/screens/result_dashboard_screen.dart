@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -35,6 +36,8 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
   late TabController _tabController;
   bool _loading = true;
   bool _initialStudentHandled = false;
+  StreamSubscription? _resultsSub;
+  StreamSubscription? _sessionSub;
 
   String _academicYear = '2025-2026';
   final List<String> _academicYears = ['2024-2025', '2025-2026', '2026-2027'];
@@ -169,11 +172,28 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
+    // Automatic live refresh whenever marks are entered, saved, or updated anywhere
+    _resultsSub = DatabaseService.onResultsChanged.stream.listen((_) {
+      if (mounted) _loadDashboardData(forceRefresh: true);
+    });
+
+    // Automatic real-time update when Principal changes teacher's assigned classes
+    _sessionSub = SessionService.instance.onSessionChanged.listen((_) {
+      if (mounted) {
+        final cachedStudents = ref.read(studentsProvider).valueOrNull ?? [];
+        final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+        _populateClassFilters(cachedStudents, settings);
+        _loadDashboardData(forceRefresh: true);
+      }
+    });
+
     _loadDashboardData(isInitial: true, forceRefresh: false);
   }
 
   @override
   void dispose() {
+    _resultsSub?.cancel();
+    _sessionSub?.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -1295,7 +1315,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () async {
-                          final updated = await Navigator.push<bool>(
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => StudentResultDetailScreen(
@@ -1304,7 +1324,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                               ),
                             ),
                           );
-                          if (updated == true && mounted) {
+                          if (mounted) {
                             _loadDashboardData(forceRefresh: true);
                           }
                         },

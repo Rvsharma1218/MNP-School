@@ -956,6 +956,59 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
         }, onError: (e) => debugPrint('[FirestoreSync] settings error: $e')));
       }
 
+      // ── Teachers stream (schools/{schoolId}/teachers) ───────────────────
+      final teachersStream = FirestoreService.instance.watchTeachers();
+      if (teachersStream != null) {
+        dataSubs.add(teachersStream.listen((teacherDocs) async {
+          if (!SessionService.instance.isTeacher) return;
+          final currentTeacherId = SessionService.instance.teacherId?.trim().toLowerCase();
+          final currentAuthUid = user.uid.trim().toLowerCase();
+          final currentName = SessionService.instance.teacherName?.trim().toLowerCase();
+
+          for (final doc in teacherDocs) {
+            final docId = (doc['id']?.toString() ?? '').trim().toLowerCase();
+            final docTeacherId = (doc['teacherId']?.toString() ?? '').trim().toLowerCase();
+            final docAuthUid = (doc['authUid']?.toString() ?? '').trim().toLowerCase();
+            final docName = (doc['name']?.toString() ?? '').trim().toLowerCase();
+
+            final matches = (currentTeacherId != null && currentTeacherId.isNotEmpty && (docId == currentTeacherId || docTeacherId == currentTeacherId)) ||
+                (docAuthUid.isNotEmpty && docAuthUid == currentAuthUid) ||
+                (currentName != null && currentName.isNotEmpty && docName == currentName);
+
+            if (matches) {
+              final rawClass = doc['assignedClass']?.toString();
+              final rawClassesList = doc['assignedClasses'];
+              String effectiveClass = '';
+              if (rawClass != null && rawClass.trim().isNotEmpty) {
+                effectiveClass = rawClass.trim();
+              } else if (rawClassesList is List && rawClassesList.isNotEmpty) {
+                effectiveClass = rawClassesList.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).join(', ');
+              }
+              final effectiveName = doc['name']?.toString();
+              final effectiveSection = doc['assignedSection']?.toString();
+
+              final classChanged = effectiveClass != (SessionService.instance.assignedClass ?? '');
+              final nameChanged = effectiveName != null && effectiveName.trim().isNotEmpty && effectiveName.trim() != (SessionService.instance.teacherName ?? '');
+              final sectionChanged = effectiveSection != SessionService.instance.assignedSection;
+
+              if (classChanged || nameChanged || sectionChanged) {
+                debugPrint('[FirestoreSync] ⚡ Teacher profile updated in real-time by Principal: class="$effectiveClass", name="$effectiveName", section="$effectiveSection"');
+                await SessionService.instance.updateTeacherAssignedClass(
+                  effectiveClass,
+                  newName: effectiveName,
+                  newSection: effectiveSection,
+                );
+                ref.invalidate(dashboardStatsProvider);
+                ref.invalidate(studentsProvider);
+                ref.read(teacherSelectedClassProvider.notifier).state = '';
+                ref.read(classFilterProvider.notifier).state = '';
+              }
+              break;
+            }
+          }
+        }, onError: (e) => debugPrint('[FirestoreSync] teachers error: $e')));
+      }
+
       subscribedUid = activeSchoolUid;
       debugPrint('[FirestoreSync] ✅ Subscribed to school: $activeSchoolUid (role: ${SessionService.instance.role?.name})');
     } catch (e, st) {

@@ -42,6 +42,9 @@ class SessionService {
   final _schoolUidController = StreamController<String?>.broadcast();
   Stream<String?> get onSchoolUidChanged => _schoolUidController.stream;
 
+  final _sessionChangeController = StreamController<void>.broadcast();
+  Stream<void> get onSessionChanged => _sessionChangeController.stream;
+
   AppRole? get role => _role;
   
   /// Active school ID for MNP School (default to SCHOOL_007 from backup)
@@ -262,21 +265,26 @@ class SessionService {
     AppNotificationService.instance.startListening();
   }
 
-  Future<void> updateTeacherAssignedClass(String newClass, {String? newName}) async {
+  Future<void> updateTeacherAssignedClass(String newClass, {String? newName, String? newSection}) async {
     final trimmed = newClass.trim();
-    if (trimmed.isNotEmpty) {
-      _assignedClass = trimmed;
-    }
+    _assignedClass = trimmed;
     if (newName != null && newName.trim().isNotEmpty) _teacherName = newName.trim();
+    if (newSection != null) _assignedSection = newSection.trim().isEmpty ? null : newSection.trim();
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (trimmed.isNotEmpty) {
-        await prefs.setString(_kAssignedClass, trimmed);
-      }
+      await prefs.setString(_kAssignedClass, trimmed);
       if (newName != null && newName.trim().isNotEmpty) {
         await prefs.setString(_kTeacherName, newName.trim());
       }
+      if (newSection != null) {
+        if (_assignedSection != null) {
+          await prefs.setString(_kAssignedSection, _assignedSection!);
+        } else {
+          await prefs.remove(_kAssignedSection);
+        }
+      }
     } catch (_) {}
+    _sessionChangeController.add(null);
   }
 
   Future<void> setParentSession({

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,11 +43,22 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
   List<ResultModel> _allResults = [];
   String _searchQuery = '';
   String _statusFilter = 'All'; // 'All', 'Completed', 'Pending'
+  StreamSubscription? _resultsSub;
 
   @override
   void initState() {
     super.initState();
+    // Live automatic sync when marks are entered, edited, or saved anywhere
+    _resultsSub = DatabaseService.onResultsChanged.stream.listen((_) {
+      if (mounted) _loadData(forceRefresh: true);
+    });
     _loadData(forceRefresh: false);
+  }
+
+  @override
+  void dispose() {
+    _resultsSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadData({bool forceRefresh = false}) async {
@@ -224,8 +236,8 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
       ),
     );
 
+    await _loadData(forceRefresh: true);
     if (saved != null) {
-      await _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -252,7 +264,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
         ),
       ),
     );
-    await _loadData();
+    await _loadData(forceRefresh: true);
   }
 
   Future<void> _deleteStudentResult(StudentModel s, ResultModel r) async {

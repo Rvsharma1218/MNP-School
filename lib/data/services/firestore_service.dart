@@ -254,6 +254,13 @@ class FirestoreService {
         .toList());
   }
 
+  Stream<List<Map<String, dynamic>>>? watchTeachers() {
+    if (!_enabled || _root == null) return null;
+    return _root!.collection('teachers').snapshots().map((snap) => snap.docs
+        .map((d) => {'id': d.id, ...d.data()})
+        .toList());
+  }
+
   // ─── Online Admission Enquiries & Teacher Applications ─────────────────
 
   StreamController<List<Map<String, dynamic>>>? _admissionsController;
