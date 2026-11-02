@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -26,6 +27,37 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
 
   Map<String, dynamic>? _pendingUpdate;
   bool _dismissedOptionalUpdate = false;
+
+  String _resolveDeviceApkUrl(Map<String, dynamic> data) {
+    final v8 = (data['apk_v8_url']?.toString() ?? '').trim();
+    final v7 = (data['apk_v7_url']?.toString() ?? '').trim();
+    final universal = (data['apkUrl']?.toString() ?? '').trim();
+
+    try {
+      final abi = Abi.current();
+      if (abi == Abi.androidArm) {
+        // 32-bit ARM (armeabi-v7a)
+        if (v7.isNotEmpty) return v7;
+      } else if (abi == Abi.androidArm64) {
+        // 64-bit ARM (arm64-v8a)
+        if (v8.isNotEmpty) return v8;
+      }
+    } catch (_) {}
+
+    if (v8.isNotEmpty) return v8;
+    if (v7.isNotEmpty) return v7;
+    return universal;
+  }
+
+  String _getDeviceArchitectureLabel() {
+    try {
+      final abi = Abi.current();
+      if (abi == Abi.androidArm) return 'CPU: armeabi-v7a (32-bit)';
+      if (abi == Abi.androidArm64) return 'CPU: arm64-v8a (64-bit)';
+      if (abi == Abi.androidX64) return 'CPU: x86_64 (64-bit)';
+    } catch (_) {}
+    return 'CPU: arm64-v8a (64-bit)';
+  }
 
   @override
   void initState() {
@@ -83,8 +115,8 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
       }
 
       final remoteVersionCode = int.tryParse(data['versionCode']?.toString() ?? '0') ?? 0;
-      final apkUrl = (data['apkUrl']?.toString() ?? '').trim();
-      final isForced = data['forceUpdate'] == true && apkUrl.isNotEmpty;
+      final effectiveApkUrl = _resolveDeviceApkUrl(data);
+      final isForced = data['forceUpdate'] == true && effectiveApkUrl.isNotEmpty;
 
       // Check if user permanently dismissed this specific update version
       try {
@@ -312,11 +344,12 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
     // 2. If an App Update is pending
     if (_pendingUpdate != null && !_dismissedOptionalUpdate) {
       final remoteVersionCode = int.tryParse(_pendingUpdate!['versionCode']?.toString() ?? '0') ?? 0;
-      final apkUrl = (_pendingUpdate!['apkUrl']?.toString() ?? '').trim();
-      final hasUrl = apkUrl.isNotEmpty;
+      final effectiveApkUrl = _resolveDeviceApkUrl(_pendingUpdate!);
+      final hasUrl = effectiveApkUrl.isNotEmpty;
       final isForced = _pendingUpdate!['forceUpdate'] == true && hasUrl;
       final newVer = _pendingUpdate!['latestVersion']?.toString() ?? '2.0.2';
       final notes = _pendingUpdate!['releaseNotes']?.toString() ?? 'Performance fixes & updates.';
+      final archLabel = _getDeviceArchitectureLabel();
 
       return Stack(
         children: [
@@ -352,16 +385,42 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.purpleAccent.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'v$newVer Available (Current: v$currentVersion)',
-                          style: const TextStyle(color: Colors.purpleAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.purpleAccent.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'v$newVer Available (Current: v$currentVersion)',
+                              style: const TextStyle(color: Colors.purpleAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.cyanAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.memory_rounded, size: 12, color: Colors.cyanAccent),
+                                const SizedBox(width: 4),
+                                Text(
+                                  archLabel,
+                                  style: const TextStyle(color: Colors.cyanAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 14),
                       Container(
@@ -423,7 +482,7 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
                             ),
                             icon: const Icon(Icons.download_rounded),
                             label: const Text('Download & Update Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            onPressed: () => _openUpdateUrl(apkUrl),
+                            onPressed: () => _openUpdateUrl(effectiveApkUrl),
                           ),
                         ),
                       if (!isForced || !hasUrl) ...[
