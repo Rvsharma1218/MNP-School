@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ffi';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -149,16 +150,24 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
       SnackBar(
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF0F172A),
+        elevation: 12,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: Colors.amber, width: 0.8),
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFF59E0B), width: 1.2),
         ),
         duration: const Duration(seconds: 7),
         content: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.notifications_active_rounded, color: Colors.amber, size: 22),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.notifications_active_rounded, color: Color(0xFFF59E0B), size: 20),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -167,12 +176,12 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Colors.white),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     body,
-                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                    style: TextStyle(fontSize: 11.5, color: Colors.white.withValues(alpha: 0.8), height: 1.35),
                   ),
                 ],
               ),
@@ -348,161 +357,397 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
       final hasUrl = effectiveApkUrl.isNotEmpty;
       final isForced = _pendingUpdate!['forceUpdate'] == true && hasUrl;
       final newVer = _pendingUpdate!['latestVersion']?.toString() ?? '2.0.2';
-      final notes = _pendingUpdate!['releaseNotes']?.toString() ?? 'Performance fixes & updates.';
+      final notes = _pendingUpdate!['releaseNotes']?.toString() ?? 'Performance fixes & security improvements.';
       final archLabel = _getDeviceArchitectureLabel();
 
       return Stack(
         children: [
           widget.child,
-          // Update Modal Overlay
+          // Premium Frosted Backdrop & Modal
           PopScope(
             canPop: !isForced,
-            child: Container(
-              color: Colors.black.withValues(alpha: isForced ? 0.92 : 0.70),
-              alignment: Alignment.center,
-              padding: const EdgeInsets.all(24),
-              child: Material(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(20),
-                elevation: 12,
-                child: Padding(
-                  padding: const EdgeInsets.all(22),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.purpleAccent.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                color: Colors.black.withValues(alpha: isForced ? 0.88 : 0.65),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF0F172A),
+                            Color(0xFF1E293B),
+                            Color(0xFF0B132B),
+                          ],
                         ),
-                        child: const Icon(Icons.rocket_launch_rounded, color: Colors.purpleAccent, size: 40),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        isForced ? 'Mandatory App Update' : 'New Update Available!',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.purpleAccent.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'v$newVer Available (Current: v$currentVersion)',
-                              style: const TextStyle(color: Colors.purpleAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: isForced
+                              ? Colors.redAccent.withValues(alpha: 0.4)
+                              : const Color(0xFF6366F1).withValues(alpha: 0.35),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isForced
+                                ? Colors.redAccent.withValues(alpha: 0.25)
+                                : const Color(0xFF6366F1).withValues(alpha: 0.30),
+                            blurRadius: 36,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 8),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.cyanAccent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.memory_rounded, size: 12, color: Colors.cyanAccent),
-                                const SizedBox(width: 4),
-                                Text(
-                                  archLabel,
-                                  style: const TextStyle(color: Colors.cyanAccent, fontSize: 10, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            blurRadius: 24,
+                            offset: const Offset(0, 12),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0F172A),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white10),
-                        ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
-                              'WHAT\'S NEW:',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 0.8),
+                            // Header Banner with Status Pill & Icon
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    (isForced ? Colors.redAccent : const Color(0xFF6366F1))
+                                        .withValues(alpha: 0.18),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  // Top Status Tag
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: (isForced ? Colors.redAccent : const Color(0xFF6366F1))
+                                          .withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: (isForced ? Colors.redAccent : const Color(0xFF6366F1))
+                                            .withValues(alpha: 0.4),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 7,
+                                          height: 7,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: isForced ? Colors.redAccent : const Color(0xFF38BDF8),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: (isForced ? Colors.redAccent : const Color(0xFF38BDF8))
+                                                    .withValues(alpha: 0.8),
+                                                blurRadius: 6,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 7),
+                                        Text(
+                                          isForced ? 'MANDATORY UPDATE' : 'NEW UPDATE AVAILABLE',
+                                          style: TextStyle(
+                                            color: isForced ? const Color(0xFFFCA5A5) : const Color(0xFFBAE6FD),
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.8,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  // Glowing Center Icon
+                                  Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: isForced
+                                            ? [const Color(0xFFEF4444), const Color(0xFF991B1B)]
+                                            : [const Color(0xFF6366F1), const Color(0xFF3B82F6)],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (isForced ? const Color(0xFFEF4444) : const Color(0xFF6366F1))
+                                              .withValues(alpha: 0.45),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.rocket_launch_rounded,
+                                        color: Colors.white,
+                                        size: 36,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // Title
+                                  Text(
+                                    isForced ? 'Critical App Upgrade' : 'Exciting New Update!',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: -0.3,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // Version Comparison Pill: Current -> Latest
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.35),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.white12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'v$currentVersion',
+                                          style: const TextStyle(
+                                            color: Colors.white60,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 8),
+                                          child: Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF34D399)),
+                                        ),
+                                        Text(
+                                          'v$newVer',
+                                          style: const TextStyle(
+                                            color: Color(0xFF34D399),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+
+                                  // Architecture chip
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.memory_rounded, size: 12, color: Color(0xFF38BDF8)),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          archLabel,
+                                          style: const TextStyle(
+                                            color: Color(0xFFBAE6FD),
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              notes,
-                              style: const TextStyle(fontSize: 12, color: Colors.white70, height: 1.4),
+
+                            // Body: Release notes & Actions
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                              child: Column(
+                                children: [
+                                  // What's New Box
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0F172A).withValues(alpha: 0.7),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Row(
+                                          children: [
+                                            Icon(Icons.auto_awesome_rounded, color: Color(0xFFFBBF24), size: 14),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              "WHAT'S NEW",
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w800,
+                                                color: Color(0xFFFBBF24),
+                                                letterSpacing: 0.8,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        ConstrainedBox(
+                                          constraints: const BoxConstraints(maxHeight: 110),
+                                          child: SingleChildScrollView(
+                                            physics: const BouncingScrollPhysics(),
+                                            child: Text(
+                                              notes,
+                                              style: TextStyle(
+                                                fontSize: 12.5,
+                                                color: Colors.white.withValues(alpha: 0.85),
+                                                height: 1.45,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+
+                                  if (!hasUrl)
+                                    Container(
+                                      width: double.infinity,
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                                      ),
+                                      child: const Row(
+                                        children: [
+                                          Icon(Icons.info_outline_rounded, color: Colors.amber, size: 16),
+                                          SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Notice broadcast without direct download link. You may continue.',
+                                              style: TextStyle(color: Colors.amber, fontSize: 11),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                  // Download Button
+                                  if (hasUrl) ...[
+                                    Container(
+                                      width: double.infinity,
+                                      height: 52,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: isForced
+                                              ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
+                                              : [const Color(0xFF4F46E5), const Color(0xFF2563EB)],
+                                        ),
+                                        borderRadius: BorderRadius.circular(14),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: (isForced ? const Color(0xFFEF4444) : const Color(0xFF4F46E5))
+                                                .withValues(alpha: 0.4),
+                                            blurRadius: 18,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shadowColor: Colors.transparent,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        ),
+                                        icon: const Icon(Icons.download_for_offline_rounded, size: 20),
+                                        label: Text(
+                                          isForced ? 'Update Now to Continue' : 'Download & Install Update',
+                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
+                                        ),
+                                        onPressed: () => _openUpdateUrl(effectiveApkUrl),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      '⚡ High-speed direct download • Auto-installs over current app',
+                                      style: TextStyle(fontSize: 10, color: Colors.white38),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+
+                                  // Optional Dismiss actions
+                                  if (!isForced || !hasUrl) ...[
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextButton(
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: Colors.white60,
+                                              padding: const EdgeInsets.symmetric(vertical: 10),
+                                            ),
+                                            onPressed: () => setState(() => _dismissedOptionalUpdate = true),
+                                            child: const Text('Remind Me Later', style: TextStyle(fontSize: 12)),
+                                          ),
+                                        ),
+                                        Container(
+                                          height: 14,
+                                          width: 1,
+                                          color: Colors.white12,
+                                        ),
+                                        Expanded(
+                                          child: TextButton.icon(
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: const Color(0xFFFBBF24),
+                                              padding: const EdgeInsets.symmetric(vertical: 10),
+                                            ),
+                                            icon: const Icon(Icons.visibility_off_outlined, size: 14),
+                                            label: const Text("Don't Show Again", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                            onPressed: () => _dismissPermanently(remoteVersionCode),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      if (!hasUrl)
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.info_outline_rounded, color: Colors.amber, size: 16),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Broadcast test notice without direct APK link. You can dismiss this prompt.',
-                                  style: TextStyle(color: Colors.amber, fontSize: 11),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (hasUrl)
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.purpleAccent,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            icon: const Icon(Icons.download_rounded),
-                            label: const Text('Download & Update Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            onPressed: () => _openUpdateUrl(effectiveApkUrl),
-                          ),
-                        ),
-                      if (!isForced || !hasUrl) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            TextButton(
-                              onPressed: () => setState(() => _dismissedOptionalUpdate = true),
-                              child: const Text('Remind Me Later', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                            ),
-                            TextButton.icon(
-                              icon: const Icon(Icons.visibility_off_outlined, size: 14, color: Colors.amberAccent),
-                              label: const Text('Don\'t Show Again', style: TextStyle(color: Colors.amberAccent, fontSize: 12, fontWeight: FontWeight.bold)),
-                              onPressed: () => _dismissPermanently(remoteVersionCode),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
               ),
