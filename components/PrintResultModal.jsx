@@ -106,8 +106,13 @@ export default function PrintResultModal({ result: propResult, student: propStud
     ? currentResult.subjects
     : [{ subjectName: currentResult.subject || 'General', totalMarks: currentResult.totalMarks || 100, marks: currentResult.marks || 0 }];
 
-  const hasDetailedBreakdown = rawSubjects.some(
-    s => (Number(s.theoryMarks) > 0 || Number(s.practicalMarks) > 0 || Number(s.internalMarks) > 0)
+  const hasDetailedBreakdown = currentResult.isDetailedMode === true || (
+    currentResult.isDetailedMode == null &&
+    rawSubjects.some(
+      s => Number(s.practicalMarks) > 0 ||
+           Number(s.internalMarks) > 0 ||
+           (Number(s.theoryMarks) > 0 && Number(s.marks) > 0 && Number(s.theoryMarks) !== Number(s.marks))
+    )
   );
 
   const total = rawSubjects.reduce((sum, s) => sum + (Number(s.totalMarks) || 0), 0);

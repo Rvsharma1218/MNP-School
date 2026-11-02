@@ -468,7 +468,7 @@ export default function ResultsView() {
           marks: total,
           totalMarks: maxMarks,
           passingMarks: passMarks,
-          theoryMarks: total,
+          theoryMarks: 0,
           practicalMarks: 0,
           internalMarks: 0
         };
@@ -1772,11 +1772,20 @@ function StudentDetailedMarkEntryModal({
   const { settings = {} } = useSchoolStore();
 
   const [isDetailed, setIsDetailed] = useState(() => {
-    if (existingResult) {
-      return existingResult.isDetailedMode ||
-        existingResult.subjects?.some(s => Number(s.theoryMarks) > 0 || Number(s.practicalMarks) > 0 || Number(s.internalMarks) > 0) || false;
+    if (initialDetailedMode !== undefined && initialDetailedMode !== null) {
+      return Boolean(initialDetailedMode);
     }
-    return initialDetailedMode;
+    if (existingResult) {
+      if (existingResult.isDetailedMode !== undefined && existingResult.isDetailedMode !== null) {
+        return Boolean(existingResult.isDetailedMode);
+      }
+      return existingResult.subjects?.some(s =>
+        Number(s.practicalMarks) > 0 ||
+        Number(s.internalMarks) > 0 ||
+        (Number(s.theoryMarks) > 0 && Number(s.marks) > 0 && Number(s.theoryMarks) !== Number(s.marks))
+      ) || false;
+    }
+    return false;
   });
 
   const [remarks, setRemarks] = useState(existingResult?.remarks || '');
@@ -1863,9 +1872,9 @@ function StudentDetailedMarkEntryModal({
         marks: Number(r.marks) || 0,
         totalMarks: Number(r.totalMarks) || 100,
         passingMarks: Number(r.passingMarks) || Math.round((Number(r.totalMarks) || 100) * 0.33),
-        theoryMarks: Number(r.theory) || 0,
-        practicalMarks: Number(r.practical) || 0,
-        internalMarks: Number(r.internal) || 0
+        theoryMarks: isDetailed ? (Number(r.theory) || 0) : 0,
+        practicalMarks: isDetailed ? (Number(r.practical) || 0) : 0,
+        internalMarks: isDetailed ? (Number(r.internal) || 0) : 0
       }))
     };
   };
