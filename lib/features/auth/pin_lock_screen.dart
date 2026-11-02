@@ -10,9 +10,8 @@ import '../parent/parent_dashboard_screen.dart';
 import 'login_screen.dart';
 
 /// Second security layer, shown right after a successful email/password
-/// sign-in. Behaviour is unchanged from the original PIN screen: first
-/// launch asks the user to set a 4-digit PIN, every launch after that asks
-/// them to enter it.
+/// sign-in. First launch asks user to set 4-digit PIN, every launch after
+/// asks to enter it. Fully responsive for all screen sizes and aspect ratios.
 class PinLockScreen extends ConsumerStatefulWidget {
   const PinLockScreen({super.key});
 
@@ -278,208 +277,257 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnim,
-            child: Column(
-              children: [
-                const SizedBox(height: 40),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmall = constraints.maxHeight < 720 || constraints.maxWidth < 360;
+                final logoSize = isSmall ? 68.0 : 92.0;
+                final keySize = isSmall ? 60.0 : 72.0;
+                final fontSize = isSmall ? 22.0 : 25.0;
+                final rowSpacing = isSmall ? 8.0 : 12.0;
+                final numpadPadding = isSmall ? 24.0 : 40.0;
 
-                // ── Official School Logo ────────────────────────────────
-                Hero(
-                  tag: 'app_logo',
-                  child: Container(
-                    width: 95,
-                    height: 95,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFDAA520),
-                        width: 2.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFDAA520).withValues(alpha: 0.35),
-                          blurRadius: 22,
-                          spreadRadius: 2,
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          blurRadius: 15,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        width: 95,
-                        height: 95,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          SizedBox(height: isSmall ? 16 : 36),
 
-                // ── App Name ─────────────────────────────────────────────
-                const Text(
-                  'Mission Navodaya',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                const Text(
-                  'PUBLIC SCHOOL MORA',
-                  style: TextStyle(
-                    color: Color(0xFFDAA520),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // ── Title & Subtitle ─────────────────────────────────────
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Column(
-                    key: ValueKey(title),
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        subtitle,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.75),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // ── PIN Dots ─────────────────────────────────────────────
-                AnimatedBuilder(
-                  animation: _shakeAnim,
-                  builder: (ctx, child) => Transform.translate(
-                    offset: Offset(_shakeAnim.value, 0),
-                    child: child,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(4, (i) {
-                      final filled = i < _enteredPin.length;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 12),
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: filled ? Colors.white : Colors.transparent,
-                          border: Border.all(
-                            color: filled
-                                ? Colors.white
-                                : Colors.white.withOpacity(0.5),
-                            width: 2,
+                          // ── Official School Logo ────────────────────────────────
+                          Hero(
+                            tag: 'app_logo',
+                            child: Container(
+                              width: logoSize,
+                              height: logoSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFDAA520),
+                                  width: 2.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFDAA520).withValues(alpha: 0.35),
+                                    blurRadius: 22,
+                                    spreadRadius: 2,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/images/logo.png',
+                                  width: logoSize,
+                                  height: logoSize,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
                           ),
-                          boxShadow: filled
-                              ? [
-                            BoxShadow(
-                              color: Colors.white.withOpacity(0.5),
-                              blurRadius: 8,
-                              spreadRadius: 1,
+                          SizedBox(height: isSmall ? 10 : 16),
+
+                          // ── App Name ─────────────────────────────────────────────
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Mission Navodaya',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: isSmall ? 20 : 24,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'PUBLIC SCHOOL MORA',
+                                    style: TextStyle(
+                                      color: const Color(0xFFDAA520),
+                                      fontSize: isSmall ? 11 : 13,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isSmall ? 14 : 26),
+
+                          // ── Title & Subtitle ─────────────────────────────────────
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: Column(
+                              key: ValueKey(title),
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: isSmall ? 18 : 22,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  child: Text(
+                                    subtitle,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.75),
+                                      fontSize: isSmall ? 12 : 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: isSmall ? 14 : 28),
+
+                          // ── PIN Dots ─────────────────────────────────────────────
+                          AnimatedBuilder(
+                            animation: _shakeAnim,
+                            builder: (ctx, child) => Transform.translate(
+                              offset: Offset(_shakeAnim.value, 0),
+                              child: child,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(4, (i) {
+                                final filled = i < _enteredPin.length;
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin: EdgeInsets.symmetric(horizontal: isSmall ? 8 : 12),
+                                  width: isSmall ? 16 : 20,
+                                  height: isSmall ? 16 : 20,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: filled ? Colors.white : Colors.transparent,
+                                    border: Border.all(
+                                      color: filled
+                                          ? Colors.white
+                                          : Colors.white.withOpacity(0.5),
+                                      width: 2,
+                                    ),
+                                    boxShadow: filled
+                                        ? [
+                                      BoxShadow(
+                                        color: Colors.white.withOpacity(0.5),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      )
+                                    ]
+                                        : null,
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+
+                          // ── Error Message ────────────────────────────────────────
+                          SizedBox(height: isSmall ? 8 : 14),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 200),
+                            child: _errorMsg.isNotEmpty
+                                ? Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 32),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: Colors.red.withOpacity(0.4), width: 1),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.error_outline,
+                                      color: Colors.white70, size: 14),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      _errorMsg,
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: isSmall ? 11 : 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             )
-                          ]
-                              : null,
-                        ),
-                      );
-                    }),
-                  ),
-                ),
+                                : const SizedBox.shrink(),
+                          ),
 
-                // ── Error Message ────────────────────────────────────────
-                const SizedBox(height: 16),
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  child: _errorMsg.isNotEmpty
-                      ? Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 40),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: Colors.red.withOpacity(0.4), width: 1),
+                          const Spacer(),
+
+                          // ── Numpad ───────────────────────────────────────────────
+                          _buildNumpad(
+                            keySize: keySize,
+                            fontSize: fontSize,
+                            rowSpacing: rowSpacing,
+                            horizontalPadding: numpadPadding,
+                          ),
+                          SizedBox(height: isSmall ? 8 : 14),
+
+                          // ── Reset PIN / Log Out ──────────────────────────────────
+                          if (_isPinSet)
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    TextButton.icon(
+                                      onPressed: _resetPin,
+                                      icon: Icon(Icons.lock_reset,
+                                          color: Colors.white.withOpacity(0.6), size: 15),
+                                      label: Text(
+                                        'Forgot PIN? Reset',
+                                        style: TextStyle(
+                                            color: Colors.white.withOpacity(0.6),
+                                            fontSize: isSmall ? 12 : 13),
+                                      ),
+                                    ),
+                                    Container(
+                                      height: 14,
+                                      width: 1,
+                                      color: Colors.white.withOpacity(0.3),
+                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: _logout,
+                                      icon: Icon(Icons.logout_rounded,
+                                          color: Colors.white.withOpacity(0.6), size: 15),
+                                      label: Text(
+                                        'Log Out',
+                                        style: TextStyle(
+                                            color: Colors.white.withOpacity(0.6),
+                                            fontSize: isSmall ? 12 : 13),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          SizedBox(height: isSmall ? 12 : 20),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline,
-                            color: Colors.white70, size: 16),
-                        const SizedBox(width: 6),
-                        Text(_errorMsg,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 13)),
-                      ],
-                    ),
-                  )
-                      : const SizedBox.shrink(),
-                ),
-
-                const Spacer(),
-
-                // ── Numpad ───────────────────────────────────────────────
-                _buildNumpad(),
-                const SizedBox(height: 16),
-
-                // ── Reset PIN / Log Out ──────────────────────────────────
-                if (_isPinSet)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextButton.icon(
-                        onPressed: _resetPin,
-                        icon: Icon(Icons.lock_reset,
-                            color: Colors.white.withOpacity(0.6), size: 16),
-                        label: Text(
-                          'Forgot PIN? Reset',
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.6), fontSize: 13),
-                        ),
-                      ),
-                      Container(
-                        height: 14,
-                        width: 1,
-                        color: Colors.white.withOpacity(0.3),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                      ),
-                      TextButton.icon(
-                        onPressed: _logout,
-                        icon: Icon(Icons.logout_rounded,
-                            color: Colors.white.withOpacity(0.6), size: 16),
-                        label: Text(
-                          'Log Out',
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.6), fontSize: 13),
-                        ),
-                      ),
-                    ],
                   ),
-                const SizedBox(height: 24),
-              ],
+                );
+              },
             ),
           ),
         ),
@@ -487,7 +535,12 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
     );
   }
 
-  Widget _buildNumpad() {
+  Widget _buildNumpad({
+    required double keySize,
+    required double fontSize,
+    required double rowSpacing,
+    required double horizontalPadding,
+  }) {
     final rows = [
       ['1', '2', '3'],
       ['4', '5', '6'],
@@ -495,18 +548,20 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
       ['', '0', '⌫'],
     ];
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
         children: rows.map((row) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.only(bottom: rowSpacing),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: row.map((d) {
-                if (d.isEmpty) return const SizedBox(width: 76, height: 76);
+                if (d.isEmpty) return SizedBox(width: keySize, height: keySize);
                 return _NumKey(
                   label: d,
                   isBackspace: d == '⌫',
+                  size: keySize,
+                  fontSize: fontSize,
                   onTap: () => d == '⌫' ? _onBackspace() : _onDigit(d),
                 );
               }).toList(),
@@ -524,8 +579,16 @@ class _NumKey extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
   final bool isBackspace;
-  const _NumKey(
-      {required this.label, required this.onTap, this.isBackspace = false});
+  final double size;
+  final double fontSize;
+
+  const _NumKey({
+    required this.label,
+    required this.onTap,
+    this.isBackspace = false,
+    this.size = 72,
+    this.fontSize = 24,
+  });
 
   @override
   State<_NumKey> createState() => _NumKeyState();
@@ -545,8 +608,8 @@ class _NumKeyState extends State<_NumKey> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 80),
-        width: 76,
-        height: 76,
+        width: widget.size,
+        height: widget.size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: _pressed
@@ -569,12 +632,12 @@ class _NumKeyState extends State<_NumKey> {
         child: Center(
           child: widget.isBackspace
               ? Icon(Icons.backspace_outlined,
-              color: Colors.white.withOpacity(0.9), size: 24)
+              color: Colors.white.withOpacity(0.9), size: widget.size * 0.35)
               : Text(
             widget.label,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 26,
+              fontSize: widget.fontSize,
               fontWeight: FontWeight.w500,
             ),
           ),

@@ -941,106 +941,122 @@ class _LoginScreenState extends State<LoginScreen>
             child: FadeTransition(
               opacity: _fadeAnim,
               child: LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 28),
+                builder: (context, constraints) {
+                  final isShort = constraints.maxHeight < 720;
+                  final isNarrow = constraints.maxWidth < 360;
+                  final logoSize = isShort ? 78.0 : 105.0;
+                  final horizontalPadding = isNarrow ? 18.0 : 28.0;
 
-                        // Official School Campus Badge
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: const Color(0xFFDAA520).withValues(alpha: 0.7), width: 1.2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: Column(
+                        children: [
+                          SizedBox(height: isShort ? 14 : 28),
+
+                          // Official School Campus Badge
+                          Container(
+                            margin: EdgeInsets.only(bottom: isShort ? 10 : 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: const Color(0xFFDAA520).withValues(alpha: 0.7), width: 1.2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.verified_rounded, size: 14, color: Color(0xFFDAA520)),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'MISSION NAVODAYA PUBLIC SCHOOL MORA',
+                                    style: TextStyle(
+                                      color: Colors.amber.shade200,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.verified_rounded, size: 14, color: Color(0xFFDAA520)),
-                              const SizedBox(width: 6),
-                              Text(
-                                'MISSION NAVODAYA PUBLIC SCHOOL MORA',
-                                style: TextStyle(
-                                  color: Colors.amber.shade200,
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.8,
+
+                          // ── Official School Logo ────────────────────────────
+                          Hero(
+                            tag: 'app_logo',
+                            child: Container(
+                              width: logoSize,
+                              height: logoSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFDAA520),
+                                  width: 2.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFDAA520).withValues(alpha: 0.35),
+                                    blurRadius: 25,
+                                    spreadRadius: 2,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/images/logo.png',
+                                  width: logoSize,
+                                  height: logoSize,
+                                  fit: BoxFit.cover,
                                 ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
+                          SizedBox(height: isShort ? 10 : 16),
 
-                  // ── Official School Logo ────────────────────────────
-                  Hero(
-                    tag: 'app_logo',
-                    child: Container(
-                      width: 105,
-                      height: 105,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFDAA520),
-                          width: 2.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFDAA520).withValues(alpha: 0.35),
-                            blurRadius: 25,
-                            spreadRadius: 2,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Mission Navodaya',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: isShort ? 22 : 26,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'PUBLIC SCHOOL MORA',
+                                  style: TextStyle(
+                                    color: const Color(0xFFDAA520),
+                                    fontSize: isShort ? 12 : 14,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            blurRadius: 15,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          width: 105,
-                          height: 105,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  const Text(
-                    'Mission Navodaya',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  const Text(
-                    'PUBLIC SCHOOL MORA',
-                    style: TextStyle(
-                      color: Color(0xFFDAA520),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
+                          SizedBox(height: isShort ? 18 : 32),
 
                   // ── Principal / Teacher / Parent toggle ─────────────
                   Container(
@@ -1179,15 +1195,16 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
 
-                  const SizedBox(height: 32),
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + (isShort ? 16 : 28)),
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     ),
   ),
+),
 ),
 );
   }
@@ -1235,7 +1252,7 @@ class _RoleTab extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 11),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         decoration: BoxDecoration(
           color: selected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
@@ -1243,14 +1260,20 @@ class _RoleTab extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: selected ? AppColors.primary : Colors.white70),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? AppColors.primary : Colors.white70,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
+            Icon(icon, size: 15, color: selected ? AppColors.primary : Colors.white70),
+            const SizedBox(width: 4),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: selected ? AppColors.primary : Colors.white70,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
               ),
             ),
           ],
