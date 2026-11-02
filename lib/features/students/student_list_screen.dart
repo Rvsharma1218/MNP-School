@@ -229,7 +229,7 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
               return ListView.builder(
                 padding: const EdgeInsets.all(12),
                 itemCount: students.length,
-                itemBuilder: (ctx, i) => _StudentCard(student: students[i]),
+                itemBuilder: (ctx, i) => _StudentCard(key: ValueKey('${students[i].id}_${students[i].photoPath}'), student: students[i]),
               );
             },
             loading: () => const LoadingWidget(message: 'Loading students...'),
@@ -867,7 +867,7 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
 
 class _StudentCard extends ConsumerStatefulWidget {
   final StudentModel student;
-  const _StudentCard({required this.student});
+  const _StudentCard({super.key, required this.student});
 
   @override
   ConsumerState<_StudentCard> createState() => _StudentCardState();
@@ -928,6 +928,9 @@ class _StudentCardState extends ConsumerState<_StudentCard> {
               arguments: s.id);
           // Refresh fee status when returning from profile
           _loadFeeStatus();
+          PaintingBinding.instance.imageCache.clear();
+          PaintingBinding.instance.imageCache.clearLiveImages();
+          ref.read(studentsProvider.notifier).loadStudents();
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(

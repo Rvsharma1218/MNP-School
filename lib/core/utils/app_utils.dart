@@ -107,6 +107,7 @@ class AppUtils {
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       return Image.network(
         trimmed,
+        key: ValueKey(trimmed),
         width: width,
         height: height,
         fit: fit,
@@ -118,6 +119,7 @@ class AppUtils {
         final bytes = base64Decode(trimmed.split(',').last.trim());
         return Image.memory(
           bytes,
+          key: ValueKey(trimmed.hashCode),
           width: width,
           height: height,
           fit: fit,
@@ -128,8 +130,10 @@ class AppUtils {
     try {
       final file = File(trimmed);
       if (file.existsSync()) {
+        final modTime = file.lastModifiedSync().millisecondsSinceEpoch;
         return Image.file(
           file,
+          key: ValueKey('${trimmed}_$modTime'),
           width: width,
           height: height,
           fit: fit,
@@ -143,6 +147,7 @@ class AppUtils {
       final bytes = base64Decode(clean);
       return Image.memory(
         bytes,
+        key: ValueKey(clean.hashCode),
         width: width,
         height: height,
         fit: fit,

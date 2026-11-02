@@ -182,6 +182,8 @@ class _EditStudentScreenState extends ConsumerState<EditStudentScreen> {
         expectedCompletionDate: _calcExpectedCompletion(),
       );
       await ref.read(studentsProvider.notifier).updateStudent(updated);
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Student updated!'), backgroundColor: AppColors.success),

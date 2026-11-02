@@ -36,6 +36,8 @@ class StudentProfileScreen extends ConsumerStatefulWidget {
 
 class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
     with SingleTickerProviderStateMixin {
+  StudentModel? _localStudent;
+
   void _quickChangeStudentPhoto(BuildContext context, StudentModel student) {
     String? updatedPhoto = student.photoPath;
     showModalBottomSheet(
@@ -76,10 +78,16 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
                     child: ElevatedButton(
                       onPressed: () async {
                         try {
-                          await DatabaseService.instance.updateStudent(
-                            student.copyWith(photoPath: updatedPhoto),
-                          );
-                          setState(() {});
+                          final updated = student.copyWith(photoPath: updatedPhoto);
+                          await DatabaseService.instance.updateStudent(updated);
+                          await ref.read(studentsProvider.notifier).updateStudent(updated);
+                          PaintingBinding.instance.imageCache.clear();
+                          PaintingBinding.instance.imageCache.clearLiveImages();
+                          if (mounted) {
+                            setState(() {
+                              _localStudent = updated;
+                            });
+                          }
                           if (sheetCtx.mounted) Navigator.pop(sheetCtx);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -163,10 +171,10 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
         ).firstOrNull;
 
     return FutureBuilder<StudentModel?>(
-      initialData: cachedStudent,
+      initialData: _localStudent ?? cachedStudent,
       future: _getStudent(),
       builder: (ctx, snap) {
-        final student = snap.data ?? cachedStudent;
+        final student = _localStudent ?? snap.data ?? cachedStudent;
         if (student == null) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Scaffold(body: LoadingWidget());
@@ -195,7 +203,15 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
                 icon: const Icon(Icons.edit_outlined, color: Colors.white),
                 onPressed: () async {
                   await Navigator.pushNamed(ctx, AppRoutes.editStudent, arguments: student.id);
-                  setState(() {});
+                  PaintingBinding.instance.imageCache.clear();
+                  PaintingBinding.instance.imageCache.clearLiveImages();
+                  await ref.read(studentsProvider.notifier).loadStudents();
+                  final fresh = await DatabaseService.instance.getStudentById(widget.studentId);
+                  if (mounted) {
+                    setState(() {
+                      _localStudent = fresh;
+                    });
+                  }
                 },
               ),
               if (isPrincipal)

@@ -264,6 +264,8 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
       );
 
       await ref.read(studentsProvider.notifier).addStudent(student);
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
       ref.invalidate(dashboardStatsProvider);
 
       if (mounted) {
