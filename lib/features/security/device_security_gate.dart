@@ -17,8 +17,8 @@ class DeviceSecurityGate extends StatefulWidget {
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
-  static const int currentVersionCode = 8;
-  static const String currentVersion = '2.0.1';
+  static const int currentVersionCode = 2009;
+  static const String currentVersion = '2.0.2';
 
   bool _isRevoked = false;
   bool _isCheckingRevocation = false;
