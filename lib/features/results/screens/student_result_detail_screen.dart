@@ -47,11 +47,11 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
   }
 
   bool get _isDetailedMode {
-    return _currentResult.isDetailedMode ||
-        _currentResult.subjects.any((s) =>
-            s.theoryMarks > 0 ||
-            s.practicalMarks > 0 ||
-            s.internalMarks > 0);
+    if (_currentResult.isDetailedMode) return true;
+    return _currentResult.subjects.any((s) =>
+        s.practicalMarks > 0 ||
+        s.internalMarks > 0 ||
+        (s.theoryMarks > 0 && s.marks > 0 && s.theoryMarks != s.marks));
   }
 
   Future<void> _updateStatusAndRemarks() async {

@@ -210,16 +210,19 @@ class ResultModel {
       created = DateTime.now();
     }
 
-    final hasDetailedMarks = parsedSubjects.any((s) =>
-        s.theoryMarks > 0 ||
-        s.practicalMarks > 0 ||
-        s.internalMarks > 0);
     final rawDetailed = map['isDetailedMode'];
-    final isDetailed = rawDetailed == 1 ||
-        rawDetailed == true ||
-        rawDetailed == '1' ||
-        rawDetailed == 'true' ||
-        hasDetailedMarks;
+    bool isDetailed;
+    if (rawDetailed != null) {
+      isDetailed = rawDetailed == 1 ||
+          rawDetailed == true ||
+          rawDetailed == '1' ||
+          rawDetailed == 'true';
+    } else {
+      isDetailed = parsedSubjects.any((s) =>
+          s.practicalMarks > 0 ||
+          s.internalMarks > 0 ||
+          (s.theoryMarks > 0 && s.marks > 0 && s.theoryMarks != s.marks));
+    }
 
     return ResultModel(
       id: map['id']?.toString() ?? '',

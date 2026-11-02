@@ -64,5 +64,46 @@ void main() {
       expect(result.totalMarks, 200);
       expect(result.overallPercentage, 75);
     });
+    test('Direct Mode result from web with isDetailedMode: false stays Direct Mode', () {
+      final map = {
+        'id': 'res_1',
+        'studentId': 'stu1',
+        'examName': 'Term Exam',
+        'isDetailedMode': false,
+        'subjects': [
+          {
+            'subjectName': 'Math',
+            'marks': 85.0,
+            'totalMarks': 100.0,
+            'theoryMarks': 85.0,
+            'practicalMarks': 0.0,
+            'internalMarks': 0.0,
+          }
+        ],
+      };
+      final res = ResultModel.fromMap(map);
+      expect(res.isDetailedMode, isFalse);
+    });
+
+    test('Detailed Mode result stays Detailed Mode', () {
+      final map = {
+        'id': 'res_2',
+        'studentId': 'stu1',
+        'examName': 'Term Exam',
+        'isDetailedMode': true,
+        'subjects': [
+          {
+            'subjectName': 'Science',
+            'marks': 90.0,
+            'totalMarks': 100.0,
+            'theoryMarks': 70.0,
+            'practicalMarks': 20.0,
+            'internalMarks': 0.0,
+          }
+        ],
+      };
+      final res = ResultModel.fromMap(map);
+      expect(res.isDetailedMode, isTrue);
+    });
   });
 }

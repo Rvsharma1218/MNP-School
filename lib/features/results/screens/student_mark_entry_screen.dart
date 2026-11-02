@@ -72,11 +72,11 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
     _selectedStatus = res?.status ?? 'AUTO';
 
     // ─── CRITICAL: AUTO-OPEN IN THE EXACT SAVED MODE ───
-    if (res != null) {
-      _isDetailedMode = res.isDetailedMode ||
-          res.subjects.any((s) => s.theoryMarks > 0 || s.practicalMarks > 0 || s.internalMarks > 0);
-    } else if (ex != null) {
+    if (ex != null) {
+      // Exam configuration is the single source of truth for evaluation mode
       _isDetailedMode = ex.isDetailedMode;
+    } else if (res != null) {
+      _isDetailedMode = res.isDetailedMode;
     }
 
     _initSubjectRows();
