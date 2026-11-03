@@ -79,6 +79,26 @@ export default function ResultsView() {
   }, [isPrincipal, hasAllClassesAccess, allowedClasses, resultsClassFilter]);
   const [resultsExamFilter, setResultsExamFilter] = useState('all');
   const [savedViewMode, setSavedViewMode] = useState('cards'); // 'cards' | 'table'
+  const [editingResultData, setEditingResultData] = useState(null);
+
+  const handleOpenEditResult = (res) => {
+    if (!res) return;
+    const stu = findStudent(res) || {
+      id: res.studentId || `stu_${res.id}`,
+      studentId: res.studentId || '',
+      name: res.studentName || 'Student',
+      rollNumber: res.rollNumber || '',
+      className: res.className || res.class || '',
+      section: res.section || 'A',
+      fatherName: res.fatherName || '',
+      motherName: res.motherName || '',
+      admissionNumber: res.admissionNumber || res.studentId || ''
+    };
+    setEditingResultData({
+      student: stu,
+      result: res
+    });
+  };
 
   // Student Matcher
   const findStudent = (r) => {
@@ -328,7 +348,7 @@ export default function ResultsView() {
           if (seen.has(name.toLowerCase())) return;
           seen.add(name.toLowerCase());
           loadedSubs.push({
-            id: `sub_${idx}_${Date.now()}`,
+            id: `sub_${idx}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`,
             name: name,
             totalMarks: Number(s.totalMarks) || 100,
             passingMarks: Number(s.passingMarks) || 33,
@@ -344,10 +364,40 @@ export default function ResultsView() {
     }
   };
 
-  // Jump from Exams tab directly to Mark Entry Desk for that exam
+  // Jump from Exams tab directly to Mark Entry Desk for that exam with instant batching
   const handleJumpToMarkEntry = (exam) => {
+    if (!exam) return;
+    const examClassName = (exam.className && exam.className !== 'All Classes' && availableClasses.includes(exam.className))
+      ? exam.className
+      : 'All Classes';
+
+    setSelectedExamId(exam.id);
+    setBulkExamTitle(exam.title);
+    setIsDetailedBreakdownMode(exam.isDetailedMode || false);
+    if (examClassName !== 'All Classes') {
+      setBulkClass(examClassName);
+    }
+    if (exam.subjects && exam.subjects.length > 0) {
+      const seen = new Set();
+      const loadedSubs = [];
+      exam.subjects.forEach((s, idx) => {
+        const name = (s.subjectName || 'Subject').trim();
+        if (seen.has(name.toLowerCase())) return;
+        seen.add(name.toLowerCase());
+        loadedSubs.push({
+          id: `sub_${idx}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          name: name,
+          totalMarks: Number(s.totalMarks) || 100,
+          passingMarks: Number(s.passingMarks) || 33,
+          theoryMax: Number(s.theoryMax) || 100,
+          practicalMax: Number(s.practicalMax) || 0,
+          internalMax: Number(s.internalMax) || 0
+        });
+      });
+      setDeskSubjects(loadedSubs);
+      setActiveDeskSubjectId(loadedSubs[0]?.id || '');
+    }
     setActiveTab('entry');
-    handleSelectExam(exam.id);
   };
 
   // Students in selected class
@@ -367,10 +417,49 @@ export default function ResultsView() {
     });
   }, [students, bulkClass, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
-  // Filtered students for mark entry desk (status + search)
+  // High-performance O(1) indexed Map for active exam results
+  const examResultsMap = useMemo(() => {
+    const map = new Map();
+    const targetExam = String(bulkExamTitle || '').trim().toLowerCase();
+    if (!targetExam) return map;
+
+    for (const r of results) {
+      if (String(r.examName || '').trim().toLowerCase() !== targetExam) continue;
+      if (r.studentId) map.set(String(r.studentId).trim().toLowerCase(), r);
+      if (r.admissionNumber) map.set(String(r.admissionNumber).trim().toLowerCase(), r);
+      if (r.id) map.set(String(r.id).trim().toLowerCase(), r);
+      if (r.studentName) {
+        const nameKey = String(r.studentName).trim().toLowerCase();
+        const rollKey = String(r.rollNumber || '').trim().toLowerCase();
+        if (rollKey) map.set(`${nameKey}_roll_${rollKey}`, r);
+        if (!map.has(nameKey)) map.set(nameKey, r);
+      }
+    }
+    return map;
+  }, [results, bulkExamTitle]);
+
+  const getStudentResult = (s) => {
+    if (!s) return null;
+    const sId = String(s.id || '').trim().toLowerCase();
+    const sStuId = String(s.studentId || '').trim().toLowerCase();
+    const sAdm = String(s.admissionNumber || s.admissionNo || '').trim().toLowerCase();
+    const sName = String(s.name || '').trim().toLowerCase();
+    const sRoll = String(s.rollNumber || '').trim().toLowerCase();
+
+    return (
+      (sId && examResultsMap.get(sId)) ||
+      (sStuId && examResultsMap.get(sStuId)) ||
+      (sAdm && examResultsMap.get(sAdm)) ||
+      (sName && sRoll && examResultsMap.get(`${sName}_roll_${sRoll}`)) ||
+      (sName && examResultsMap.get(sName)) ||
+      null
+    );
+  };
+
+  // Filtered students for mark entry desk (status + search) - O(1) matching
   const deskFilteredStudents = useMemo(() => {
     return classStudents.filter(s => {
-      const existing = results.find(r => matchesStudent(r, s) && r.examName === bulkExamTitle);
+      const existing = getStudentResult(s);
       if (deskStatusFilter === 'Completed' && !existing) return false;
       if (deskStatusFilter === 'Pending' && existing) return false;
 
@@ -381,15 +470,15 @@ export default function ResultsView() {
       const sId = (s.studentId || '').toLowerCase();
       return sName.includes(q) || sRoll.includes(q) || sId.includes(q);
     });
-  }, [classStudents, results, bulkExamTitle, deskStatusFilter, deskSearchQuery]);
+  }, [classStudents, examResultsMap, deskStatusFilter, deskSearchQuery]);
 
-  // Sync mark entries from existing results when class / exam / subjects change
+  // Sync mark entries from existing results when class / exam / subjects change - O(1) lookups
   useEffect(() => {
     const initial = {};
     deskSubjects.forEach(bs => {
       initial[bs.id] = {};
       classStudents.forEach(s => {
-        const existing = results.find(r => matchesStudent(r, s) && r.examName === bulkExamTitle);
+        const existing = getStudentResult(s);
         const subMark = existing?.subjects?.find(sub => sub.subjectName === bs.name);
         if (subMark) {
           const total = subMark.marks != null ? subMark.marks : '';
@@ -403,7 +492,7 @@ export default function ResultsView() {
       });
     });
     setMarkEntries(initial);
-  }, [bulkClass, bulkExamTitle, deskSubjects.map(s => s.name).join(','), results]);
+  }, [bulkClass, bulkExamTitle, deskSubjects, examResultsMap, classStudents]);
 
   const handleDeskMarkChange = (subjectId, studentId, field, val) => {
     setMarkEntries(prev => {
@@ -430,7 +519,7 @@ export default function ResultsView() {
 
   // Save single student's marks from desk
   const handleSaveStudentMarks = async (student) => {
-    const existing = results.find(r => matchesStudent(r, student) && r.examName === bulkExamTitle);
+    const existing = getStudentResult(student);
     let updatedSubjects = existing ? [...existing.subjects] : [];
 
     deskSubjects.forEach(bs => {
@@ -538,7 +627,7 @@ export default function ResultsView() {
 
   // Open Individual Student Mark Entry Modal (matching student_mark_entry_screen.dart)
   const handleOpenIndividualStudentModal = (student, index) => {
-    const existing = results.find(r => matchesStudent(r, student) && r.examName === bulkExamTitle);
+    const existing = getStudentResult(student);
     setModalStudent(student);
     setModalStudentResult(existing || null);
     setModalStudentIndex(index);
@@ -894,6 +983,16 @@ export default function ResultsView() {
                         <span>Marksheet</span>
                       </button>
 
+                      {/* Edit Result Marks */}
+                      <button
+                        onClick={() => handleOpenEditResult(res)}
+                        className="py-1.5 px-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95 shadow-xs"
+                        title="Edit Marks and Scores"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+
                       {/* WhatsApp Share */}
                       <button
                         onClick={() => handleWhatsAppShare(res, stu)}
@@ -984,6 +1083,14 @@ export default function ResultsView() {
                               >
                                 <Eye className="w-3 h-3" />
                                 <span>Marksheet</span>
+                              </button>
+                              <button
+                                onClick={() => handleOpenEditResult(res)}
+                                className="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer shadow-xs transition-all active:scale-95"
+                                title="Edit Result Marks"
+                              >
+                                <Edit className="w-3 h-3" />
+                                <span>Edit</span>
                               </button>
                               <button
                                 onClick={() => handleWhatsAppShare(res, stu)}
@@ -1439,7 +1546,7 @@ export default function ResultsView() {
             /* ── MOBILE PHONE TOUCH CARDS VIEW ── */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {deskFilteredStudents.map((student, idx) => {
-                const existing = results.find(r => matchesStudent(r, student) && r.examName === bulkExamTitle);
+                const existing = getStudentResult(student);
                 const hasEntered = !!existing;
 
                 return (
@@ -1692,7 +1799,7 @@ export default function ResultsView() {
           subjects={deskSubjects}
           isDetailedMode={isDetailedBreakdownMode}
           passingMarks={bulkPassingMarks}
-          existingResult={results.find(r => matchesStudent(r, modalStudent) && r.examName === bulkExamTitle)}
+          existingResult={getStudentResult(modalStudent)}
           onClose={() => setModalStudent(null)}
           onSaved={async (savedPayload) => {
             await saveResult(savedPayload);
@@ -1725,6 +1832,25 @@ export default function ResultsView() {
               setModalStudentIndex(nextIdx);
               setModalStudent(deskFilteredStudents[nextIdx]);
             }
+          }}
+        />
+      )}
+
+      {/* EDIT SAVED RESULT MODAL */}
+      {editingResultData && (
+        <StudentDetailedMarkEntryModal
+          student={editingResultData.student}
+          examTitle={editingResultData.result.examName}
+          examId={editingResultData.result.examId || ''}
+          subjects={editingResultData.result.subjects || []}
+          isDetailedMode={editingResultData.result.isDetailedMode}
+          passingMarks={editingResultData.result.passingMarks || 33}
+          existingResult={editingResultData.result}
+          onClose={() => setEditingResultData(null)}
+          onSaved={async (savedPayload) => {
+            await saveResult(savedPayload);
+            showToast(`✓ Result updated for ${editingResultData.student.name}!`, 'success');
+            setEditingResultData(null);
           }}
         />
       )}
@@ -1856,8 +1982,8 @@ function StudentDetailedMarkEntryModal({
       studentId: student.studentId || student.id,
       studentName: student.name,
       rollNumber: student.rollNumber || '',
-      className: student.className || student.course || '',
-      section: student.section || 'A',
+      className: student.className || student.course || existingResult?.className || '',
+      section: student.section || existingResult?.section || 'A',
       fatherName: student.fatherName || '',
       motherName: student.motherName || '',
       admissionNumber: student.admissionNumber || student.admissionNo || '',
