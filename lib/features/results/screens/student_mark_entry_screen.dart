@@ -132,8 +132,63 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
     final res = widget.editResult;
     final ex = widget.exam;
 
-    if (res != null && res.subjects.isNotEmpty) {
-      // Load existing result subjects (retaining saved mode and marks)
+    if (ex != null && ex.subjects.isNotEmpty) {
+      // ─── 1. Exam Configuration Strictly Governs the Subjects ───
+      final seen = <String>{};
+      final uniqueSubs = ex.subjects.where((s) => seen.add(s.subjectName.trim().toLowerCase())).toList();
+      _subjectRows = uniqueSubs.map((s) {
+        final sName = s.subjectName.trim();
+        final sCat = s.category.isNotEmpty ? s.category : (sName.toLowerCase().contains('oral') ? 'Oral' : 'Written');
+        final isStd = _standardSubjects.contains(sName) && sName != 'Other';
+        final maxM = _isDetailedMode ? (s.theoryMax + s.practicalMax + s.internalMax) : s.totalMarks;
+        final effMax = maxM > 0 ? maxM : 100.0;
+
+        // Check if student has saved marks for this exact subject in existing result
+        SubjectResult? existingSub;
+        if (res != null && res.subjects.isNotEmpty) {
+          existingSub = res.subjects.where((r) {
+            final rName = r.subjectName.trim().toLowerCase();
+            final targetName = sName.toLowerCase();
+            return rName == targetName;
+          }).firstOrNull;
+        }
+
+        if (existingSub != null) {
+          final isPre = _isPrePrimary;
+          final hasGrade = existingSub.gradeOverride != null && existingSub.gradeOverride!.isNotEmpty;
+          return {
+            'id': 'ex_res_${sName}_${DateTime.now().microsecondsSinceEpoch}',
+            'name': isStd ? sName : 'Other',
+            'customCtrl': TextEditingController(text: sName),
+            'marks': TextEditingController(text: existingSub.marks > 0 ? existingSub.marks.toInt().toString() : ''),
+            'theory': TextEditingController(text: existingSub.theoryMarks > 0 ? existingSub.theoryMarks.toInt().toString() : (existingSub.marks > 0 && _isDetailedMode && existingSub.practicalMarks == 0 && existingSub.internalMarks == 0 ? existingSub.marks.toInt().toString() : '')),
+            'oral': TextEditingController(text: existingSub.oralMarks > 0 ? existingSub.oralMarks.toInt().toString() : ''),
+            'practical': TextEditingController(text: existingSub.practicalMarks > 0 ? existingSub.practicalMarks.toInt().toString() : ''),
+            'internal': TextEditingController(text: existingSub.internalMarks > 0 ? existingSub.internalMarks.toInt().toString() : ''),
+            'totalMarks': TextEditingController(text: (existingSub.totalMarks > 0 ? existingSub.totalMarks : effMax).toInt().toString()),
+            'category': existingSub.category ?? sCat,
+            'grade': existingSub.gradeOverride ?? (existingSub.marks > 0 ? existingSub.grade : ''),
+            'entryMode': (isPre || hasGrade) ? 'grade' : 'marks',
+          };
+        } else {
+          return {
+            'id': 'ex_${sName}_${DateTime.now().microsecondsSinceEpoch}',
+            'name': isStd ? sName : 'Other',
+            'customCtrl': TextEditingController(text: sName),
+            'marks': TextEditingController(text: ''),
+            'theory': TextEditingController(text: ''),
+            'oral': TextEditingController(text: ''),
+            'practical': TextEditingController(text: ''),
+            'internal': TextEditingController(text: ''),
+            'totalMarks': TextEditingController(text: effMax.toInt().toString()),
+            'category': sCat,
+            'grade': '',
+            'entryMode': _isPrePrimary ? 'grade' : 'marks',
+          };
+        }
+      }).toList();
+    } else if (res != null && res.subjects.isNotEmpty) {
+      // ─── 2. Fallback: Load saved result subjects if no exam configuration ───
       _subjectRows = res.subjects.map((s) {
         final isStd = _standardSubjects.contains(s.subjectName) && s.subjectName != 'Other';
         final isPre = _isPrePrimary;
@@ -153,30 +208,8 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
           'entryMode': (isPre || hasGrade) ? 'grade' : 'marks',
         };
       }).toList();
-    } else if (ex != null && ex.subjects.isNotEmpty) {
-      // Pre-fill from selected Exam's subjects (deduplicated)
-      final seen = <String>{};
-      final uniqueSubs = ex.subjects.where((s) => seen.add(s.subjectName.trim().toLowerCase())).toList();
-      _subjectRows = uniqueSubs.map((s) {
-        final isStd = _standardSubjects.contains(s.subjectName) && s.subjectName != 'Other';
-        final maxM = _isDetailedMode ? (s.theoryMax + s.practicalMax + s.internalMax) : s.totalMarks;
-        return {
-          'id': 'ex_${s.subjectName}_${DateTime.now().microsecondsSinceEpoch}',
-          'name': isStd ? s.subjectName : 'Other',
-          'customCtrl': TextEditingController(text: s.subjectName),
-          'marks': TextEditingController(text: ''),
-          'theory': TextEditingController(text: ''),
-          'oral': TextEditingController(text: ''),
-          'practical': TextEditingController(text: ''),
-          'internal': TextEditingController(text: ''),
-          'totalMarks': TextEditingController(text: (maxM > 0 ? maxM : 100).toInt().toString()),
-          'category': s.category,
-          'grade': '',
-          'entryMode': _isPrePrimary ? 'grade' : 'marks',
-        };
-      }).toList();
     } else if (widget.subjectTemplate != null && widget.subjectTemplate!.isNotEmpty) {
-      // Pre-fill from class template
+      // ─── 3. Fallback: Pre-fill from class template ───
       _subjectRows = widget.subjectTemplate!.map((tmpl) {
         final name = tmpl['name'] ?? 'Subject';
         final maxM = tmpl['maxMarks'] ?? '100';
@@ -726,40 +759,63 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Subjects (${_subjectRows.length}):', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ElevatedButton.icon(
-                        onPressed: _promptAddSubject,
-                        icon: const Icon(Icons.add_rounded, size: 16),
-                        label: const Text('Add Subject', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E3A8A),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      if (widget.exam == null || widget.exam!.subjects.isEmpty)
+                        ElevatedButton.icon(
+                          onPressed: _promptAddSubject,
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          label: const Text('Add Subject', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E3A8A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
 
-                  // Quick Chips
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        const Text('Quick Add: ', style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
-                        for (final qSub in ['Sanskrit', 'Urdu', 'EVS', 'Moral Science', 'Drawing', 'GK', 'P.E.', 'Computer']) ...[
-                          Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: ActionChip(
-                              label: Text('+ $qSub', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
-                              backgroundColor: const Color(0xFFEFF6FF),
-                              onPressed: () => _addSubjectRow(name: qSub),
+                  // Quick Chips (Only shown when not locked to a specific Exam)
+                  if (widget.exam == null || widget.exam!.subjects.isEmpty) ...[
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          const Text('Quick Add: ', style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                          for (final qSub in ['Sanskrit', 'Urdu', 'EVS', 'Moral Science', 'Drawing', 'GK', 'P.E.', 'Computer']) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: ActionChip(
+                                label: Text('+ $qSub', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+                                backgroundColor: const Color(0xFFEFF6FF),
+                                onPressed: () => _addSubjectRow(name: qSub),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E3A8A).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.lock_rounded, size: 14, color: Color(0xFF1E3A8A)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Subjects locked to "${widget.exam!.title}" (${widget.exam!.subjects.length} subjects defined)',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
                             ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 10),
 
                   // ─── Subject Entry Cards ───

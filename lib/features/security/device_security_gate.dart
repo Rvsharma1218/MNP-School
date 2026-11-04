@@ -275,10 +275,6 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
 
     setState(() {
       _isDownloadingUpdate = true;
-      _downloadProgress = 0.0;
-      _downloadedBytes = 0;
-      _totalBytes = 0;
-      _downloadStatus = 'Connecting to high-speed server...';
       _downloadError = null;
       _downloadedApkPath = null;
     });
@@ -286,88 +282,171 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
     _pulseController.repeat(reverse: true);
     _rotateController.repeat();
 
-    HttpClient? client;
-    try {
-      client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 20);
-      _downloadClient = client;
+    final dir = await getTemporaryDirectory();
+    final apkFile = File('${dir.path}/mnp_school_update.apk');
 
-      final uri = Uri.parse(apkUrl.trim());
-      final request = await client.getUrl(uri);
-      final response = await request.close();
+    // Build primary and mirror CDN URLs for maximum reliability
+    final primaryUrl = apkUrl.trim();
+    String mirrorUrl = '';
+    if (primaryUrl.contains('mnp-school.vercel.app')) {
+      mirrorUrl = primaryUrl.replaceAll('https://mnp-school.vercel.app', 'https://raw.githubusercontent.com/Rvsharma1218/MNP-School/master/public');
+    } else if (primaryUrl.contains('raw.githubusercontent.com')) {
+      mirrorUrl = primaryUrl.replaceAll('https://raw.githubusercontent.com/Rvsharma1218/MNP-School/master/public', 'https://mnp-school.vercel.app');
+    }
 
-      if (response.statusCode != 200) {
-        throw Exception('Server returned HTTP ${response.statusCode}');
-      }
+    int retryCount = 0;
+    const maxRetries = 7;
+    bool completed = false;
 
-      final total = response.contentLength;
-      if (mounted) {
-        setState(() {
-          _totalBytes = total > 0 ? total : 0;
-          _downloadStatus = 'Downloading update package...';
-        });
-      }
+    while (retryCount < maxRetries && !completed && _isDownloadingUpdate) {
+      HttpClient? client;
+      IOSink? sink;
+      try {
+        // Switch between primary and high-speed mirror CDN if retrying
+        final currentUrl = (retryCount >= 2 && mirrorUrl.isNotEmpty) ? mirrorUrl : primaryUrl;
+        final uri = Uri.parse(currentUrl);
 
-      final dir = await getTemporaryDirectory();
-      final apkFile = File('${dir.path}/mnp_school_update.apk');
-      if (await apkFile.exists()) {
-        try {
-          await apkFile.delete();
-        } catch (_) {}
-      }
+        client = HttpClient();
+        client.connectionTimeout = const Duration(seconds: 15);
+        _downloadClient = client;
 
-      final sink = apkFile.openWrite();
-      int received = 0;
-      DateTime lastUiTick = DateTime.now();
+        // Check already downloaded bytes for resume support
+        int existingBytes = 0;
+        if (await apkFile.exists()) {
+          existingBytes = await apkFile.length();
+        }
 
-      await for (final chunk in response) {
-        sink.add(chunk);
-        received += chunk.length;
+        final request = await client.getUrl(uri);
+        request.headers.set(HttpHeaders.userAgentHeader, 'MNPSchoolApp/2.0');
+        request.headers.set(HttpHeaders.acceptEncodingHeader, 'identity'); // prevent gzip chunking so Content-Length is exact
+        if (existingBytes > 0) {
+          request.headers.set(HttpHeaders.rangeHeader, 'bytes=$existingBytes-');
+        }
 
-        final now = DateTime.now();
-        if (now.difference(lastUiTick).inMilliseconds > 60 || (total > 0 && received >= total)) {
-          lastUiTick = now;
-          if (mounted) {
-            setState(() {
-              _downloadedBytes = received;
-              _downloadProgress = total > 0 ? (received / total).clamp(0.0, 1.0) : 0.0;
-              final percent = (_downloadProgress * 100).toInt();
-              _downloadStatus = 'Downloading update: $percent%';
-            });
+        final response = await request.close();
+
+        // 200 = OK (Full download), 206 = Partial Content (Resumed)
+        if (response.statusCode != 200 && response.statusCode != 206) {
+          if (response.statusCode == 416) {
+            // Range not satisfiable (file already full or server mismatch), clean and restart
+            if (await apkFile.exists()) {
+              await apkFile.delete();
+            }
+            existingBytes = 0;
+            retryCount++;
+            continue;
+          }
+          throw Exception('Server returned HTTP ${response.statusCode}');
+        }
+
+        int total = 0;
+        if (response.statusCode == 206) {
+          final contentRange = response.headers.value('content-range');
+          if (contentRange != null && contentRange.contains('/')) {
+            total = int.tryParse(contentRange.split('/').last) ?? (existingBytes + response.contentLength);
+          } else {
+            total = existingBytes + response.contentLength;
+          }
+        } else {
+          // If 200 was returned when we had partial bytes, server doesn't support range; restart file
+          if (existingBytes > 0 && await apkFile.exists()) {
+            await apkFile.delete();
+            existingBytes = 0;
+          }
+          total = response.contentLength;
+        }
+
+        if (mounted) {
+          setState(() {
+            _totalBytes = total > 0 ? total : 0;
+            _downloadedBytes = existingBytes;
+            _downloadProgress = (total > 0 && existingBytes > 0) ? (existingBytes / total).clamp(0.0, 1.0) : _downloadProgress;
+            _downloadStatus = existingBytes > 0
+                ? 'Resuming download: ${(_downloadProgress * 100).toInt()}%'
+                : 'Downloading update package...';
+          });
+        }
+
+        sink = apkFile.openWrite(mode: existingBytes > 0 ? FileMode.append : FileMode.write);
+        int received = existingBytes;
+        DateTime lastUiTick = DateTime.now();
+
+        await for (final chunk in response) {
+          if (!_isDownloadingUpdate) break; // User cancelled
+          sink.add(chunk);
+          received += chunk.length;
+
+          final now = DateTime.now();
+          if (now.difference(lastUiTick).inMilliseconds > 70 || (total > 0 && received >= total)) {
+            lastUiTick = now;
+            if (mounted) {
+              setState(() {
+                _downloadedBytes = received;
+                _downloadProgress = total > 0 ? (received / total).clamp(0.0, 1.0) : 0.0;
+                final percent = (_downloadProgress * 100).toInt();
+                _downloadStatus = 'Downloading update: $percent%';
+              });
+            }
           }
         }
+
+        await sink.flush();
+        await sink.close();
+        sink = null;
+
+        if (!_isDownloadingUpdate) return;
+
+        // Check if finished
+        if (total > 0 && received >= total) {
+          completed = true;
+          if (mounted) {
+            setState(() {
+              _downloadProgress = 1.0;
+              _downloadedBytes = received;
+              _downloadStatus = '✓ Download complete! Launching installer...';
+              _downloadedApkPath = apkFile.path;
+              _isDownloadingUpdate = false;
+            });
+          }
+          _pulseController.stop();
+          _rotateController.stop();
+          await _launchApkInstaller(apkFile.path, fallbackUrl: apkUrl);
+          return;
+        }
+
+      } catch (e) {
+        if (!_isDownloadingUpdate) return;
+        retryCount++;
+        if (sink != null) {
+          try {
+            await sink.flush();
+            await sink.close();
+          } catch (_) {}
+          sink = null;
+        }
+
+        if (retryCount < maxRetries && _isDownloadingUpdate) {
+          final resumeMb = ((await apkFile.exists() ? await apkFile.length() : 0) / (1024 * 1024)).toStringAsFixed(1);
+          if (mounted) {
+            setState(() {
+              _downloadStatus = 'Connection slow, auto-resuming from ${resumeMb}MB ($retryCount/$maxRetries)...';
+            });
+          }
+          await Future.delayed(Duration(seconds: 1 + retryCount));
+        } else {
+          if (mounted) {
+            setState(() {
+              _downloadError = 'Download paused. Tap "Resume Download" to continue without losing progress.';
+              _isDownloadingUpdate = false;
+            });
+          }
+          _pulseController.stop();
+          _rotateController.stop();
+        }
+      } finally {
+        client?.close();
+        _downloadClient = null;
       }
-
-      await sink.flush();
-      await sink.close();
-
-      if (mounted) {
-        setState(() {
-          _downloadProgress = 1.0;
-          _downloadedBytes = received;
-          _downloadStatus = '✓ Download complete! Launching installer...';
-          _downloadedApkPath = apkFile.path;
-        });
-      }
-
-      _pulseController.stop();
-      _rotateController.stop();
-
-      // Launch native installer
-      await _launchApkInstaller(apkFile.path, fallbackUrl: apkUrl);
-
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _downloadError = 'Download interrupted: $e';
-          _isDownloadingUpdate = false;
-        });
-      }
-      _pulseController.stop();
-      _rotateController.stop();
-    } finally {
-      client?.close();
-      _downloadClient = null;
     }
   }
 
@@ -401,7 +480,8 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
       setState(() {
         _isDownloadingUpdate = false;
         _downloadProgress = 0.0;
-        _downloadStatus = 'Update cancelled';
+        _downloadStatus = 'Download paused';
+        _downloadError = 'Download paused. Tap Resume to continue.';
         _downloadError = null;
       });
     }
@@ -1140,7 +1220,7 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
                                           ),
                                           icon: const Icon(Icons.download_for_offline_rounded, size: 20),
                                           label: Text(
-                                            isForced ? 'Update Now to Continue' : 'Download & Install Update',
+                                            _downloadProgress > 0 && _downloadError != null ? 'Resume Download (${(_downloadProgress * 100).toInt()}%)' : (isForced ? 'Update Now to Continue' : 'Download & Install Update'),
                                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
                                           ),
                                           onPressed: () => _startInAppUpdate(effectiveApkUrl),

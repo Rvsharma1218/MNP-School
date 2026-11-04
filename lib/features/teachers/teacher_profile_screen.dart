@@ -21,6 +21,7 @@ import '../../data/services/providers.dart';
 import '../../data/services/session_service.dart';
 import '../../data/services/teacher_service.dart';
 import '../../widgets/student_photo_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import '../attendance/teacher_attendance_screen.dart';
 
 class TeacherProfileScreen extends ConsumerStatefulWidget {
@@ -1747,6 +1748,239 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
     );
   }
 
+  Future<void> _pickAndSaveTeacherSignature(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source, maxWidth: 1000, maxHeight: 600, imageQuality: 85);
+      if (picked == null) return;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                SizedBox(width: 12),
+                Text('Processing & cleaning signature background...'),
+              ],
+            ),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+
+      final rawBytes = await picked.readAsBytes();
+      final base64Sig = (await SignatureProcessor.processAndCleanSignature(rawBytes)) ??
+          'data:image/png;base64,${base64Encode(rawBytes)}';
+
+      final schoolUid = SessionService.instance.activeSchoolUid.isNotEmpty
+          ? SessionService.instance.activeSchoolUid
+          : 'SCHOOL_001';
+      final schoolEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+
+      await TeacherService.instance.updateTeacherSignature(
+        schoolUid: schoolUid,
+        schoolEmail: schoolEmail,
+        teacher: _teacher,
+        signatureUrl: base64Sig,
+      );
+
+      if (mounted) {
+        setState(() {
+          _teacher = _teacher.copyWith(signatureUrl: base64Sig);
+        });
+        widget.onTeacherUpdated?.call();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ Digital signature saved for ' + _teacher.name + '! It will appear on marksheets.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update signature: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeTeacherSignature() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Signature?'),
+        content: Text('Are you sure you want to remove the digital signature for ' + _teacher.name + '?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    final schoolUid = SessionService.instance.activeSchoolUid.isNotEmpty
+        ? SessionService.instance.activeSchoolUid
+        : 'SCHOOL_001';
+    final schoolEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+
+    await TeacherService.instance.updateTeacherSignature(
+      schoolUid: schoolUid,
+      schoolEmail: schoolEmail,
+      teacher: _teacher,
+      signatureUrl: '',
+    );
+
+    if (mounted) {
+      setState(() {
+        _teacher = _teacher.copyWith(signatureUrl: '');
+      });
+      widget.onTeacherUpdated?.call();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signature removed'), backgroundColor: Colors.orange),
+      );
+    }
+  }
+
+  Widget _buildSignatureSection(ColorScheme cs) {
+    final hasSig = _teacher.signatureUrl != null && _teacher.signatureUrl!.trim().isNotEmpty;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.draw_rounded, color: Color(0xFF7C3AED), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Class Teacher Digital Signature',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasSig ? 'Active on Student Report Cards & Marksheets' : 'Not uploaded yet (will show blank on marksheets)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: hasSig ? const Color(0xFF059669) : Colors.orange.shade800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: hasSig ? const Color(0xFFD1FAE5) : const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  hasSig ? 'ACTIVE' : 'MISSING',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: hasSig ? const Color(0xFF059669) : const Color(0xFFB45309),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (hasSig) ...[
+            Container(
+              height: 75,
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Center(
+                child: Image.memory(
+                  base64Decode(_teacher.signatureUrl!.contains(',')
+                      ? _teacher.signatureUrl!.split(',').last
+                      : _teacher.signatureUrl!),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Text('Signature Preview Error', style: TextStyle(color: Colors.red, fontSize: 11)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickAndSaveTeacherSignature(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined, size: 16),
+                  label: Text(hasSig ? 'Change (Gallery)' : 'Upload from Gallery', style: const TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF7C3AED),
+                    side: const BorderSide(color: Color(0xFF7C3AED)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _pickAndSaveTeacherSignature(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt_outlined, size: 16),
+                  label: const Text('Capture Camera', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C3AED),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (hasSig) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton.icon(
+                onPressed: _removeTeacherSignature,
+                icon: const Icon(Icons.delete_outline, size: 15, color: Colors.red),
+                label: const Text('Remove Signature', style: TextStyle(color: Colors.red, fontSize: 11)),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   // ─── TAB 2: ACADEMIC INFO ─────────────────────────────────────────────────────
   Widget _buildAcademicTab(ColorScheme cs) {
     return ListView(
@@ -1770,6 +2004,8 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        _buildSignatureSection(cs),
       ],
     );
   }

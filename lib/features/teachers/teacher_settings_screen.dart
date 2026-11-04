@@ -1,19 +1,20 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../core/utils/signature_processor.dart';
-import '../auth/pin_lock_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
+import '../../core/utils/signature_processor.dart';
+import '../../data/models/settings_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/providers.dart';
 import '../../data/services/session_service.dart';
-import '../../widgets/common_widgets.dart';
+import '../auth/pin_lock_screen.dart';
 
 class TeacherSettingsScreen extends ConsumerStatefulWidget {
   const TeacherSettingsScreen({super.key});
@@ -49,12 +50,13 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
   }
 
   void _startRealtimeTeacherListener() {
-    final schoolId = SessionService.instance.activeSchoolId;
+    final schoolId = SessionService.instance.activeSchoolId.isNotEmpty
+        ? SessionService.instance.activeSchoolId
+        : SessionService.instance.activeSchoolUid;
     final teacherId = SessionService.instance.teacherId;
     final teacherName = SessionService.instance.teacherName;
     if (schoolId.isEmpty) return;
 
-    // Listen to real-time teacher profile updates from Firestore
     _teacherStreamSub = FirebaseFirestore.instance
         .collection('schools')
         .doc(schoolId)
@@ -85,7 +87,6 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
           }
           final name = dName;
 
-          // Parse assigned class from both string and list formats
           String parsedClass = '';
           final rawCls = data['assignedClass'];
           if (rawCls is String && rawCls.trim().isNotEmpty) {
@@ -123,75 +124,7 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
           break;
         }
       }
-    }, onError: (e) {
-      debugPrint('[TeacherSettings] stream note: $e');
-    });
-  }
-
-  Future<void> _logout(BuildContext context, WidgetRef ref) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Confirm Logout', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to log out? You will need to sign in again to access your classes.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-
-    try {
-      await AuthService.instance.signOut();
-    } finally {
-      await SessionService.instance.clear();
-      if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (r) => false);
-      }
-    }
-  }
-
-  Widget _buildCard(BuildContext context, String title, IconData icon, List<Widget> children, {Widget? trailing}) {
-    final cs = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 20, color: AppColors.primary),
-            ),
-            const SizedBox(width: 10),
-            Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            if (trailing != null) ...[
-              const Spacer(),
-              trailing,
-            ],
-          ]),
-          const Divider(height: 24),
-          ...children,
-        ]),
-      ),
-    );
+    }, onError: (_) {});
   }
 
   Future<void> _checkPinStatus() async {
@@ -315,7 +248,7 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
                   if (mounted) {
                     setState(() => _isPinConfigured = true);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('✓ 4-Digit Screen PIN changed successfully!'), backgroundColor: Colors.green),
+                      const SnackBar(content: Text('✓ 4-Digit Screen PIN saved successfully!'), backgroundColor: Colors.green),
                     );
                   }
                 },
@@ -335,7 +268,9 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
   }
 
   Future<void> _uploadTeacherSignature() async {
-    final schoolId = SessionService.instance.activeSchoolId;
+    final schoolId = SessionService.instance.activeSchoolId.isNotEmpty
+        ? SessionService.instance.activeSchoolId
+        : SessionService.instance.activeSchoolUid;
     if (schoolId.isEmpty) return;
 
     final picker = ImagePicker();
@@ -368,14 +303,14 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Processing signature and cleaning background...'), duration: Duration(seconds: 2)),
+      const SnackBar(content: Text('Processing signature & cleaning background...'), duration: Duration(seconds: 1)),
     );
 
     final cleanSig = await SignatureProcessor.processAndCleanSignature(picked.path, colorMode: 'dark');
     if (cleanSig == null || cleanSig.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not process signature. Please try again with good lighting.')),
+          const SnackBar(content: Text('Could not process signature. Please try again with clear paper.')),
         );
       }
       return;
@@ -390,9 +325,14 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
             .doc(schoolId)
             .collection('teachers')
             .doc(_teacherDocId)
-            .update({'signatureUrl': cleanSig});
+            .update({
+          'signatureUrl': cleanSig,
+          'teacherSignature': cleanSig,
+          'signature': cleanSig,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
       } catch (e) {
-        debugPrint('[TeacherSettings] signature save note: $e');
+        debugPrint('[TeacherSettings] signature save error: $e');
       }
     }
 
@@ -406,11 +346,64 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
     }
   }
 
-  Future<void> _openWhatsAppHelp(String teacherName, String schoolName) async {
+  Future<void> _removeTeacherSignature() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Signature?'),
+        content: const Text('Are you sure you want to remove your digital signature from marksheets?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    final schoolId = SessionService.instance.activeSchoolId.isNotEmpty
+        ? SessionService.instance.activeSchoolId
+        : SessionService.instance.activeSchoolUid;
+
+    setState(() => _liveSignatureUrl = null);
+
+    if (_teacherDocId != null && _teacherDocId!.isNotEmpty && schoolId.isNotEmpty) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('schools')
+            .doc(schoolId)
+            .collection('teachers')
+            .doc(_teacherDocId)
+            .update({
+          'signatureUrl': '',
+          'teacherSignature': '',
+          'signature': '',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signature removed from profile'), backgroundColor: Colors.orange),
+      );
+    }
+  }
+
+  Future<void> _openWhatsAppHelp(String teacherName, String schoolName, SettingsModel settings) async {
+    final cleanPhone = settings.mobile.replaceAll(RegExp(r'[^0-9]'), '');
+    final effectivePhone = cleanPhone.isNotEmpty ? cleanPhone : '8603481865';
+    final targetNumber = effectivePhone.startsWith('91') && effectivePhone.length > 10
+        ? effectivePhone
+        : '91$effectivePhone';
+
     final msg = Uri.encodeComponent(
       'Hello Support Team, I am faculty member $teacherName from $schoolName. I need assistance with the school app.',
     );
-    final url = Uri.parse('https://wa.me/919142825442?text=$msg');
+    final url = Uri.parse('https://wa.me/$targetNumber?text=$msg');
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -418,8 +411,10 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
     } catch (_) {}
   }
 
-  Future<void> _callHelpline() async {
-    final url = Uri.parse('tel:+919142825442');
+  Future<void> _callHelpline(SettingsModel settings) async {
+    final cleanPhone = settings.mobile.replaceAll(RegExp(r'[^0-9]'), '');
+    final effectivePhone = cleanPhone.isNotEmpty ? cleanPhone : '8603481865';
+    final url = Uri.parse('tel:$effectivePhone');
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url);
@@ -436,135 +431,146 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
     } catch (_) {}
   }
 
-  Widget _infoRow(BuildContext context, IconData icon, String label, String value) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(icon, size: 18, color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, fontWeight: FontWeight.w500),
+  Future<void> _logout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirm Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to log out? You will need your credentials to sign in again.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              softWrap: true,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface),
-            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Logout'),
           ),
         ],
       ),
     );
+    if (confirm != true) return;
+
+    try {
+      await AuthService.instance.signOut();
+    } finally {
+      await SessionService.instance.clear();
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (r) => false);
+      }
+    }
   }
 
-  Widget _buildAssignedClassChips(String assigned) {
-    final clean = assigned.trim();
-    final isAll = clean.toLowerCase() == 'all' ||
-        clean.toLowerCase() == 'all classes' ||
-        clean.toLowerCase() == 'all classes (full access)' ||
-        SessionService.instance.hasAllClassesAccess;
-
-    if (isAll) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF4338CA).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF4338CA).withValues(alpha: 0.3)),
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 22),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w800,
+          color: Color(0xFF64748B),
+          letterSpacing: 0.5,
         ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.stars_rounded, size: 18, color: Color(0xFF4338CA)),
-            SizedBox(width: 8),
-            Text(
-              '★ All Classes Access (Full School)',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF4338CA)),
-            ),
-          ],
-        ),
-      );
-    }
+      ),
+    );
+  }
 
-    final classes = clean
-        .split(RegExp(r'[,|]'))
-        .map((c) => c.trim().replaceAll(RegExp(r'^class\s*', caseSensitive: false), ''))
-        .where((c) => c.isNotEmpty && c.toLowerCase() != 'none')
-        .toList();
-
-    if (classes.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.amber.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.amber.shade400),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.info_outline, size: 16, color: Colors.amber),
-            SizedBox(width: 6),
-            Text(
-              'No Specific Classes Assigned',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: classes.map((c) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D9488).withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.4)),
+  Widget _buildCardGroup(BuildContext context, List<Widget> children) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildMenuTile({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.check_circle_rounded, size: 15, color: Color(0xFF0D9488)),
-              const SizedBox(width: 6),
-              Text(
-                'Class $c',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
               ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null)
+                trailing
+              else
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: isDark ? Colors.white24 : const Color(0xFF94A3B8),
+                ),
             ],
           ),
-        );
-      }).toList(),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
-    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final session = SessionService.instance;
-
-    final effectiveAssignedClass = (_liveAssignedClass != null && _liveAssignedClass!.isNotEmpty)
-        ? _liveAssignedClass!
-        : (session.assignedClass?.isNotEmpty == true
-            ? session.assignedClass!
-            : (session.hasAllClassesAccess ? 'All Classes' : 'All Classes'));
 
     final teacherName = _liveName ?? session.teacherName ?? 'Teacher';
     final designation = _liveDesignation ?? 'Faculty Member';
@@ -572,479 +578,430 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
     final mobile = _liveMobile ?? '—';
     final email = _liveEmail ?? '${teacherName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}.${(session.teacherId ?? 't001').toLowerCase()}@faculty';
 
+    final effectiveAssignedClass = (_liveAssignedClass != null && _liveAssignedClass!.isNotEmpty)
+        ? _liveAssignedClass!
+        : (session.assignedClass?.isNotEmpty == true
+            ? session.assignedClass!
+            : (session.hasAllClassesAccess ? 'All Classes' : 'All Classes'));
+
+    final hasSignature = _liveSignatureUrl != null && _liveSignatureUrl!.trim().isNotEmpty;
+
     return Scaffold(
-      backgroundColor: cs.surface,
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Faculty Settings & Profile'),
+        title: const Text('Teacher Settings & Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: settingsAsync.when(
         data: (settings) => ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           children: [
-            // Teacher Profile Card
-            _buildCard(
-              context,
-              'Faculty Account Profile',
-              Icons.badge_outlined,
-              [
-                // Top header with avatar and name
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                      child: Text(
-                        teacherName.isNotEmpty ? teacherName[0].toUpperCase() : 'T',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+            // ─── HEADER IDENTITY CARD (PRINCIPAL STYLE) ───
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF1E3A8A).withValues(alpha: 0.25),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white30, width: 2),
+                        ),
+                        child: Center(
+                          child: Text(
+                            teacherName.isNotEmpty ? teacherName[0].toUpperCase() : 'T',
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            teacherName,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 2),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              teacherName,
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                             ),
-                            child: Text(
-                              designation,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$designation • ID: ${session.teacherId ?? "TCH-001"}',
+                              style: const TextStyle(fontSize: 12, color: Colors.white70),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Divider(),
-                _infoRow(context, Icons.tag, 'Teacher ID', session.teacherId ?? '—'),
-                _infoRow(context, Icons.menu_book_outlined, 'Subject', subject),
-                if (mobile != '—') _infoRow(context, Icons.phone_outlined, 'Contact Mobile', mobile),
-                _infoRow(context, Icons.alternate_email, 'Account / Username', email),
-                const Divider(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.class_outlined, size: 18, color: cs.onSurfaceVariant),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Assigned Teaching Classes',
-                            style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),
-                          ),
-                        ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white38),
+                        ),
+                        child: Text(
+                          'Session: ${settings.currentSession.isNotEmpty ? settings.currentSession : "2026-27"}',
+                          style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Classes and sections you have permissions to manage attendance and marks:',
-                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.8)),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildAssignedClassChips(effectiveAssignedClass),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // School Information Card
-            _buildCard(context, 'School Information', Icons.school_outlined, [
-              _infoRow(context, Icons.business, 'Institute Name', settings.instituteName),
-              _infoRow(context, Icons.calendar_month, 'Academic Session', settings.currentSession),
-              if (settings.principalName != null && settings.principalName!.isNotEmpty)
-                _infoRow(context, Icons.person_outline, 'Principal / Head', settings.principalName!),
-            ]),
-            const SizedBox(height: 16),
-
-            // ─── Digital Signature Card ──────────────────────────────────────
-            _buildCard(
-              context,
-              'Class Teacher Digital Signature',
-              Icons.draw_outlined,
-              [
-                const Text(
-                  'Your digital signature will be automatically printed on official report cards & marksheets for your assigned class standard.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 12),
-                if (_liveSignatureUrl != null && _liveSignatureUrl!.isNotEmpty) ...[
+                  const SizedBox(height: 14),
                   Container(
-                    height: 80,
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color: Colors.black.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    alignment: Alignment.center,
-                    child: _liveSignatureUrl!.startsWith('data:image')
-                        ? Image.memory(
-                            base64Decode(_liveSignatureUrl!.split(',').last),
-                            height: 64,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Text('Signature Preview'),
-                          )
-                        : Image.network(
-                            _liveSignatureUrl!,
-                            height: 64,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Text('Signature Preview'),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.school_rounded, size: 16, color: Color(0xFFFBBF24)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Class Teacher: $effectiveAssignedClass ($subject)',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
                 ],
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E3A8A),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: _uploadTeacherSignature,
-                    icon: Icon(_liveSignatureUrl != null ? Icons.refresh_rounded : Icons.camera_alt_rounded, size: 18),
-                    label: Text(
-                      _liveSignatureUrl != null ? 'Re-upload / Change Signature' : 'Upload Digital Signature (Camera/Gallery)',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 16),
 
-            // ─── Security & Screen PIN Lock Card ─────────────────────────────
-            _buildCard(
-              context,
-              'Screen PIN Lock & Privacy',
-              Icons.lock_outline_rounded,
-              [
-                Row(
+            // ─── SECTION 1: ACADEMIC & CLASS DUTIES ───
+            _buildSectionHeader('ACADEMIC & CLASS DUTIES (कक्षा एवं शैक्षणिक कार्य)'),
+            _buildCardGroup(context, [
+              _buildMenuTile(
+                context: context,
+                title: 'Class Promotion Desk',
+                subtitle: 'Promote assigned class students to next academic session with 1-click',
+                icon: Icons.upgrade_rounded,
+                iconColor: const Color(0xFF059669),
+                iconBg: const Color(0xFFD1FAE5),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.promoteStudents),
+              ),
+              const Divider(height: 1, indent: 64),
+              _buildMenuTile(
+                context: context,
+                title: 'Assigned Classes & Subjects',
+                subtitle: 'Classes: $effectiveAssignedClass • Specialization: $subject',
+                icon: Icons.menu_book_rounded,
+                iconColor: const Color(0xFF2563EB),
+                iconBg: const Color(0xFFDBEAFE),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDBEAFE),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('ASSIGNED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8))),
+                ),
+                onTap: null,
+              ),
+              const Divider(height: 1, indent: 64),
+              _buildMenuTile(
+                context: context,
+                title: 'Faculty Account ID & Email',
+                subtitle: email,
+                icon: Icons.badge_rounded,
+                iconColor: const Color(0xFF7C3AED),
+                iconBg: const Color(0xFFEDE9FE),
+                trailing: Text(mobile != '—' ? mobile : (session.teacherId ?? ''), style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+              ),
+            ]),
+
+            // ─── SECTION 2: DIGITAL CREDENTIALS & SIGNATURE ───
+            _buildSectionHeader('DIGITAL SIGNATURE & CREDENTIALS (हस्ताक्षर एवं डिजिटल पहचान)'),
+            _buildCardGroup(context, [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _isPinConfigured ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _isPinConfigured ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                            size: 14,
-                            color: _isPinConfigured ? const Color(0xFF166534) : const Color(0xFFB45309),
+                    Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEDE9FE),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _isPinConfigured ? '4-Digit PIN Active' : 'PIN Not Configured',
+                          child: const Icon(Icons.draw_rounded, color: Color(0xFF7C3AED), size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Class Teacher Signature', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              const SizedBox(height: 2),
+                              Text(
+                                hasSignature ? 'Active on Student Report Cards & Marksheets' : 'Not uploaded (blank on marksheets)',
+                                style: TextStyle(fontSize: 11.5, color: hasSignature ? const Color(0xFF059669) : Colors.orange.shade800),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: hasSignature ? const Color(0xFFD1FAE5) : const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            hasSignature ? 'ACTIVE' : 'MISSING',
                             style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: _isPinConfigured ? const Color(0xFF166534) : const Color(0xFFB45309),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: hasSignature ? const Color(0xFF059669) : const Color(0xFFB45309),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: _showChangePinDialog,
-                      icon: const Icon(Icons.edit_rounded, size: 16),
-                      label: Text(_isPinConfigured ? 'Change PIN' : 'Set PIN', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Quick 4-digit PIN prevents unauthorized access to marks and student records when stepping away from device.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 44),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: _lockScreenNow,
-                  icon: const Icon(Icons.lock_clock_rounded, size: 18),
-                  label: const Text('Lock Screen Now (तत्काल स्क्रीन लॉक करें)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // ─── Academic Operations & Promotion Card ────────────────────────
-            _buildCard(
-              context,
-              'Academic Management',
-              Icons.school_rounded,
-              [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEEF2FF),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.upgrade_rounded, color: Color(0xFF1E3A8A), size: 22),
-                  ),
-                  title: const Text('1-Click Class Promotion (कक्षा प्रोन्नति)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                  subtitle: const Text('Promote whole batch or single student to next session', style: TextStyle(fontSize: 11)),
-                  trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.promoteStudents),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // ─── Help & Support Desk Card ────────────────────────────────────
-            _buildCard(
-              context,
-              'Help & Technical Support (सहायता केंद्र)',
-              Icons.headset_mic_outlined,
-              [
-                const Text(
-                  'Reach out to school tech desk for marksheets, login credentials, or feature support:',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF25D366),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        onPressed: () => _openWhatsAppHelp(teacherName, settings.instituteName),
-                        icon: const Icon(Icons.chat_rounded, size: 15),
-                        label: const Text('WhatsApp', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: _callHelpline,
-                        icon: const Icon(Icons.phone_outlined, size: 15),
-                        label: const Text('Call', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: _emailSupport,
-                        icon: const Icon(Icons.mail_outline_rounded, size: 15),
-                        label: const Text('Email', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Divider(),
-                const Text('Frequently Asked Questions (FAQ):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-                const SizedBox(height: 6),
-                for (int i = 0; i < 4; i++) ...[
-                  Builder(
-                    builder: (ctx) {
-                      final faqs = [
-                        {
-                          'q': 'Pre-Primary (Nursery, LKG, UKG) me Grade kaise enter karein?',
-                          'a': 'Marksheet screen par Pre-Primary student select karne par direct Grade buttons (A+, A, B+, B, C, D) aate hain. 1-tap me grade select ho jata hai.',
-                        },
-                        {
-                          'q': 'Class Teacher Signature marksheet par kaise aayega?',
-                          'a': 'Upar "Upload Digital Signature" button se apne sign ka photo upload karein. App background clean karke transparent signature marksheet par render karega.',
-                        },
-                        {
-                          'q': 'Screen PIN Lock kaise change karein?',
-                          'a': 'Upar "Screen PIN Lock" card me "Change PIN" par tap karein aur naya 4-digit PIN enter karke Save karein.',
-                        },
-                        {
-                          'q': 'Students ko agli class me Promote kaise karein?',
-                          'a': 'Academic Management card me "1-Click Class Promotion" par tap karein, apni class chunein aur Promote button dabaayein.',
-                        },
-                      ];
-                      final isExp = _expandedFaqIndex == i;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 6),
+                    const SizedBox(height: 14),
+                    if (hasSignature) ...[
+                      Container(
+                        height: 75,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(8),
-                          onTap: () => setState(() => _expandedFaqIndex = isExp ? -1 : i),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        faqs[i]['q']!,
-                                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                                      ),
-                                    ),
-                                    Icon(isExp ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, size: 18, color: const Color(0xFF64748B)),
-                                  ],
-                                ),
-                                if (isExp) ...[
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    faqs[i]['a']!,
-                                    style: const TextStyle(fontSize: 11, color: Color(0xFF475569), height: 1.3),
-                                  ),
-                                ],
-                              ],
+                        child: Center(
+                          child: Image.memory(
+                            base64Decode(_liveSignatureUrl!.contains(',')
+                                ? _liveSignatureUrl!.split(',').last
+                                : _liveSignatureUrl!),
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Text('Signature Preview Error', style: TextStyle(color: Colors.red, fontSize: 11)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _uploadTeacherSignature,
+                            icon: const Icon(Icons.upload_file_rounded, size: 16),
+                            label: Text(hasSignature ? 'Change Signature' : 'Upload Signature', style: const TextStyle(fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF7C3AED),
+                              side: const BorderSide(color: Color(0xFF7C3AED)),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Theme Card
-            _buildCard(context, 'Display & Theme', Icons.palette_outlined, [
-              Row(
-                children: [
-                  Expanded(
-                    child: _ThemeOption(
-                      label: 'Light',
-                      icon: Icons.light_mode,
-                      selected: settings.themeMode == 'light',
-                      onTap: () => ref.read(themeModeProvider.notifier).setMode('light'),
+                        if (hasSignature) ...[
+                          const SizedBox(width: 10),
+                          TextButton.icon(
+                            onPressed: _removeTeacherSignature,
+                            icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                            label: const Text('Remove', style: TextStyle(color: Colors.red, fontSize: 12)),
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ThemeOption(
-                      label: 'Dark',
-                      icon: Icons.dark_mode,
-                      selected: settings.themeMode == 'dark',
-                      onTap: () => ref.read(themeModeProvider.notifier).setMode('dark'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ThemeOption(
-                      label: 'System',
-                      icon: Icons.brightness_auto,
-                      selected: settings.themeMode == 'system',
-                      onTap: () => ref.read(themeModeProvider.notifier).setMode('system'),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ]),
-            const SizedBox(height: 24),
 
-            // Logout Button
-            OutlinedButton.icon(
-              onPressed: () => _logout(context, ref),
-              icon: const Icon(Icons.logout, color: AppColors.error),
-              label: const Text(
-                'Logout from Teacher Account',
-                style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 14),
+            // ─── SECTION 3: SECURITY & APP PREFERENCES ───
+            _buildSectionHeader('SECURITY & SCREEN ACCESS (सुरक्षा एवं स्क्रीन लॉक)'),
+            _buildCardGroup(context, [
+              _buildMenuTile(
+                context: context,
+                title: 'Screen Security PIN',
+                subtitle: _isPinConfigured ? '4-Digit PIN configured (Tap to update PIN)' : 'Set 4-Digit PIN to protect student marks & attendance',
+                icon: Icons.pin_rounded,
+                iconColor: const Color(0xFFF59E0B),
+                iconBg: const Color(0xFFFEF3C7),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _isPinConfigured ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _isPinConfigured ? 'PROTECTED' : 'NOT SET',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: _isPinConfigured ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                    ),
+                  ),
+                ),
+                onTap: _showChangePinDialog,
               ),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 52),
-                side: const BorderSide(color: AppColors.error, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              const Divider(height: 1, indent: 64),
+              _buildMenuTile(
+                context: context,
+                title: 'Lock Screen Now',
+                subtitle: 'Instantly lock app to prevent unauthorized access in classroom',
+                icon: Icons.lock_clock_rounded,
+                iconColor: const Color(0xFF6366F1),
+                iconBg: const Color(0xFFEEF2FF),
+                onTap: _lockScreenNow,
               ),
-            ),
-            const SizedBox(height: 32),
+            ]),
+
+            // ─── SECTION 4: HELP DESK & SUPPORT ───
+            _buildSectionHeader('HELP & SUPPORT DESK (सहायता एवं हेल्पलाइन)'),
+            _buildCardGroup(context, [
+              _buildMenuTile(
+                context: context,
+                title: 'WhatsApp Faculty Help Desk',
+                subtitle: 'Direct WhatsApp chat with pre-filled teacher & school credentials',
+                icon: Icons.chat_rounded,
+                iconColor: const Color(0xFF10B981),
+                iconBg: const Color(0xFFD1FAE5),
+                onTap: () => _openWhatsAppHelp(teacherName, settings.schoolName, settings),
+              ),
+              const Divider(height: 1, indent: 64),
+              _buildMenuTile(
+                context: context,
+                title: 'Call Technical Helpline',
+                subtitle: 'Helpline: ${settings.mobile.isNotEmpty ? settings.mobile : "8603481865"} (School Admin & Support)',
+                icon: Icons.phone_in_talk_rounded,
+                iconColor: const Color(0xFF0284C7),
+                iconBg: const Color(0xFFE0F2FE),
+                onTap: () => _callHelpline(settings),
+              ),
+              const Divider(height: 1, indent: 64),
+              _buildMenuTile(
+                context: context,
+                title: 'Official Email Support',
+                subtitle: 'support@mnpschool.edu',
+                icon: Icons.alternate_email_rounded,
+                iconColor: const Color(0xFFEA580C),
+                iconBg: const Color(0xFFFFEDD5),
+                onTap: _emailSupport,
+              ),
+            ]),
+
+            // ─── FAQ ACCORDION ───
+            _buildSectionHeader('TEACHER FAQS & GUIDES (सामान्य प्रश्न एवं सहायता)'),
+            _buildCardGroup(context, [
+              _buildFaqItem(
+                index: 0,
+                question: 'Pre-Primary classes ke direct grades kaise enter karein?',
+                answer: 'Nursery se Balvatika tak mark entry open karte hi "Grade Entry (A+, A, B, etc.)" toggle automatic on rehta hai. Aap direct chips par tap karke grades assign kar sakte hain.',
+              ),
+              const Divider(height: 1),
+              _buildFaqItem(
+                index: 1,
+                question: 'Oral (मौखिक) subjects ke marks kaise daalein?',
+                answer: 'Mark Entry Desk par subject category selector mein "Oral (🗣️)" choose karein, ya Detailed Mode on karke "Oral" column mein alag se numbers daalein.',
+              ),
+              const Divider(height: 1),
+              _buildFaqItem(
+                index: 2,
+                question: 'Mera digital signature marksheet par kaise dikhega?',
+                answer: 'Upar "Class Teacher Signature" section se camera ya gallery se plain white paper par kiya signature upload karein. Marksheet generate hone par "CLASS TEACHER SIGN" ke upar automatic print hoga.',
+              ),
+              const Divider(height: 1),
+              _buildFaqItem(
+                index: 3,
+                question: 'Students ko next session mein promote kaise karein?',
+                answer: 'Upar "Academic & Class Duties" ke andar "Class Promotion Desk" par tap karein. Wahan apni assigned class choose karke 1-tap promote kar sakte hain.',
+              ),
+            ]),
+
+            // ─── SECTION 5: SYSTEM INFO & LOGOUT ───
+            _buildSectionHeader('SYSTEM & LOGOUT (सिस्टम एवं लॉगआउट)'),
+            _buildCardGroup(context, [
+              _buildMenuTile(
+                context: context,
+                title: 'MNP School App Version',
+                subtitle: 'v2.0.6 (Build 2013) • High-Speed Resumable Engine',
+                icon: Icons.system_update_alt_rounded,
+                iconColor: const Color(0xFF64748B),
+                iconBg: const Color(0xFFF1F5F9),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('UP TO DATE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                ),
+                onTap: null,
+              ),
+              const Divider(height: 1, indent: 64),
+              _buildMenuTile(
+                context: context,
+                title: 'Sign Out Account',
+                subtitle: 'Securely logout from this mobile device',
+                icon: Icons.logout_rounded,
+                iconColor: const Color(0xFFDC2626),
+                iconBg: const Color(0xFFFEE2E2),
+                onTap: () => _logout(context),
+              ),
+            ]),
+
+            const SizedBox(height: 30),
           ],
         ),
-        loading: () => const LoadingWidget(),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error loading settings: $e')),
       ),
     );
   }
-}
 
-class _ThemeOption extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ThemeOption({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? cs.primary : cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? cs.primary : cs.outline),
+  Widget _buildFaqItem({required int index, required String question, required String answer}) {
+    final isExpanded = _expandedFaqIndex == index;
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        title: Text(
+          question,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
         ),
-        child: Column(children: [
-          Icon(icon, color: selected ? Colors.white : cs.onSurfaceVariant, size: 22),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : cs.onSurface,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
+        initiallyExpanded: isExpanded,
+        onExpansionChanged: (val) {
+          setState(() {
+            _expandedFaqIndex = val ? index : -1;
+          });
+        },
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+            child: Text(
+              answer,
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.4),
             ),
           ),
-        ]),
+        ],
       ),
     );
   }

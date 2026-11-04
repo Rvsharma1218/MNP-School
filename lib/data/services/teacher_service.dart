@@ -573,6 +573,50 @@ class TeacherService {
     _cachedTeachers.sort((a, b) => a.name.compareTo(b.name));
   }
 
+  Future<void> updateTeacherSignature({
+    required String schoolUid,
+    required String schoolEmail,
+    required TeacherModel teacher,
+    required String signatureUrl,
+  }) async {
+    final updateData = {
+      'signatureUrl': signatureUrl.trim(),
+      'teacherSignature': signatureUrl.trim(),
+      'signature': signatureUrl.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    final effectiveSchoolEmail = schoolEmail.isNotEmpty ? schoolEmail : '${schoolUid.toLowerCase()}@school.com';
+    final primaryDocId = teacher.id.isNotEmpty ? teacher.id : teacher.teacherId;
+
+    await _teachersCol(schoolUid).doc(primaryDocId).set(updateData, SetOptions(merge: true));
+    if (teacher.teacherId.isNotEmpty && teacher.teacherId != primaryDocId) {
+      await _teachersCol(schoolUid).doc(teacher.teacherId).set(updateData, SetOptions(merge: true)).catchError((_) {});
+    }
+    if (teacher.authUid.isNotEmpty && teacher.authUid != primaryDocId) {
+      await _teachersCol(schoolUid).doc(teacher.authUid).set(updateData, SetOptions(merge: true)).catchError((_) {});
+    }
+    try {
+      if (effectiveSchoolEmail.isNotEmpty) {
+        if (teacher.teacherId.isNotEmpty) {
+          await _publicTeachersCol(effectiveSchoolEmail).doc(teacher.teacherId).set(updateData, SetOptions(merge: true)).catchError((_) {});
+        }
+        if (teacher.authUid.isNotEmpty) {
+          await _publicTeachersCol(effectiveSchoolEmail).doc(teacher.authUid).set(updateData, SetOptions(merge: true)).catchError((_) {});
+        }
+      }
+    } catch (_) {}
+
+    final updatedTeacher = teacher.copyWith(signatureUrl: signatureUrl.trim());
+    final idx = _cachedTeachers.indexWhere((t) => t.teacherId == teacher.teacherId || (teacher.authUid.isNotEmpty && t.authUid == teacher.authUid));
+    if (idx != -1) {
+      _cachedTeachers[idx] = updatedTeacher;
+    } else {
+      _cachedTeachers.add(updatedTeacher);
+    }
+    _saveToDisk();
+  }
+
   Future<void> setTeacherActive({
     required String schoolUid,
     required String schoolEmail,
