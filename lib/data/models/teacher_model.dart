@@ -166,6 +166,10 @@ class TeacherModel {
       schoolId: (map['schoolId'] as String?) ?? '',
       assignedClass: parseAssignedClass(),
       assignedSection: map['assignedSection'] as String?,
+      allowedClasses: (map['allowedClasses'] as String?) ??
+          ((map['assignedClasses'] is List && (map['assignedClasses'] as List).isNotEmpty)
+              ? (map['assignedClasses'] as List).map((c) => c.toString().trim()).where((c) => c.isNotEmpty).join(', ')
+              : null),
       active: isActive,
       status: (map['status'] as String?) ?? (isActive ? 'active' : 'disabled'),
       createdAt: parseDt(map['createdAt']),

@@ -675,7 +675,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
                                               child: Wrap(
                                                 spacing: 8,
                                                 runSpacing: 8,
-                                                children: _availableClasses.map((c) {
+                                                children: _availableClasses.where((c) => c != 'All Classes').map((c) {
                                                   final isSel = _selectedClasses.contains(c);
                                                   return FilterChip(
                                                     selected: isSel,

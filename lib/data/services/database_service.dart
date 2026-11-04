@@ -3750,33 +3750,32 @@ CREATE TABLE monthly_fees (
       final local = rows.map(ExamModel.fromMap).toList();
       _cachedExams = local;
 
-      // Never block caller on slow Firestore! Return local SQLite immediately in 0ms.
-      if (local.isEmpty) {
-        unawaited(() async {
-          try {
-            final remote = await FirestoreService.instance
-                .fetchExamsRemote()
-                .timeout(const Duration(seconds: 3), onTimeout: () => []);
-            if (remote.isNotEmpty) {
-              final dbLocal = await database;
-              for (final ex in remote) {
-                await dbLocal.insert('exams', {
-                  'id': ex.id,
-                  'title': ex.title,
-                  'term': ex.term,
-                  'className': ex.className,
-                  'academicYear': ex.academicYear,
-                  'examDate': ex.examDate.toIso8601String(),
-                  'status': ex.status,
-                  'isDetailedMode': ex.isDetailedMode ? 1 : 0,
-                  'subjects': jsonEncode(ex.subjects.map((s) => s.toMap()).toList()),
-                  'createdAt': ex.createdAt.toIso8601String(),
-                }, conflictAlgorithm: ConflictAlgorithm.replace);
-              }
-              _cachedExams = remote;
+      // If local cache is empty or forceRefresh requested, await remote exams from Firestore!
+      if (local.isEmpty || forceRefresh) {
+        try {
+          final remote = await FirestoreService.instance
+              .fetchExamsRemote()
+              .timeout(const Duration(seconds: 4), onTimeout: () => []);
+          if (remote.isNotEmpty) {
+            final dbLocal = await database;
+            for (final ex in remote) {
+              await dbLocal.insert('exams', {
+                'id': ex.id,
+                'title': ex.title,
+                'term': ex.term,
+                'className': ex.className,
+                'academicYear': ex.academicYear,
+                'examDate': ex.examDate.toIso8601String(),
+                'status': ex.status,
+                'isDetailedMode': ex.isDetailedMode ? 1 : 0,
+                'subjects': jsonEncode(ex.subjects.map((s) => s.toMap()).toList()),
+                'createdAt': ex.createdAt.toIso8601String(),
+              }, conflictAlgorithm: ConflictAlgorithm.replace);
             }
-          } catch (_) {}
-        }());
+            _cachedExams = remote;
+            return remote;
+          }
+        } catch (_) {}
       }
       return local;
     } catch (_) {

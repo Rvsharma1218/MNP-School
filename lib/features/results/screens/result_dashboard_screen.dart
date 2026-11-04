@@ -134,8 +134,9 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
   List<ExamModel> get _scopedExams {
     if (SessionService.instance.hasAllClassesAccess) return _exams;
     return _exams.where((ex) {
-      if (ex.className.isEmpty || ex.className == 'All Classes') return true;
-      return SessionService.instance.canAccessClass(ex.className);
+      if (ex.className.isEmpty || ex.className.trim().toLowerCase() == 'all classes') return true;
+      final examClasses = ex.className.split(',').map((c) => c.trim()).where((c) => c.isNotEmpty);
+      return examClasses.any((cls) => SessionService.instance.canAccessClass(cls));
     }).toList();
   }
 

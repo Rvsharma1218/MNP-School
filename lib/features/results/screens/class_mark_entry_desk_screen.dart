@@ -112,27 +112,42 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
       _examTitle = exams.first.title;
     }
 
-    // 2. Resolve selected class based on initialClass or the selected exam's className!
-    if (widget.initialClass != null && widget.initialClass!.isNotEmpty) {
-      final match = _availableClasses.firstWhere(
-        (c) => _normalizeClass(c) == _normalizeClass(widget.initialClass!),
-        orElse: () => widget.initialClass!,
-      );
-      _selectedClass = match;
-    } else if (_selectedExam != null &&
+    // 2. Resolve selected class strictly from the selected exam's classes!
+    if (_selectedExam != null &&
         _selectedExam!.className.isNotEmpty &&
         _selectedExam!.className.trim().toLowerCase() != 'all classes') {
-      final firstExamClass = _selectedExam!.className.split(',').first.trim();
-      final match = _availableClasses.firstWhere(
-        (c) => _normalizeClass(c) == _normalizeClass(firstExamClass),
-        orElse: () => firstExamClass,
-      );
-      _selectedClass = match;
-    } else if (_selectedClass.isEmpty || !_availableClasses.contains(_selectedClass)) {
-      _selectedClass = _availableClasses.isNotEmpty ? _availableClasses.first : 'All Classes';
+      final examClasses = _selectedExam!.className.split(',').map((c) => c.trim()).where((c) => c.isNotEmpty).toList();
+      if (widget.initialClass != null && examClasses.any((ec) => _normalizeClass(ec) == _normalizeClass(widget.initialClass!))) {
+        _selectedClass = widget.initialClass!;
+      } else if (examClasses.length > 1) {
+        _selectedClass = 'All Exam Classes';
+      } else {
+        _selectedClass = examClasses.first;
+      }
+    } else if (widget.initialClass != null && widget.initialClass!.isNotEmpty) {
+      _selectedClass = widget.initialClass!;
+    } else {
+      _selectedClass = 'All Classes';
     }
 
     if (mounted) setState(() => _loading = false);
+  }
+
+  List<String> get _dropdownClasses {
+    if (_selectedExam != null &&
+        _selectedExam!.className.isNotEmpty &&
+        _selectedExam!.className.trim().toLowerCase() != 'all classes') {
+      final examClasses = _selectedExam!.className
+          .split(',')
+          .map((c) => c.trim())
+          .where((c) => c.isNotEmpty)
+          .toList();
+      if (examClasses.length > 1) {
+        return ['All Exam Classes', ...examClasses];
+      }
+      return examClasses;
+    }
+    return _availableClasses;
   }
 
   static String _normalizeClass(String s) {
@@ -167,7 +182,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
   }
 
   bool _matchesClass(StudentModel s, String filterClass) {
-    if (filterClass == 'All Classes') return true;
+    if (filterClass == 'All Classes' || filterClass == 'All Exam Classes') return true;
     final c1 = (s.className ?? '').trim().toLowerCase();
     final c2 = (s.course ?? '').trim().toLowerCase();
     final target = filterClass.trim().toLowerCase();
@@ -634,8 +649,10 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                           // Class Dropdown
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              key: ValueKey('desk_class_$_selectedClass'),
-                              value: _availableClasses.contains(_selectedClass) ? _selectedClass : 'All Classes',
+                              key: ValueKey('desk_class_${_selectedExam?.id}_$_selectedClass'),
+                              value: _dropdownClasses.contains(_selectedClass)
+                                  ? _selectedClass
+                                  : (_dropdownClasses.isNotEmpty ? _dropdownClasses.first : 'All Classes'),
                               isExpanded: true,
                               decoration: InputDecoration(
                                 labelText: 'Class',
@@ -643,7 +660,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                               ),
-                              items: _availableClasses.map((c) {
+                              items: _dropdownClasses.map((c) {
                                 return DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis));
                               }).toList(),
                               onChanged: (val) {
@@ -695,16 +712,16 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                                   setState(() {
                                     _examTitle = val;
                                     _selectedExam = _allExams.firstWhere((e) => e.title == val, orElse: () => _allExams.first);
-                                    // When switching exam, automatically update class to that exam's class!
+                                    // When switching exam, restrict class dropdown strictly to this exam's classes!
                                     if (_selectedExam != null &&
                                         _selectedExam!.className.isNotEmpty &&
                                         _selectedExam!.className.trim().toLowerCase() != 'all classes') {
-                                      final firstExamClass = _selectedExam!.className.split(',').first.trim();
-                                      final match = _availableClasses.firstWhere(
-                                        (c) => _normalizeClass(c) == _normalizeClass(firstExamClass),
-                                        orElse: () => firstExamClass,
-                                      );
-                                      _selectedClass = match;
+                                      final examClasses = _selectedExam!.className.split(',').map((c) => c.trim()).where((c) => c.isNotEmpty).toList();
+                                      if (examClasses.length > 1) {
+                                        _selectedClass = 'All Exam Classes';
+                                      } else {
+                                        _selectedClass = examClasses.first;
+                                      }
                                     } else {
                                       _selectedClass = 'All Classes';
                                     }

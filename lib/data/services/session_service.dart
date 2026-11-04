@@ -81,7 +81,9 @@ class SessionService {
     if (isPrincipal) return true;
     if (!isTeacher) return true;
     if (hasAllClassesAccess) return true;
-    final cls = (_allowedClasses ?? _assignedClass ?? '').trim();
+    final cls = (_allowedClasses != null && _allowedClasses!.trim().isNotEmpty)
+        ? _allowedClasses!.trim()
+        : (_assignedClass ?? '').trim();
     if (cls.isEmpty || cls.toLowerCase() == 'none' || cls.toLowerCase() == 'null') {
       return false;
     }
@@ -92,23 +94,29 @@ class SessionService {
         .replaceAll(RegExp(r'^class\s*', caseSensitive: false), '')
         .replaceAll('.', '')
         .trim();
-    final targetNorm = norm(targetClass);
+
     final allowedList = cls.split(RegExp(r'[,|]')).map(norm).where((c) => c.isNotEmpty).toList();
     if (allowedList.any((a) => a == 'all' || a == 'all classes')) return true;
-    return allowedList.any((a) {
-      if (a == targetNorm) return true;
-      final numA = RegExp(r'\d+').firstMatch(a)?.group(0);
-      final numTarget = RegExp(r'\d+').firstMatch(targetNorm)?.group(0);
-      if (numA != null && numTarget != null) {
-        return numA == numTarget;
-      }
-      final cleanA = a.replaceAll(RegExp(r'\s+'), '');
-      final cleanTarget = targetNorm.replaceAll(RegExp(r'\s+'), '');
-      if (cleanA.isNotEmpty && cleanTarget.isNotEmpty) {
-        if (cleanA == cleanTarget) return true;
-        if (cleanTarget.contains(cleanA) || cleanA.contains(cleanTarget)) return true;
-      }
-      return a == targetNorm;
+
+    final targetList = targetClass.split(RegExp(r'[,|]')).map(norm).where((c) => c.isNotEmpty).toList();
+    if (targetList.isEmpty) return false;
+
+    return targetList.any((targetNorm) {
+      return allowedList.any((a) {
+        if (a == targetNorm) return true;
+        final numA = RegExp(r'\d+').firstMatch(a)?.group(0);
+        final numTarget = RegExp(r'\d+').firstMatch(targetNorm)?.group(0);
+        if (numA != null && numTarget != null) {
+          return numA == numTarget;
+        }
+        final cleanA = a.replaceAll(RegExp(r'\s+'), '');
+        final cleanTarget = targetNorm.replaceAll(RegExp(r'\s+'), '');
+        if (cleanA.isNotEmpty && cleanTarget.isNotEmpty) {
+          if (cleanA == cleanTarget) return true;
+          if (cleanTarget.contains(cleanA) || cleanA.contains(cleanTarget)) return true;
+        }
+        return a == targetNorm;
+      });
     });
   }
 
