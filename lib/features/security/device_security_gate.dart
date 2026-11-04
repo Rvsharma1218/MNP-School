@@ -20,8 +20,8 @@ class DeviceSecurityGate extends StatefulWidget {
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProviderStateMixin {
-  static int currentVersionCode = 2015;
-  static String currentVersion = '2.0.8';
+  static int currentVersionCode = 2016;
+  static String currentVersion = '2.0.9';
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
@@ -320,7 +320,9 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
       try {
         // Switch between primary and high-speed mirror CDN if retrying
         final currentUrl = (retryCount >= 2 && mirrorUrl.isNotEmpty) ? mirrorUrl : primaryUrl;
-        final uri = Uri.parse(currentUrl);
+        final cacheBuster = 't=${DateTime.now().millisecondsSinceEpoch}';
+        final finalDownloadUrl = currentUrl.contains('?') ? '$currentUrl&$cacheBuster' : '$currentUrl?$cacheBuster';
+        final uri = Uri.parse(finalDownloadUrl);
 
         client = HttpClient();
         client.connectionTimeout = const Duration(seconds: 15);
@@ -334,6 +336,8 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
 
         final request = await client.getUrl(uri);
         request.headers.set(HttpHeaders.userAgentHeader, 'MNPSchoolApp/2.0');
+        request.headers.set(HttpHeaders.cacheControlHeader, 'no-cache, no-store, must-revalidate');
+        request.headers.set('Pragma', 'no-cache');
         request.headers.set(HttpHeaders.acceptEncodingHeader, 'identity'); // prevent gzip chunking so Content-Length is exact
         if (existingBytes > 0) {
           request.headers.set(HttpHeaders.rangeHeader, 'bytes=$existingBytes-');

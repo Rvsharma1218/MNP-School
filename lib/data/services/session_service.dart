@@ -20,6 +20,7 @@ class SessionService {
   static const _kTeacherName = 'session_teacher_name';
   static const _kAssignedClass = 'session_assigned_class';
   static const _kAssignedSection = 'session_assigned_section';
+  static const _kAllowedClasses = 'session_allowed_classes';
   static const _kParentStudentId = 'session_parent_student_id';
   static const _kParentStudentName = 'session_parent_student_name';
   static const _kParentStudentClass = 'session_parent_student_class';
@@ -32,6 +33,7 @@ class SessionService {
   String? _teacherName;
   String? _assignedClass;
   String? _assignedSection;
+  String? _allowedClasses;
   String? _parentStudentId;
   String? _parentStudentName;
   String? _parentStudentClass;
@@ -56,6 +58,7 @@ class SessionService {
   String? get teacherName => _teacherName;
   String? get assignedClass => _assignedClass;
   String? get assignedSection => _assignedSection;
+  String? get allowedClasses => _allowedClasses;
   String? get parentStudentId => _parentStudentId;
   String? get parentStudentName => _parentStudentName;
   String? get parentStudentClass => _parentStudentClass;
@@ -70,19 +73,17 @@ class SessionService {
   bool get hasAllClassesAccess {
     if (isPrincipal) return true;
     if (!isTeacher) return true;
-    final cls = _assignedClass?.trim().toLowerCase() ?? '';
-    return cls == 'all' || cls == 'all classes' || cls.contains('all classes');
+    final allowed = (_allowedClasses ?? _assignedClass ?? '').trim().toLowerCase();
+    return allowed == 'all' || allowed == 'all classes' || allowed.contains('all classes') || allowed.isEmpty;
   }
 
   bool canAccessClass(String? targetClass) {
     if (isPrincipal) return true;
     if (!isTeacher) return true;
-    final cls = _assignedClass?.trim() ?? '';
-    if (cls.toLowerCase() == 'all' || cls.toLowerCase() == 'all classes' || cls.toLowerCase().contains('all classes')) {
-      return true;
-    }
+    if (hasAllClassesAccess) return true;
+    final cls = (_allowedClasses ?? _assignedClass ?? '').trim();
     if (cls.isEmpty || cls.toLowerCase() == 'none' || cls.toLowerCase() == 'null') {
-      return false; // Not assigned -> strictly unauthorized
+      return false;
     }
     if (targetClass == null || targetClass.trim().isEmpty) return false;
     String norm(String s) => s
@@ -165,6 +166,7 @@ class SessionService {
     _teacherName = prefs.getString(_kTeacherName);
     _assignedClass = prefs.getString(_kAssignedClass);
     _assignedSection = prefs.getString(_kAssignedSection);
+    _allowedClasses = prefs.getString(_kAllowedClasses);
     _loaded = true;
 
     // Resolve user profile from Firestore in background (non-blocking)
@@ -214,6 +216,7 @@ class SessionService {
     _teacherName = null;
     _assignedClass = null;
     _assignedSection = null;
+    _allowedClasses = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kRole, 'principal');
     await prefs.setString(_kSchoolId, _schoolId!);
@@ -234,6 +237,7 @@ class SessionService {
     String? teacherName,
     String? assignedClass,
     String? assignedSection,
+    String? allowedClasses,
   }) async {
     _role = AppRole.teacher;
     _schoolId = schoolUid.isNotEmpty ? schoolUid : 'SCHOOL_001';
@@ -241,6 +245,7 @@ class SessionService {
     _teacherName = teacher?.name ?? teacherName;
     _assignedClass = teacher?.assignedClass ?? assignedClass;
     _assignedSection = teacher?.assignedSection ?? assignedSection;
+    _allowedClasses = teacher?.allowedClasses ?? allowedClasses;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kRole, 'teacher');
@@ -259,6 +264,11 @@ class SessionService {
       await prefs.setString(_kAssignedSection, _assignedSection!);
     } else {
       await prefs.remove(_kAssignedSection);
+    }
+    if (_allowedClasses != null && _allowedClasses!.isNotEmpty) {
+      await prefs.setString(_kAllowedClasses, _allowedClasses!);
+    } else {
+      await prefs.remove(_kAllowedClasses);
     }
     _schoolUidController.add(_schoolId);
     unawaited(TeacherPermissionsService.instance.syncWithSchool(_schoolId!));
@@ -323,6 +333,7 @@ class SessionService {
     _teacherName = null;
     _assignedClass = null;
     _assignedSection = null;
+    _allowedClasses = null;
     _parentStudentId = null;
     _parentStudentName = null;
     _parentStudentClass = null;

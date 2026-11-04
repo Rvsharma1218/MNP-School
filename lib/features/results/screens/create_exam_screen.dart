@@ -22,6 +22,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
   DateTime _examDate = DateTime.now();
   String _status = 'In Progress';
   bool _isDetailedMode = false;
+  bool _isSaving = false;
 
   List<String> _availableClasses = [];
   List<Map<String, dynamic>> _subjectRows = [];
@@ -352,7 +353,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () { Navigator.pop(ctx); setState(() {}); }, child: const Text('Cancel')),
               ElevatedButton.icon(
                 onPressed: () {
                   final subName = nameCtrl.text.trim();
@@ -397,6 +398,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
   }
 
   Future<void> _saveExam() async {
+    if (_isSaving) return;
     if (_titleCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter exam title')));
       return;
@@ -406,81 +408,81 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
       return;
     }
 
-    final seen = <String>{};
-    final configs = <ExamSubjectConfig>[];
-    for (final r in _subjectRows) {
-      final customName = (r['customCtrl'] as TextEditingController).text.trim();
-      final subName = (r['name'] == 'Other')
-          ? (customName.isNotEmpty ? customName : 'Subject')
-          : (r['name']?.toString() ?? 'Subject');
-      final normName = subName.trim();
-      if (seen.contains(normName.toLowerCase())) continue;
-      seen.add(normName.toLowerCase());
+    setState(() => _isSaving = true);
 
-      final cat = (r['category'] as String?) ?? 'Written';
-      final oralP = double.tryParse((r['oralPass'] as TextEditingController?)?.text ?? '') ?? 0.0;
-      final oralM = double.tryParse((r['oralMax'] as TextEditingController?)?.text ?? '') ?? 0.0;
+    try {
+      final seen = <String>{};
+      final configs = <ExamSubjectConfig>[];
+      for (final r in _subjectRows) {
+        final customName = (r['customCtrl'] as TextEditingController).text.trim();
+        final subName = (r['name'] == 'Other')
+            ? (customName.isNotEmpty ? customName : 'Subject')
+            : (r['name']?.toString() ?? 'Subject');
+        final normName = subName.trim();
+        if (seen.contains(normName.toLowerCase())) continue;
+        seen.add(normName.toLowerCase());
 
-      configs.add(ExamSubjectConfig(
-        subjectName: normName.isNotEmpty ? normName : 'Subject',
-        isCompulsory: r['isCompulsory'] == true,
-        category: cat,
-        oralPassing: oralP,
-        oralMax: oralM,
-        theoryPassing: double.tryParse((r['theoryPass'] as TextEditingController).text) ?? 33.0,
-        theoryMax: double.tryParse((r['theoryMax'] as TextEditingController).text) ?? 100.0,
-        practicalPassing: double.tryParse((r['practicalPass'] as TextEditingController).text) ?? 0.0,
-        practicalMax: double.tryParse((r['practicalMax'] as TextEditingController).text) ?? 0.0,
-        internalPassing: double.tryParse((r['internalPass'] as TextEditingController).text) ?? 0.0,
-        internalMax: double.tryParse((r['internalMax'] as TextEditingController).text) ?? 0.0,
-        passingMarks: double.tryParse((r['passingMarks'] as TextEditingController).text) ?? 33.0,
-        totalMarks: double.tryParse((r['totalMarks'] as TextEditingController).text) ?? 100.0,
-      ));
-    }
+        final cat = (r['category'] as String?) ?? 'Written';
+        final oralP = double.tryParse((r['oralPass'] as TextEditingController?)?.text ?? '') ?? 0.0;
+        final oralM = double.tryParse((r['oralMax'] as TextEditingController?)?.text ?? '') ?? 0.0;
 
-    final selectedList = _selectedClasses.contains('All Classes')
-        ? ['All Classes']
-        : _selectedClasses.toList();
-    final primaryClass = selectedList.join(', ');
-
-    final exam = ExamModel(
-      id: widget.editExam?.id ?? 'exam_${DateTime.now().millisecondsSinceEpoch}',
-      title: _titleCtrl.text.trim(),
-      term: _selectedTerm,
-      className: primaryClass,
-      academicYear: _academicYear,
-      examDate: _examDate,
-      status: _status,
-      isDetailedMode: _isDetailedMode,
-      subjects: configs,
-      createdAt: widget.editExam?.createdAt ?? DateTime.now(),
-    );
-
-    await DatabaseService.instance.saveExam(exam);
-
-    if (widget.editExam == null && selectedList.length > 1 && !selectedList.contains('All Classes')) {
-      for (final cls in selectedList) {
-        final subExam = ExamModel(
-          id: 'exam_${cls.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}_${DateTime.now().millisecondsSinceEpoch}',
-          title: '${_titleCtrl.text.trim()} - $cls',
-          term: _selectedTerm,
-          className: cls,
-          academicYear: _academicYear,
-          examDate: _examDate,
-          status: _status,
-          isDetailedMode: _isDetailedMode,
-          subjects: configs,
-          createdAt: DateTime.now(),
-        );
-        await DatabaseService.instance.saveExam(subExam);
+        configs.add(ExamSubjectConfig(
+          subjectName: normName.isNotEmpty ? normName : 'Subject',
+          isCompulsory: r['isCompulsory'] == true,
+          category: cat,
+          oralPassing: oralP,
+          oralMax: oralM,
+          theoryPassing: double.tryParse((r['theoryPass'] as TextEditingController).text) ?? 33.0,
+          theoryMax: double.tryParse((r['theoryMax'] as TextEditingController).text) ?? 100.0,
+          practicalPassing: double.tryParse((r['practicalPass'] as TextEditingController).text) ?? 0.0,
+          practicalMax: double.tryParse((r['practicalMax'] as TextEditingController).text) ?? 0.0,
+          internalPassing: double.tryParse((r['internalPass'] as TextEditingController).text) ?? 0.0,
+          internalMax: double.tryParse((r['internalMax'] as TextEditingController).text) ?? 0.0,
+          passingMarks: double.tryParse((r['passingMarks'] as TextEditingController).text) ?? 33.0,
+          totalMarks: double.tryParse((r['totalMarks'] as TextEditingController).text) ?? 100.0,
+        ));
       }
-    }
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(duration: const Duration(seconds: 3), content: Text('✓ Exam "${exam.title}" saved successfully!'), backgroundColor: Colors.green),
+
+      // If user selected specific classes, strictly use those classes!
+      final nonAllClasses = _selectedClasses.where((c) => c != 'All Classes').toList();
+      final effectiveClass = (_selectedClasses.contains('All Classes') || nonAllClasses.isEmpty)
+          ? 'All Classes'
+          : nonAllClasses.join(', ');
+
+      final exam = ExamModel(
+        id: widget.editExam?.id ?? 'exam_${DateTime.now().millisecondsSinceEpoch}',
+        title: _titleCtrl.text.trim(),
+        term: _selectedTerm,
+        className: effectiveClass,
+        academicYear: _academicYear,
+        examDate: _examDate,
+        status: _status,
+        isDetailedMode: _isDetailedMode,
+        subjects: configs,
+        createdAt: widget.editExam?.createdAt ?? DateTime.now(),
       );
-      Navigator.pop(context, exam);
+
+      // Create EXACTLY ONE exam record. Do not generate duplicate sub-exams!
+      await DatabaseService.instance.saveExam(exam);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 3),
+            content: Text('✓ Exam "${exam.title}" saved successfully for $effectiveClass!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, exam);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save exam: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -694,7 +696,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
                                             width: double.infinity,
                                             child: ElevatedButton(
                                               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                                              onPressed: () => Navigator.pop(ctx),
+                                              onPressed: () { Navigator.pop(ctx); setState(() {}); },
                                               child: Text('Done (${_selectedClasses.contains("All Classes") ? "All Classes" : "${_selectedClasses.length} selected"})', style: const TextStyle(fontWeight: FontWeight.bold)),
                                             ),
                                           ),

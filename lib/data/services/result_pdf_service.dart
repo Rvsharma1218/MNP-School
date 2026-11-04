@@ -609,15 +609,22 @@ class ResultPdfService {
     final photoBytes = await AppUtils.loadAppImageBytes(student.photoPath);
     final studentPhoto = photoBytes != null ? pw.MemoryImage(photoBytes) : null;
 
-    // Resolve assigned class teacher for this student's class
+    // Resolve assigned class teacher for this student's class (STRICT SINGLE CLASS MATCH)
     TeacherModel? classTeacher;
     try {
-      final sClass = (student.className ?? result.className ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final sClass = (student.className ?? result.className ?? '').trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '');
+      final sSec = (student.section ?? '').trim().toLowerCase();
       if (sClass.isNotEmpty) {
         final teachers = TeacherService.instance.cachedTeachers;
         for (final t in teachers) {
-          final tCls = (t.assignedClass ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-          if (tCls.isNotEmpty && (tCls == sClass || tCls.contains(sClass))) {
+          final rawTCls = (t.assignedClass ?? '').trim();
+          if (rawTCls.isEmpty || rawTCls.toLowerCase() == 'none' || rawTCls.toLowerCase() == 'all classes') continue;
+          final tCls = rawTCls.toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '');
+          if (tCls == sClass) {
+            final tSec = (t.assignedSection ?? '').trim().toLowerCase();
+            if (tSec.isNotEmpty && sSec.isNotEmpty && tSec != sSec) {
+              continue;
+            }
             classTeacher = t;
             break;
           }

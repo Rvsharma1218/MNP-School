@@ -12,6 +12,7 @@ class TeacherModel {
   final String schoolId;
   final String? assignedClass;   // e.g. "Class 5" or "Nursery"
   final String? assignedSection; // e.g. "A"
+  final String? allowedClasses;  // e.g. "All Classes" or "Class 1, Class 2"
   final bool active;
   final String status;
   final DateTime createdAt;
@@ -45,6 +46,7 @@ class TeacherModel {
     this.schoolId = '',
     this.assignedClass,
     this.assignedSection,
+    this.allowedClasses,
     required this.active,
     this.status = 'active',
     required this.createdAt,
@@ -84,6 +86,7 @@ class TeacherModel {
           .where((c) => c.isNotEmpty)
           .toList(),
       'assignedSection': assignedSection,
+      'allowedClasses': allowedClasses ?? (assignedClass != null ? assignedClass : 'All Classes'),
       'active': active,
       'status': status,
       'createdAt': createdAt.toIso8601String(),
@@ -201,6 +204,7 @@ class TeacherModel {
           .where((c) => c.isNotEmpty)
           .toList(),
       'assignedSection': assignedSection,
+      'allowedClasses': allowedClasses ?? (assignedClass != null ? assignedClass : 'All Classes'),
       'active': active,
       'qualification': qualification,
       'designation': designation,
@@ -240,6 +244,7 @@ class TeacherModel {
     String? password,
     String? assignedClass,
     String? assignedSection,
+    String? allowedClasses,
     bool? active,
     String? status,
     String? fatherName,
@@ -270,6 +275,7 @@ class TeacherModel {
       schoolId: schoolId,
       assignedClass: assignedClass ?? this.assignedClass,
       assignedSection: assignedSection ?? this.assignedSection,
+      allowedClasses: allowedClasses ?? this.allowedClasses,
       active: active ?? this.active,
       status: status ?? this.status,
       createdAt: createdAt,

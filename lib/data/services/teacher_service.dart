@@ -301,6 +301,7 @@ class TeacherService {
     String? aadhaarDocUrl,
     String? schoolName,
     String? signatureUrl,
+    String? allowedClasses,
   }) async {
     final teacherId = await getNextSequentialTeacherId(schoolUid, schoolName);
     final effectiveSchoolEmail = schoolEmail.isNotEmpty ? schoolEmail : '${schoolUid.toLowerCase()}@school.com';
@@ -366,6 +367,7 @@ class TeacherService {
           .where((c) => c.isNotEmpty)
           .toList(),
       'assignedSection': teacher.assignedSection,
+      if (allowedClasses != null && allowedClasses.isNotEmpty) 'allowedClasses': allowedClasses,
       'authEmail': syntheticEmail,
       'authUid': authUid,
       'createdAt': FieldValue.serverTimestamp(),
@@ -438,6 +440,7 @@ class TeacherService {
         'status': 'active',
         'assignedClass': teacher.assignedClass,
         'assignedSection': teacher.assignedSection,
+      if (teacher.allowedClasses != null && teacher.allowedClasses!.isNotEmpty) 'allowedClasses': teacher.allowedClasses,
         'instituteName': instituteName ?? 'Mission Navodaya Public School',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -483,6 +486,7 @@ class TeacherService {
     String? photoUrl,
     String? aadhaarDocUrl,
     String? signatureUrl,
+    String? allowedClasses,
   }) async {
     final effectiveSchoolEmail = schoolEmail.isNotEmpty ? schoolEmail : '${schoolUid.toLowerCase()}@school.com';
     final updates = <String, dynamic>{
@@ -494,6 +498,7 @@ class TeacherService {
           .where((c) => c.isNotEmpty)
           .toList(),
       'assignedSection': assignedSection?.trim().isEmpty == true ? null : assignedSection?.trim(),
+      if (allowedClasses != null && allowedClasses.isNotEmpty) 'allowedClasses': allowedClasses.trim(),
       if (mobile != null) 'mobile': mobile.trim(),
       if (password != null && password.isNotEmpty) 'password': password.trim(),
       if (fatherName != null) 'fatherName': fatherName.trim(),
@@ -856,6 +861,7 @@ class TeacherService {
           'status': 'active',
           'assignedClass': teacher.assignedClass,
           'assignedSection': teacher.assignedSection,
+      if (teacher.allowedClasses != null && teacher.allowedClasses!.isNotEmpty) 'allowedClasses': teacher.allowedClasses,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
