@@ -13,6 +13,8 @@ import '../../data/services/session_service.dart';
 import '../../data/services/teacher_service.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/student_photo_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../core/utils/signature_processor.dart';
 import '../attendance/teacher_attendance_screen.dart';
 import 'teacher_profile_screen.dart';
 import 'teacher_role_access_screen.dart';
@@ -148,6 +150,7 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
     DateTime? selectedJoiningDate;
     String? photoUrl;
     String? aadhaarDocUrl;
+    String? signatureUrl;
 
     final formKey = GlobalKey<FormState>();
     bool saving = false;
@@ -487,6 +490,133 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                       ),
                       const SizedBox(height: 10),
 
+                      // ─── Digital Signature Section (Class Teacher Sign on Marksheets) ───
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: cs.outlineVariant),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.draw_rounded, color: Color(0xFF7C3AED), size: 18),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Class Teacher Digital Signature',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.onSurface),
+                                      ),
+                                      const SizedBox(height: 1),
+                                      Text(
+                                        signatureUrl != null ? 'Signature Attached (Will show on Marksheets)' : 'Optional • Can be added later in profile',
+                                        style: TextStyle(fontSize: 11, color: signatureUrl != null ? const Color(0xFF059669) : cs.onSurfaceVariant),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (signatureUrl != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFD1FAE5),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text('ATTACHED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                                  ),
+                              ],
+                            ),
+                            if (signatureUrl != null) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                height: 65,
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: Center(
+                                  child: Image.memory(
+                                    base64Decode(signatureUrl!.contains(',') ? signatureUrl!.split(',').last : signatureUrl!),
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => const Text('Signature Preview Error', style: TextStyle(color: Colors.red, fontSize: 11)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () async {
+                                      final picker = ImagePicker();
+                                      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+                                      if (picked == null) return;
+                                      final rawBytes = await picked.readAsBytes();
+                                      final cleaned = await SignatureProcessor.processAndCleanSignature(rawBytes);
+                                      final b64 = cleaned ?? ('data:image/png;base64,' + base64Encode(rawBytes));
+                                      setSheetState(() => signatureUrl = b64);
+                                    },
+                                    icon: const Icon(Icons.photo_library_outlined, size: 15),
+                                    label: Text(signatureUrl != null ? 'Change (Gallery)' : 'From Gallery', style: const TextStyle(fontSize: 12)),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF7C3AED),
+                                      side: const BorderSide(color: Color(0xFF7C3AED)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () async {
+                                      final picker = ImagePicker();
+                                      final picked = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+                                      if (picked == null) return;
+                                      final rawBytes = await picked.readAsBytes();
+                                      final cleaned = await SignatureProcessor.processAndCleanSignature(rawBytes);
+                                      final b64 = cleaned ?? ('data:image/png;base64,' + base64Encode(rawBytes));
+                                      setSheetState(() => signatureUrl = b64);
+                                    },
+                                    icon: const Icon(Icons.camera_alt_outlined, size: 15),
+                                    label: const Text('Capture Camera', style: TextStyle(fontSize: 12)),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF7C3AED),
+                                      side: const BorderSide(color: Color(0xFF7C3AED)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
+                                ),
+                                if (signatureUrl != null) ...[
+                                  const SizedBox(width: 6),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                    onPressed: () => setSheetState(() => signatureUrl = null),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
                       TextFormField(
                         controller: passwordCtrl,
                         decoration: const InputDecoration(labelText: 'Portal Password *', prefixIcon: Icon(Icons.lock_outline)),
@@ -548,6 +678,7 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                     aadhaarNumber: aadhaarCtrl.text.trim().isEmpty ? null : aadhaarCtrl.text.trim(),
                                     qualification: qualCtrl.text.trim().isEmpty ? null : qualCtrl.text.trim(),
                                     designation: desigCtrl.text.trim().isEmpty ? null : desigCtrl.text.trim(),
+                                    signatureUrl: signatureUrl,
                                     subject: subjectCtrl.text.trim().isEmpty ? null : subjectCtrl.text.trim(),
                                     joiningDate: selectedJoiningDate,
                                     salary: salVal,

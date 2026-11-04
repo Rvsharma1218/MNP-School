@@ -566,6 +566,455 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
     );
   }
 
+
+  // ─── TEACHER FEEDBACK DIALOG ──────────────────────────────────────────────
+  void _showTeacherFeedbackDialog(BuildContext context) {
+    int rating = 5;
+    String category = 'General Feedback';
+    final commentCtrl = TextEditingController();
+    bool submitting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.star_rounded, color: Colors.amber, size: 24),
+                ),
+                const SizedBox(width: 10),
+                const Text('Send App Feedback', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Rate your experience:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      final starNum = index + 1;
+                      return IconButton(
+                        icon: Icon(
+                          starNum <= rating ? Icons.star_rounded : Icons.star_border_rounded,
+                          color: Colors.amber,
+                          size: 32,
+                        ),
+                        onPressed: () => setDlgState(() => rating = starNum),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Category:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    value: category,
+                    isDense: true,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'General Feedback', child: Text('General Feedback')),
+                      DropdownMenuItem(value: 'Marks & Results Desk', child: Text('Marks & Results Desk')),
+                      DropdownMenuItem(value: 'Student Attendance', child: Text('Student Attendance')),
+                      DropdownMenuItem(value: 'App Speed & Performance', child: Text('App Speed & Performance')),
+                      DropdownMenuItem(value: 'Feature Suggestion', child: Text('Feature Suggestion')),
+                    ],
+                    onChanged: (val) => setDlgState(() => category = val ?? 'General Feedback'),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Your Comments / Feedback:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: commentCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Share your thoughts, suggestions or experience...',
+                      hintStyle: const TextStyle(fontSize: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: submitting
+                    ? null
+                    : () async {
+                        setDlgState(() => submitting = true);
+                        final schoolId = SessionService.instance.activeSchoolId.isNotEmpty
+                            ? SessionService.instance.activeSchoolId
+                            : SessionService.instance.activeSchoolUid;
+                        final teacherName = SessionService.instance.teacherName ?? 'Teacher';
+
+                        try {
+                          await FirebaseFirestore.instance
+                              .collection('schools')
+                              .doc(schoolId)
+                              .collection('feedback')
+                              .add({
+                            'rating': rating,
+                            'category': category,
+                            'comments': commentCtrl.text.trim(),
+                            'submittedBy': teacherName,
+                            'role': 'teacher',
+                            'schoolId': schoolId,
+                            'createdAt': FieldValue.serverTimestamp(),
+                          });
+
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✓ Thank you! Feedback submitted successfully.'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setDlgState(() => submitting = false);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                child: submitting
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Submit'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // ─── TEACHER REPORT BUG / PROBLEM DIALOG ──────────────────────────────────
+  void _showReportBugDialog(BuildContext context) {
+    String category = 'Marks & Results';
+    final descCtrl = TextEditingController();
+    bool submitting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.bug_report_rounded, color: Colors.red, size: 24),
+                ),
+                const SizedBox(width: 10),
+                const Text('Report a Problem / Bug', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Issue Category:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    value: category,
+                    isDense: true,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Marks & Results', child: Text('Marks & Results Desk')),
+                      DropdownMenuItem(value: 'Student Attendance', child: Text('Student Attendance')),
+                      DropdownMenuItem(value: 'Class Allocation / Role', child: Text('Class Allocation / Role')),
+                      DropdownMenuItem(value: 'ID Card / Admit Card', child: Text('ID Card / Admit Card')),
+                      DropdownMenuItem(value: 'Screen Lock / PIN', child: Text('Screen Lock / PIN')),
+                      DropdownMenuItem(value: 'App Crash / Lag', child: Text('App Crash / Lag')),
+                      DropdownMenuItem(value: 'Other Issue', child: Text('Other Issue')),
+                    ],
+                    onChanged: (val) => setDlgState(() => category = val ?? 'Marks & Results'),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Describe the problem in detail:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: descCtrl,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      hintText: 'What went wrong? E.g., Mark sheet error on Class 5...',
+                      hintStyle: const TextStyle(fontSize: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Our technical team will review this report and fix the issue.',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: submitting
+                    ? null
+                    : () async {
+                        if (descCtrl.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please describe the problem')),
+                          );
+                          return;
+                        }
+                        setDlgState(() => submitting = true);
+                        final schoolId = SessionService.instance.activeSchoolId.isNotEmpty
+                            ? SessionService.instance.activeSchoolId
+                            : SessionService.instance.activeSchoolUid;
+                        final teacherName = SessionService.instance.teacherName ?? 'Teacher';
+
+                        try {
+                          await FirebaseFirestore.instance
+                              .collection('schools')
+                              .doc(schoolId)
+                              .collection('bug_reports')
+                              .add({
+                            'category': category,
+                            'description': descCtrl.text.trim(),
+                            'reportedBy': teacherName,
+                            'role': 'teacher',
+                            'schoolId': schoolId,
+                            'status': 'open',
+                            'createdAt': FieldValue.serverTimestamp(),
+                          });
+
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✓ Problem report sent to technical team. Thank you!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setDlgState(() => submitting = false);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                child: submitting
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Send Report'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // ─── THEME & LANGUAGE SECTION ─────────────────────────────────────────────
+  Widget _buildThemeAndLanguageSection(BuildContext context, SettingsModel settings) {
+    final currentLang = ref.watch(appLanguageProvider);
+    final themeMode = ref.watch(themeModeProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('DISPLAY & PREFERENCES (थीम एवं भाषा)'),
+        _buildCardGroup(context, [
+          // Theme Selector
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.palette_outlined, color: Color(0xFF6366F1), size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Theme Mode (ऐप का रंग)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          SizedBox(height: 2),
+                          Text('Choose Light, Dark or System Default', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildChoiceChip(
+                        label: '☀️ Light',
+                        selected: themeMode == ThemeMode.light,
+                        onTap: () => ref.read(themeModeProvider.notifier).setMode('light'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildChoiceChip(
+                        label: '🌙 Dark',
+                        selected: themeMode == ThemeMode.dark,
+                        onTap: () => ref.read(themeModeProvider.notifier).setMode('dark'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildChoiceChip(
+                        label: '⚙️ System',
+                        selected: themeMode == ThemeMode.system,
+                        onTap: () => ref.read(themeModeProvider.notifier).setMode('system'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+
+          // Language Selector
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D9488).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.language_rounded, color: Color(0xFF0D9488), size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('App Language (भाषा)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          SizedBox(height: 2),
+                          Text('Choose English, हिंदी or Hinglish', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildChoiceChip(
+                        label: '🇬🇧 English',
+                        selected: currentLang == 'en',
+                        onTap: () => ref.read(appLanguageProvider.notifier).setLanguage('en'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildChoiceChip(
+                        label: '🇮🇳 हिंदी',
+                        selected: currentLang == 'hi',
+                        onTap: () => ref.read(appLanguageProvider.notifier).setLanguage('hi'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildChoiceChip(
+                        label: '🔤 Hinglish',
+                        selected: currentLang == 'hinglish',
+                        onTap: () => ref.read(appLanguageProvider.notifier).setLanguage('hinglish'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  Widget _buildChoiceChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF2563EB) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? const Color(0xFF1D4ED8) : const Color(0xFFCBD5E1),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+            color: selected ? Colors.white : const Color(0xFF1E293B),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
@@ -875,6 +1324,9 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
               ),
             ]),
 
+            // ─── DISPLAY & PREFERENCES (THEME & LANGUAGE) ───
+            _buildThemeAndLanguageSection(context, settings),
+
             // ─── SECTION 4: HELP DESK & SUPPORT ───
             _buildSectionHeader('HELP & SUPPORT DESK (सहायता एवं हेल्पलाइन)'),
             _buildCardGroup(context, [
@@ -896,6 +1348,26 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
                 iconColor: const Color(0xFF0284C7),
                 iconBg: const Color(0xFFE0F2FE),
                 onTap: () => _callHelpline(settings),
+              ),
+              const Divider(height: 1, indent: 64),
+              _buildMenuTile(
+                context: context,
+                title: 'Send App Feedback (फीडबैक दें)',
+                subtitle: 'Rate the app & suggest features to principal / admin',
+                icon: Icons.rate_review_outlined,
+                iconColor: const Color(0xFFF59E0B),
+                iconBg: const Color(0xFFFEF3C7),
+                onTap: () => _showTeacherFeedbackDialog(context),
+              ),
+              const Divider(height: 1, indent: 64),
+              _buildMenuTile(
+                context: context,
+                title: 'Report a Problem / Bug (समस्या दर्ज करें)',
+                subtitle: 'Submit an issue to technical support team for fast resolution',
+                icon: Icons.bug_report_outlined,
+                iconColor: const Color(0xFFEF4444),
+                iconBg: const Color(0xFFFEE2E2),
+                onTap: () => _showReportBugDialog(context),
               ),
               const Divider(height: 1, indent: 64),
               _buildMenuTile(

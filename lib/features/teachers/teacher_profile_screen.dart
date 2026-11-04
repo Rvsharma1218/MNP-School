@@ -23,6 +23,7 @@ import '../../data/services/teacher_service.dart';
 import '../../widgets/student_photo_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import '../attendance/teacher_attendance_screen.dart';
+import 'teacher_role_access_screen.dart';
 
 class TeacherProfileScreen extends ConsumerStatefulWidget {
   final TeacherModel teacher;
@@ -1540,6 +1541,384 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
   }
 
   // ─── TAB 1: PERSONAL INFO ─────────────────────────────────────────────────────
+
+  // ─── CLASS ASSIGNMENT & PERMISSIONS MANAGEMENT ─────────────────────────────
+  Future<void> _showAssignClassesSheet() async {
+    final cs = Theme.of(context).colorScheme;
+    final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+    final availableClasses = <String>{
+      ...settings.schoolClasses,
+      ...settings.computerCourses,
+      'Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+      'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'
+    }.toList();
+    final availableSections = settings.sections.isNotEmpty ? settings.sections : ['A', 'B', 'C', 'D'];
+
+    String currentAssigned = _teacher.assignedClass ?? 'All Classes';
+    List<String> selectedClasses = currentAssigned
+        .split(RegExp(r'[,|]'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (selectedClasses.isEmpty) selectedClasses = ['All Classes'];
+
+    String selectedSection = _teacher.assignedSection ?? '';
+    bool saving = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final isAllSelected = selectedClasses.contains('All Classes') || selectedClasses.isEmpty;
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: cs.onSurfaceVariant.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Assign Classes to Teacher', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: cs.onSurface)),
+                            Text(_teacher.name, style: const TextStyle(fontSize: 12, color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    Text('SELECT TEACHING CLASSES:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 0.5)),
+                    const SizedBox(height: 8),
+
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        FilterChip(
+                          label: const Text('All Classes (सभी कक्षाएँ)'),
+                          selected: isAllSelected,
+                          selectedColor: const Color(0xFF2563EB),
+                          checkmarkColor: Colors.white,
+                          labelStyle: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: isAllSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isAllSelected ? Colors.white : cs.onSurface,
+                          ),
+                          onSelected: (sel) {
+                            setSheetState(() {
+                              selectedClasses = ['All Classes'];
+                            });
+                          },
+                        ),
+                        ...availableClasses.map((c) {
+                          final isSel = !isAllSelected && selectedClasses.contains(c);
+                          return FilterChip(
+                            label: Text(c),
+                            selected: isSel,
+                            selectedColor: const Color(0xFF0D9488),
+                            checkmarkColor: Colors.white,
+                            labelStyle: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                              color: isSel ? Colors.white : cs.onSurface,
+                            ),
+                            onSelected: (sel) {
+                              setSheetState(() {
+                                if (isAllSelected) selectedClasses.clear();
+                                if (sel) {
+                                  if (!selectedClasses.contains(c)) selectedClasses.add(c);
+                                } else {
+                                  selectedClasses.remove(c);
+                                }
+                                if (selectedClasses.isEmpty) selectedClasses = ['All Classes'];
+                              });
+                            },
+                          );
+                        }),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    Text('ASSIGNED SECTION (OPTIONAL):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 0.5)),
+                    const SizedBox(height: 8),
+
+                    DropdownButtonFormField<String>(
+                      value: selectedSection.isEmpty ? '' : selectedSection,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: '', child: Text('All / Any Section')),
+                        ...availableSections.map((s) => DropdownMenuItem(value: s, child: Text('Section $s'))),
+                      ],
+                      onChanged: (val) => setSheetState(() => selectedSection = val ?? ''),
+                    ),
+                    const SizedBox(height: 20),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: saving
+                            ? null
+                            : () async {
+                                setSheetState(() => saving = true);
+                                final finalClassStr = selectedClasses.contains('All Classes')
+                                    ? 'All Classes'
+                                    : selectedClasses.join(', ');
+
+                                final schoolUid = SessionService.instance.activeSchoolUid.isNotEmpty
+                                    ? SessionService.instance.activeSchoolUid
+                                    : 'SCHOOL_001';
+
+                                try {
+                                  await FirebaseFirestore.instance
+                                      .collection('schools')
+                                      .doc(schoolUid)
+                                      .collection('teachers')
+                                      .doc(_teacher.teacherId)
+                                      .update({
+                                    'assignedClass': finalClassStr,
+                                    'assignedClasses': selectedClasses,
+                                    'assignedSection': selectedSection,
+                                  });
+
+                                  if (mounted) {
+                                    setState(() {
+                                      _teacher = _teacher.copyWith(
+                                        assignedClass: finalClassStr,
+                                        assignedSection: selectedSection,
+                                      );
+                                    });
+                                    widget.onTeacherUpdated?.call();
+                                    Navigator.pop(ctx);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('✓ Class allocation updated for ${_teacher.name}'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  setSheetState(() => saving = false);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Failed to update class: $e'), backgroundColor: Colors.red),
+                                    );
+                                  }
+                                }
+                              },
+                        child: saving
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text('Save Class Allocation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildClassAssignAndPermissionsSection(ColorScheme cs) {
+    final assigned = _teacher.assignedClass ?? 'All Classes';
+    final classesList = assigned.split(RegExp(r'[,|]')).map((c) => c.trim()).where((c) => c.isNotEmpty).toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.school_rounded, color: Color(0xFF0284C7), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Class Assign & Role Access',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Assigned Classes: $assigned',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF0284C7)),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _showAssignClassesSheet,
+                icon: const Icon(Icons.edit_calendar_rounded, size: 14),
+                label: const Text('Assign', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0284C7),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Chips display of assigned classes
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: classesList.isEmpty
+                ? [
+                    Chip(
+                      label: const Text('All Classes', style: TextStyle(fontSize: 11, color: Colors.white)),
+                      backgroundColor: const Color(0xFF2563EB),
+                      padding: EdgeInsets.zero,
+                    )
+                  ]
+                : classesList.map((cls) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        cls,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                      ),
+                    );
+                  }).toList(),
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+
+          // Faculty Permissions Sub-section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.shield_outlined, size: 16, color: Color(0xFF7C3AED)),
+                  const SizedBox(width: 6),
+                  const Text('Faculty Permissions & Privileges', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TeacherRoleAccessScreen()),
+                  );
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Manage Access >', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Active Permissions badges
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _buildPermBadge('📝 Marks Entry', true),
+              _buildPermBadge('📅 Attendance', true),
+              _buildPermBadge('🪪 ID / Admit Cards', true),
+              _buildPermBadge('📋 Reports & Slips', true),
+              _buildPermBadge('✏️ Edit Student', false),
+              _buildPermBadge('💰 Collect Fees', false),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermBadge(String label, bool isEnabled) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isEnabled ? const Color(0xFFD1FAE5) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: isEnabled ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: isEnabled ? const Color(0xFF065F46) : const Color(0xFF64748B),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPersonalTab(ColorScheme cs) {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -1584,6 +1963,14 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
             ],
           ),
         ),
+        const SizedBox(height: 14),
+
+        // ─── 1. Class Teacher Digital Signature (Prominent in Personal Tab) ───
+        _buildSignatureSection(cs),
+        const SizedBox(height: 14),
+
+        // ─── 2. Class Allocation & Permissions ───
+        _buildClassAssignAndPermissionsSection(cs),
         const SizedBox(height: 14),
 
         _cardSection(
@@ -1770,7 +2157,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
       }
 
       final rawBytes = await picked.readAsBytes();
-      final base64Sig = (await SignatureProcessor.processAndCleanSignature(rawBytes)) ??
+      final base64Sig = (await SignatureProcessor.processAndCleanSignature(rawBytes, colorMode: 'dark')) ??
           'data:image/png;base64,${base64Encode(rawBytes)}';
 
       final schoolUid = SessionService.instance.activeSchoolUid.isNotEmpty

@@ -235,6 +235,39 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     }).firstOrNull;
   }
 
+  ExamModel? _getEffectiveExamForStudent(StudentModel student) {
+    final sClass = (student.className ?? student.displayClass).trim().toLowerCase();
+    final cleanTitle = _examTitle.trim().toLowerCase();
+
+    bool matchesClass(ExamModel e) {
+      final eClass = e.className.trim().toLowerCase();
+      if (eClass.isEmpty || eClass == 'all classes') return true;
+      final split = eClass.split(',').map((c) => c.trim()).toList();
+      return split.contains(sClass);
+    }
+
+    // 1. Exact match for this student's class and exam title
+    final exactClassMatch = _allExams.where((e) {
+      final eTitle = e.title.trim().toLowerCase();
+      return eTitle == cleanTitle && matchesClass(e) && e.className.trim().toLowerCase() != 'all classes' && e.className.trim().isNotEmpty;
+    }).firstOrNull;
+    if (exactClassMatch != null) return exactClassMatch;
+
+    // 2. Global exam for All Classes with this exam title
+    final globalMatch = _allExams.where((e) {
+      final eTitle = e.title.trim().toLowerCase();
+      final eClass = e.className.trim().toLowerCase();
+      return eTitle == cleanTitle && (eClass.isEmpty || eClass == 'all classes');
+    }).firstOrNull;
+    if (globalMatch != null) return globalMatch;
+
+    // 3. Fallback: match by title alone
+    final titleMatch = _allExams.where((e) => e.title.trim().toLowerCase() == cleanTitle).firstOrNull;
+    if (titleMatch != null) return titleMatch;
+
+    return _selectedExam;
+  }
+
   Future<void> _openMarkEntry(StudentModel student) async {
     final existing = _getResultForStudent(student);
     final saved = await Navigator.push<ResultModel>(
@@ -242,7 +275,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
       MaterialPageRoute(
         builder: (_) => StudentMarkEntryScreen(
           student: student,
-          exam: _selectedExam,
+          exam: _getEffectiveExamForStudent(student),
           editResult: existing,
         ),
       ),
@@ -587,7 +620,19 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                                 return DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis));
                               }).toList(),
                               onChanged: (val) {
-                                if (val != null) setState(() => _selectedClass = val);
+                                if (val != null) {
+                                  setState(() {
+                                    _selectedClass = val;
+                                    final cleanTitle = _examTitle.trim().toLowerCase();
+                                    final targetClass = val.trim().toLowerCase();
+                                    _selectedExam = _allExams.where((e) {
+                                      final eTitle = e.title.trim().toLowerCase();
+                                      final eClass = e.className.trim().toLowerCase();
+                                      final split = eClass.split(',').map((c) => c.trim()).toList();
+                                      return eTitle == cleanTitle && (eClass == targetClass || split.contains(targetClass));
+                                    }).firstOrNull ?? _allExams.where((e) => e.title.trim().toLowerCase() == cleanTitle).firstOrNull;
+                                  });
+                                }
                               },
                             ),
                           ),
@@ -606,10 +651,10 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                               ),
                               items: _allExams.isNotEmpty
-                                  ? _allExams.map((e) {
+                                  ? _allExams.map((e) => e.title.trim()).where((t) => t.isNotEmpty).toSet().map((title) {
                                       return DropdownMenuItem(
-                                        value: e.title,
-                                        child: Text(e.title, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                                        value: title,
+                                        child: Text(title, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
                                       );
                                     }).toList()
                                   : [
@@ -622,7 +667,14 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                                 if (val != null) {
                                   setState(() {
                                     _examTitle = val;
-                                    _selectedExam = _allExams.where((e) => e.title == val).firstOrNull;
+                                    final cleanTitle = val.trim().toLowerCase();
+                                    final targetClass = _selectedClass.trim().toLowerCase();
+                                    _selectedExam = _allExams.where((e) {
+                                      final eTitle = e.title.trim().toLowerCase();
+                                      final eClass = e.className.trim().toLowerCase();
+                                      final split = eClass.split(',').map((c) => c.trim()).toList();
+                                      return eTitle == cleanTitle && (eClass == targetClass || split.contains(targetClass));
+                                    }).firstOrNull ?? _allExams.where((e) => e.title.trim().toLowerCase() == cleanTitle).firstOrNull;
                                   });
                                 }
                               },

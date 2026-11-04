@@ -300,6 +300,7 @@ class TeacherService {
     String? photoUrl,
     String? aadhaarDocUrl,
     String? schoolName,
+    String? signatureUrl,
   }) async {
     final teacherId = await getNextSequentialTeacherId(schoolUid, schoolName);
     final effectiveSchoolEmail = schoolEmail.isNotEmpty ? schoolEmail : '${schoolUid.toLowerCase()}@school.com';
@@ -353,6 +354,7 @@ class TeacherService {
       salary: salary ?? 25000.0,
       photoUrl: photoUrl,
       aadhaarDocUrl: aadhaarDocUrl,
+      signatureUrl: signatureUrl,
     );
 
     final teacherDocData = {
@@ -392,6 +394,9 @@ class TeacherService {
       'aadhaarDocUrl': teacher.aadhaarDocUrl,
       'aadhaarDocPath': teacher.aadhaarDocUrl,
       'aadhaarCardUrl': teacher.aadhaarDocUrl,
+      if (signatureUrl != null && signatureUrl.isNotEmpty) 'signatureUrl': signatureUrl,
+      if (signatureUrl != null && signatureUrl.isNotEmpty) 'teacherSignature': signatureUrl,
+      if (signatureUrl != null && signatureUrl.isNotEmpty) 'signature': signatureUrl,
     };
 
     // 1. Primary: Save in school's teachers subcollection by teacherId
@@ -477,6 +482,7 @@ class TeacherService {
     double? salary,
     String? photoUrl,
     String? aadhaarDocUrl,
+    String? signatureUrl,
   }) async {
     final effectiveSchoolEmail = schoolEmail.isNotEmpty ? schoolEmail : '${schoolUid.toLowerCase()}@school.com';
     final updates = <String, dynamic>{
@@ -503,6 +509,11 @@ class TeacherService {
       if (joiningDate != null) 'joiningDate': joiningDate.toIso8601String(),
       if (salary != null) 'salary': salary,
       if (photoUrl != null) 'photoUrl': photoUrl,
+      if (signatureUrl != null) ...{
+        'signatureUrl': signatureUrl,
+        'teacherSignature': signatureUrl,
+        'signature': signatureUrl,
+      },
       if (aadhaarDocUrl != null) ...{
         'aadhaarDocUrl': aadhaarDocUrl,
         'aadhaarDocPath': aadhaarDocUrl,
@@ -563,6 +574,7 @@ class TeacherService {
       salary: salary,
       photoUrl: photoUrl,
       aadhaarDocUrl: aadhaarDocUrl,
+      signatureUrl: signatureUrl ?? teacher.signatureUrl,
     );
     final idx = _cachedTeachers.indexWhere((t) => t.teacherId == teacher.teacherId || (teacher.authUid.isNotEmpty && t.authUid == teacher.authUid));
     if (idx != -1) {
