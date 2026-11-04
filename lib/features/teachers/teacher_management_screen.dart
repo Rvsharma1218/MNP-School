@@ -15,9 +15,9 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/student_photo_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/utils/signature_processor.dart';
+import '../../core/utils/signature_helper.dart';
 import '../attendance/teacher_attendance_screen.dart';
 import 'teacher_profile_screen.dart';
-import 'teacher_role_access_screen.dart';
 
 class TeacherManagementScreen extends ConsumerStatefulWidget {
   const TeacherManagementScreen({super.key});
@@ -161,8 +161,9 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
     final availableClasses = <String>{...settings.schoolClasses, ...settings.computerCourses}.toList();
     final availableSections = settings.sections.isNotEmpty ? settings.sections : ['A', 'B', 'C', 'D'];
 
-    String selectedClass = '';
-    String selectedSection = '';
+    String designatedClass = '';
+    String designatedSection = '';
+    String allowedClasses = 'All Classes';
 
     String buildPreviewEmail(String rawName) {
       final cleanName = rawName.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -246,11 +247,11 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                       ),
                       const SizedBox(height: 10),
 
-                      // Class Assignment Section
+                      // ─── CARD 1: Designated Class Teacher (Single Class) ───
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: cs.surfaceVariant.withValues(alpha: 0.35),
+                          color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
                         ),
@@ -260,32 +261,134 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'Class Access / Assignment',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.onSurface),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.school_rounded, size: 18, color: Color(0xFF0284C7)),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Designated Class Teacher (कक्षा अध्यापक)',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.onSurface),
+                                    ),
+                                  ],
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: (selectedClass == 'All Classes' || selectedClass.isEmpty)
-                                        ? AppColors.primary.withValues(alpha: 0.1)
-                                        : Colors.teal.withValues(alpha: 0.1),
+                                    color: designatedClass.isNotEmpty
+                                        ? const Color(0xFF0284C7).withValues(alpha: 0.1)
+                                        : Colors.grey.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    (selectedClass == 'All Classes' || selectedClass.isEmpty)
-                                        ? 'Full Access'
-                                        : '${selectedClass.split(',').where((s) => s.trim().isNotEmpty && s.trim() != 'All Classes').length} Selected',
+                                    designatedClass.isNotEmpty ? (designatedClass.startsWith('Class') ? designatedClass : 'Class $designatedClass') : 'Subject Teacher Only',
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: (selectedClass == 'All Classes' || selectedClass.isEmpty)
-                                          ? AppColors.primary
-                                          : Colors.teal.shade800,
+                                      color: designatedClass.isNotEmpty ? const Color(0xFF0284C7) : Colors.grey.shade700,
                                     ),
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'इस कक्षा के अंकपत्र (Marksheet) पर इस अध्यापक के डिजिटल हस्ताक्षर व नाम प्रिंट होंगे:',
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    value: designatedClass.isEmpty ? '' : designatedClass,
+                                    isDense: true,
+                                    decoration: InputDecoration(
+                                      labelText: 'Class (कक्षा)',
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    items: [
+                                      const DropdownMenuItem(value: '', child: Text('None / Subject Teacher Only')),
+                                      ...availableClasses.map((c) => DropdownMenuItem(value: c, child: Text(c.startsWith('Class') ? c : 'Class $c'))),
+                                    ],
+                                    onChanged: (val) => setSheetState(() => designatedClass = val ?? ''),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    value: designatedSection.isEmpty ? '' : designatedSection,
+                                    isDense: true,
+                                    decoration: InputDecoration(
+                                      labelText: 'Section (सेक्शन)',
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    items: [
+                                      const DropdownMenuItem(value: '', child: Text('All / Not Applicable')),
+                                      ...availableSections.map((s) => DropdownMenuItem(value: s, child: Text('Section $s'))),
+                                    ],
+                                    onChanged: designatedClass.isEmpty ? null : (val) => setSheetState(() => designatedSection = val ?? ''),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // ─── CARD 2: Class Permissions (Data & Results Access) ───
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.verified_user_rounded, size: 18, color: Colors.teal),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Class Permissions (डेटा व परिणाम एक्सेस)',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.onSurface),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (allowedClasses == 'All Classes' || allowedClasses.isEmpty)
+                                        ? Colors.teal.withValues(alpha: 0.1)
+                                        : AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    (allowedClasses == 'All Classes' || allowedClasses.isEmpty)
+                                        ? 'All Classes Access'
+                                        : '${allowedClasses.split(',').where((s) => s.trim().isNotEmpty && s.trim() != 'All Classes').length} Classes Selected',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: (allowedClasses == 'All Classes' || allowedClasses.isEmpty)
+                                          ? Colors.teal.shade800
+                                          : AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'अंक प्रविष्टि (Result Enter Marks), उपस्थिति व छात्र रिकॉर्ड एक्सेस करने की अनुमति:',
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
                             ),
                             const SizedBox(height: 8),
                             Wrap(
@@ -296,23 +399,23 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                   avatar: Icon(
                                     Icons.stars_rounded,
                                     size: 16,
-                                    color: (selectedClass == 'All Classes' || selectedClass.isEmpty) ? Colors.white : AppColors.primary,
+                                    color: (allowedClasses == 'All Classes' || allowedClasses.isEmpty) ? Colors.white : Colors.teal,
                                   ),
                                   label: const Text('All Classes (Full Access)'),
                                   labelStyle: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: (selectedClass == 'All Classes' || selectedClass.isEmpty) ? Colors.white : cs.onSurface,
+                                    color: (allowedClasses == 'All Classes' || allowedClasses.isEmpty) ? Colors.white : cs.onSurface,
                                   ),
-                                  selected: selectedClass == 'All Classes' || selectedClass.isEmpty,
-                                  selectedColor: AppColors.primary,
+                                  selected: allowedClasses == 'All Classes' || allowedClasses.isEmpty,
+                                  selectedColor: Colors.teal.shade700,
                                   checkmarkColor: Colors.white,
                                   onSelected: (sel) {
-                                    setSheetState(() => selectedClass = 'All Classes');
+                                    setSheetState(() => allowedClasses = 'All Classes');
                                   },
                                 ),
                                 ...availableClasses.map((c) {
-                                  final currentList = selectedClass
+                                  final currentList = allowedClasses
                                       .split(',')
                                       .map((s) => s.trim())
                                       .where((s) => s.isNotEmpty && s != 'All Classes')
@@ -322,15 +425,15 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                     label: Text(c),
                                     labelStyle: TextStyle(
                                       fontSize: 11,
-                                      fontWeight: isSel && selectedClass != 'All Classes' ? FontWeight.bold : FontWeight.normal,
-                                      color: isSel && selectedClass != 'All Classes' ? Colors.white : cs.onSurface,
+                                      fontWeight: isSel && allowedClasses != 'All Classes' ? FontWeight.bold : FontWeight.normal,
+                                      color: isSel && allowedClasses != 'All Classes' ? Colors.white : cs.onSurface,
                                     ),
-                                    selected: isSel && selectedClass != 'All Classes',
-                                    selectedColor: Colors.teal.shade700,
+                                    selected: isSel && allowedClasses != 'All Classes',
+                                    selectedColor: AppColors.primary,
                                     checkmarkColor: Colors.white,
                                     onSelected: (sel) {
                                       setSheetState(() {
-                                        if (selectedClass == 'All Classes' || selectedClass.isEmpty) {
+                                        if (allowedClasses == 'All Classes' || allowedClasses.isEmpty) {
                                           currentList.clear();
                                         }
                                         if (sel) {
@@ -339,9 +442,9 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                           currentList.remove(c);
                                         }
                                         if (currentList.isEmpty) {
-                                          selectedClass = 'All Classes';
+                                          allowedClasses = 'All Classes';
                                         } else {
-                                          selectedClass = currentList.join(', ');
+                                          allowedClasses = currentList.join(', ');
                                         }
                                       });
                                     },
@@ -351,20 +454,6 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      DropdownButtonFormField<String>(
-                        value: selectedSection.isEmpty ? null : selectedSection,
-                        decoration: const InputDecoration(
-                          labelText: 'Section (Optional)',
-                          prefixIcon: Icon(Icons.meeting_room_outlined),
-                        ),
-                        items: [
-                          const DropdownMenuItem(value: '', child: Text('All / Any Section')),
-                          ...availableSections.map((s) => DropdownMenuItem(value: s, child: Text('Section $s'))),
-                        ],
-                        onChanged: (val) => setSheetState(() => selectedSection = val ?? ''),
                       ),
                       const SizedBox(height: 10),
 
@@ -522,8 +611,13 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                       ),
                                       const SizedBox(height: 1),
                                       Text(
-                                        signatureUrl != null ? 'Signature Attached (Will show on Marksheets)' : 'Optional • Can be added later in profile',
-                                        style: TextStyle(fontSize: 11, color: signatureUrl != null ? const Color(0xFF059669) : cs.onSurfaceVariant),
+                                        signatureUrl != null
+                                            ? 'Signature Attached (Will print on Marksheets)'
+                                            : 'Optional • Can be added later in profile',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: signatureUrl != null ? const Color(0xFF059669) : cs.onSurfaceVariant,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -535,28 +629,22 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                       color: const Color(0xFFD1FAE5),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Text('ATTACHED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                                    child: const Text('ATTACHED',
+                                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
                                   ),
                               ],
                             ),
                             if (signatureUrl != null) ...[
                               const SizedBox(height: 10),
-                              Container(
-                                height: 65,
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                                ),
-                                child: Center(
-                                  child: Image.memory(
-                                    base64Decode(signatureUrl!.contains(',') ? signatureUrl!.split(',').last : signatureUrl!),
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, __, ___) => const Text('Signature Preview Error', style: TextStyle(color: Colors.red, fontSize: 11)),
-                                  ),
-                                ),
+                              SignatureHelper.buildSignaturePreviewBox(
+                                context: ctx,
+                                signatureUrl: signatureUrl,
+                                teacherName: nameCtrl.text.isNotEmpty ? nameCtrl.text : 'Teacher',
+                                onCropEdit: () async {
+                                  final cleaned = await SignatureHelper.pickCropAndCleanSignature(ctx, ImageSource.gallery);
+                                  if (cleaned != null) setSheetState(() => signatureUrl = cleaned);
+                                },
+                                onRemove: () => setSheetState(() => signatureUrl = null),
                               ),
                             ],
                             const SizedBox(height: 10),
@@ -565,16 +653,12 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     onPressed: () async {
-                                      final picker = ImagePicker();
-                                      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-                                      if (picked == null) return;
-                                      final rawBytes = await picked.readAsBytes();
-                                      final cleaned = await SignatureProcessor.processAndCleanSignature(rawBytes);
-                                      final b64 = cleaned ?? ('data:image/png;base64,' + base64Encode(rawBytes));
-                                      setSheetState(() => signatureUrl = b64);
+                                      final cleaned = await SignatureHelper.pickCropAndCleanSignature(ctx, ImageSource.gallery);
+                                      if (cleaned != null) setSheetState(() => signatureUrl = cleaned);
                                     },
                                     icon: const Icon(Icons.photo_library_outlined, size: 15),
-                                    label: Text(signatureUrl != null ? 'Change (Gallery)' : 'From Gallery', style: const TextStyle(fontSize: 12)),
+                                    label: Text(signatureUrl != null ? 'Change (Gallery)' : 'From Gallery',
+                                        style: const TextStyle(fontSize: 12)),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: const Color(0xFF7C3AED),
                                       side: const BorderSide(color: Color(0xFF7C3AED)),
@@ -586,13 +670,8 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     onPressed: () async {
-                                      final picker = ImagePicker();
-                                      final picked = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
-                                      if (picked == null) return;
-                                      final rawBytes = await picked.readAsBytes();
-                                      final cleaned = await SignatureProcessor.processAndCleanSignature(rawBytes);
-                                      final b64 = cleaned ?? ('data:image/png;base64,' + base64Encode(rawBytes));
-                                      setSheetState(() => signatureUrl = b64);
+                                      final cleaned = await SignatureHelper.pickCropAndCleanSignature(ctx, ImageSource.camera);
+                                      if (cleaned != null) setSheetState(() => signatureUrl = cleaned);
                                     },
                                     icon: const Icon(Icons.camera_alt_outlined, size: 15),
                                     label: const Text('Capture Camera', style: TextStyle(fontSize: 12)),
@@ -603,13 +682,6 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                     ),
                                   ),
                                 ),
-                                if (signatureUrl != null) ...[
-                                  const SizedBox(width: 6),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                    onPressed: () => setSheetState(() => signatureUrl = null),
-                                  ),
-                                ],
                               ],
                             ),
                           ],
@@ -667,8 +739,8 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                     name: nameCtrl.text.trim(),
                                     mobile: phoneCtrl.text.trim(),
                                     password: passwordCtrl.text.trim(),
-                                    assignedClass: selectedClass.isEmpty ? null : selectedClass,
-                                    assignedSection: selectedSection.isEmpty ? null : selectedSection,
+                                    assignedClass: designatedClass.isNotEmpty ? designatedClass : (allowedClasses != 'All Classes' ? allowedClasses : null),
+                                    assignedSection: (designatedClass.isNotEmpty && designatedSection.isNotEmpty) ? designatedSection : null,
                                     fatherName: fatherCtrl.text.trim().isEmpty ? null : fatherCtrl.text.trim(),
                                     motherName: motherCtrl.text.trim().isEmpty ? null : motherCtrl.text.trim(),
                                     dob: selectedDob,
@@ -740,14 +812,6 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const TeacherAttendanceScreen()),
-            ),
-          ),
-          IconButton(
-            tooltip: 'Teacher Role Permissions (ON/OFF)',
-            icon: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TeacherRoleAccessScreen()),
             ),
           ),
         ],

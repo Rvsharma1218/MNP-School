@@ -138,11 +138,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final assignedClass = SessionService.instance.assignedClass ?? '';
         final assignedSection = SessionService.instance.assignedSection ?? '';
-        // Always default to 'All Classes' for teachers so all assigned classes show
-        ref.read(teacherSelectedClassProvider.notifier).state = '';
-        ref.read(classFilterProvider.notifier).state = '';
-        ref.read(teacherSelectedSectionProvider.notifier).state = '';
-        ref.read(sectionFilterProvider.notifier).state = '';
+        // Default directly to designated Class and Section if teacher is assigned to one
+        ref.read(teacherSelectedClassProvider.notifier).state = assignedClass;
+        ref.read(classFilterProvider.notifier).state = assignedClass;
+        ref.read(teacherSelectedSectionProvider.notifier).state = assignedSection;
+        ref.read(sectionFilterProvider.notifier).state = assignedSection;
       });
     }
 
@@ -2455,7 +2455,7 @@ class _TeacherClassSectionSelector extends ConsumerWidget {
         return a.compareTo(b);
       });
     final sections = students
-        .where((s) => s.section?.isNotEmpty == true)
+        .where((s) => (selectedClass.isEmpty || s.className == selectedClass) && s.section?.isNotEmpty == true)
         .map((s) => s.section!)
         .toSet()
         .toList()
@@ -2501,6 +2501,14 @@ class _TeacherClassSectionSelector extends ConsumerWidget {
                       final val = (v == null || v == 'All Classes') ? '' : v;
                       ref.read(teacherSelectedClassProvider.notifier).state = val;
                       ref.read(classFilterProvider.notifier).state = val;
+                      final validSections = students
+                          .where((s) => (val.isEmpty || s.className == val) && s.section?.isNotEmpty == true)
+                          .map((s) => s.section!)
+                          .toSet();
+                      if (selectedSection.isNotEmpty && !validSections.contains(selectedSection)) {
+                        ref.read(teacherSelectedSectionProvider.notifier).state = '';
+                        ref.read(sectionFilterProvider.notifier).state = '';
+                      }
                     },
                   ),
                 ),
@@ -2832,7 +2840,7 @@ class _WebDashboardViewState extends ConsumerState<_WebDashboardView> {
       ..sort();
     final classes = SessionService.instance.filterAllowedClasses(rawClasses);
     final sections = students
-        .where((s) => s.section?.isNotEmpty == true)
+        .where((s) => (selectedClass.isEmpty || s.className == selectedClass) && s.section?.isNotEmpty == true)
         .map((s) => s.section!)
         .toSet()
         .toList()

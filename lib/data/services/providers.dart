@@ -662,17 +662,26 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsModel>> {
   }
 }
 
-// ─── THEME PROVIDER ───────────────────────────────────────────────────────
+// ─── THEME PROVIDER (PER-DEVICE / PER-USER LOCAL ISOLATION) ──────────────────
 
 final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
-  final settings = ref.watch(settingsProvider).valueOrNull;
-  final initialMode = settings?.themeMode ?? 'light';
-  return ThemeModeNotifier(ref, initialMode);
+  return ThemeModeNotifier();
 });
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  final Ref _ref;
-  ThemeModeNotifier(this._ref, String initialMode) : super(_parseMode(initialMode));
+  ThemeModeNotifier() : super(ThemeMode.light) {
+    _loadFromLocalPrefs();
+  }
+
+  Future<void> _loadFromLocalPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('local_theme_mode');
+      if (saved != null) {
+        state = _parseMode(saved);
+      }
+    } catch (_) {}
+  }
 
   static ThemeMode _parseMode(String mode) {
     switch (mode.toLowerCase()) {
@@ -687,31 +696,41 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
 
   Future<void> setMode(String mode) async {
     state = _parseMode(mode);
-    final current = _ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
-    await _ref.read(settingsProvider.notifier).save(current.copyWith(themeMode: mode));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('local_theme_mode', mode);
+    } catch (_) {}
   }
 }
 
-// ─── APP LANGUAGE PROVIDER ────────────────────────────────────────────────
+// ─── APP LANGUAGE PROVIDER (PER-DEVICE / PER-USER LOCAL ISOLATION) ───────────
 
 final appLanguageProvider = StateNotifierProvider<AppLanguageNotifier, String>((ref) {
-  final settings = ref.watch(settingsProvider).valueOrNull;
-  final initialLang = settings?.appLanguage ?? 'en';
-  return AppLanguageNotifier(ref, initialLang);
+  return AppLanguageNotifier();
 });
 
 class AppLanguageNotifier extends StateNotifier<String> {
-  final Ref _ref;
-  AppLanguageNotifier(this._ref, String initialLang) : super(initialLang);
+  AppLanguageNotifier() : super('en') {
+    _loadFromLocalPrefs();
+  }
+
+  Future<void> _loadFromLocalPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('local_app_language') ?? prefs.getString('app_language');
+      if (saved != null) {
+        state = saved;
+      }
+    } catch (_) {}
+  }
 
   Future<void> setLanguage(String lang) async {
     state = lang;
     try {
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('local_app_language', lang);
       await prefs.setString('app_language', lang);
     } catch (_) {}
-    final current = _ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
-    await _ref.read(settingsProvider.notifier).save(current.copyWith(appLanguage: lang));
   }
 }
 

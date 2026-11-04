@@ -15,6 +15,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_utils.dart';
 import '../../core/utils/file_saver.dart';
 import '../../core/utils/signature_processor.dart';
+import '../../core/utils/signature_helper.dart';
 import '../../data/models/settings_model.dart';
 import '../../data/models/teacher_model.dart';
 import '../../data/services/providers.dart';
@@ -23,7 +24,6 @@ import '../../data/services/teacher_service.dart';
 import '../../widgets/student_photo_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import '../attendance/teacher_attendance_screen.dart';
-import 'teacher_role_access_screen.dart';
 
 class TeacherProfileScreen extends ConsumerStatefulWidget {
   final TeacherModel teacher;
@@ -1542,223 +1542,200 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
 
   // ─── TAB 1: PERSONAL INFO ─────────────────────────────────────────────────────
 
-  // ─── CLASS ASSIGNMENT & PERMISSIONS MANAGEMENT ─────────────────────────────
-  Future<void> _showAssignClassesSheet() async {
-    final cs = Theme.of(context).colorScheme;
+  // ─── CLASS TEACHER ALLOCATION (EXACT MATCH TO WEBSITE) ──────────────────────
+  Future<void> _showClassTeacherAllocationDialog() async {
     final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
     final availableClasses = <String>{
       ...settings.schoolClasses,
-      ...settings.computerCourses,
       'Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
       'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'
     }.toList();
     final availableSections = settings.sections.isNotEmpty ? settings.sections : ['A', 'B', 'C', 'D'];
 
-    String currentAssigned = _teacher.assignedClass ?? 'All Classes';
-    List<String> selectedClasses = currentAssigned
-        .split(RegExp(r'[,|]'))
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
-    if (selectedClasses.isEmpty) selectedClasses = ['All Classes'];
-
-    String selectedSection = _teacher.assignedSection ?? '';
+    String curClass = _teacher.assignedClass ?? '';
+    if (curClass.toLowerCase() == 'none' || curClass == 'All Classes') curClass = '';
+    String curSection = _teacher.assignedSection ?? '';
     bool saving = false;
 
-    await showModalBottomSheet<void>(
+    await showDialog<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) {
-          final isAllSelected = selectedClasses.contains('All Classes') || selectedClasses.isEmpty;
-
-          return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-            child: Container(
-              constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: cs.onSurfaceVariant.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Assign Classes to Teacher', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: cs.onSurface)),
-                            Text(_teacher.name, style: const TextStyle(fontSize: 12, color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    Text('SELECT TEACHING CLASSES:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 0.5)),
-                    const SizedBox(height: 8),
-
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        FilterChip(
-                          label: const Text('All Classes (सभी कक्षाएँ)'),
-                          selected: isAllSelected,
-                          selectedColor: const Color(0xFF2563EB),
-                          checkmarkColor: Colors.white,
-                          labelStyle: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: isAllSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isAllSelected ? Colors.white : cs.onSurface,
-                          ),
-                          onSelected: (sel) {
-                            setSheetState(() {
-                              selectedClasses = ['All Classes'];
-                            });
-                          },
-                        ),
-                        ...availableClasses.map((c) {
-                          final isSel = !isAllSelected && selectedClasses.contains(c);
-                          return FilterChip(
-                            label: Text(c),
-                            selected: isSel,
-                            selectedColor: const Color(0xFF0D9488),
-                            checkmarkColor: Colors.white,
-                            labelStyle: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                              color: isSel ? Colors.white : cs.onSurface,
-                            ),
-                            onSelected: (sel) {
-                              setSheetState(() {
-                                if (isAllSelected) selectedClasses.clear();
-                                if (sel) {
-                                  if (!selectedClasses.contains(c)) selectedClasses.add(c);
-                                } else {
-                                  selectedClasses.remove(c);
-                                }
-                                if (selectedClasses.isEmpty) selectedClasses = ['All Classes'];
-                              });
-                            },
-                          );
-                        }),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    Text('ASSIGNED SECTION (OPTIONAL):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 0.5)),
-                    const SizedBox(height: 8),
-
-                    DropdownButtonFormField<String>(
-                      value: selectedSection.isEmpty ? '' : selectedSection,
-                      decoration: InputDecoration(
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      items: [
-                        const DropdownMenuItem(value: '', child: Text('All / Any Section')),
-                        ...availableSections.map((s) => DropdownMenuItem(value: s, child: Text('Section $s'))),
-                      ],
-                      onChanged: (val) => setSheetState(() => selectedSection = val ?? ''),
-                    ),
-                    const SizedBox(height: 20),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 46,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: saving
-                            ? null
-                            : () async {
-                                setSheetState(() => saving = true);
-                                final finalClassStr = selectedClasses.contains('All Classes')
-                                    ? 'All Classes'
-                                    : selectedClasses.join(', ');
-
-                                final schoolUid = SessionService.instance.activeSchoolUid.isNotEmpty
-                                    ? SessionService.instance.activeSchoolUid
-                                    : 'SCHOOL_001';
-
-                                try {
-                                  await FirebaseFirestore.instance
-                                      .collection('schools')
-                                      .doc(schoolUid)
-                                      .collection('teachers')
-                                      .doc(_teacher.teacherId)
-                                      .update({
-                                    'assignedClass': finalClassStr,
-                                    'assignedClasses': selectedClasses,
-                                    'assignedSection': selectedSection,
-                                  });
-
-                                  if (mounted) {
-                                    setState(() {
-                                      _teacher = _teacher.copyWith(
-                                        assignedClass: finalClassStr,
-                                        assignedSection: selectedSection,
-                                      );
-                                    });
-                                    widget.onTeacherUpdated?.call();
-                                    Navigator.pop(ctx);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('✓ Class allocation updated for ${_teacher.name}'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  setSheetState(() => saving = false);
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Failed to update class: $e'), backgroundColor: Colors.red),
-                                    );
-                                  }
-                                }
-                              },
-                        child: saving
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : const Text('Save Class Allocation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      ),
-                    ),
-                  ],
+        builder: (ctx, setDlgState) {
+          final isClassTeacher = curClass.isNotEmpty;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0284C7).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.school_rounded, color: Color(0xFF0284C7), size: 22),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Class Teacher Allocation', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                      Text(_teacher.name, style: const TextStyle(fontSize: 12, color: Color(0xFF0284C7), fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isClassTeacher ? const Color(0xFFE0F2FE) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: isClassTeacher ? const Color(0xFFBAE6FD) : const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isClassTeacher ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                          size: 16,
+                          color: isClassTeacher ? const Color(0xFF0284C7) : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            isClassTeacher
+                                ? 'Designated Class Teacher of $curClass${curSection.isNotEmpty ? " ($curSection)" : ""}'
+                                : 'Subject Teacher (विषय अध्यापक - No specific class)',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                              color: isClassTeacher ? const Color(0xFF0369A1) : Colors.blueGrey,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'इस कक्षा के अंकपत्र (Marksheet) पर इस अध्यापक के डिजिटल हस्ताक्षर व नाम प्रिंट होंगे:',
+                    style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.3),
+                  ),
+                  const SizedBox(height: 12),
+
+                  const Text('Designated Class (कक्षा):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    value: curClass.isEmpty ? '' : curClass,
+                    isDense: true,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    items: [
+                      const DropdownMenuItem(value: '', child: Text('None / Subject Teacher Only')),
+                      ...availableClasses.map((c) => DropdownMenuItem(value: c, child: Text(c.startsWith('Class') ? c : 'Class $c'))),
+                    ],
+                    onChanged: (val) => setDlgState(() => curClass = val ?? ''),
+                  ),
+                  const SizedBox(height: 12),
+
+                  const Text('Section (सेक्शन):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    value: curSection.isEmpty ? '' : curSection,
+                    isDense: true,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    items: [
+                      const DropdownMenuItem(value: '', child: Text('All / Not Applicable')),
+                      ...availableSections.map((s) => DropdownMenuItem(value: s, child: Text('Section $s'))),
+                    ],
+                    onChanged: curClass.isEmpty ? null : (val) => setDlgState(() => curSection = val ?? ''),
+                  ),
+                ],
               ),
             ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0284C7),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: saving
+                    ? null
+                    : () async {
+                        setDlgState(() => saving = true);
+                        final schoolUid = SessionService.instance.activeSchoolUid.isNotEmpty
+                            ? SessionService.instance.activeSchoolUid
+                            : 'SCHOOL_001';
+
+                        final finalClass = curClass.trim().isEmpty ? null : curClass.trim();
+                        final finalSection = (finalClass == null || curSection.trim().isEmpty) ? null : curSection.trim();
+
+                        try {
+                          await FirebaseFirestore.instance
+                              .collection('schools')
+                              .doc(schoolUid)
+                              .collection('teachers')
+                              .doc(_teacher.teacherId)
+                              .update({
+                            'assignedClass': finalClass,
+                            'assignedClasses': finalClass != null ? [finalClass] : [],
+                            'assignedSection': finalSection,
+                            'updatedAt': FieldValue.serverTimestamp(),
+                          });
+
+                          if (mounted) {
+                            setState(() {
+                              _teacher = _teacher.copyWith(
+                                assignedClass: finalClass,
+                                assignedSection: finalSection,
+                              );
+                            });
+                            widget.onTeacherUpdated?.call();
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('✓ Class Teacher allocation saved for ${_teacher.name}'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setDlgState(() => saving = false);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                child: saving
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Save Allocation'),
+              ),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _buildClassAssignAndPermissionsSection(ColorScheme cs) {
-    final assigned = _teacher.assignedClass ?? 'All Classes';
-    final classesList = assigned.split(RegExp(r'[,|]')).map((c) => c.trim()).where((c) => c.isNotEmpty).toList();
+  Widget _buildClassTeacherSection(ColorScheme cs) {
+    final rawCls = _teacher.assignedClass ?? '';
+    final isClassTeacher = rawCls.isNotEmpty && rawCls.toLowerCase() != 'none';
+    final displayCls = isClassTeacher ? (rawCls.startsWith('Class') ? rawCls : 'Class $rawCls') : 'Subject Teacher Only';
+    final sectionStr = _teacher.assignedSection?.isNotEmpty == true ? ' • Section ${_teacher.assignedSection}' : '';
 
     return Container(
       decoration: BoxDecoration(
@@ -1777,7 +1754,6 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
           Row(
             children: [
               Container(
@@ -1794,22 +1770,25 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Class Assign & Role Access',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      'Designated Class Teacher (कक्षा अध्यापक)',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Assigned Classes: $assigned',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF0284C7)),
-                      overflow: TextOverflow.ellipsis,
+                      '$displayCls$sectionStr',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isClassTeacher ? const Color(0xFF0284C7) : Colors.blueGrey,
+                      ),
                     ),
                   ],
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: _showAssignClassesSheet,
-                icon: const Icon(Icons.edit_calendar_rounded, size: 14),
-                label: const Text('Assign', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                onPressed: _showClassTeacherAllocationDialog,
+                icon: const Icon(Icons.edit_rounded, size: 13),
+                label: const Text('Change', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0284C7),
                   foregroundColor: Colors.white,
@@ -1820,101 +1799,38 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
               ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Chips display of assigned classes
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: classesList.isEmpty
-                ? [
-                    Chip(
-                      label: const Text('All Classes', style: TextStyle(fontSize: 11, color: Colors.white)),
-                      backgroundColor: const Color(0xFF2563EB),
-                      padding: EdgeInsets.zero,
-                    )
-                  ]
-                : classesList.map((cls) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0284C7).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        cls,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
-                      ),
-                    );
-                  }).toList(),
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-
-          // Faculty Permissions Sub-section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.shield_outlined, size: 16, color: Color(0xFF7C3AED)),
-                  const SizedBox(width: 6),
-                  const Text('Faculty Permissions & Privileges', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                ],
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TeacherRoleAccessScreen()),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isClassTeacher ? const Color(0xFFF0F9FF) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: isClassTeacher ? const Color(0xFFBAE6FD) : const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isClassTeacher ? Icons.assignment_turned_in_rounded : Icons.info_outline_rounded,
+                  size: 15,
+                  color: isClassTeacher ? const Color(0xFF0284C7) : Colors.grey,
                 ),
-                child: const Text('Manage Access >', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED))),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Active Permissions badges
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _buildPermBadge('📝 Marks Entry', true),
-              _buildPermBadge('📅 Attendance', true),
-              _buildPermBadge('🪪 ID / Admit Cards', true),
-              _buildPermBadge('📋 Reports & Slips', true),
-              _buildPermBadge('✏️ Edit Student', false),
-              _buildPermBadge('💰 Collect Fees', false),
-            ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isClassTeacher
+                        ? '$displayCls ke marksheets par iss teacher ke digital sign & name print honge.'
+                        : 'Yeh teacher kisi specific class ke class teacher nahi hain (Subject Teacher).',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isClassTeacher ? const Color(0xFF0369A1) : Colors.blueGrey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPermBadge(String label, bool isEnabled) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: isEnabled ? const Color(0xFFD1FAE5) : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: isEnabled ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: isEnabled ? const Color(0xFF065F46) : const Color(0xFF64748B),
-        ),
       ),
     );
   }
@@ -1970,7 +1886,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
         const SizedBox(height: 14),
 
         // ─── 2. Class Allocation & Permissions ───
-        _buildClassAssignAndPermissionsSection(cs),
+        _buildClassTeacherSection(cs),
         const SizedBox(height: 14),
 
         _cardSection(
@@ -2137,28 +2053,8 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
 
   Future<void> _pickAndSaveTeacherSignature(ImageSource source) async {
     try {
-      final picker = ImagePicker();
-      final picked = await picker.pickImage(source: source, maxWidth: 1000, maxHeight: 600, imageQuality: 85);
-      if (picked == null) return;
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-                SizedBox(width: 12),
-                Text('Processing & cleaning signature background...'),
-              ],
-            ),
-            duration: Duration(seconds: 1),
-          ),
-        );
-      }
-
-      final rawBytes = await picked.readAsBytes();
-      final base64Sig = (await SignatureProcessor.processAndCleanSignature(rawBytes, colorMode: 'dark')) ??
-          'data:image/png;base64,${base64Encode(rawBytes)}';
+      final base64Sig = await SignatureHelper.pickCropAndCleanSignature(context, source);
+      if (base64Sig == null) return;
 
       final schoolUid = SessionService.instance.activeSchoolUid.isNotEmpty
           ? SessionService.instance.activeSchoolUid
@@ -2179,7 +2075,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
         widget.onTeacherUpdated?.call();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✓ Digital signature saved for ' + _teacher.name + '! It will appear on marksheets.'),
+            content: Text('✓ Digital signature saved for ${_teacher.name}! It will appear on marksheets.'),
             backgroundColor: Colors.green,
           ),
         );
@@ -2187,7 +2083,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update signature: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -2303,24 +2199,12 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
           ),
           const SizedBox(height: 14),
           if (hasSig) ...[
-            Container(
-              height: 75,
-              width: double.infinity,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Center(
-                child: Image.memory(
-                  base64Decode(_teacher.signatureUrl!.contains(',')
-                      ? _teacher.signatureUrl!.split(',').last
-                      : _teacher.signatureUrl!),
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Text('Signature Preview Error', style: TextStyle(color: Colors.red, fontSize: 11)),
-                ),
-              ),
+            SignatureHelper.buildSignaturePreviewBox(
+              context: context,
+              signatureUrl: _teacher.signatureUrl,
+              teacherName: _teacher.name,
+              onCropEdit: () => _pickAndSaveTeacherSignature(ImageSource.gallery),
+              onRemove: _removeTeacherSignature,
             ),
             const SizedBox(height: 12),
           ],
@@ -2353,16 +2237,6 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen>
               ),
             ],
           ),
-          if (hasSig) ...[
-            const SizedBox(height: 8),
-            Center(
-              child: TextButton.icon(
-                onPressed: _removeTeacherSignature,
-                icon: const Icon(Icons.delete_outline, size: 15, color: Colors.red),
-                label: const Text('Remove Signature', style: TextStyle(color: Colors.red, fontSize: 11)),
-              ),
-            ),
-          ],
         ],
       ),
     );
