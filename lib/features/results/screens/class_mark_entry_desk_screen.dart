@@ -100,34 +100,43 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     _allResults = results;
     _allExams = exams;
 
-    // Retain selected class if already set by user or teacher assignment
-    if (_selectedClass.isEmpty || !_availableClasses.contains(_selectedClass)) {
-      if (widget.initialClass != null && _availableClasses.contains(widget.initialClass)) {
-        _selectedClass = widget.initialClass!;
-      } else if (widget.initialExam?.className.isNotEmpty == true && _availableClasses.contains(widget.initialExam!.className)) {
-        _selectedClass = widget.initialExam!.className;
-      } else {
-        _selectedClass = 'All Classes';
-      }
-    }
-
-    if (widget.initialExam != null && _selectedExam == null) {
+    // 1. Resolve selected exam first
+    if (widget.initialExam != null) {
       _selectedExam = widget.initialExam;
       _examTitle = widget.initialExam!.title;
-      if (widget.initialExam!.className.isNotEmpty && _availableClasses.contains(widget.initialExam!.className)) {
-        _selectedClass = widget.initialExam!.className;
-      }
+    } else if (_selectedExam != null) {
+      _selectedExam = exams.firstWhere((e) => e.id == _selectedExam!.id, orElse: () => exams.first);
+      _examTitle = _selectedExam!.title;
     } else if (exams.isNotEmpty) {
-      if (_selectedExam != null) {
-        _selectedExam = exams.firstWhere((e) => e.id == _selectedExam!.id, orElse: () => exams.first);
-        _examTitle = _selectedExam!.title;
-      } else {
-        _selectedExam = exams.first;
-        _examTitle = exams.first.title;
-      }
+      _selectedExam = exams.first;
+      _examTitle = exams.first.title;
+    }
+
+    // 2. Resolve selected class based on initialClass or the selected exam's className!
+    if (widget.initialClass != null && widget.initialClass!.isNotEmpty) {
+      final match = _availableClasses.firstWhere(
+        (c) => _normalizeClass(c) == _normalizeClass(widget.initialClass!),
+        orElse: () => widget.initialClass!,
+      );
+      _selectedClass = match;
+    } else if (_selectedExam != null &&
+        _selectedExam!.className.isNotEmpty &&
+        _selectedExam!.className.trim().toLowerCase() != 'all classes') {
+      final firstExamClass = _selectedExam!.className.split(',').first.trim();
+      final match = _availableClasses.firstWhere(
+        (c) => _normalizeClass(c) == _normalizeClass(firstExamClass),
+        orElse: () => firstExamClass,
+      );
+      _selectedClass = match;
+    } else if (_selectedClass.isEmpty || !_availableClasses.contains(_selectedClass)) {
+      _selectedClass = _availableClasses.isNotEmpty ? _availableClasses.first : 'All Classes';
     }
 
     if (mounted) setState(() => _loading = false);
+  }
+
+  static String _normalizeClass(String s) {
+    return s.trim().toLowerCase().replaceAll(RegExp(r'^class\\s*', caseSensitive: false), '').trim();
   }
 
   static int _compareClassNames(String a, String b) {
@@ -174,9 +183,27 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
   }
 
   List<StudentModel> get _filteredStudents {
-    var list = _selectedClass == 'All Classes'
-        ? _allStudents
-        : _allStudents.where((s) => _matchesClass(s, _selectedClass)).toList();
+    var list = _allStudents;
+
+    // 1. If an exam is selected and has specific classes, restrict strictly to the exam's classes!
+    if (_selectedExam != null &&
+        _selectedExam!.className.isNotEmpty &&
+        _selectedExam!.className.trim().toLowerCase() != 'all classes') {
+      final examClasses = _selectedExam!.className
+          .split(',')
+          .map((c) => _normalizeClass(c))
+          .where((c) => c.isNotEmpty)
+          .toList();
+      list = list.where((s) {
+        final sCls = _normalizeClass(s.className ?? s.course ?? '');
+        return examClasses.any((ec) => ec == sCls || ec.contains(sCls) || sCls.contains(ec));
+      }).toList();
+    }
+
+    // 2. If a specific class dropdown filter is active (not All Classes), apply it:
+    if (_selectedClass != 'All Classes' && _selectedClass.isNotEmpty) {
+      list = list.where((s) => _matchesClass(s, _selectedClass)).toList();
+    }
 
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
@@ -667,14 +694,20 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                                 if (val != null) {
                                   setState(() {
                                     _examTitle = val;
-                                    final cleanTitle = val.trim().toLowerCase();
-                                    final targetClass = _selectedClass.trim().toLowerCase();
-                                    _selectedExam = _allExams.where((e) {
-                                      final eTitle = e.title.trim().toLowerCase();
-                                      final eClass = e.className.trim().toLowerCase();
-                                      final split = eClass.split(',').map((c) => c.trim()).toList();
-                                      return eTitle == cleanTitle && (eClass == targetClass || split.contains(targetClass));
-                                    }).firstOrNull ?? _allExams.where((e) => e.title.trim().toLowerCase() == cleanTitle).firstOrNull;
+                                    _selectedExam = _allExams.firstWhere((e) => e.title == val, orElse: () => _allExams.first);
+                                    // When switching exam, automatically update class to that exam's class!
+                                    if (_selectedExam != null &&
+                                        _selectedExam!.className.isNotEmpty &&
+                                        _selectedExam!.className.trim().toLowerCase() != 'all classes') {
+                                      final firstExamClass = _selectedExam!.className.split(',').first.trim();
+                                      final match = _availableClasses.firstWhere(
+                                        (c) => _normalizeClass(c) == _normalizeClass(firstExamClass),
+                                        orElse: () => firstExamClass,
+                                      );
+                                      _selectedClass = match;
+                                    } else {
+                                      _selectedClass = 'All Classes';
+                                    }
                                   });
                                 }
                               },

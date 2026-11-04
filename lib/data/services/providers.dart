@@ -61,7 +61,20 @@ class StudentsNotifier extends StateNotifier<AsyncValue<List<StudentModel>>> {
 
   Future<void> loadStudents() async {
     try {
-      final students = await DatabaseService.instance.getAllStudents();
+      var students = await DatabaseService.instance.getAllStudents();
+      if (students.isEmpty) {
+        try {
+          final remote = await FirestoreService.instance.fetchStudents();
+          if (remote.isNotEmpty) {
+            for (final s in remote) {
+              await DatabaseService.instance.insertStudent(s);
+            }
+            students = remote;
+          }
+        } catch (e) {
+          debugPrint('[StudentsNotifier] Cloud fetch fallback error: ');
+        }
+      }
       state = AsyncData(students);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -142,7 +155,10 @@ final filteredStudentsProvider = Provider<AsyncValue<List<StudentModel>>>((ref) 
   return studentsAsync.whenData((students) {
     var list = students.where((s) {
       if (SessionService.instance.isTeacher && !SessionService.instance.hasAllClassesAccess) {
-        if (!SessionService.instance.canAccessClass(s.className)) return false;
+        final sTarget = (s.className != null && s.className!.trim().isNotEmpty)
+            ? s.className
+            : (s.course != null && s.course!.trim().isNotEmpty ? s.course : s.displayClass);
+        if (!SessionService.instance.canAccessClass(sTarget)) return false;
       }
       if (typeFilter != 'all' && s.studentType != typeFilter) return false;
       if (statusFilter != 'all' && s.status != statusFilter) return false;
@@ -152,10 +168,16 @@ final filteredStudentsProvider = Provider<AsyncValue<List<StudentModel>>>((ref) 
             .map((c) => c.trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), ''))
             .where((c) => c.isNotEmpty)
             .toList();
-        final sCls = (s.className ?? '').trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '');
+        final sCls = (s.className ?? s.course ?? '').trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '');
         if (fList.isNotEmpty && !fList.contains(sCls)) return false;
       }
-      if (sectionFilter.isNotEmpty && sectionFilter.toLowerCase() != 'all' && sectionFilter.toLowerCase() != 'none' && s.section != sectionFilter) return false;
+      if (sectionFilter.isNotEmpty &&
+          sectionFilter.toLowerCase() != 'all' &&
+          sectionFilter.toLowerCase() != 'none' &&
+          !sectionFilter.toLowerCase().contains('all') &&
+          !sectionFilter.toLowerCase().contains('not applicable')) {
+        if (s.section != null && s.section!.isNotEmpty && s.section != sectionFilter) return false;
+      }
       if (courseFilter.isNotEmpty && courseFilter.toLowerCase() != 'all' && s.course != courseFilter) return false;
       if (batchFilter.isNotEmpty && batchFilter.toLowerCase() != 'all' && s.batch != batchFilter) return false;
 

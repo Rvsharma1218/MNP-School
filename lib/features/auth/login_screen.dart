@@ -474,10 +474,12 @@ class _LoginScreenState extends State<LoginScreen>
       );
       await SessionService.instance.setTeacherSession(
         schoolUid: _resolvedSchoolUid!,
+        teacher: teacher,
         teacherId: teacher.teacherId,
         teacherName: teacher.name,
         assignedClass: teacher.assignedClass,
         assignedSection: teacher.assignedSection,
+        allowedClasses: teacher.allowedClasses,
       );
       AppNotificationService.instance.startListening();
       unawaited(DeviceSecurityService.instance.syncSession());

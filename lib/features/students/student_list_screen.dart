@@ -34,23 +34,21 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
     _searchCtrl.addListener(() {
       ref.read(studentSearchProvider.notifier).state = _searchCtrl.text;
     });
-    // For teacher role, sync global filter from teacher's assigned class/section.
-    // Prefer SessionService (set at login) over provider state which may be empty.
+    // For teacher role: If assigned to a single class and no All-Classes access, default filter to that class.
+    // If hasAllClassesAccess is true, keep filter empty so all students are shown!
+    // Never lock section filter on initial load so students without section are visible.
     if (_isTeacher) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final sessionClass = SessionService.instance.assignedClass ?? '';
-        final sessionSection = SessionService.instance.assignedSection ?? '';
-        final tc = sessionClass.isNotEmpty
-            ? sessionClass
-            : ref.read(teacherSelectedClassProvider);
-        final ts = sessionSection.isNotEmpty
-            ? sessionSection
-            : ref.read(teacherSelectedSectionProvider);
-        // Default to teacher's assigned class & section so they see their class directly
-        ref.read(classFilterProvider.notifier).state = tc;
-        ref.read(teacherSelectedClassProvider.notifier).state = tc;
-        ref.read(sectionFilterProvider.notifier).state = ts;
-        ref.read(teacherSelectedSectionProvider.notifier).state = ts;
+        final hasAll = SessionService.instance.hasAllClassesAccess;
+        if (!hasAll && sessionClass.isNotEmpty && sessionClass != 'All Classes') {
+          ref.read(classFilterProvider.notifier).state = sessionClass;
+          ref.read(teacherSelectedClassProvider.notifier).state = sessionClass;
+        } else {
+          ref.read(classFilterProvider.notifier).state = '';
+        }
+        ref.read(sectionFilterProvider.notifier).state = '';
+        ref.read(teacherSelectedSectionProvider.notifier).state = '';
       });
     }
 
@@ -88,12 +86,13 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
     ref.read(rollNumberFilterProvider.notifier).state = '';
     ref.read(studentSortProvider.notifier).state = 'none';
     ref.read(admissionTypeFilterProvider.notifier).state = 'all';
-    // Re-apply teacher's working class/section
+    // Re-apply teacher's working class if single-class restricted
     if (_isTeacher) {
-      final tc = ref.read(teacherSelectedClassProvider);
-      final ts = ref.read(teacherSelectedSectionProvider);
-      if (tc.isNotEmpty) ref.read(classFilterProvider.notifier).state = tc;
-      if (ts.isNotEmpty) ref.read(sectionFilterProvider.notifier).state = ts;
+      final sessionClass = SessionService.instance.assignedClass ?? '';
+      final hasAll = SessionService.instance.hasAllClassesAccess;
+      if (!hasAll && sessionClass.isNotEmpty && sessionClass != 'All Classes') {
+        ref.read(classFilterProvider.notifier).state = sessionClass;
+      }
     }
   }
 

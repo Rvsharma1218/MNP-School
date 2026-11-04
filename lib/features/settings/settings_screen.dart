@@ -22,6 +22,9 @@ import '../../core/utils/signature_processor.dart';
 import '../../core/utils/app_utils.dart';
 import '../../data/services/database_service.dart';
 import 'campus_geofence_settings_screen.dart';
+import '../../data/models/teacher_model.dart';
+import '../../data/services/teacher_service.dart';
+import '../dashboard/dashboard_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -374,6 +377,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     MaterialPageRoute(builder: (_) => const HelpSupportSettingsScreen()),
                   ),
                 ),
+                if (SessionService.instance.isPrincipal) ...[
+                  const Divider(height: 1, indent: 64),
+                  _buildMenuTile(
+                    context: context,
+                    title: 'Direct Teacher Login (अध्यापक लॉगिन)',
+                    subtitle: 'Switch directly into any teacher\'s account without password',
+                    icon: Icons.switch_account_rounded,
+                    iconColor: const Color(0xFF7C3AED),
+                    iconBg: const Color(0xFFEDE9FE),
+                    onTap: () => _showDirectTeacherLoginSheet(context),
+                  ),
+                ],
               ],
             ),
           ),
@@ -481,6 +496,234 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
 
     return content;
+  }
+
+
+  Future<void> _showDirectTeacherLoginSheet(BuildContext context) async {
+    final schoolUid = SessionService.instance.activeSchoolId;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.switch_account_rounded, color: Color(0xFF7C3AED), size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Direct Teacher Login',
+                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'अध्यापक मोड में सीधे लॉगिन करें (बिना पासवर्ड)',
+                            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: FutureBuilder<List<TeacherModel>>(
+                  future: TeacherService.instance.listAllTeachers(schoolUid, forceRefresh: true),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final teachers = snapshot.data ?? [];
+                    if (teachers.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.person_off_rounded, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'कोई अध्यापक नहीं मिला',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'पहले Faculty Management से अध्यापक जोड़ें',
+                              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      itemCount: teachers.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final t = teachers[index];
+                        final hasClass = t.assignedClass != null && t.assignedClass!.isNotEmpty;
+
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            leading: CircleAvatar(
+                              radius: 22,
+                              backgroundColor: const Color(0xFF7C3AED).withValues(alpha: 0.15),
+                              backgroundImage: (t.photoUrl != null && t.photoUrl!.isNotEmpty)
+                                  ? NetworkImage(t.photoUrl!)
+                                  : null,
+                              child: (t.photoUrl == null || t.photoUrl!.isEmpty)
+                                  ? Text(
+                                      t.name.isNotEmpty ? t.name[0].toUpperCase() : 'T',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
+                                    )
+                                  : null,
+                            ),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    t.name,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    t.teacherId,
+                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${(t.designation != null && t.designation!.isNotEmpty) ? t.designation! : "Faculty"} • ${(t.subject != null && t.subject!.isNotEmpty) ? t.subject! : "All Subjects"}',
+                                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(Icons.school_rounded, size: 13, color: hasClass ? const Color(0xFF0284C7) : Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      hasClass
+                                          ? 'Class Teacher: ${t.assignedClass}${t.assignedSection?.isNotEmpty == true ? " (${t.assignedSection})" : ""}'
+                                          : 'Subject Teacher Only',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: hasClass ? FontWeight.w600 : FontWeight.normal,
+                                        color: hasClass ? const Color(0xFF0284C7) : cs.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            trailing: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7C3AED),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.login_rounded, size: 16),
+                              label: const Text('Login', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              onPressed: () async {
+                                Navigator.pop(ctx);
+                                await SessionService.instance.setTeacherSession(
+                                  schoolUid: schoolUid,
+                                  teacher: t,
+                                  teacherId: t.teacherId,
+                                  teacherName: t.name,
+                                  assignedClass: t.assignedClass,
+                                  assignedSection: t.assignedSection,
+                                  allowedClasses: t.allowedClasses,
+                                );
+                                ref.invalidate(studentsProvider);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('✅ Logged in as ${t.name} (Teacher Mode)'),
+                                      backgroundColor: const Color(0xFF059669),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                  Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                                    (route) => false,
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildMenuTile({
