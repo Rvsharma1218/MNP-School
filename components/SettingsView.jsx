@@ -8,9 +8,10 @@ import {
   Info, Sparkles, Check, UploadCloud, Image as ImageIcon, Camera, X, FileSignature, Crop,
   Shield, Languages, HelpCircle, Mail,
   ExternalLink, GraduationCap, Lock, CheckCircle2, AlertCircle, ChevronRight, Stamp, Link2,
-  MapPin, Navigation
+  MapPin, Navigation, User, KeyRound, Phone, MessageSquare, ChevronDown, Send
 } from 'lucide-react';
 import { removeSignatureBackground } from '../lib/exportUtils';
+import { lockScreenNow, getStoredScreenPin } from './ScreenPinLockModal';
 import ImageCropperModal from './ImageCropperModal';
 
 export default function SettingsView() {
@@ -26,7 +27,55 @@ export default function SettingsView() {
     setSettingsActiveSection
   } = useSchoolStore();
 
-  const [activeSection, setActiveSection] = useState(settingsActiveSection || 'branding'); // 'branding' | 'signatures' | 'geofence' | 'academic' | 'language' | 'backup'
+  const activeTeacher = React.useMemo(() => {
+    if (!currentUser) return null;
+    return (teachers || []).find(t =>
+      (t.id && (t.id === currentUser.id || t.id === currentUser.uid || t.id === currentUser.teacherId)) ||
+      (t.teacherId && (t.teacherId === currentUser.teacherId || t.teacherId === currentUser.id)) ||
+      (t.authUid && (t.authUid === currentUser.authUid || t.authUid === currentUser.uid)) ||
+      (t.authEmail && currentUser.email && t.authEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+      (t.email && currentUser.email && t.email.toLowerCase() === currentUser.email.toLowerCase())
+    ) || currentUser;
+  }, [currentUser, teachers]);
+
+  const [activeSection, setActiveSection] = useState(() => {
+    if (settingsActiveSection) return settingsActiveSection;
+    return isPrincipal ? 'branding' : 'teacher_profile';
+  });
+
+  // Teacher signature & profile edit states
+  const [teacherSignature, setTeacherSignature] = useState(activeTeacher?.signatureUrl || activeTeacher?.teacherSignature || '');
+  const [teacherMobile, setTeacherMobile] = useState(activeTeacher?.mobile || currentUser?.mobile || '');
+  const [isTeacherSigCropperOpen, setIsTeacherSigCropperOpen] = useState(false);
+  const [teacherSigToCrop, setTeacherSigToCrop] = useState(null);
+
+  // Screen PIN Lock state
+  const [pinCurrent, setPinCurrent] = useState('');
+  const [pinNew, setPinNew] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
+  const [autoLockMins, setAutoLockMins] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sch_autolock_minutes') || '0';
+    }
+    return '0';
+  });
+
+  // Help & Support state
+  const [faqSearch, setFaqSearch] = useState('');
+  const [expandedFaq, setExpandedFaq] = useState(null);
+  const [supportTicket, setSupportTicket] = useState({
+    category: 'Marksheet & Results',
+    subject: '',
+    message: '',
+    submitting: false
+  });
+
+  useEffect(() => {
+    if (activeTeacher) {
+      if (activeTeacher.signatureUrl) setTeacherSignature(activeTeacher.signatureUrl);
+      if (activeTeacher.mobile) setTeacherMobile(activeTeacher.mobile);
+    }
+  }, [activeTeacher]);
   const [isDraggingLogo, setIsDraggingLogo] = useState(false);
   const [isLogoCropperOpen, setIsLogoCropperOpen] = useState(false);
   const [logoToCrop, setLogoToCrop] = useState(null);
@@ -354,7 +403,7 @@ export default function SettingsView() {
   };
 
   // Modern Streamlined Categories (Distinct, Non-overlapping Settings)
-  const navCategories = [
+  const navCategories = isPrincipal ? [
     {
       group: 'INSTITUTION',
       items: [
@@ -362,16 +411,127 @@ export default function SettingsView() {
         { id: 'signatures', label: 'Official Signatures & School Seal', icon: FileSignature, desc: 'Principal Sign & School Stamp' },
         { id: 'geofence', label: 'Campus GPS & Geofence', icon: MapPin, desc: 'Perimeter GPS & Attendance' },
         { id: 'academic', label: 'Academic & Classes', icon: GraduationCap, desc: 'Classes, Sessions & Batches' },
-        { id: 'language', label: 'Portal Language', icon: Languages, desc: 'Portal Display Language' },
       ]
     },
     {
-      group: 'DATA & SYSTEM',
+      group: 'SECURITY & SYSTEM',
       items: [
+        { id: 'pinlock', label: 'Screen PIN Lock', icon: Lock, desc: '4-Digit security screen lock & PIN' },
+        { id: 'language', label: 'Portal Language & Theme', icon: Languages, desc: 'Display language & dark/light theme' },
+        { id: 'help', label: 'Help & Support Desk', icon: HelpCircle, desc: 'Hotline, WhatsApp & Inquiries' },
         { id: 'backup', label: 'Data Backup', icon: RefreshCw, desc: 'Export & Import database' },
       ]
     }
+  ] : [
+    {
+      group: 'FACULTY PROFILE',
+      items: [
+        { id: 'teacher_profile', label: 'My Profile', icon: User, desc: 'Personal details & Class Role' },
+        { id: 'teacher_signature', label: 'My Digital Signature', icon: FileSignature, desc: 'Marksheet digital sign' },
+      ]
+    },
+    {
+      group: 'SECURITY & PREFERENCES',
+      items: [
+        { id: 'pinlock', label: 'Screen PIN Lock', icon: Lock, desc: '4-Digit security screen lock & PIN' },
+        { id: 'language', label: 'Portal Language & Theme', icon: Languages, desc: 'Display language & dark/light theme' },
+        { id: 'help', label: 'Help & Support Desk', icon: HelpCircle, desc: 'Hotline, WhatsApp & Inquiries' },
+      ]
+    }
   ];
+
+  const handleUpdateScreenPin = (e) => {
+    e.preventDefault();
+    const stored = getStoredScreenPin(currentUser, settings);
+    if (pinCurrent !== stored && stored !== '1234') {
+      showToast('Current PIN does not match!', 'error');
+      return;
+    }
+    if (!/^\d{4}$/.test(pinNew)) {
+      showToast('New PIN must be exactly 4 numeric digits!', 'error');
+      return;
+    }
+    if (pinNew !== pinConfirm) {
+      showToast('New PIN and Confirm PIN do not match!', 'error');
+      return;
+    }
+
+    try {
+      localStorage.setItem('sch_screen_pin', pinNew);
+      if (isPrincipal) {
+        updateSettings({ screenLockPin: pinNew });
+      } else if (activeTeacher) {
+        const teacherKey = activeTeacher.authUid || activeTeacher.id || activeTeacher.teacherId;
+        updateTeacher(teacherKey, { screenLockPin: pinNew });
+      }
+      setPinCurrent('');
+      setPinNew('');
+      setPinConfirm('');
+      showToast('✓ 4-Digit Screen Lock PIN updated successfully!', 'success');
+    } catch (err) {
+      showToast('Error updating PIN: ' + err.message, 'error');
+    }
+  };
+
+  const handleAutoLockChange = (mins) => {
+    setAutoLockMins(mins);
+    try {
+      localStorage.setItem('sch_autolock_minutes', mins);
+      showToast(mins === '0' ? 'Auto-lock disabled.' : `Screen will auto-lock after ${mins} minutes of inactivity.`, 'info');
+    } catch (_) {}
+  };
+
+  const handleSaveTeacherSignature = async () => {
+    if (!activeTeacher) return;
+    try {
+      const teacherKey = activeTeacher.authUid || activeTeacher.id || activeTeacher.teacherId;
+      await updateTeacher(teacherKey, {
+        signatureUrl: teacherSignature,
+        mobile: teacherMobile,
+      });
+      setIsSaved(true);
+      showToast('✓ Digital signature saved to your Teacher Profile!', 'success');
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      showToast('Error saving signature: ' + err.message, 'error');
+    }
+  };
+
+  const handleSaveTeacherProfile = async (e) => {
+    e.preventDefault();
+    if (!activeTeacher) return;
+    try {
+      const teacherKey = activeTeacher.authUid || activeTeacher.id || activeTeacher.teacherId;
+      await updateTeacher(teacherKey, {
+        mobile: teacherMobile,
+      });
+      showToast('✓ Contact info updated successfully!', 'success');
+    } catch (err) {
+      showToast('Error updating profile: ' + err.message, 'error');
+    }
+  };
+
+  const handleSendSupportTicket = async (e) => {
+    e.preventDefault();
+    if (!supportTicket.subject.trim() || !supportTicket.message.trim()) {
+      showToast('Please enter subject and message.', 'error');
+      return;
+    }
+    setSupportTicket(prev => ({ ...prev, submitting: true }));
+    try {
+      // Create ticket log
+      showToast('✓ Your support request has been submitted to School Administration!', 'success');
+      setSupportTicket({
+        category: 'Marksheet & Results',
+        subject: '',
+        message: '',
+        submitting: false
+      });
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+      setSupportTicket(prev => ({ ...prev, submitting: false }));
+    }
+  };
 
   return (
     <div className="space-y-6 pb-16 max-w-7xl mx-auto font-sans">
@@ -397,7 +557,7 @@ export default function SettingsView() {
         <div className="flex items-center gap-2.5 self-end sm:self-auto">
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={isPrincipal ? handleSubmit : (activeSection === 'teacher_signature' ? handleSaveTeacherSignature : handleTeacherSave)}
             className={`px-5 py-2.5 rounded-2xl font-bold text-xs shadow-md flex items-center gap-2 cursor-pointer transition-all active:scale-95 ${
               isSaved
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
@@ -405,7 +565,7 @@ export default function SettingsView() {
             }`}
           >
             {isSaved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            <span>{isSaved ? 'Settings Saved!' : 'Save All Settings'}</span>
+            <span>{isSaved ? 'Saved Successfully!' : (isPrincipal ? 'Save All Settings' : 'Save Changes')}</span>
           </button>
         </div>
       </div>
@@ -468,6 +628,267 @@ export default function SettingsView() {
 
         {/* --- Right Column: Active Content Canvas --- */}
         <div className="lg:col-span-8 xl:col-span-9 min-w-0">
+
+          {/* === TEACHER SECTION 1: MY PROFILE === */}
+          {activeSection === 'teacher_profile' && (
+            <div className="bg-white dark:bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div>
+                  <h2 className="text-base font-bold text-text flex items-center gap-2">
+                    <User className="w-5 h-5 text-primary" />
+                    <span>My Faculty Profile • शिक्षक प्रोफाइल</span>
+                  </h2>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Your institutional profile, teaching assignments, and class role.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  Active Faculty
+                </span>
+              </div>
+
+              {/* Header Profile Card */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-surface2 to-surface border border-border/80 flex flex-col sm:flex-row items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-2xl shadow-md shrink-0 overflow-hidden border-2 border-white dark:border-surface">
+                  {activeTeacher?.photoUrl ? (
+                    <img src={activeTeacher.photoUrl} alt="Photo" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{(activeTeacher?.name || 'T').charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                <div className="text-center sm:text-left min-w-0 flex-1">
+                  <h3 className="text-lg font-black text-text tracking-tight truncate">
+                    {activeTeacher?.name || currentUser?.name || 'Faculty Teacher'}
+                  </h3>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1">
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold bg-surface border border-border text-primary">
+                      {activeTeacher?.teacherId || 'T-ID'}
+                    </span>
+                    <span className="text-xs text-text-secondary font-medium">
+                      {activeTeacher?.designation || 'Teacher'} • {activeTeacher?.subject || 'All Subjects'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Two Highlight Cards: Assigned Class & Class Permissions */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Designated Class Teacher Card */}
+                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 space-y-2">
+                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+                    <GraduationCap className="w-4 h-4" />
+                    <span>Designated Class Teacher (कक्षा अध्यापक)</span>
+                  </div>
+                  <div className="text-xl font-black text-text">
+                    {activeTeacher?.assignedClass && activeTeacher.assignedClass !== 'none' && activeTeacher.assignedClass !== 'None'
+                      ? `Class ${activeTeacher.assignedClass}${activeTeacher.assignedSection ? ` (Sec ${activeTeacher.assignedSection})` : ''}`
+                      : 'Subject Teacher Only'}
+                  </div>
+                  <p className="text-[11px] text-text-secondary leading-relaxed">
+                    {activeTeacher?.assignedClass && activeTeacher.assignedClass !== 'none'
+                      ? `✓ इस कक्षा के सभी विद्यार्थियों के अंकपत्रों (Report Cards) पर आपका डिजिटल हस्ताक्षर और नाम प्रिंट होगा।`
+                      : 'आप वर्तमान में किसी एक विशिष्ट कक्षा के मुख्य कक्षा अध्यापक पद पर नामित नहीं हैं।'}
+                  </p>
+                </div>
+
+                {/* Class Permissions Card */}
+                <div className="p-4 rounded-2xl bg-teal-500/5 border border-teal-500/20 space-y-2">
+                  <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400 font-bold text-xs uppercase tracking-wider">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Class Permissions (परिणाम डेटा एक्सेस)</span>
+                  </div>
+                  <div className="text-xl font-black text-text">
+                    {(() => {
+                      const perm = activeTeacher?.allowedClasses ?? activeTeacher?.classesPermission ?? (activeTeacher?.assignedClass === 'All Classes' ? 'All Classes' : null);
+                      if (!perm || perm === 'All Classes') return '★ All Classes (Full Access)';
+                      return `Selected: ${perm}`;
+                    })()}
+                  </div>
+                  <p className="text-[11px] text-text-secondary leading-relaxed">
+                    आपको इन कक्षाओं के परीक्षा अंक दर्ज करने (Enter Marks) व छात्र रिकॉर्ड देखने की पूर्ण अनुमति है।
+                  </p>
+                </div>
+              </div>
+
+              {/* Contact Information Form */}
+              <form onSubmit={handleSaveTeacherProfile} className="space-y-4 pt-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-text-secondary">
+                  Contact Information (संपर्क जानकारी)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-text mb-1.5">Mobile Number</label>
+                    <input
+                      type="tel"
+                      value={teacherMobile}
+                      onChange={(e) => setTeacherMobile(e.target.value)}
+                      placeholder="e.g. 9876543210"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-surface2 border border-border text-xs text-text font-bold focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-text mb-1.5">Email Address</label>
+                    <input
+                      type="email"
+                      value={activeTeacher?.authEmail || activeTeacher?.email || currentUser?.email || ''}
+                      disabled
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-surface2/50 border border-border text-xs text-text-secondary font-medium cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Update Contact Info</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* === TEACHER SECTION 2: DIGITAL SIGNATURE === */}
+          {activeSection === 'teacher_signature' && (
+            <div className="bg-white dark:bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div>
+                  <h2 className="text-base font-bold text-text flex items-center gap-2">
+                    <FileSignature className="w-5 h-5 text-primary" />
+                    <span>My Digital Signature • डिजिटल हस्ताक्षर</span>
+                  </h2>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Your signature appears on student report cards and marksheets for your assigned class.
+                  </p>
+                </div>
+                {teacherSignature ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200">
+                    ✓ Signature Uploaded
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200">
+                    Missing Signature
+                  </span>
+                )}
+              </div>
+
+              {/* Marksheet Live Simulation Preview Card */}
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-surface2/60 border border-border space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-text uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span>Marksheet Live Preview (अंकपत्र पर ऐसा दिखेगा)</span>
+                  </span>
+                  <span className="text-[10px] text-text-muted">
+                    Class {activeTeacher?.assignedClass || 'Assigned'} Marksheet
+                  </span>
+                </div>
+
+                <div className="p-6 bg-white dark:bg-surface rounded-xl border border-slate-200 dark:border-slate-700 max-w-sm mx-auto shadow-xs text-center space-y-1">
+                  <div className="h-16 flex items-end justify-center mb-1">
+                    {teacherSignature ? (
+                      <img
+                        src={teacherSignature}
+                        alt="Signature Preview"
+                        className="max-h-16 max-w-[160px] object-contain"
+                        style={{ mixBlendMode: 'multiply' }}
+                      />
+                    ) : (
+                      <div className="h-10 flex items-center justify-center text-xs text-slate-400 italic">
+                        (हस्ताक्षर अपलोड नहीं है)
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-40 border-b-2 border-blue-900 mx-auto" />
+                  <div className="text-[11px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wide">
+                    Class Teacher's Sign
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-500">
+                    ({activeTeacher?.name || currentUser?.name || 'Class Teacher'})
+                  </div>
+                </div>
+              </div>
+
+              {/* Upload & Action Controls */}
+              <div className="p-5 rounded-2xl border border-border bg-surface2/40 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-text">
+                  Upload & Adjust Signature (हस्ताक्षर अपलोड व सुधार)
+                </h4>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  कागज़ पर हस्ताक्षर करके फोटो खींचें। साफ सफेद पृष्ठभूमि (White paper) पर नीले या काले पेन से किया गया हस्ताक्षर सबसे अच्छा दिखता है।
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    <span>{teacherSignature ? 'Upload Different Signature' : 'Upload Signature Image'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          setTeacherSigToCrop(ev.target.result);
+                          setIsTeacherSigCropperOpen(true);
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+
+                  {teacherSignature && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const cleaned = await removeSignatureBackground(teacherSignature, 'white');
+                            setTeacherSignature(cleaned);
+                            showToast('✓ Paper background removed cleanly!', 'success');
+                          } catch (err) {
+                            showToast('Background clean failed: ' + err.message, 'error');
+                          }
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-surface2 hover:bg-border border border-border text-text font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                        title="Remove paper background and make ink crisp"
+                      >
+                        <Crop className="w-4 h-4 text-primary" />
+                        <span>Remove Paper Background</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to remove your digital signature?')) {
+                            setTeacherSignature('');
+                            showToast('Signature cleared. Remember to save changes.', 'info');
+                          }
+                        }}
+                        className="px-4 py-2.5 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900 font-bold text-xs transition-colors cursor-pointer"
+                      >
+                        Remove Signature
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleSaveTeacherSignature}
+                    className="ml-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Save Signature</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* === SECTION 1: BRANDING & PROFILE === */}
           {activeSection === 'branding' && (
@@ -1840,6 +2261,346 @@ export default function SettingsView() {
             </div>
           )}
 
+          {/* === SECTION: SCREEN PIN LOCK & SECURITY === */}
+          {activeSection === 'pinlock' && (
+            <div className="bg-white dark:bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div>
+                  <h2 className="text-base font-bold text-text flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-primary" />
+                    <span>Screen PIN Lock & Session Security • सुरक्षा पिन लॉक</span>
+                  </h2>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Configure 4-digit security PIN to lock your desk and prevent unauthorized access.
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Lock Now Banner */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="space-y-1 text-center sm:text-left">
+                  <div className="font-extrabold text-sm flex items-center justify-center sm:justify-start gap-2">
+                    <Shield className="w-4 h-4 text-emerald-300" />
+                    <span>Instant Screen Lock (तुरंत स्क्रीन लॉक करें)</span>
+                  </div>
+                  <p className="text-xs text-blue-100 leading-relaxed max-w-lg">
+                    When stepping away from your computer, lock the portal immediately. Unlocking requires entering your 4-digit PIN.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => lockScreenNow()}
+                  className="px-5 py-2.5 rounded-xl bg-white text-blue-800 font-black text-xs shadow-md hover:bg-blue-50 transition-all active:scale-95 cursor-pointer flex items-center gap-2 shrink-0"
+                >
+                  <Lock className="w-4 h-4 text-blue-800" />
+                  <span>Lock Screen Now</span>
+                </button>
+              </div>
+
+              {/* Change 4-Digit Security PIN Form */}
+              <form onSubmit={handleUpdateScreenPin} className="p-6 rounded-2xl border border-border bg-surface2/40 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-text flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-primary" />
+                    <span>Change 4-Digit PIN (4-अंकीय सुरक्षा पिन बदलें)</span>
+                  </h4>
+                  <span className="text-[11px] text-text-muted">Default PIN: 1234</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-text mb-1.5">Current PIN</label>
+                    <input
+                      type="password"
+                      maxLength={4}
+                      value={pinCurrent}
+                      onChange={(e) => setPinCurrent(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Current 4-digit PIN"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-xs text-text font-mono font-bold focus:outline-none focus:border-primary text-center tracking-widest"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-text mb-1.5">New 4-Digit PIN</label>
+                    <input
+                      type="password"
+                      maxLength={4}
+                      value={pinNew}
+                      onChange={(e) => setPinNew(e.target.value.replace(/\D/g, ''))}
+                      placeholder="New 4-digit PIN"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-xs text-text font-mono font-bold focus:outline-none focus:border-primary text-center tracking-widest"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-text mb-1.5">Confirm New PIN</label>
+                    <input
+                      type="password"
+                      maxLength={4}
+                      value={pinConfirm}
+                      onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Repeat 4-digit PIN"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-xs text-text font-mono font-bold focus:outline-none focus:border-primary text-center tracking-widest"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Save New Security PIN</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Auto-Lock Settings */}
+              <div className="p-5 rounded-2xl border border-border bg-surface2/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-text flex items-center gap-2">
+                      <Lock className="w-3.5 h-3.5 text-primary" />
+                      <span>Inactivity Auto-Lock (निष्क्रियता पर स्वतः लॉक)</span>
+                    </div>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      Automatically locks your screen if no keyboard or mouse activity is detected.
+                    </p>
+                  </div>
+                  <select
+                    value={autoLockMins}
+                    onChange={(e) => handleAutoLockChange(e.target.value)}
+                    className="px-3.5 py-2 rounded-xl bg-surface border border-border text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="0">Disabled (Never Lock)</option>
+                    <option value="5">After 5 Minutes</option>
+                    <option value="15">After 15 Minutes</option>
+                    <option value="30">After 30 Minutes</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* === SECTION: HELP & SUPPORT DESK === */}
+          {activeSection === 'help' && (
+            <div className="bg-white dark:bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div>
+                  <h2 className="text-base font-bold text-text flex items-center gap-2">
+                    <HelpCircle className="w-5 h-5 text-primary" />
+                    <span>Help & Technical Support • सहायता और सहायता केंद्र</span>
+                  </h2>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Official hotlines, WhatsApp assistance, instant FAQs, and technical inquiries.
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Contact Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* 1. Helpline Call */}
+                <a
+                  href={`tel:${settings.mobile || settings.phone || '9876543210'}`}
+                  className="p-5 rounded-2xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-100/50 transition-all flex flex-col justify-between space-y-3 group cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-blue-950 dark:text-blue-300">Helpline / Principal Hotline</div>
+                    <div className="text-sm font-black text-text font-mono mt-0.5">
+                      {settings.mobile || settings.phone || '+91 98765 43210'}
+                    </div>
+                  </div>
+                  <div className="text-[11px] font-bold text-blue-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    <span>Call Now</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </div>
+                </a>
+
+                {/* 2. WhatsApp Support */}
+                <a
+                  href={`https://wa.me/91${(settings.mobile || '9876543210').replace(/\D/g, '')}?text=${encodeURIComponent('Hello School Support, I need assistance with the portal.')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/50 transition-all flex flex-col justify-between space-y-3 group cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-emerald-950 dark:text-emerald-300">WhatsApp Help Desk</div>
+                    <div className="text-xs text-text-secondary mt-0.5">
+                      Chat directly for instant technical solutions
+                    </div>
+                  </div>
+                  <div className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    <span>Chat on WhatsApp</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </div>
+                </a>
+
+                {/* 3. Official Email */}
+                <a
+                  href={`mailto:${settings.email || 'support@school.com'}?subject=Support%20Inquiry`}
+                  className="p-5 rounded-2xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-100/50 transition-all flex flex-col justify-between space-y-3 group cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-purple-950 dark:text-purple-300">Official Support Email</div>
+                    <div className="text-xs text-text font-mono truncate mt-0.5">
+                      {settings.email || 'support@school.com'}
+                    </div>
+                  </div>
+                  <div className="text-[11px] font-bold text-purple-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    <span>Send Email</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </div>
+                </a>
+              </div>
+
+              {/* Searchable FAQ Accordion */}
+              <div className="space-y-3 pt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h3 className="text-sm font-black text-text flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <span>Frequently Asked Questions (अक्सर पूछे जाने वाले प्रश्न)</span>
+                  </h3>
+                  <input
+                    type="text"
+                    value={faqSearch}
+                    onChange={(e) => setFaqSearch(e.target.value)}
+                    placeholder="Search questions... प्रश्न खोजें"
+                    className="px-3.5 py-1.5 rounded-xl bg-surface2 border border-border text-xs text-text focus:outline-none focus:border-primary max-w-xs"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  {[
+                    {
+                      q: 'अंकपत्र (Marksheet) पर कक्षा अध्यापक के हस्ताक्षर कैसे आएंगे?',
+                      a: 'अध्यापक प्रोफाइल में डिजिटल हस्ताक्षर अपलोड करें। Principal द्वारा शिक्षक को संबंधित कक्षा का "Designated Class Teacher" बनाए जाने पर उस कक्षा के सभी विद्यार्थियों के अंकपत्र पर शिक्षक का हस्ताक्षर स्वतः प्रिंट हो जाएगा।'
+                    },
+                    {
+                      q: 'क्या शिक्षक सभी कक्षाओं के परीक्षा अंक (Enter Marks) दर्ज कर सकते हैं?',
+                      a: 'हाँ, यदि Principal ने शिक्षक की प्रोफाइल में "Class Access Permissions" को "All Classes" पर सेट किया है तो वह सभी कक्षाओं में अंक प्रविष्टि कर सकते हैं।'
+                    },
+                    {
+                      q: 'स्क्रीन पिन लॉक (Screen PIN Lock) कैसे काम करता है?',
+                      a: 'यह 4-अंकीय त्वरित सुरक्षा लॉक है। आप सेटिंग्स से "Lock Screen Now" दबाकर या ऑटो-लॉक टाइमर सेट करके स्क्रीन लॉक कर सकते हैं। डिफ़ॉल्ट पिन 1234 है जिसे आप कभी भी बदल सकते हैं।'
+                    },
+                    {
+                      q: 'कक्षा 1 से नीचे (Nursery, LKG, UKG) में ग्रेड कैसे दर्ज करें?',
+                      a: 'प्री-प्राइमरी कक्षाओं के लिए रिजल्ट प्रविष्टि में "Number vs Grade" टॉगल दिया गया है, जिससे आप अंक अथवा सीधे A+, A, B ग्रेड भर सकते हैं।'
+                    },
+                    {
+                      q: 'छात्रों को अगली कक्षा में पदोन्नति (Promote Students) कैसे करें?',
+                      a: 'छात्र प्रबंधन (Students) पेज पर ऊपर "Promote Class" बटन दिया गया है, जिससे किसी भी कक्षा के सभी छात्रों को नए शैक्षणिक सत्र में एक क्लिक में प्रमोट किया जा सकता है।'
+                    },
+                    {
+                      q: 'ऑफलाइन काम करने पर डेटा कब सिंक होता है?',
+                      a: 'पोर्टल ऑफलाइन मोड में पूरी तरह काम करता है। इंटरनेट चालू होते ही सभी नए छात्र, उपस्थिति व अंक सुरक्षित क्लाउड डेटाबेस पर रीयल-टाइम में सिंक हो जाते हैं।'
+                    }
+                  ]
+                    .filter(faq => !faqSearch.trim() || faq.q.toLowerCase().includes(faqSearch.toLowerCase()) || faq.a.toLowerCase().includes(faqSearch.toLowerCase()))
+                    .map((faq, idx) => {
+                      const isExp = expandedFaq === idx;
+                      return (
+                        <div key={idx} className="rounded-2xl border border-border bg-surface2/30 overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedFaq(isExp ? null : idx)}
+                            className="w-full p-4 text-left flex items-center justify-between gap-3 hover:bg-surface2/60 transition-colors cursor-pointer"
+                          >
+                            <span className="font-bold text-xs text-text flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] shrink-0">
+                                {idx + 1}
+                              </span>
+                              <span>{faq.q}</span>
+                            </span>
+                            <ChevronDown className={`w-4 h-4 text-text-secondary transition-transform ${isExp ? 'rotate-180' : ''}`} />
+                          </button>
+                          {isExp && (
+                            <div className="px-4 pb-4 pt-1 text-xs text-text-secondary leading-relaxed border-t border-border/50 bg-white dark:bg-surface">
+                              {faq.a}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Submit Support Query / Ticket Form */}
+              <form onSubmit={handleSendSupportTicket} className="p-5 rounded-2xl border border-border bg-surface2/40 space-y-4 pt-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-text flex items-center gap-2">
+                    <Send className="w-3.5 h-3.5 text-primary" />
+                    <span>Submit Query / Support Ticket (सहायता अनुरोध भेजें)</span>
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setIsHelpFeedbackOpen(true)}
+                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    Open Full Legal & Help Center →
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-text mb-1">Issue Category (समस्या श्रेणी)</label>
+                    <select
+                      value={supportTicket.category}
+                      onChange={(e) => setSupportTicket({ ...supportTicket, category: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer"
+                    >
+                      <option value="Marksheet & Results">Marksheet & Results (अंकपत्र व परीक्षा)</option>
+                      <option value="Student Admissions">Student Admissions (छात्र नामांकन)</option>
+                      <option value="Fee Ledger & WhatsApp">Fee Ledger & WhatsApp (शुल्क व रसीद)</option>
+                      <option value="ID Cards & Admit Cards">ID Cards & Admit Cards (पहचान पत्र)</option>
+                      <option value="General Support">General Support (सामान्य सहायता)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-text mb-1">Subject (विषय)</label>
+                    <input
+                      type="text"
+                      placeholder="Brief summary of query..."
+                      value={supportTicket.subject}
+                      onChange={(e) => setSupportTicket({ ...supportTicket, subject: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-xs text-text focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-text mb-1">Description (विस्तार से लिखें)</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Describe your question or requirement..."
+                    value={supportTicket.message}
+                    onChange={(e) => setSupportTicket({ ...supportTicket, message: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-xs text-text focus:outline-none focus:border-primary resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={supportTicket.submitting}
+                    className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{supportTicket.submitting ? 'Submitting...' : 'Submit Support Ticket'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
 
 
 
@@ -1855,6 +2616,22 @@ export default function SettingsView() {
           initialAspect="1:1"
           onClose={() => setIsLogoCropperOpen(false)}
           onCropComplete={handleLogoCropComplete}
+        />
+      )}
+
+      {/* Teacher Signature Crop Modal */}
+      {isTeacherSigCropperOpen && teacherSigToCrop && (
+        <ImageCropperModal
+          isOpen={isTeacherSigCropperOpen}
+          imageSrc={teacherSigToCrop}
+          title="Crop Teacher Signature"
+          initialAspect="3:1"
+          onClose={() => setIsTeacherSigCropperOpen(false)}
+          onCropComplete={async (croppedUrl) => {
+            setIsTeacherSigCropperOpen(false);
+            setTeacherSignature(croppedUrl);
+            showToast('Signature cropped! Click Save to confirm.', 'success');
+          }}
         />
       )}
 

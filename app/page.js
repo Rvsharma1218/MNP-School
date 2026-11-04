@@ -17,6 +17,7 @@ import TeachersView from '../components/TeachersView';
 import ReportsView from '../components/ReportsView';
 import QrScannerView from '../components/QrScannerView';
 import SettingsView from '../components/SettingsView';
+import ScreenPinLockModal from '../components/ScreenPinLockModal';
 import TeacherPermissionsModal from '../components/TeacherPermissionsModal';
 import SubscriptionView from '../components/SubscriptionView';
 import PrintReceiptModal from '../components/PrintReceiptModal';
@@ -349,7 +350,8 @@ function AppContent() {
             onClose={() => setPrintResultData(null)}
           />
         )}
-        <ToastContainer />
+        <ScreenPinLockModal />
+      <ToastContainer />
       </>
     );
   }
@@ -398,7 +400,7 @@ function AppContent() {
             {cleanPath === '/documents' && ((isPrincipal || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
             {cleanPath === '/import-export' && ((isPrincipal || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
             {(cleanPath === '/qrscanner' || cleanPath === '/scanner') && <QrScannerView />}
-            {cleanPath.startsWith('/settings') && (isPrincipal ? <SettingsView /> : <AccessDeniedView />)}
+            {cleanPath.startsWith('/settings') && <SettingsView />}
             {cleanPath === '/subscription' && (isPrincipal ? <SubscriptionView /> : <AccessDeniedView />)}
             {cleanPath === '/users' && (isPrincipal ? <UserManagementView /> : <AccessDeniedView />)}
             {cleanPath === '/profile' && <ProfileView />}

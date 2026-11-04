@@ -41,7 +41,8 @@ import {
   Users,
   CheckCircle2,
   Filter,
-  FileCheck
+  FileCheck,
+  FileSignature
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -1271,35 +1272,77 @@ export default function TeachersView() {
                     />
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-surface2/60 border border-border/80 space-y-2.5">
+                  {/* Field 1: Designated Class Teacher (Single Class) */}
+                  <div className="p-3.5 rounded-xl bg-surface2/60 border border-border/80 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="font-bold text-text text-xs flex items-center gap-1.5">
                         <GraduationCap className="w-3.5 h-3.5 text-primary" />
-                        <span>Class Access & Permissions</span>
+                        <span>Designated Class Teacher (कक्षा अध्यापक)</span>
+                      </label>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                        {formData.assignedClass && formData.assignedClass !== 'none' ? `Class ${formData.assignedClass}` : 'Subject Teacher Only'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-text-muted leading-tight">
+                      इस कक्षा के अंकपत्र (Marksheet) पर इस अध्यापक के डिजिटल हस्ताक्षर व नाम प्रिंट होंगे:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-text mb-1">Class (कक्षा)</label>
+                        <select
+                          value={formData.assignedClass}
+                          onChange={(e) => setFormData({ ...formData, assignedClass: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-surface border border-border text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer"
+                        >
+                          <option value="">None / Subject Teacher Only</option>
+                          {availableClasses.map(c => <option key={c} value={c}>Class {c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-text mb-1">Section (सेक्शन)</label>
+                        <select
+                          disabled={!formData.assignedClass || formData.assignedClass === 'none'}
+                          value={formData.assignedSection}
+                          onChange={(e) => setFormData({ ...formData, assignedSection: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-surface border border-border text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer disabled:opacity-50"
+                        >
+                          <option value="">All / Not Applicable</option>
+                          {['A', 'B', 'C', 'D', 'E'].map(s => <option key={s} value={s}>Section {s}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Field 2: Class Access & Result Permissions (Multi-select) */}
+                  <div className="p-3.5 rounded-xl bg-surface2/60 border border-border/80 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-text text-xs flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+                        <span>Class Permissions (डेटा व परिणाम एक्सेस)</span>
                       </label>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        parseClassString(formData.assignedClass) === 'All Classes' || !parseClassString(formData.assignedClass)
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300'
+                        parseClassString(formData.allowedClasses) === 'All Classes' || !parseClassString(formData.allowedClasses)
+                          ? 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300'
+                          : 'bg-primary/10 text-primary'
                       }`}>
-                        {parseClassString(formData.assignedClass) === 'All Classes' || !parseClassString(formData.assignedClass)
-                          ? 'Full School Access'
-                          : `${parseClassString(formData.assignedClass).split(',').filter(s => s.trim() && s.trim() !== 'All Classes').length} Classes Selected`}
+                        {parseClassString(formData.allowedClasses) === 'All Classes' || !parseClassString(formData.allowedClasses)
+                          ? 'All Classes Access'
+                          : `${parseClassString(formData.allowedClasses).split(',').filter(s => s.trim() && s.trim() !== 'All Classes').length} Classes Selected`}
                       </span>
                     </div>
 
                     <p className="text-[11px] text-text-muted leading-tight">
-                      Choose if this teacher can manage all school classes or select multiple specific classes:
+                      अंक प्रविष्टि (Result Enter Marks), उपस्थिति व छात्र रिकॉर्ड एक्सेस करने की अनुमति:
                     </p>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, assignedClass: 'All Classes' })}
+                        onClick={() => setFormData({ ...formData, allowedClasses: 'All Classes' })}
                         className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                          parseClassString(formData.assignedClass) === 'All Classes' || !parseClassString(formData.assignedClass)
-                            ? 'bg-primary text-white shadow-sm'
-                            : 'bg-surface border border-border text-text hover:border-primary'
+                          parseClassString(formData.allowedClasses) === 'All Classes' || !parseClassString(formData.allowedClasses)
+                            ? 'bg-teal-600 text-white shadow-sm'
+                            : 'bg-surface border border-border text-text hover:border-teal-500'
                         }`}
                       >
                         <span>★</span>
@@ -1307,18 +1350,18 @@ export default function TeachersView() {
                       </button>
 
                       {availableClasses.map(c => {
-                        const list = parseClassString(formData.assignedClass)
+                        const list = parseClassString(formData.allowedClasses)
                           .split(/[,|]/)
                           .map(s => s.trim())
                           .filter(s => s && s !== 'All Classes');
-                        const isSel = list.includes(c) && parseClassString(formData.assignedClass) !== 'All Classes';
+                        const isSel = list.includes(c) && parseClassString(formData.allowedClasses) !== 'All Classes';
                         return (
                           <button
                             key={c}
                             type="button"
                             onClick={() => {
                               let nextList = [...list];
-                              if (formData.assignedClass === 'All Classes' || !formData.assignedClass) nextList = [];
+                              if (formData.allowedClasses === 'All Classes' || !formData.allowedClasses) nextList = [];
                               if (isSel) {
                                 nextList = nextList.filter(x => x !== c);
                               } else {
@@ -1326,13 +1369,13 @@ export default function TeachersView() {
                               }
                               setFormData({
                                 ...formData,
-                                assignedClass: nextList.length === 0 ? 'All Classes' : nextList.join(', ')
+                                allowedClasses: nextList.length === 0 ? 'All Classes' : nextList.join(', ')
                               });
                             }}
                             className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                               isSel
-                                ? 'bg-teal-600 text-white shadow-sm'
-                                : 'bg-surface border border-border text-text hover:border-teal-500'
+                                ? 'bg-primary text-white shadow-sm'
+                                : 'bg-surface border border-border text-text hover:border-primary'
                             }`}
                           >
                             {isSel && <span>✓</span>}
@@ -1341,26 +1384,61 @@ export default function TeachersView() {
                         );
                       })}
                     </div>
-
-                    {formData.assignedClass && formData.assignedClass !== 'All Classes' && (
-                      <div className="text-[11px] text-teal-700 dark:text-teal-300 font-semibold pt-1 flex items-center gap-1">
-                        <span>Selected:</span>
-                        <span className="font-bold underline">{formData.assignedClass}</span>
-                      </div>
-                    )}
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-text mb-1">Section</label>
-                    <select
-                      disabled={!formData.assignedClass || formData.assignedClass === 'none'}
-                      value={formData.assignedSection}
-                      onChange={(e) => setFormData({ ...formData, assignedSection: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-surface2 border border-border text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer disabled:opacity-50"
-                    >
-                      <option value="">None / Not Applicable</option>
-                      {['A', 'B', 'C', 'D', 'E'].map(s => <option key={s} value={s}>Section {s}</option>)}
-                    </select>
+                  {/* Field 3: Digital Signature */}
+                  <div className="p-3.5 rounded-xl bg-surface2/60 border border-border/80 space-y-2">
+                    <label className="font-bold text-text text-xs flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <FileSignature className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Digital Signature (डिजिटल हस्ताक्षर)</span>
+                      </span>
+                      {formData.signatureUrl ? (
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">✓ Uploaded</span>
+                      ) : (
+                        <span className="text-[10px] font-medium text-slate-400">Not Uploaded</span>
+                      )}
+                    </label>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-32 h-14 rounded-xl border border-dashed border-border bg-white dark:bg-surface flex items-center justify-center overflow-hidden p-1">
+                        {formData.signatureUrl ? (
+                          <img src={formData.signatureUrl} alt="Signature" className="max-h-12 max-w-full object-contain" />
+                        ) : (
+                          <span className="text-[10px] text-text-muted text-center leading-tight">No Signature</span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{formData.signatureUrl ? 'Change Sign' : 'Upload Sign'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                setFormData(prev => ({ ...prev, signatureUrl: ev.target.result }));
+                              };
+                              reader.readAsDataURL(file);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        {formData.signatureUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, signatureUrl: '' }))}
+                            className="px-3 py-1 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-[11px] font-bold border border-rose-200 dark:border-rose-900 cursor-pointer transition-colors"
+                          >
+                            Remove Sign
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div>

@@ -53,6 +53,7 @@ export default function TeacherPermissionsModal({ isOpen, onClose }) {
         canMarkTeacherAtt: true,
         canViewSchoolStatus: true,
         canViewFacultyList: true,
+        canPromoteStudents: true,
       };
     } else if (type === 'standard') {
       updated = {
@@ -76,6 +77,7 @@ export default function TeacherPermissionsModal({ isOpen, onClose }) {
         canMarkTeacherAtt: false,
         canViewSchoolStatus: false,
         canViewFacultyList: false,
+        canPromoteStudents: false,
       };
     } else if (type === 'minimal') {
       updated = {
@@ -99,6 +101,7 @@ export default function TeacherPermissionsModal({ isOpen, onClose }) {
         canMarkTeacherAtt: false,
         canViewSchoolStatus: false,
         canViewFacultyList: false,
+        canPromoteStudents: false,
       };
     }
     setPerms(updated);
@@ -224,6 +227,7 @@ export default function TeacherPermissionsModal({ isOpen, onClose }) {
               {renderToggleRow('canEditStudents', t('permEditStudents', lang), t('permEditStudentsDesc', lang), Edit3, 'bg-indigo-50', 'text-indigo-600')}
               {renderToggleRow('canDeleteStudents', t('permDeleteStudents', lang), t('permDeleteStudentsDesc', lang), Trash2, 'bg-rose-50', 'text-rose-600')}
               {renderToggleRow('canManageClasses', t('permManageClasses', lang), t('permManageClassesDesc', lang), Building2, 'bg-teal-50', 'text-teal-600')}
+              {renderToggleRow('canPromoteStudents', 'Promote Students (कक्षा पदोन्नति)', 'Allow teachers to promote students to next session', GraduationCap, 'bg-purple-50', 'text-purple-600')}
             </div>
           </div>
 

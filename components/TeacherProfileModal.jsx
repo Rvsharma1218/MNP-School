@@ -34,7 +34,8 @@ import {
   ChevronRight,
   Clock,
   FileCheck,
-  CalendarCheck
+  CalendarCheck,
+  FileSignature
 } from 'lucide-react';
 import ImageCropperModal from './ImageCropperModal';
 
@@ -717,11 +718,22 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
                 </div>
 
                 <div className="p-3 rounded-xl bg-surface2 border border-border/70 space-y-1">
-                  <span className="text-[10.5px] text-text-muted font-medium block">Assigned Class</span>
+                  <span className="text-[10.5px] text-text-muted font-medium block">Designated Class Teacher (अंकपत्र हस्ताक्षर)</span>
                   <span className="font-bold text-primary text-sm block">
-                    {isAllClasses
-                      ? '★ All Classes Access'
-                      : `Class ${rawCls}${teacher.assignedSection ? ` - ${teacher.assignedSection}` : ''}`}
+                    {teacher.assignedClass && teacher.assignedClass !== 'none' && teacher.assignedClass !== 'None'
+                      ? `Class ${teacher.assignedClass}${teacher.assignedSection ? ` - Section ${teacher.assignedSection}` : ''}`
+                      : 'None (Subject Teacher Only)'}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-surface2 border border-border/70 space-y-1">
+                  <span className="text-[10.5px] text-text-muted font-medium block">Class Access Permissions (डेटा व परिणाम एक्सेस)</span>
+                  <span className="font-bold text-teal-600 dark:text-teal-400 text-sm block">
+                    {(() => {
+                      const perm = teacher.allowedClasses ?? teacher.classesPermission ?? (teacher.assignedClass === 'All Classes' ? 'All Classes' : null);
+                      if (!perm || perm === 'All Classes') return '★ All Classes (Full Access)';
+                      return String(perm);
+                    })()}
                   </span>
                 </div>
 
@@ -735,6 +747,87 @@ export default function TeacherProfileModal({ teacher, onClose, onEdit, onOpenPe
                   <span className="font-mono font-extrabold text-emerald-600 text-sm block">
                     ₹{Number(teacher.salary || 25000).toLocaleString('en-IN')} / month
                   </span>
+                </div>
+
+                {/* Digital Signature Card */}
+                <div className="p-4 rounded-xl bg-surface2 border border-border/80 space-y-2.5 sm:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileSignature className="w-4 h-4 text-primary" />
+                      <span className="font-bold text-text text-xs">Official Digital Signature (डिजिटल हस्ताक्षर)</span>
+                    </div>
+                    {teacher.signatureUrl ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200 dark:border-emerald-800">
+                        ✓ Signature Active
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 border border-amber-200 dark:border-amber-800">
+                        Missing Signature
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-text-muted leading-tight">
+                    {teacher.assignedClass && teacher.assignedClass !== 'none'
+                      ? `Class ${teacher.assignedClass} के छात्र अंकपत्र (Report Card / Marksheet) पर यह हस्ताक्षर प्रिंट होगा।`
+                      : 'इस अध्यापक द्वारा कक्षा अध्यापक पद मिलने पर अंकपत्र पर यही हस्ताक्षर प्रिंट होगा।'}
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
+                    <div className="w-44 h-16 rounded-xl border border-dashed border-border bg-white dark:bg-surface flex items-center justify-center p-2 overflow-hidden shadow-2xs">
+                      {teacher.signatureUrl ? (
+                        <img src={teacher.signatureUrl} alt="Signature" className="max-h-12 max-w-full object-contain" />
+                      ) : (
+                        <span className="text-[10px] text-text-muted text-center font-medium">No signature uploaded</span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{teacher.signatureUrl ? 'Change Signature' : 'Upload Signature'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = async (ev) => {
+                              try {
+                                await updateTeacher(teacherKey, { signatureUrl: ev.target.result });
+                                showToast(`Digital signature updated for ${teacher.name}!`, 'success');
+                              } catch (err) {
+                                showToast(`Failed to update signature: ${err.message}`, 'error');
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+
+                      {teacher.signatureUrl && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (window.confirm(`Remove digital signature for ${teacher.name}?`)) {
+                              try {
+                                await updateTeacher(teacherKey, { signatureUrl: '' });
+                                showToast('Signature removed.', 'info');
+                              } catch (err) {
+                                showToast('Failed to remove: ' + err.message, 'error');
+                              }
+                            }
+                          }}
+                          className="px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold border border-rose-200 dark:border-rose-900 cursor-pointer transition-colors"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

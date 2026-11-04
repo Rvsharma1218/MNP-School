@@ -10,7 +10,7 @@ import { exportSingleResultPDF, exportBulkResultMarksheetsPDF, openWhatsAppResul
 import { useSchoolStore } from '../lib/store';
 
 export default function PrintResultModal({ result: propResult, student: propStudent, data, onClose }) {
-  const { settings: storeSettings, students = [], showToast } = useSchoolStore();
+  const { settings: storeSettings, students = [], teachers = [], showToast } = useSchoolStore();
 
   const settings = data?.settings || storeSettings || {};
 
@@ -41,6 +41,27 @@ export default function PrintResultModal({ result: propResult, student: propStud
   }, [allResults.length, currentIndex]);
 
   const currentResult = allResults[currentIndex] || propResult || data?.result;
+
+  const studentClass = currentStudent?.class || currentResult?.studentClass || currentResult?.class || '';
+  const studentSection = currentStudent?.section || currentResult?.section || '';
+
+  const classTeacher = useMemo(() => {
+    if (!studentClass || !teachers?.length) return null;
+    const clean = String(studentClass).trim().toLowerCase().replace(/^class\s*/i, '');
+    return teachers.find(t => {
+      if (!t.assignedClass || t.assignedClass === 'none') return false;
+      const tc = String(t.assignedClass).trim().toLowerCase().replace(/^class\s*/i, '');
+      if (tc !== clean) return false;
+      if (studentSection && t.assignedSection) {
+        return String(t.assignedSection).trim().toLowerCase() === String(studentSection).trim().toLowerCase();
+      }
+      return true;
+    }) || teachers.find(t => {
+      if (!t.assignedClass || t.assignedClass === 'none') return false;
+      const tc = String(t.assignedClass).trim().toLowerCase().replace(/^class\s*/i, '');
+      return tc === clean;
+    });
+  }, [studentClass, studentSection, teachers]);
 
   // Resolve matching student for currently selected result
   const currentStudent = useMemo(() => {
@@ -154,7 +175,10 @@ export default function PrintResultModal({ result: propResult, student: propStud
   const handleDownloadPDF = async () => {
     try {
       showToast(`Generating marksheet PDF for ${currentStudent?.name || 'student'}...`, 'info');
-      await exportSingleResultPDF(currentResult, currentStudent, settings);
+      await exportSingleResultPDF(currentResult, currentStudent, settings, {
+        teacherSignatureUrl: classTeacher?.signatureUrl,
+        teacherName: classTeacher?.name
+      });
       showToast(`Downloaded marksheet PDF!`, 'success');
     } catch (e) {
       console.error(e);
@@ -514,8 +538,25 @@ export default function PrintResultModal({ result: propResult, student: propStud
             {/* Signatures & Stamp */}
             <div className="flex items-end justify-between pt-3 sm:pt-6">
               <div className="text-center space-y-1">
-                <div className="w-24 sm:w-36 border-b border-blue-900" />
+                <div className="h-10 sm:h-12 flex items-end justify-center mb-1">
+                  {classTeacher?.signatureUrl ? (
+                    <img
+                      src={classTeacher.signatureUrl}
+                      alt="Class Teacher Sign"
+                      className="max-h-10 sm:max-h-12 max-w-[110px] sm:max-w-[130px] object-contain"
+                      style={{ mixBlendMode: 'multiply' }}
+                    />
+                  ) : (
+                    <div className="h-5" />
+                  )}
+                </div>
+                <div className="w-24 sm:w-36 border-b border-blue-900 mx-auto" />
                 <div className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-700">Class Teacher's Sign</div>
+                {classTeacher?.name && (
+                  <div className="text-[8px] font-semibold text-slate-500 truncate max-w-[120px] mx-auto">
+                    ({classTeacher.name})
+                  </div>
+                )}
               </div>
 
               {/* QR Code Center */}

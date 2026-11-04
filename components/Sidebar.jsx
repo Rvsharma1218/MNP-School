@@ -193,6 +193,14 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
                   </>
                 )}
 
+                {!isPrincipal && (
+                  <>
+                    <SectionLabel collapsed={collapsed}>{lang === 'hi' ? 'सेटिंग्स व सहायता' : 'Settings & Support'}</SectionLabel>
+                    <NavBtn icon={Settings} label={t('settings', lang)} active={currentPath.startsWith('/settings')} onClick={() => nav('settings')} collapsed={collapsed} />
+                    <NavBtn icon={HelpCircle} label={t('helpSupport', lang)} active={isHelpFeedbackOpen} onClick={() => { setIsHelpFeedbackOpen(true); if (onClose) onClose(); }} collapsed={collapsed} />
+                  </>
+                )}
+
                 {/* Action Button at bottom */}
                 {!collapsed && (isPrincipal || teacherPermissions?.canAddStudents) && (
                   <div className="pt-4 px-1">

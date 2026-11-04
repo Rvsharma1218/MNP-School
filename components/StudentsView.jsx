@@ -304,7 +304,7 @@ export default function StudentsView() {
               )}
             </button>
           )}
-          {isPrincipal && (
+          {(isPrincipal || teacherPermissions?.canPromoteStudents) && (
             <button
               onClick={() => setIsPromoteModalOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
