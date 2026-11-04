@@ -17,8 +17,22 @@ class DeviceSecurityGate extends StatefulWidget {
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
-  static const int currentVersionCode = 2009;
-  static const String currentVersion = '2.0.2';
+    static const int currentVersionCode = 2010;
+  static const String currentVersion = '2.0.3';
+
+  bool _isSemanticVersionHigher(String remote, String current) {
+    try {
+      final rParts = remote.split('.').map((e) => int.tryParse(e.replaceAll(RegExp(r'\D'), '')) ?? 0).toList();
+      final cParts = current.split('.').map((e) => int.tryParse(e.replaceAll(RegExp(r'\D'), '')) ?? 0).toList();
+      while (rParts.length < 3) rParts.add(0);
+      while (cParts.length < 3) cParts.add(0);
+      for (int i = 0; i < 3; i++) {
+        if (rParts[i] > cParts[i]) return true;
+        if (rParts[i] < cParts[i]) return false;
+      }
+    } catch (_) {}
+    return false;
+  }
 
   bool _isRevoked = false;
   bool _isCheckingRevocation = false;
@@ -116,14 +130,19 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
       }
 
       final remoteVersionCode = int.tryParse(data['versionCode']?.toString() ?? '0') ?? 0;
+      final remoteVersion = (data['latestVersion']?.toString() ?? '').trim();
       final effectiveApkUrl = _resolveDeviceApkUrl(data);
       final isForced = data['forceUpdate'] == true && effectiveApkUrl.isNotEmpty;
+
+      final isNewerBuild = remoteVersionCode > currentVersionCode;
+      final isNewerVersion = remoteVersion.isNotEmpty && _isSemanticVersionHigher(remoteVersion, currentVersion);
+      final shouldPrompt = isNewerBuild || isNewerVersion || (isForced && (remoteVersionCode >= currentVersionCode || remoteVersion != currentVersion));
 
       // Check if user permanently dismissed this specific update version
       try {
         final prefs = await SharedPreferences.getInstance();
         final dismissedCode = prefs.getInt('dismissed_app_update_version_code') ?? 0;
-        if (remoteVersionCode <= dismissedCode && !isForced) {
+        if (remoteVersionCode <= dismissedCode && !isForced && !isNewerVersion) {
           if (mounted && _pendingUpdate != null) {
             setState(() => _pendingUpdate = null);
           }
@@ -131,7 +150,7 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
         }
       } catch (_) {}
 
-      if (remoteVersionCode > currentVersionCode) {
+      if (shouldPrompt) {
         if (mounted) {
           setState(() {
             _pendingUpdate = data;

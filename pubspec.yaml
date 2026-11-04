@@ -1,7 +1,7 @@
 name: mnp_school
 description: MNP School - Mission Navodaya Public School Official App
 publish_to: 'none'
-version: 2.0.2+2009
+version: 2.0.3+2010
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
