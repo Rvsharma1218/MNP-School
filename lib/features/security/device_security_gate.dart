@@ -301,14 +301,10 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
     final dir = await getTemporaryDirectory();
     final apkFile = File('${dir.path}/mnp_school_update.apk');
 
-    // Build primary and mirror CDN URLs for maximum reliability
+    // Primary: GitHub Releases (free, unlimited, no CDN caching issues)
+    // Mirror: empty — APKs removed from Vercel to reduce storage
     final primaryUrl = apkUrl.trim();
-    String mirrorUrl = '';
-    if (primaryUrl.contains('mnp-school.vercel.app')) {
-      mirrorUrl = primaryUrl.replaceAll('https://mnp-school.vercel.app', 'https://raw.githubusercontent.com/Rvsharma1218/MNP-School/master/public');
-    } else if (primaryUrl.contains('raw.githubusercontent.com')) {
-      mirrorUrl = primaryUrl.replaceAll('https://raw.githubusercontent.com/Rvsharma1218/MNP-School/master/public', 'https://mnp-school.vercel.app');
-    }
+    final String mirrorUrl = '';
 
     int retryCount = 0;
     const maxRetries = 7;
