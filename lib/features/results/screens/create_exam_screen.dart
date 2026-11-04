@@ -17,6 +17,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
   late TextEditingController _titleCtrl;
   String _selectedTerm = 'Annual';
   String _selectedClass = '';
+  Set<String> _selectedClasses = {'All Classes'};
   String _academicYear = '2026 - 2027';
   DateTime _examDate = DateTime.now();
   String _status = 'In Progress';
@@ -61,6 +62,12 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
     _titleCtrl = TextEditingController(text: ex?.title ?? 'Annual Examination 2026');
     _selectedTerm = ex?.term ?? 'Annual';
     _selectedClass = ex?.className ?? widget.initialClass ?? '';
+    if (_selectedClass.isNotEmpty && _selectedClass != 'All Classes') {
+      _selectedClasses = _selectedClass.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toSet();
+      if (_selectedClasses.isEmpty) _selectedClasses = {'All Classes'};
+    } else {
+      _selectedClasses = {'All Classes'};
+    }
     _academicYear = ex?.academicYear ?? '2026 - 2027';
     _examDate = ex?.examDate ?? DateTime.now();
     _status = ex?.status ?? 'In Progress';
@@ -74,6 +81,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
           'name': isStd ? s.subjectName : 'Other',
           'customCtrl': TextEditingController(text: s.subjectName),
           'isCompulsory': s.isCompulsory,
+          'category': s.category,
+          'oralPass': TextEditingController(text: s.oralPassing.toInt().toString()),
+          'oralMax': TextEditingController(text: s.oralMax.toInt().toString()),
           'theoryPass': TextEditingController(text: s.theoryPassing.toInt().toString()),
           'theoryMax': TextEditingController(text: s.theoryMax.toInt().toString()),
           'practicalPass': TextEditingController(text: s.practicalPassing.toInt().toString()),
@@ -94,6 +104,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
           'name': sub,
           'customCtrl': TextEditingController(text: sub),
           'isCompulsory': true,
+          'category': 'Written',
+          'oralPass': TextEditingController(text: '0'),
+          'oralMax': TextEditingController(text: '0'),
           'theoryPass': TextEditingController(text: '33'),
           'theoryMax': TextEditingController(text: '100'),
           'practicalPass': TextEditingController(text: '15'),
@@ -118,6 +131,8 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
       (r['customCtrl'] as TextEditingController).dispose();
       (r['theoryPass'] as TextEditingController).dispose();
       (r['theoryMax'] as TextEditingController).dispose();
+      (r['oralPass'] as TextEditingController?)?.dispose();
+      (r['oralMax'] as TextEditingController?)?.dispose();
       (r['practicalPass'] as TextEditingController).dispose();
       (r['practicalMax'] as TextEditingController).dispose();
       (r['internalPass'] as TextEditingController).dispose();
@@ -126,6 +141,65 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
       (r['totalMarks'] as TextEditingController).dispose();
     }
     super.dispose();
+  }
+
+  void _toggleClass(String c) {
+    setState(() {
+      if (c == 'All Classes') {
+        _selectedClasses = {'All Classes'};
+        _selectedClass = 'All Classes';
+        return;
+      }
+      _selectedClasses.remove('All Classes');
+      if (_selectedClasses.contains(c)) {
+        _selectedClasses.remove(c);
+        if (_selectedClasses.isEmpty) {
+          _selectedClasses = {'All Classes'};
+        }
+      } else {
+        _selectedClasses.add(c);
+      }
+      _selectedClass = _selectedClasses.contains('All Classes') ? 'All Classes' : _selectedClasses.join(', ');
+    });
+  }
+
+  void _applyClassPreset(String groupKey) {
+    final available = _availableClasses.where((c) => c != 'All Classes').toList();
+    Set<String> matched = {};
+
+    if (groupKey == 'ALL') {
+      matched = {'All Classes'};
+    } else if (groupKey == 'PRE_PRIMARY') {
+      matched = available.where((c) {
+        final norm = c.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+        return norm.contains('nursery') || norm.contains('lkg') || norm.contains('ukg') || norm.contains('kg') || norm.contains('prep') || norm.contains('play');
+      }).toSet();
+      if (matched.isEmpty) matched = {'Nursery', 'LKG', 'UKG'}.intersection(available.toSet());
+      if (matched.isEmpty) matched = {'Nursery', 'LKG', 'UKG'};
+    } else if (groupKey == 'PRIMARY') {
+      matched = available.where((c) {
+        final norm = c.toLowerCase().trim();
+        return RegExp(r'^(1st|2nd|3rd|4th|5th|class\s*[1-5]|[1-5])$', caseSensitive: false).hasMatch(norm);
+      }).toSet();
+      if (matched.isEmpty) matched = {'1st', '2nd', '3rd', '4th', '5th'};
+    } else if (groupKey == 'MIDDLE') {
+      matched = available.where((c) {
+        final norm = c.toLowerCase().trim();
+        return RegExp(r'^(6th|7th|8th|class\s*[6-8]|[6-8])$', caseSensitive: false).hasMatch(norm);
+      }).toSet();
+      if (matched.isEmpty) matched = {'6th', '7th', '8th'};
+    } else if (groupKey == 'SECONDARY') {
+      matched = available.where((c) {
+        final norm = c.toLowerCase().trim();
+        return RegExp(r'^(9th|10th|class\s*(?:9|10)|9|10)$', caseSensitive: false).hasMatch(norm);
+      }).toSet();
+      if (matched.isEmpty) matched = {'9th', '10th'};
+    }
+
+    setState(() {
+      _selectedClasses = matched.isNotEmpty ? matched : {'All Classes'};
+      _selectedClass = _selectedClasses.contains('All Classes') ? 'All Classes' : _selectedClasses.join(', ');
+    });
   }
 
   Future<void> _loadClasses() async {
@@ -176,6 +250,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
       'name': effectiveName,
       'customCtrl': TextEditingController(text: effectiveName),
       'isCompulsory': true,
+      'category': effectiveName.toLowerCase().contains('oral') ? 'Oral' : 'Written',
+      'oralPass': TextEditingController(text: '0'),
+      'oralMax': TextEditingController(text: '0'),
       'theoryPass': TextEditingController(text: '33'),
       'theoryMax': TextEditingController(text: '100'),
       'practicalPass': TextEditingController(text: '15'),
@@ -340,9 +417,16 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
       if (seen.contains(normName.toLowerCase())) continue;
       seen.add(normName.toLowerCase());
 
+      final cat = (r['category'] as String?) ?? 'Written';
+      final oralP = double.tryParse((r['oralPass'] as TextEditingController?)?.text ?? '') ?? 0.0;
+      final oralM = double.tryParse((r['oralMax'] as TextEditingController?)?.text ?? '') ?? 0.0;
+
       configs.add(ExamSubjectConfig(
         subjectName: normName.isNotEmpty ? normName : 'Subject',
         isCompulsory: r['isCompulsory'] == true,
+        category: cat,
+        oralPassing: oralP,
+        oralMax: oralM,
         theoryPassing: double.tryParse((r['theoryPass'] as TextEditingController).text) ?? 33.0,
         theoryMax: double.tryParse((r['theoryMax'] as TextEditingController).text) ?? 100.0,
         practicalPassing: double.tryParse((r['practicalPass'] as TextEditingController).text) ?? 0.0,
@@ -354,11 +438,16 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
       ));
     }
 
+    final selectedList = _selectedClasses.contains('All Classes')
+        ? ['All Classes']
+        : _selectedClasses.toList();
+    final primaryClass = selectedList.join(', ');
+
     final exam = ExamModel(
       id: widget.editExam?.id ?? 'exam_${DateTime.now().millisecondsSinceEpoch}',
       title: _titleCtrl.text.trim(),
       term: _selectedTerm,
-      className: _selectedClass,
+      className: primaryClass,
       academicYear: _academicYear,
       examDate: _examDate,
       status: _status,
@@ -368,6 +457,24 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
     );
 
     await DatabaseService.instance.saveExam(exam);
+
+    if (widget.editExam == null && selectedList.length > 1 && !selectedList.contains('All Classes')) {
+      for (final cls in selectedList) {
+        final subExam = ExamModel(
+          id: 'exam_${cls.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}_${DateTime.now().millisecondsSinceEpoch}',
+          title: '${_titleCtrl.text.trim()} - $cls',
+          term: _selectedTerm,
+          className: cls,
+          academicYear: _academicYear,
+          examDate: _examDate,
+          status: _status,
+          isDetailedMode: _isDetailedMode,
+          subjects: configs,
+          createdAt: DateTime.now(),
+        );
+        await DatabaseService.instance.saveExam(subExam);
+      }
+    }
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -471,22 +578,156 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Class / Course:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          Row(
+                            children: [
+                              const Text('Target Classes:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              const Spacer(),
+                              Text(
+                                _selectedClasses.contains('All Classes')
+                                    ? 'All Classes'
+                                    : '${_selectedClasses.length} Selected',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            key: ValueKey('exam_class_$_selectedClass'),
-                            initialValue: _selectedClass.isNotEmpty ? _selectedClass : null,
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              hintText: 'Select Class',
-                              isDense: true,
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                            ),
-                            items: _availableClasses.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 12)))).toList(),
-                            onChanged: (val) {
-                              if (val != null) setState(() => _selectedClass = val);
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+                                builder: (ctx) => StatefulBuilder(
+                                  builder: (ctx, setModalState) {
+                                    return Container(
+                                      padding: const EdgeInsets.all(20),
+                                      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.class_rounded, color: Color(0xFF1E3A8A)),
+                                              const SizedBox(width: 8),
+                                              const Text('Select Classes for Exam', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                              const Spacer(),
+                                              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 10),
+                                          const Text('Quick Presets:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                                          const SizedBox(height: 6),
+                                          Wrap(
+                                            spacing: 6,
+                                            runSpacing: 6,
+                                            children: [
+                                              ActionChip(
+                                                label: const Text('🌟 All Classes', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                                backgroundColor: _selectedClasses.contains('All Classes') ? const Color(0xFFEEF2FF) : Colors.white,
+                                                onPressed: () {
+                                                  _applyClassPreset('ALL');
+                                                  setModalState(() {});
+                                                },
+                                              ),
+                                              ActionChip(
+                                                label: const Text('🧸 Pre-Primary', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                                backgroundColor: const Color(0xFFFAF5FF),
+                                                onPressed: () {
+                                                  _applyClassPreset('PRE_PRIMARY');
+                                                  setModalState(() {});
+                                                },
+                                              ),
+                                              ActionChip(
+                                                label: const Text('🎒 Primary (1st-5th)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                                backgroundColor: const Color(0xFFF0FDF4),
+                                                onPressed: () {
+                                                  _applyClassPreset('PRIMARY');
+                                                  setModalState(() {});
+                                                },
+                                              ),
+                                              ActionChip(
+                                                label: const Text('📚 Middle (6th-8th)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                                backgroundColor: const Color(0xFFFFFBEB),
+                                                onPressed: () {
+                                                  _applyClassPreset('MIDDLE');
+                                                  setModalState(() {});
+                                                },
+                                              ),
+                                              ActionChip(
+                                                label: const Text('🎓 Secondary (9th-10th)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                                backgroundColor: const Color(0xFFEFF6FF),
+                                                onPressed: () {
+                                                  _applyClassPreset('SECONDARY');
+                                                  setModalState(() {});
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                          const Divider(height: 24),
+                                          const Text('All School Classes (Tap to toggle):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                                          const SizedBox(height: 8),
+                                          Expanded(
+                                            child: SingleChildScrollView(
+                                              child: Wrap(
+                                                spacing: 8,
+                                                runSpacing: 8,
+                                                children: _availableClasses.map((c) {
+                                                  final isSel = _selectedClasses.contains(c);
+                                                  return FilterChip(
+                                                    selected: isSel,
+                                                    label: Text(c, style: TextStyle(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.w500)),
+                                                    selectedColor: const Color(0xFF1E3A8A).withValues(alpha: 0.15),
+                                                    checkmarkColor: const Color(0xFF1E3A8A),
+                                                    onSelected: (_) {
+                                                      _toggleClass(c);
+                                                      setModalState(() {});
+                                                    },
+                                                  );
+                                                }).toList(),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            child: ElevatedButton(
+                                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                                              onPressed: () => Navigator.pop(ctx),
+                                              child: Text('Done (${_selectedClasses.contains("All Classes") ? "All Classes" : "${_selectedClasses.length} selected"})', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
                             },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFCBD5E1)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _selectedClasses.contains('All Classes')
+                                          ? '🌟 All Classes'
+                                          : _selectedClasses.join(', '),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_drop_down, color: Color(0xFF64748B)),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -752,11 +993,49 @@ class _CreateExamScreenState extends State<CreateExamScreen> with SingleTickerPr
                               ),
                             ),
                             const SizedBox(width: 8),
+                            // Category Dropdown
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                color: row['category'] == 'Oral'
+                                    ? const Color(0xFFFAF5FF)
+                                    : row['category'] == 'Practical'
+                                        ? const Color(0xFFECFDF5)
+                                        : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: row['category'] == 'Oral'
+                                      ? const Color(0xFFD8B4FE)
+                                      : const Color(0xFFCBD5E1),
+                                ),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: (row['category'] as String?) ?? 'Written',
+                                  isDense: true,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: row['category'] == 'Oral' ? const Color(0xFF6B21A8) : const Color(0xFF334155),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(value: 'Written', child: Text('✍️ Written')),
+                                    DropdownMenuItem(value: 'Oral', child: Text('🗣️ Oral')),
+                                    DropdownMenuItem(value: 'Practical', child: Text('🔬 Practical')),
+                                    DropdownMenuItem(value: 'Activity', child: Text('🎨 Activity')),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) setState(() => row['category'] = val);
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
                             // Compulsory switch
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('Compulsory', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                                const Text('Comp.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
                                 Switch(
                                   value: row['isCompulsory'] == true,
                                   activeColor: const Color(0xFF1E3A8A),

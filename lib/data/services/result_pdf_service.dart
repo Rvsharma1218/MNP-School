@@ -8,6 +8,8 @@ import 'package:printing/printing.dart';
 import '../models/result_model.dart';
 import '../models/settings_model.dart';
 import '../models/student_model.dart';
+import '../models/teacher_model.dart';
+import 'teacher_service.dart';
 import '../../core/utils/app_utils.dart';
 
 /// Centralized service to generate official Statement of Marks / Exam Result PDFs matching the Website 1:1.
@@ -44,6 +46,8 @@ class ResultPdfService {
     pw.MemoryImage? sigImage,
     pw.MemoryImage? stampImage,
     pw.MemoryImage? studentPhoto,
+    pw.MemoryImage? teacherSigImage,
+    String? teacherName,
   }) {
     final rawSubjects = result.subjects.isNotEmpty
         ? result.subjects
@@ -502,12 +506,23 @@ class ResultPdfService {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  // Class Teacher Sign
+                  // Class Teacher Sign & Digital Signature
                   pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
+                      if (teacherSigImage != null)
+                        pw.Container(
+                          height: 32,
+                          alignment: pw.Alignment.bottomCenter,
+                          child: pw.Image(teacherSigImage, height: 30, fit: pw.BoxFit.contain),
+                        )
+                      else
+                        pw.SizedBox(height: 32),
                       pw.Container(width: 130, height: 1.2, color: textDark),
                       pw.SizedBox(height: 4),
                       pw.Text('CLASS TEACHER SIGN', style: pw.TextStyle(font: ttfBold, fontSize: 9.5, color: textMuted)),
+                      if (teacherName != null && teacherName.isNotEmpty)
+                        pw.Text('($teacherName)', style: pw.TextStyle(font: ttf, fontSize: 7.5, color: textMuted)),
                     ],
                   ),
 
@@ -594,6 +609,30 @@ class ResultPdfService {
     final photoBytes = await AppUtils.loadAppImageBytes(student.photoPath);
     final studentPhoto = photoBytes != null ? pw.MemoryImage(photoBytes) : null;
 
+    // Resolve assigned class teacher for this student's class
+    TeacherModel? classTeacher;
+    try {
+      final sClass = (student.className ?? result.className ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      if (sClass.isNotEmpty) {
+        final teachers = TeacherService.instance.cachedTeachers;
+        for (final t in teachers) {
+          final tCls = (t.assignedClass ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+          if (tCls.isNotEmpty && (tCls == sClass || tCls.contains(sClass))) {
+            classTeacher = t;
+            break;
+          }
+        }
+      }
+    } catch (_) {}
+
+    pw.MemoryImage? teacherSigImage;
+    if (classTeacher?.signatureUrl != null && classTeacher!.signatureUrl!.isNotEmpty) {
+      final tSigBytes = await AppUtils.loadAppImageBytes(classTeacher.signatureUrl);
+      if (tSigBytes != null) {
+        teacherSigImage = pw.MemoryImage(tSigBytes);
+      }
+    }
+
     final doc = pw.Document();
     doc.addPage(
       buildMarksheetPage(
@@ -606,6 +645,8 @@ class ResultPdfService {
         sigImage: sigImage,
         stampImage: stampImage,
         studentPhoto: studentPhoto,
+        teacherSigImage: teacherSigImage,
+        teacherName: classTeacher?.name,
       ),
     );
     return doc;
@@ -630,9 +671,34 @@ class ResultPdfService {
 
     final doc = pw.Document();
 
+    final cachedTeachers = TeacherService.instance.cachedTeachers;
+
     for (final item in items) {
       final photoBytes = await AppUtils.loadAppImageBytes(item.key.photoPath);
       final studentPhoto = photoBytes != null ? pw.MemoryImage(photoBytes) : null;
+
+      TeacherModel? classTeacher;
+      try {
+        final sClass = (item.key.className ?? item.value.className ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+        if (sClass.isNotEmpty) {
+          for (final t in cachedTeachers) {
+            final tCls = (t.assignedClass ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            if (tCls.isNotEmpty && (tCls == sClass || tCls.contains(sClass))) {
+              classTeacher = t;
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+
+      pw.MemoryImage? teacherSigImage;
+      if (classTeacher?.signatureUrl != null && classTeacher!.signatureUrl!.isNotEmpty) {
+        final tSigBytes = await AppUtils.loadAppImageBytes(classTeacher.signatureUrl);
+        if (tSigBytes != null) {
+          teacherSigImage = pw.MemoryImage(tSigBytes);
+        }
+      }
+
       doc.addPage(
         buildMarksheetPage(
           result: item.value,
@@ -644,6 +710,8 @@ class ResultPdfService {
           sigImage: sigImage,
           stampImage: stampImage,
           studentPhoto: studentPhoto,
+          teacherSigImage: teacherSigImage,
+          teacherName: classTeacher?.name,
         ),
       );
     }

@@ -562,11 +562,16 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
             canPop: !isForced,
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(
-                color: Colors.black.withValues(alpha: isForced ? 0.88 : 0.65),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                child: ConstrainedBox(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: isForced ? null : () => setState(() => _dismissedOptionalUpdate = true),
+                child: Container(
+                  color: Colors.black.withValues(alpha: isForced ? 0.88 : 0.65),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  child: GestureDetector(
+                    onTap: () {}, // Absorb click inside modal
+                    child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Material(
                     color: Colors.transparent,
@@ -626,49 +631,71 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
                               ),
                               child: Column(
                                 children: [
-                                  // Top Status Tag
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: (isForced ? Colors.redAccent : const Color(0xFF6366F1))
-                                          .withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: (isForced ? Colors.redAccent : const Color(0xFF6366F1))
-                                            .withValues(alpha: 0.4),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 7,
-                                          height: 7,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: isForced ? Colors.redAccent : const Color(0xFF38BDF8),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: (isForced ? Colors.redAccent : const Color(0xFF38BDF8))
-                                                    .withValues(alpha: 0.8),
-                                                blurRadius: 6,
+                                  // Top Row: Status Tag & Optional Close 'X' Button
+                                  Row(
+                                    children: [
+                                      const SizedBox(width: 32),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: (isForced ? Colors.redAccent : const Color(0xFF6366F1))
+                                              .withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: (isForced ? Colors.redAccent : const Color(0xFF6366F1))
+                                                .withValues(alpha: 0.4),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              width: 7,
+                                              height: 7,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: isForced ? Colors.redAccent : const Color(0xFF38BDF8),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: (isForced ? Colors.redAccent : const Color(0xFF38BDF8))
+                                                        .withValues(alpha: 0.8),
+                                                    blurRadius: 6,
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                            const SizedBox(width: 7),
+                                            Text(
+                                              isForced ? 'MANDATORY UPDATE' : 'NEW UPDATE AVAILABLE',
+                                              style: TextStyle(
+                                                color: isForced ? const Color(0xFFFCA5A5) : const Color(0xFFBAE6FD),
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.8,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 7),
-                                        Text(
-                                          isForced ? 'MANDATORY UPDATE' : 'NEW UPDATE AVAILABLE',
-                                          style: TextStyle(
-                                            color: isForced ? const Color(0xFFFCA5A5) : const Color(0xFFBAE6FD),
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.8,
+                                      ),
+                                      const Spacer(),
+                                      if (!isForced)
+                                        InkWell(
+                                          borderRadius: BorderRadius.circular(20),
+                                          onTap: () => setState(() => _dismissedOptionalUpdate = true),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(5),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(alpha: 0.1),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(Icons.close_rounded, size: 16, color: Colors.white70),
                                           ),
-                                        ),
-                                      ],
-                                    ),
+                                        )
+                                      else
+                                        const SizedBox(width: 32),
+                                    ],
                                   ),
                                   const SizedBox(height: 16),
 
@@ -1190,8 +1217,10 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
               ),
             ),
           ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
     }
 
     return widget.child;

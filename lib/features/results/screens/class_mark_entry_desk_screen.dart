@@ -204,11 +204,23 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     final sStuId = s.studentId.trim().toLowerCase();
     final sAdm = s.admissionNumber.trim().toLowerCase();
     final sName = s.name.trim().toLowerCase();
+    final rRoll = (r.rollNumber ?? '').trim().toLowerCase();
+    final sRoll = (s.rollNumber ?? '').trim().toLowerCase();
+    final rClass = (r.className ?? '').trim().toLowerCase();
+    final sClass = (s.className ?? s.course ?? '').trim().toLowerCase();
 
+    // 1. Strict ID Match (Primary & Unique identity)
     if (rId.isNotEmpty) {
       if (rId == sId || rId == sStuId || rId == sAdm) return true;
     }
-    if (rName.isNotEmpty && sName.isNotEmpty && rName == sName) return true;
+
+    // 2. Strict Roll + Class + Name match (Never match by name alone!)
+    if (rRoll.isNotEmpty && sRoll.isNotEmpty && rRoll == sRoll) {
+      final classMatches = rClass.isEmpty || sClass.isEmpty || rClass == sClass;
+      if (classMatches) {
+        if (rName.isEmpty || sName.isEmpty || rName == sName) return true;
+      }
+    }
     return false;
   }
 

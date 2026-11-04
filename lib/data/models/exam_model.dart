@@ -10,8 +10,11 @@ class ExamSubjectConfig {
   final double practicalMax;
   final double internalPassing;
   final double internalMax;
+  final double oralPassing;
+  final double oralMax;
   final double passingMarks; // Used when Direct Mode is active
   final double totalMarks;   // Used when Direct Mode is active
+  final String category;     // 'Written', 'Oral', 'Practical', 'Activity'
 
   ExamSubjectConfig({
     required this.subjectName,
@@ -22,8 +25,11 @@ class ExamSubjectConfig {
     this.practicalMax = 0.0,
     this.internalPassing = 0.0,
     this.internalMax = 0.0,
+    this.oralPassing = 0.0,
+    this.oralMax = 0.0,
     this.passingMarks = 33.0,
     this.totalMarks = 100.0,
+    this.category = 'Written',
   });
 
   Map<String, dynamic> toMap() {
@@ -36,8 +42,11 @@ class ExamSubjectConfig {
       'practicalMax': practicalMax,
       'internalPassing': internalPassing,
       'internalMax': internalMax,
+      'oralPassing': oralPassing,
+      'oralMax': oralMax,
       'passingMarks': passingMarks,
       'totalMarks': totalMarks,
+      'category': category,
     };
   }
 
@@ -51,8 +60,11 @@ class ExamSubjectConfig {
       practicalMax: (map['practicalMax'] as num?)?.toDouble() ?? 0.0,
       internalPassing: (map['internalPassing'] as num?)?.toDouble() ?? 0.0,
       internalMax: (map['internalMax'] as num?)?.toDouble() ?? 0.0,
+      oralPassing: (map['oralPassing'] as num?)?.toDouble() ?? 0.0,
+      oralMax: (map['oralMax'] as num?)?.toDouble() ?? 0.0,
       passingMarks: (map['passingMarks'] as num?)?.toDouble() ?? 33.0,
       totalMarks: (map['totalMarks'] as num?)?.toDouble() ?? 100.0,
+      category: map['category']?.toString() ?? 'Written',
     );
   }
 }

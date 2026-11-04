@@ -53,7 +53,6 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       if (s.id.isNotEmpty) _studentLookup[s.id.toLowerCase()] = s;
       if (s.studentId.isNotEmpty) _studentLookup[s.studentId.toLowerCase()] = s;
       if (s.admissionNumber.isNotEmpty) _studentLookup[s.admissionNumber.toLowerCase()] = s;
-      if (s.name.isNotEmpty) _studentLookup[s.name.trim().toLowerCase()] = s;
     }
   }
 
@@ -63,19 +62,19 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       final s = _studentLookup[rId];
       if (s != null) return s;
     }
-    final rName = (r.studentName ?? '').trim().toLowerCase();
-    if (rName.isNotEmpty) {
-      final s = _studentLookup[rName];
-      if (s != null) return s;
-    }
     final rRoll = (r.rollNumber ?? '').trim().toLowerCase();
+    final rClass = (r.className ?? '').trim().toLowerCase();
+    final rName = (r.studentName ?? '').trim().toLowerCase();
+
+    // Secondary fallback: Strict Roll Number + Class (+ Name check)
     if (rRoll.isNotEmpty) {
-      final rClass = (r.className ?? '').trim().toLowerCase();
       final match = _students.where((s) {
         final sRoll = (s.rollNumber ?? '').trim().toLowerCase();
         if (sRoll != rRoll) return false;
         final sClass = (s.className ?? s.course ?? '').trim().toLowerCase();
         if (rClass.isNotEmpty && sClass.isNotEmpty && rClass != sClass) return false;
+        final sName = s.name.trim().toLowerCase();
+        if (rName.isNotEmpty && sName.isNotEmpty && rName != sName) return false;
         return true;
       }).firstOrNull;
       if (match != null) return match;

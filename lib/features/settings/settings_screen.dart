@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -1708,23 +1709,46 @@ class _SecurityPinSettingsScreenState extends State<SecurityPinSettingsScreen> {
     super.dispose();
   }
 
-  void _updatePin() {
-    if (_newPinCtrl.text.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN must be exactly 4 digits'), backgroundColor: Colors.red),
-      );
+  Future<void> _updatePin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentSavedPin = prefs.getString('app_pin') ?? '';
+    final isPinSet = prefs.getBool('app_pin_set') ?? (currentSavedPin.isNotEmpty);
+
+    if (isPinSet && _oldPinCtrl.text.trim() != currentSavedPin) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Current PIN does not match!'), backgroundColor: Colors.red),
+        );
+      }
       return;
     }
-    if (_newPinCtrl.text != _confirmPinCtrl.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('New PIN and Confirm PIN do not match'), backgroundColor: Colors.red),
-      );
+
+    if (_newPinCtrl.text.trim().length != 4) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PIN must be exactly 4 digits'), backgroundColor: Colors.red),
+        );
+      }
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Master Security PIN updated successfully!'), backgroundColor: AppColors.success),
-    );
-    Navigator.pop(context);
+    if (_newPinCtrl.text.trim() != _confirmPinCtrl.text.trim()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New PIN and Confirm PIN do not match'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    await prefs.setString('app_pin', _newPinCtrl.text.trim());
+    await prefs.setBool('app_pin_set', true);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✓ Master Security PIN updated successfully!'), backgroundColor: AppColors.success),
+      );
+      Navigator.pop(context);
+    }
   }
 
   @override

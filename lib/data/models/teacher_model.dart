@@ -31,6 +31,7 @@ class TeacherModel {
   final double? salary;
   final String? photoUrl;
   final String? aadhaarDocUrl;
+  final String? signatureUrl;
 
   TeacherModel({
     required this.authUid,
@@ -61,6 +62,7 @@ class TeacherModel {
     this.salary,
     this.photoUrl,
     this.aadhaarDocUrl,
+    this.signatureUrl,
   })  : id = (id != null && id.isNotEmpty) ? id : teacherId,
         email = (email != null && email.isNotEmpty) ? email : authEmail;
 
@@ -101,6 +103,7 @@ class TeacherModel {
       'aadhaarDocUrl': aadhaarDocUrl,
       'aadhaarDocPath': aadhaarDocUrl,
       'aadhaarCardUrl': aadhaarDocUrl,
+      'signatureUrl': signatureUrl,
     };
   }
 
@@ -177,6 +180,7 @@ class TeacherModel {
       salary: parsedSalary,
       photoUrl: (map['photoUrl'] as String?) ?? (map['photoPath'] as String?),
       aadhaarDocUrl: (map['aadhaarDocUrl'] as String?) ?? (map['aadhaarDocPath'] as String?) ?? (map['aadhaarCardUrl'] as String?),
+      signatureUrl: (map['signatureUrl'] as String?) ?? (map['teacherSignature'] as String?) ?? (map['signature'] as String?),
     );
   }
 
@@ -252,6 +256,7 @@ class TeacherModel {
     double? salary,
     String? photoUrl,
     String? aadhaarDocUrl,
+    String? signatureUrl,
   }) {
     return TeacherModel(
       authUid: authUid,
@@ -282,6 +287,7 @@ class TeacherModel {
       salary: salary ?? this.salary,
       photoUrl: photoUrl ?? this.photoUrl,
       aadhaarDocUrl: aadhaarDocUrl ?? this.aadhaarDocUrl,
+      signatureUrl: signatureUrl ?? this.signatureUrl,
     );
   }
 }

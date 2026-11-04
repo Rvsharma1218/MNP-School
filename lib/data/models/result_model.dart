@@ -3,12 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SubjectResult {
   final String subjectName;
-  final double marks; // Total marks obtained (theory + practical + internal)
+  final double marks; // Total marks obtained (theory + practical + internal + oral)
   final double totalMarks; // Maximum possible marks ("total kitne mai se", default 100)
   final double passingMarks; // Minimum marks to pass ("kitne number pe paas hai", default 33)
   final double theoryMarks;
   final double practicalMarks;
   final double internalMarks;
+  final double oralMarks;
+  final String? category; // 'Written', 'Oral', 'Practical', 'Activity'
+  final String? gradeOverride; // Direct grade entry for Pre-Primary ('A+', 'A', 'B+', 'B', 'C', 'D', 'F')
 
   SubjectResult({
     required this.subjectName,
@@ -18,6 +21,9 @@ class SubjectResult {
     this.theoryMarks = 0.0,
     this.practicalMarks = 0.0,
     this.internalMarks = 0.0,
+    this.oralMarks = 0.0,
+    this.category,
+    this.gradeOverride,
   });
 
   double get percentage => totalMarks > 0 ? (marks / totalMarks) * 100 : 0;
@@ -25,6 +31,9 @@ class SubjectResult {
   bool get isPass => marks >= passingMarks;
 
   String get grade {
+    if (gradeOverride != null && gradeOverride!.trim().isNotEmpty) {
+      return gradeOverride!.trim();
+    }
     final p = percentage;
     if (p >= 90) return 'A+';
     if (p >= 80) return 'A';
@@ -44,6 +53,9 @@ class SubjectResult {
       'theoryMarks': theoryMarks,
       'practicalMarks': practicalMarks,
       'internalMarks': internalMarks,
+      'oralMarks': oralMarks,
+      if (category != null) 'category': category,
+      if (gradeOverride != null) 'gradeOverride': gradeOverride,
     };
   }
 
@@ -54,6 +66,9 @@ class SubjectResult {
     final th = (map['theoryMarks'] as num?)?.toDouble() ?? 0.0;
     final pr = (map['practicalMarks'] as num?)?.toDouble() ?? 0.0;
     final inM = (map['internalMarks'] as num?)?.toDouble() ?? 0.0;
+    final oral = (map['oralMarks'] as num?)?.toDouble() ?? 0.0;
+    final cat = map['category']?.toString();
+    final gradeOvr = map['gradeOverride']?.toString() ?? map['grade']?.toString();
 
     return SubjectResult(
       subjectName: map['subjectName']?.toString() ?? '',
@@ -63,6 +78,9 @@ class SubjectResult {
       theoryMarks: th,
       practicalMarks: pr,
       internalMarks: inM,
+      oralMarks: oral,
+      category: cat,
+      gradeOverride: gradeOvr,
     );
   }
 }

@@ -23,6 +23,52 @@ class StudentMarkEntryScreen extends StatefulWidget {
 }
 
 class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
+  bool get _isPrePrimary {
+    final cls = widget.student.className ?? widget.student.displayClass;
+    if (cls.isEmpty) return false;
+    final c = cls.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return c.contains('nursery') ||
+        c.contains('lkg') ||
+        c.contains('ukg') ||
+        c.contains('kg') ||
+        c.contains('prep') ||
+        c.contains('play') ||
+        c.contains('balvatika') ||
+        c.contains('infant');
+  }
+
+  static const List<String> _prePrimaryGrades = ['A+', 'A', 'B+', 'B', 'C', 'D', 'F'];
+
+  String _marksToGradePill(double marks, double maxMarks) {
+    if (maxMarks <= 0) return '';
+    final pct = (marks / maxMarks) * 100;
+    if (pct >= 90) return 'A+';
+    if (pct >= 80) return 'A';
+    if (pct >= 70) return 'B+';
+    if (pct >= 60) return 'B';
+    if (pct >= 50) return 'C';
+    if (pct >= 40) return 'D';
+    return 'F';
+  }
+
+  void _selectGradeForRow(Map<String, dynamic> row, String g, double maxM) {
+    const ratios = {
+      'A+': 0.95,
+      'A': 0.85,
+      'B+': 0.75,
+      'B': 0.65,
+      'C': 0.50,
+      'D': 0.40,
+      'F': 0.25,
+    };
+    final ratio = ratios[g] ?? 0.80;
+    final estimated = (maxM * ratio).round();
+    setState(() {
+      row['grade'] = g;
+      (row['marks'] as TextEditingController).text = estimated.toString();
+    });
+  }
+
   late TextEditingController _examCtrl;
   late TextEditingController _passCriteriaCtrl;
   late TextEditingController _remarksCtrl;
@@ -90,15 +136,21 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
       // Load existing result subjects (retaining saved mode and marks)
       _subjectRows = res.subjects.map((s) {
         final isStd = _standardSubjects.contains(s.subjectName) && s.subjectName != 'Other';
+        final isPre = _isPrePrimary;
+        final hasGrade = s.gradeOverride != null && s.gradeOverride!.isNotEmpty;
         return {
           'id': 'res_${s.subjectName}_${DateTime.now().microsecondsSinceEpoch}',
           'name': isStd ? s.subjectName : 'Other',
           'customCtrl': TextEditingController(text: s.subjectName),
           'marks': TextEditingController(text: s.marks > 0 ? s.marks.toInt().toString() : ''),
           'theory': TextEditingController(text: s.theoryMarks > 0 ? s.theoryMarks.toInt().toString() : (s.marks > 0 && _isDetailedMode && s.practicalMarks == 0 && s.internalMarks == 0 ? s.marks.toInt().toString() : '')),
+          'oral': TextEditingController(text: s.oralMarks > 0 ? s.oralMarks.toInt().toString() : ''),
           'practical': TextEditingController(text: s.practicalMarks > 0 ? s.practicalMarks.toInt().toString() : ''),
           'internal': TextEditingController(text: s.internalMarks > 0 ? s.internalMarks.toInt().toString() : ''),
           'totalMarks': TextEditingController(text: s.totalMarks > 0 ? s.totalMarks.toInt().toString() : '100'),
+          'category': s.category ?? (s.subjectName.toLowerCase().contains('oral') ? 'Oral' : 'Written'),
+          'grade': s.gradeOverride ?? (s.marks > 0 ? s.grade : ''),
+          'entryMode': (isPre || hasGrade) ? 'grade' : 'marks',
         };
       }).toList();
     } else if (ex != null && ex.subjects.isNotEmpty) {
@@ -114,9 +166,13 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
           'customCtrl': TextEditingController(text: s.subjectName),
           'marks': TextEditingController(text: ''),
           'theory': TextEditingController(text: ''),
+          'oral': TextEditingController(text: ''),
           'practical': TextEditingController(text: ''),
           'internal': TextEditingController(text: ''),
           'totalMarks': TextEditingController(text: (maxM > 0 ? maxM : 100).toInt().toString()),
+          'category': s.category,
+          'grade': '',
+          'entryMode': _isPrePrimary ? 'grade' : 'marks',
         };
       }).toList();
     } else if (widget.subjectTemplate != null && widget.subjectTemplate!.isNotEmpty) {
@@ -131,9 +187,13 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
           'customCtrl': TextEditingController(text: name),
           'marks': TextEditingController(text: ''),
           'theory': TextEditingController(text: ''),
+          'oral': TextEditingController(text: ''),
           'practical': TextEditingController(text: ''),
           'internal': TextEditingController(text: ''),
           'totalMarks': TextEditingController(text: maxM),
+          'category': name.toLowerCase().contains('oral') ? 'Oral' : 'Written',
+          'grade': '',
+          'entryMode': _isPrePrimary ? 'grade' : 'marks',
         };
       }).toList();
     } else {
@@ -146,9 +206,13 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
           'customCtrl': TextEditingController(text: name),
           'marks': TextEditingController(text: ''),
           'theory': TextEditingController(text: ''),
+          'oral': TextEditingController(text: ''),
           'practical': TextEditingController(text: ''),
           'internal': TextEditingController(text: ''),
           'totalMarks': TextEditingController(text: '100'),
+          'category': 'Written',
+          'grade': '',
+          'entryMode': _isPrePrimary ? 'grade' : 'marks',
         };
       }).toList();
     }
@@ -164,6 +228,7 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
       (r['customCtrl'] as TextEditingController).dispose();
       (r['marks'] as TextEditingController).dispose();
       (r['theory'] as TextEditingController).dispose();
+      (r['oral'] as TextEditingController?)?.dispose();
       (r['practical'] as TextEditingController).dispose();
       (r['internal'] as TextEditingController).dispose();
       (r['totalMarks'] as TextEditingController).dispose();
@@ -185,7 +250,11 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
           'customCtrl': TextEditingController(text: effectiveName),
           'marks': TextEditingController(text: ''),
           'theory': TextEditingController(text: ''),
+          'oral': TextEditingController(text: ''),
           'practical': TextEditingController(text: ''),
+          'category': effectiveName.toLowerCase().contains('oral') ? 'Oral' : 'Written',
+          'grade': '',
+          'entryMode': _isPrePrimary ? 'grade' : 'marks',
           'internal': TextEditingController(text: ''),
           'totalMarks': TextEditingController(text: maxMarks),
         },
@@ -343,9 +412,12 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
       final subName = (r['name'] == 'Other' || customName.isNotEmpty) ? customName : (r['name']?.toString() ?? 'Subject');
       final maxM = double.tryParse((r['totalMarks'] as TextEditingController).text) ?? 100.0;
       final th = double.tryParse((r['theory'] as TextEditingController).text) ?? 0.0;
+      final oral = double.tryParse((r['oral'] as TextEditingController?)?.text ?? '') ?? 0.0;
       final pr = double.tryParse((r['practical'] as TextEditingController).text) ?? 0.0;
       final inM = double.tryParse((r['internal'] as TextEditingController).text) ?? 0.0;
-      final obt = _isDetailedMode ? (th + pr + inM) : (double.tryParse((r['marks'] as TextEditingController).text) ?? 0.0);
+      final obt = _isDetailedMode ? (th + oral + pr + inM) : (double.tryParse((r['marks'] as TextEditingController).text) ?? 0.0);
+      final grade = (r['grade'] as String?)?.trim();
+      final cat = (r['category'] as String?) ?? 'Written';
 
       return SubjectResult(
         subjectName: subName.isNotEmpty ? subName : 'Subject',
@@ -353,8 +425,11 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
         totalMarks: maxM,
         passingMarks: maxM * (passCriteria / 100.0),
         theoryMarks: _isDetailedMode ? th : 0.0,
+        oralMarks: _isDetailedMode ? oral : 0.0,
         practicalMarks: _isDetailedMode ? pr : 0.0,
         internalMarks: _isDetailedMode ? inM : 0.0,
+        category: cat,
+        gradeOverride: (r['entryMode'] == 'grade' && grade != null && grade.isNotEmpty) ? grade : null,
       );
     }).toList();
 
@@ -694,10 +769,14 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
 
                     final maxM = double.tryParse((row['totalMarks'] as TextEditingController).text) ?? 100.0;
                     final th = double.tryParse((row['theory'] as TextEditingController).text) ?? 0.0;
+                    final oral = double.tryParse((row['oral'] as TextEditingController?)?.text ?? '') ?? 0.0;
                     final pr = double.tryParse((row['practical'] as TextEditingController).text) ?? 0.0;
                     final inM = double.tryParse((row['internal'] as TextEditingController).text) ?? 0.0;
-                    final obt = _isDetailedMode ? (th + pr + inM) : (double.tryParse((row['marks'] as TextEditingController).text) ?? 0.0);
+                    final obt = _isDetailedMode ? (th + oral + pr + inM) : (double.tryParse((row['marks'] as TextEditingController).text) ?? 0.0);
                     final isPassed = obt >= (maxM * (passCriteria / 100.0));
+                    final curGrade = (row['grade'] as String?) ?? '';
+                    final curCategory = (row['category'] as String?) ?? 'Written';
+                    final entryMode = (row['entryMode'] as String?) ?? (_isPrePrimary ? 'grade' : 'marks');
 
                     return Container(
                       key: ValueKey(row['id']),
@@ -802,31 +881,224 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
                           ],
                           const SizedBox(height: 8),
 
-                          // Direct vs Detailed Inputs
-                          if (!_isDetailedMode) ...[
-                            Row(
+                          // Subject Category & Mode Switcher Row
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
                               children: [
-                                const Text('Obtained Marks: ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: TextField(
-                                    controller: row['marks'] as TextEditingController,
-                                    keyboardType: TextInputType.number,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
-                                    decoration: InputDecoration(
-                                      hintText: 'e.g. 78',
-                                      suffixText: '/ ${maxM.toInt()}',
-                                      isDense: true,
-                                      border: const OutlineInputBorder(),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                // Category Chip Dropdown
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: curCategory == 'Oral'
+                                        ? const Color(0xFFFAF5FF)
+                                        : curCategory == 'Practical'
+                                            ? const Color(0xFFECFDF5)
+                                            : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: curCategory == 'Oral'
+                                          ? const Color(0xFFD8B4FE)
+                                          : curCategory == 'Practical'
+                                              ? const Color(0xFFA7F3D0)
+                                              : const Color(0xFFCBD5E1),
                                     ),
-                                    onChanged: (_) => setState(() {}),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: curCategory,
+                                      isDense: true,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: curCategory == 'Oral' ? const Color(0xFF6B21A8) : const Color(0xFF334155),
+                                      ),
+                                      items: const [
+                                        DropdownMenuItem(value: 'Written', child: Text('✍️ Written (लिखित)')),
+                                        DropdownMenuItem(value: 'Oral', child: Text('🗣️ Oral (मौखिक)')),
+                                        DropdownMenuItem(value: 'Practical', child: Text('🔬 Practical (प्रायोगिक)')),
+                                        DropdownMenuItem(value: 'Activity', child: Text('🎨 Activity (गतिविधि)')),
+                                      ],
+                                      onChanged: (val) {
+                                        if (val != null) setState(() => row['category'] = val);
+                                      },
+                                    ),
                                   ),
                                 ),
+                                const Spacer(),
+                                // Pre-primary / Direct Mode toggle (Grade vs Marks)
+                                if (!_isDetailedMode) ...[
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(6),
+                                    onTap: () {
+                                      setState(() {
+                                        row['entryMode'] = entryMode == 'grade' ? 'marks' : 'grade';
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: entryMode == 'grade'
+                                            ? const Color(0xFFEEF2FF)
+                                            : const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: entryMode == 'grade'
+                                              ? const Color(0xFF6366F1)
+                                              : const Color(0xFFCBD5E1),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            entryMode == 'grade' ? Icons.stars_rounded : Icons.dialpad_rounded,
+                                            size: 13,
+                                            color: entryMode == 'grade' ? const Color(0xFF4338CA) : const Color(0xFF64748B),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            entryMode == 'grade' ? '🏅 Grade' : '🔢 Marks',
+                                            style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: entryMode == 'grade' ? const Color(0xFF4338CA) : const Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
+                          ),
+
+                          // Direct vs Detailed Inputs
+                          if (!_isDetailedMode) ...[
+                            if (entryMode == 'grade') ...[
+                              // Pre-primary Direct Grade selector chips
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Text(
+                                        'Select Grade (ग्रेड चुनें):',
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                                      ),
+                                      const Spacer(),
+                                      if (obt > 0)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEEF2FF),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            '≈ ${obt.toInt()} / ${maxM.toInt()} pts',
+                                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3730A3)),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: _prePrimaryGrades.map((g) {
+                                        final isSel = curGrade == g;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(right: 6),
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(8),
+                                            onTap: () => _selectGradeForRow(row, g, maxM),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(milliseconds: 150),
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                              decoration: BoxDecoration(
+                                                color: isSel ? const Color(0xFF1E3A8A) : Colors.white,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: isSel ? const Color(0xFF1E3A8A) : const Color(0xFFCBD5E1),
+                                                  width: isSel ? 1.8 : 1,
+                                                ),
+                                                boxShadow: isSel
+                                                    ? [
+                                                        BoxShadow(
+                                                          color: const Color(0xFF1E3A8A).withValues(alpha: 0.2),
+                                                          blurRadius: 4,
+                                                          offset: const Offset(0, 2),
+                                                        ),
+                                                      ]
+                                                    : null,
+                                              ),
+                                              child: Text(
+                                                g,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: isSel ? Colors.white : const Color(0xFF1E293B),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              // Standard Numeric Marks input with Grade pill
+                              Row(
+                                children: [
+                                  const Text('Obtained Marks: ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: row['marks'] as TextEditingController,
+                                      keyboardType: TextInputType.number,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+                                      decoration: InputDecoration(
+                                        hintText: 'e.g. 78',
+                                        suffixText: '/ ${maxM.toInt()}',
+                                        isDense: true,
+                                        border: const OutlineInputBorder(),
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                      ),
+                                      onChanged: (val) {
+                                        final numVal = double.tryParse(val) ?? 0;
+                                        row['grade'] = _marksToGradePill(numVal, maxM);
+                                        setState(() {});
+                                      },
+                                    ),
+                                  ),
+                                  if (obt > 0) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEEF2FF),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: const Color(0xFFC7D2FE)),
+                                      ),
+                                      child: Text(
+                                        _marksToGradePill(obt, maxM),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 11,
+                                          color: Color(0xFF3730A3),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ] else ...[
+                            // Detailed Breakdown: Theory, Oral, Practical, Internal
                             Row(
                               children: [
                                 Expanded(
@@ -838,7 +1110,27 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
                                     onChanged: (_) => setState(() {}),
                                   ),
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: TextField(
+                                    controller: (row['oral'] as TextEditingController?) ?? TextEditingController(),
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    decoration: InputDecoration(
+                                      labelText: 'Oral',
+                                      labelStyle: const TextStyle(color: Color(0xFF7E22CE), fontWeight: FontWeight.bold),
+                                      filled: true,
+                                      fillColor: const Color(0xFFFAF5FF),
+                                      isDense: true,
+                                      border: const OutlineInputBorder(),
+                                      enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD8B4FE))),
+                                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF9333EA), width: 1.5)),
+                                      contentPadding: const EdgeInsets.all(6),
+                                    ),
+                                    onChanged: (_) => setState(() {}),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
                                 Expanded(
                                   child: TextField(
                                     controller: row['practical'] as TextEditingController,
@@ -848,7 +1140,7 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
                                     onChanged: (_) => setState(() {}),
                                   ),
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 4),
                                 Expanded(
                                   child: TextField(
                                     controller: row['internal'] as TextEditingController,
@@ -858,15 +1150,15 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
                                     onChanged: (_) => setState(() {}),
                                   ),
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 4),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFEFF6FF),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(color: const Color(0xFFBFDBFE)),
                                   ),
-                                  child: Text('Total: ${obt.toInt()} / ${maxM.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1E3A8A))),
+                                  child: Text('Tot: ${obt.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Color(0xFF1E3A8A))),
                                 ),
                               ],
                             ),
