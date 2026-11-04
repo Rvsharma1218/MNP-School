@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Save, Plus, Trash2, BookOpen, Calendar, Award, CheckCircle2, Sliders, Sparkles } from 'lucide-react';
+import { X, Save, Plus, Trash2, BookOpen, Calendar, Award, CheckCircle2, Sliders, Sparkles, Check } from 'lucide-react';
 import { useSchoolStore } from '../lib/store';
 
 const STANDARD_SUBJECT_OPTIONS = [
@@ -39,11 +39,72 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
   // Exam Details State
   const [title, setTitle] = useState(editExam?.title || 'Annual Examination 2026-27');
   const [term, setTerm] = useState(editExam?.term || 'Annual');
-  const [className, setClassName] = useState(editExam?.className || 'All Classes');
   const [academicYear, setAcademicYear] = useState(editExam?.academicYear || settings?.currentSession || '2026-27');
   const [examDate, setExamDate] = useState(editExam?.examDate ? editExam.examDate.split('T')[0] : new Date().toISOString().split('T')[0]);
   const [status, setStatus] = useState(editExam?.status || 'In Progress');
   const [isDetailedMode, setIsDetailedMode] = useState(editExam?.isDetailedMode || false);
+
+  const schoolClassesList = (settings?.schoolClasses && Array.isArray(settings.schoolClasses) && settings.schoolClasses.length > 0)
+    ? settings.schoolClasses
+    : ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th-Sci', '12th-Sci'];
+
+  const [selectedClasses, setSelectedClasses] = useState(() => {
+    if (editExam?.classes && Array.isArray(editExam.classes) && editExam.classes.length > 0) {
+      return editExam.classes;
+    }
+    if (editExam?.className) {
+      if (editExam.className === 'All Classes') return ['All Classes'];
+      return editExam.className.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return ['All Classes'];
+  });
+
+  const PRESET_CLASS_GROUPS = [
+    { label: '🌟 All Classes', getClasses: () => ['All Classes'] },
+    {
+      label: '🧸 Pre-Primary (Nursery, LKG, UKG)',
+      getClasses: () => {
+        const matches = schoolClassesList.filter(c => /nursery|lkg|ukg|kg|prep|play/i.test(c));
+        return matches.length > 0 ? matches : ['Nursery', 'LKG', 'UKG'];
+      }
+    },
+    {
+      label: '🎒 Primary (1st - 5th)',
+      getClasses: () => {
+        const matches = schoolClassesList.filter(c => /^(1st|2nd|3rd|4th|5th|class 1|class 2|class 3|class 4|class 5)$/i.test(c.trim()));
+        return matches.length > 0 ? matches : ['1st', '2nd', '3rd', '4th', '5th'];
+      }
+    },
+    {
+      label: '📚 Middle (6th - 8th)',
+      getClasses: () => {
+        const matches = schoolClassesList.filter(c => /^(6th|7th|8th|class 6|class 7|class 8)$/i.test(c.trim()));
+        return matches.length > 0 ? matches : ['6th', '7th', '8th'];
+      }
+    },
+    {
+      label: '🎓 Secondary (9th & 10th)',
+      getClasses: () => {
+        const matches = schoolClassesList.filter(c => /^(9th|10th|class 9|class 10)$/i.test(c.trim()));
+        return matches.length > 0 ? matches : ['9th', '10th'];
+      }
+    }
+  ];
+
+  const handleToggleClass = (cls) => {
+    if (cls === 'All Classes') {
+      setSelectedClasses(['All Classes']);
+      return;
+    }
+    let next = selectedClasses.filter(c => c !== 'All Classes');
+    if (next.includes(cls)) {
+      next = next.filter(c => c !== cls);
+      if (next.length === 0) next = ['All Classes'];
+    } else {
+      next.push(cls);
+    }
+    setSelectedClasses(next);
+  };
 
   // Subjects Configuration State
   const [subjects, setSubjects] = useState(() => {
@@ -57,11 +118,14 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
         deduped.push({
           id: `sub_${idx}_${Date.now()}`,
           subjectName: name,
+          category: s.category || (name.toLowerCase().includes('oral') ? 'Oral' : 'Written'),
           isCompulsory: s.isCompulsory !== false,
           totalMarks: Number(s.totalMarks) || 100,
           passingMarks: Number(s.passingMarks) || 33,
           theoryMax: Number(s.theoryMax) || 100,
           theoryPassing: Number(s.theoryPassing) || 33,
+          oralMax: Number(s.oralMax) || 0,
+          oralPassing: Number(s.oralPassing) || 0,
           practicalMax: Number(s.practicalMax) || 0,
           practicalPassing: Number(s.practicalPassing) || 0,
           internalMax: Number(s.internalMax) || 0,
@@ -72,17 +136,15 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
     }
     // Default 5 standard subjects
     return [
-      { id: 'sub_1', subjectName: 'Mathematics', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 100, theoryPassing: 33, practicalMax: 0, practicalPassing: 0, internalMax: 0, internalPassing: 0 },
-      { id: 'sub_2', subjectName: 'Science', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 80, theoryPassing: 26, practicalMax: 20, practicalPassing: 7, internalMax: 0, internalPassing: 0 },
-      { id: 'sub_3', subjectName: 'Social Science', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 100, theoryPassing: 33, practicalMax: 0, practicalPassing: 0, internalMax: 0, internalPassing: 0 },
-      { id: 'sub_4', subjectName: 'English', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 100, theoryPassing: 33, practicalMax: 0, practicalPassing: 0, internalMax: 0, internalPassing: 0 },
-      { id: 'sub_5', subjectName: 'Hindi', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 100, theoryPassing: 33, practicalMax: 0, practicalPassing: 0, internalMax: 0, internalPassing: 0 },
+      { id: 'sub_1', subjectName: 'Mathematics', category: 'Written', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 100, theoryPassing: 33, oralMax: 0, oralPassing: 0, practicalMax: 0, practicalPassing: 0, internalMax: 0, internalPassing: 0 },
+      { id: 'sub_2', subjectName: 'Science', category: 'Written', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 80, theoryPassing: 26, oralMax: 0, oralPassing: 0, practicalMax: 20, practicalPassing: 7, internalMax: 0, internalPassing: 0 },
+      { id: 'sub_3', subjectName: 'Social Science', category: 'Written', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 100, theoryPassing: 33, oralMax: 0, oralPassing: 0, practicalMax: 0, practicalPassing: 0, internalMax: 0, internalPassing: 0 },
+      { id: 'sub_4', subjectName: 'English', category: 'Written', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 80, theoryPassing: 26, oralMax: 20, oralPassing: 7, practicalMax: 0, practicalPassing: 0, internalMax: 0, internalPassing: 0 },
+      { id: 'sub_5', subjectName: 'Hindi', category: 'Written', isCompulsory: true, totalMarks: 100, passingMarks: 33, theoryMax: 80, theoryPassing: 26, oralMax: 20, oralPassing: 7, practicalMax: 0, practicalPassing: 0, internalMax: 0, internalPassing: 0 },
     ];
   });
 
   if (!isOpen) return null;
-
-  const availableClasses = ['All Classes', ...(settings?.schoolClasses || ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th-Sci', '12th-Sci'])];
 
   const handleAddSubject = () => {
     const existing = new Set(subjects.map(s => (s.subjectName || '').trim().toLowerCase()));
@@ -102,11 +164,14 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
       {
         id: `sub_${Date.now()}_${prev.length + 1}`,
         subjectName: candidate,
+        category: 'Written',
         isCompulsory: true,
         totalMarks: 100,
         passingMarks: 33,
         theoryMax: 100,
         theoryPassing: 33,
+        oralMax: 0,
+        oralPassing: 0,
         practicalMax: 0,
         practicalPassing: 0,
         internalMax: 0,
@@ -127,11 +192,20 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
     setSubjects(prev => prev.map(s => {
       if (s.id !== id) return s;
       const updated = { ...s, [key]: value };
-      if (isDetailedMode && (key === 'theoryMax' || key === 'practicalMax' || key === 'internalMax')) {
+      if (key === 'category' && value === 'Oral') {
+        if (Number(updated.theoryMax) === 100 && Number(updated.oralMax) === 0) {
+          updated.oralMax = 100;
+          updated.oralPassing = 33;
+          updated.theoryMax = 0;
+          updated.theoryPassing = 0;
+        }
+      }
+      if (isDetailedMode && (key === 'theoryMax' || key === 'oralMax' || key === 'practicalMax' || key === 'internalMax')) {
         const t = Number(key === 'theoryMax' ? value : updated.theoryMax) || 0;
+        const o = Number(key === 'oralMax' ? value : updated.oralMax) || 0;
         const p = Number(key === 'practicalMax' ? value : updated.practicalMax) || 0;
         const i = Number(key === 'internalMax' ? value : updated.internalMax) || 0;
-        updated.totalMarks = t + p + i;
+        updated.totalMarks = t + o + p + i;
       }
       return updated;
     }));
@@ -156,11 +230,14 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
       seenNames.add(name.toLowerCase());
       dedupedSubjects.push({
         subjectName: name,
+        category: s.category || 'Written',
         isCompulsory: s.isCompulsory !== false,
         totalMarks: Number(s.totalMarks) || 100,
         passingMarks: Number(s.passingMarks) || 33,
         theoryMax: Number(s.theoryMax) || 100,
         theoryPassing: Number(s.theoryPassing) || 33,
+        oralMax: Number(s.oralMax) || 0,
+        oralPassing: Number(s.oralPassing) || 0,
         practicalMax: Number(s.practicalMax) || 0,
         practicalPassing: Number(s.practicalPassing) || 0,
         internalMax: Number(s.internalMax) || 0,
@@ -173,11 +250,16 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
       return;
     }
 
+    const isAll = selectedClasses.includes('All Classes') || selectedClasses.length === 0;
+    const finalClasses = isAll ? ['All Classes'] : selectedClasses;
+    const finalClassName = isAll ? 'All Classes' : finalClasses.join(', ');
+
     const payload = {
       id: editExam?.id || `exam_${Date.now()}`,
       title: title.trim(),
       term,
-      className,
+      classes: finalClasses,
+      className: finalClassName,
       academicYear,
       examDate: new Date(examDate).toISOString(),
       status,
@@ -202,6 +284,10 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
     'Pre-Board Examination'
   ];
 
+  const displayClassName = selectedClasses.includes('All Classes')
+    ? 'All Classes'
+    : selectedClasses.join(', ');
+
   return (
     <div
       onClick={(e) => {
@@ -222,7 +308,7 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
                 {editExam ? 'Edit Examination' : 'Create New Examination'}
               </h3>
               <p className="text-[11px] text-amber-200/90 font-medium truncate">
-                Configure exam term, target class & subjects marking breakdown
+                Configure exam term, target classes & subjects marking breakdown
               </p>
             </div>
           </div>
@@ -295,8 +381,8 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
                 </div>
               </div>
 
-              {/* Grid 1: Term, Class, Academic Year */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              {/* Grid 1: Term & Academic Session */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
                     Term / Category
@@ -319,21 +405,6 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
 
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                    Target Class
-                  </label>
-                  <select
-                    value={className}
-                    onChange={(e) => setClassName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-bold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#1f108e] outline-none shadow-xs text-slate-800"
-                  >
-                    {availableClasses.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
                     Academic Session
                   </label>
                   <select
@@ -346,6 +417,90 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
                     <option value="2026-27">2026-27</option>
                     <option value="2027-28">2027-28</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Target Classes Selection (Multi-Select & Group Presets) */}
+              <div className="space-y-2.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <label className="block text-xs font-black text-slate-800 uppercase tracking-wider">
+                    Target Classes <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 border border-indigo-200 truncate">
+                    {selectedClasses.includes('All Classes')
+                      ? '🌟 All Classes Selected'
+                      : `Selected (${selectedClasses.length}): ${selectedClasses.join(', ')}`}
+                  </span>
+                </div>
+
+                {/* Quick Group Presets */}
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase py-1">Quick Groups:</span>
+                  {PRESET_CLASS_GROUPS.map((grp) => {
+                    const grpClasses = grp.getClasses();
+                    const isActive = grpClasses.includes('All Classes')
+                      ? selectedClasses.includes('All Classes')
+                      : grpClasses.length > 0 && grpClasses.every(c => selectedClasses.includes(c)) && !selectedClasses.includes('All Classes');
+                    return (
+                      <button
+                        key={grp.label}
+                        type="button"
+                        onClick={() => setSelectedClasses(grpClasses)}
+                        className={`text-[10.5px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-[#1f108e] text-white border-[#1f108e] shadow-xs'
+                            : 'bg-white hover:bg-indigo-50 text-slate-700 hover:text-[#1f108e] border-slate-200'
+                        }`}
+                      >
+                        {grp.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Individual Classes Checkbox Grid */}
+                <div className="p-2.5 bg-white rounded-lg border border-slate-200 max-h-36 overflow-y-auto">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleClass('All Classes')}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-bold text-left flex items-center gap-1.5 border transition-all cursor-pointer ${
+                        selectedClasses.includes('All Classes')
+                          ? 'bg-[#1f108e] text-white border-[#1f108e] shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-indigo-300'
+                      }`}
+                    >
+                      <span className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[9px] font-black ${
+                        selectedClasses.includes('All Classes') ? 'bg-white text-[#1f108e]' : 'border border-slate-300'
+                      }`}>
+                        {selectedClasses.includes('All Classes') ? '✓' : ''}
+                      </span>
+                      <span className="truncate">All Classes</span>
+                    </button>
+
+                    {schoolClassesList.map((cls) => {
+                      const isChecked = !selectedClasses.includes('All Classes') && selectedClasses.includes(cls);
+                      return (
+                        <button
+                          key={cls}
+                          type="button"
+                          onClick={() => handleToggleClass(cls)}
+                          className={`px-2 py-1.5 rounded-lg text-xs font-bold text-left flex items-center gap-1.5 border transition-all cursor-pointer ${
+                            isChecked
+                              ? 'bg-[#1f108e] text-white border-[#1f108e] shadow-xs'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-indigo-300'
+                          }`}
+                        >
+                          <span className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[9px] font-black ${
+                            isChecked ? 'bg-white text-[#1f108e]' : 'border border-slate-300'
+                          }`}>
+                            {isChecked ? '✓' : ''}
+                          </span>
+                          <span className="truncate">{cls}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -385,11 +540,11 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-black text-[#1f108e]">Detailed Marks Breakdown</span>
                     <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-indigo-100 text-indigo-700">
-                      {isDetailedMode ? 'Theory + Practical + Internal' : 'Direct Total Only'}
+                      {isDetailedMode ? 'Theory + Oral + Practical + Internal' : 'Direct Total / Grade'}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-600 mt-0.5">
-                    Enable if your school records Theory, Practical, and Internal assessments separately.
+                    Enable to record Theory, Oral (मौखिक), Practical, and Internal marks separately.
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -422,7 +577,7 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
                     Exam Subjects & Max Marks
                   </h4>
                   <p className="text-[11px] text-slate-500">
-                    Set up subjects, maximum marks, and passing criteria for this exam.
+                    Set up subjects, category (Written/Oral), maximum marks, and passing criteria.
                   </p>
                 </div>
                 <button
@@ -469,6 +624,23 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
                               className="px-2.5 py-1.5 text-xs font-bold bg-white border border-slate-300 rounded-lg outline-none flex-1 min-w-[140px] text-slate-900"
                             />
                           )}
+
+                          {/* Subject Category: Written, Oral, Practical, Activity */}
+                          <select
+                            value={sub.category || 'Written'}
+                            onChange={(e) => handleUpdateSubject(sub.id, 'category', e.target.value)}
+                            className={`px-2 py-1.5 text-xs font-bold rounded-lg outline-none border shrink-0 ${
+                              sub.category === 'Oral'
+                                ? 'bg-purple-50 text-purple-900 border-purple-300 font-black'
+                                : 'bg-white text-slate-700 border-slate-300'
+                            }`}
+                            title="Subject Category"
+                          >
+                            <option value="Written">Written (लिखित)</option>
+                            <option value="Oral">🗣️ Oral (मौखिक)</option>
+                            <option value="Practical">🔬 Practical (प्रायोगिक)</option>
+                            <option value="Activity">🎨 Activity (गतिविधि)</option>
+                          </select>
                         </div>
                       </div>
 
@@ -520,9 +692,14 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
                             min="0"
                           />
                         </div>
+                        {sub.category === 'Oral' && (
+                          <div className="col-span-2 flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 rounded-lg border border-purple-200 text-purple-900 text-xs font-bold">
+                            <span>🗣️ Oral Subject (मौखिक मूल्यांकन)</span>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-slate-200/80">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 border-t border-slate-200/80">
                         <div>
                           <label className="block text-[9.5px] font-bold text-slate-500 uppercase mb-0.5">
                             Theory Max / Pass
@@ -541,6 +718,29 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
                               onChange={(e) => handleUpdateSubject(sub.id, 'theoryPassing', Number(e.target.value))}
                               placeholder="Pass"
                               className="w-1/2 px-2 py-1 text-xs font-bold bg-white border border-slate-300 rounded-lg outline-none text-slate-800"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[9.5px] font-black text-purple-700 uppercase mb-0.5 flex items-center gap-1">
+                            <span>Oral Max / Pass</span>
+                            <span className="text-[9px] px-1 bg-purple-100 rounded text-purple-700">मौखिक</span>
+                          </label>
+                          <div className="flex gap-1">
+                            <input
+                              type="number"
+                              value={sub.oralMax}
+                              onChange={(e) => handleUpdateSubject(sub.id, 'oralMax', Number(e.target.value))}
+                              placeholder="Max"
+                              className="w-1/2 px-2 py-1 text-xs font-bold bg-white border border-purple-300 rounded-lg outline-none text-purple-950"
+                            />
+                            <input
+                              type="number"
+                              value={sub.oralPassing}
+                              onChange={(e) => handleUpdateSubject(sub.id, 'oralPassing', Number(e.target.value))}
+                              placeholder="Pass"
+                              className="w-1/2 px-2 py-1 text-xs font-bold bg-white border border-purple-300 rounded-lg outline-none text-purple-950"
                             />
                           </div>
                         </div>
@@ -607,8 +807,8 @@ export default function CreateExamModal({ isOpen, onClose, editExam = null, onSa
 
           {/* Footer Actions */}
           <div className="border-t border-slate-200 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-            <span className="text-xs text-slate-500 font-medium order-2 sm:order-1">
-              Class: <strong className="text-slate-800">{className}</strong> • Subjects: <strong className="text-slate-800">{subjects.length}</strong>
+            <span className="text-xs text-slate-500 font-medium order-2 sm:order-1 truncate max-w-sm">
+              Classes: <strong className="text-slate-800">{displayClassName}</strong> • Subjects: <strong className="text-slate-800">{subjects.length}</strong>
             </span>
             <div className="flex items-center gap-2.5 w-full sm:w-auto order-1 sm:order-2">
               <button

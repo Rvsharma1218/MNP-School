@@ -36,6 +36,54 @@ const STANDARD_RESULT_SUBJECTS = [
   'Other'
 ];
 
+export const isPrePrimaryClass = (className) => {
+  if (!className) return false;
+  const c = String(className).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return (
+    c.includes('nursery') ||
+    c.includes('lkg') ||
+    c.includes('ukg') ||
+    c.includes('kg') ||
+    c.includes('prep') ||
+    c.includes('play') ||
+    c.includes('balvatika') ||
+    c.includes('preprimary') ||
+    c.includes('infant')
+  );
+};
+
+export const PRE_PRIMARY_GRADES = ['A+', 'A', 'B+', 'B', 'C', 'D'];
+
+export const gradeToEstimatedMarks = (grade, maxMarks = 100) => {
+  const g = String(grade || '').toUpperCase().trim();
+  const ratio = {
+    'A+': 0.95,
+    'A': 0.85,
+    'B+': 0.75,
+    'B': 0.65,
+    'C': 0.50,
+    'D': 0.40,
+    'E': 0.30,
+    'F': 0.20
+  }[g] || 0.80;
+  return Math.round(maxMarks * ratio);
+};
+
+export const marksToGradePill = (marks, maxMarks = 100) => {
+  if (marks === '' || marks === null || marks === undefined) return '';
+  const num = Number(marks);
+  if (isNaN(num)) return String(marks).toUpperCase();
+  const pct = maxMarks > 0 ? (num / maxMarks) * 100 : 0;
+  if (pct >= 90) return 'A+';
+  if (pct >= 80) return 'A';
+  if (pct >= 70) return 'B+';
+  if (pct >= 60) return 'B';
+  if (pct >= 50) return 'C';
+  if (pct >= 40) return 'D';
+  return 'F';
+};
+
+
 export default function ResultsView() {
   const {
     students = [],
@@ -100,44 +148,81 @@ export default function ResultsView() {
     });
   };
 
-  // Student Matcher
+  // Student Matcher - Strict Unique Identity Binding (Eliminates Same-Name Collisions)
   const findStudent = (r) => {
     if (!r) return null;
+    const rDocId = (r.studentDocId ? String(r.studentDocId) : '').trim().toLowerCase();
     const rId = (r.studentId ? String(r.studentId) : '').trim().toLowerCase();
+    const rAdm = (r.admissionNumber ? String(r.admissionNumber) : '').trim().toLowerCase();
     const rRoll = (r.rollNumber ? String(r.rollNumber) : '').trim().toLowerCase();
     const rName = (r.studentName ? String(r.studentName) : '').trim().toLowerCase();
     const rClass = (r.className || r.class || r.studentClass || '').trim().toLowerCase();
-    return students.find(s => {
-      const sId = (s.id ? String(s.id) : '').trim().toLowerCase();
-      const sStuId = (s.studentId ? String(s.studentId) : '').trim().toLowerCase();
-      const sAdm = (s.admissionNumber || s.admissionNo ? String(s.admissionNumber || s.admissionNo) : '').trim().toLowerCase();
-      const sRoll = (s.rollNumber ? String(s.rollNumber) : '').trim().toLowerCase();
-      const sName = (s.name ? String(s.name) : '').trim().toLowerCase();
-      const sClass = (s.className || s.course || '').trim().toLowerCase();
+    const rSec = (r.section || '').trim().toLowerCase();
 
-      if (rId && (rId === sId || rId === sStuId || rId === sAdm)) return true;
-      if (rName && sName && rName === sName) {
-        if (!rRoll || !sRoll || rRoll === sRoll) return true;
-      }
-      if (rRoll && sRoll && rRoll === sRoll) {
-        if (!rClass || !sClass || rClass === sClass) return true;
-      }
-      return false;
-    }) || null;
+    // 1. Strict doc ID match
+    if (rDocId) {
+      const match = students.find(s => String(s.id).toLowerCase() === rDocId);
+      if (match) return match;
+    }
+
+    // 2. Strict studentId or admissionNumber match
+    if (rId || rAdm) {
+      const match = students.find(s => {
+        const sId = String(s.id || '').toLowerCase();
+        const sStuId = String(s.studentId || '').toLowerCase();
+        const sAdm = String(s.admissionNumber || s.admissionNo || '').toLowerCase();
+        return (rId && (rId === sId || rId === sStuId || rId === sAdm)) ||
+               (rAdm && (rAdm === sAdm || rAdm === sStuId));
+      });
+      if (match) return match;
+    }
+
+    // 3. Fallback: ONLY if RollNumber, Class, AND Name all match together!
+    // (Never match solely by name alone when multiple students share the same name)
+    if (rRoll && rClass) {
+      const match = students.find(s => {
+        const sRoll = String(s.rollNumber || '').trim().toLowerCase();
+        const sClass = String(s.className || s.course || '').trim().toLowerCase();
+        const sSec = String(s.section || '').trim().toLowerCase();
+        const sName = String(s.name || '').trim().toLowerCase();
+        if (sRoll === rRoll && sClass === rClass) {
+          if (!rSec || !sSec || rSec === sSec) {
+            if (!rName || sName === rName) return true;
+          }
+        }
+        return false;
+      });
+      if (match) return match;
+    }
+
+    return null;
   };
 
   const matchesStudent = (r, s) => {
     if (!r || !s) return false;
-    const sId = String(s.id || '').toLowerCase();
-    const sStuId = String(s.studentId || '').toLowerCase();
-    const sAdm = String(s.admissionNumber || s.admissionNo || '').toLowerCase();
+    const sId = String(s.id || '').trim().toLowerCase();
+    const sStuId = String(s.studentId || '').trim().toLowerCase();
+    const sAdm = String(s.admissionNumber || s.admissionNo || '').trim().toLowerCase();
+    const sRoll = String(s.rollNumber || '').trim().toLowerCase();
+    const sClass = String(s.className || s.course || '').trim().toLowerCase();
     const sName = String(s.name || '').trim().toLowerCase();
-    const rId = String(r.studentId || '').toLowerCase();
+
+    const rDocId = String(r.studentDocId || '').trim().toLowerCase();
+    const rId = String(r.studentId || '').trim().toLowerCase();
+    const rAdm = String(r.admissionNumber || '').trim().toLowerCase();
+    const rRoll = String(r.rollNumber || '').trim().toLowerCase();
+    const rClass = String(r.className || r.class || '').trim().toLowerCase();
     const rName = String(r.studentName || '').trim().toLowerCase();
-    return (
-      (rId && (rId === sId || rId === sStuId || rId === sAdm)) ||
-      (rName && sName && rName === sName)
-    );
+
+    if (rDocId && rDocId === sId) return true;
+    if (rId && (rId === sId || rId === sStuId || rId === sAdm)) return true;
+    if (rAdm && (rAdm === sAdm || rAdm === sStuId)) return true;
+
+    // Only if IDs absent: roll + class + name must all match together
+    if (rRoll && sRoll && rRoll === sRoll && rClass && sClass && rClass === sClass && rName && sName && rName === sName) {
+      return true;
+    }
+    return false;
   };
 
   // Available classes list from settings and students
@@ -364,18 +449,26 @@ export default function ResultsView() {
     }
   };
 
-  // Jump from Exams tab directly to Mark Entry Desk for that exam with instant batching
+  // Jump from Exams tab directly to Mark Entry Desk for that exam with multi-class support
   const handleJumpToMarkEntry = (exam) => {
     if (!exam) return;
-    const examClassName = (exam.className && exam.className !== 'All Classes' && availableClasses.includes(exam.className))
-      ? exam.className
-      : 'All Classes';
+    const examClasses = (exam.classes && Array.isArray(exam.classes) && exam.classes.length > 0)
+      ? exam.classes
+      : (exam.className && exam.className !== 'All Classes')
+        ? exam.className.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+
+    let targetClass = 'All Classes';
+    if (examClasses.length > 0 && !examClasses.includes('All Classes')) {
+      const match = examClasses.find(c => availableClasses.includes(c));
+      targetClass = match || examClasses[0];
+    }
 
     setSelectedExamId(exam.id);
     setBulkExamTitle(exam.title);
     setIsDetailedBreakdownMode(exam.isDetailedMode || false);
-    if (examClassName !== 'All Classes') {
-      setBulkClass(examClassName);
+    if (targetClass !== 'All Classes') {
+      setBulkClass(targetClass);
     }
     if (exam.subjects && exam.subjects.length > 0) {
       const seen = new Set();
@@ -387,9 +480,11 @@ export default function ResultsView() {
         loadedSubs.push({
           id: `sub_${idx}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`,
           name: name,
+          category: s.category || (name.toLowerCase().includes('oral') ? 'Oral' : 'Written'),
           totalMarks: Number(s.totalMarks) || 100,
           passingMarks: Number(s.passingMarks) || 33,
           theoryMax: Number(s.theoryMax) || 100,
+          oralMax: Number(s.oralMax) || 0,
           practicalMax: Number(s.practicalMax) || 0,
           internalMax: Number(s.internalMax) || 0
         });
@@ -417,7 +512,7 @@ export default function ResultsView() {
     });
   }, [students, bulkClass, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
-  // High-performance O(1) indexed Map for active exam results
+  // High-performance O(1) indexed Map for active exam results strictly by student unique IDs
   const examResultsMap = useMemo(() => {
     const map = new Map();
     const targetExam = String(bulkExamTitle || '').trim().toLowerCase();
@@ -425,14 +520,21 @@ export default function ResultsView() {
 
     for (const r of results) {
       if (String(r.examName || '').trim().toLowerCase() !== targetExam) continue;
-      if (r.studentId) map.set(String(r.studentId).trim().toLowerCase(), r);
-      if (r.admissionNumber) map.set(String(r.admissionNumber).trim().toLowerCase(), r);
-      if (r.id) map.set(String(r.id).trim().toLowerCase(), r);
-      if (r.studentName) {
-        const nameKey = String(r.studentName).trim().toLowerCase();
-        const rollKey = String(r.rollNumber || '').trim().toLowerCase();
-        if (rollKey) map.set(`${nameKey}_roll_${rollKey}`, r);
-        if (!map.has(nameKey)) map.set(nameKey, r);
+      if (r.studentDocId) map.set(`doc_${String(r.studentDocId).trim().toLowerCase()}`, r);
+      if (r.studentId) {
+        map.set(`id_${String(r.studentId).trim().toLowerCase()}`, r);
+        map.set(String(r.studentId).trim().toLowerCase(), r);
+      }
+      if (r.admissionNumber) {
+        map.set(`adm_${String(r.admissionNumber).trim().toLowerCase()}`, r);
+        map.set(String(r.admissionNumber).trim().toLowerCase(), r);
+      }
+      if (r.id) map.set(`res_${String(r.id).trim().toLowerCase()}`, r);
+
+      const rRoll = String(r.rollNumber || '').trim().toLowerCase();
+      const rClass = String(r.className || r.class || '').trim().toLowerCase();
+      if (rRoll && rClass) {
+        map.set(`roll_${rRoll}_class_${rClass}`, r);
       }
     }
     return map;
@@ -440,18 +542,20 @@ export default function ResultsView() {
 
   const getStudentResult = (s) => {
     if (!s) return null;
-    const sId = String(s.id || '').trim().toLowerCase();
+    const sDocId = String(s.id || '').trim().toLowerCase();
     const sStuId = String(s.studentId || '').trim().toLowerCase();
     const sAdm = String(s.admissionNumber || s.admissionNo || '').trim().toLowerCase();
-    const sName = String(s.name || '').trim().toLowerCase();
     const sRoll = String(s.rollNumber || '').trim().toLowerCase();
+    const sClass = String(s.className || s.course || bulkClass || '').trim().toLowerCase();
 
     return (
-      (sId && examResultsMap.get(sId)) ||
+      (sDocId && examResultsMap.get(`doc_${sDocId}`)) ||
+      (sDocId && examResultsMap.get(sDocId)) ||
+      (sStuId && examResultsMap.get(`id_${sStuId}`)) ||
       (sStuId && examResultsMap.get(sStuId)) ||
+      (sAdm && examResultsMap.get(`adm_${sAdm}`)) ||
       (sAdm && examResultsMap.get(sAdm)) ||
-      (sName && sRoll && examResultsMap.get(`${sName}_roll_${sRoll}`)) ||
-      (sName && examResultsMap.get(sName)) ||
+      (sRoll && sClass && examResultsMap.get(`roll_${sRoll}_class_${sClass}`)) ||
       null
     );
   };
@@ -480,14 +584,18 @@ export default function ResultsView() {
       classStudents.forEach(s => {
         const existing = getStudentResult(s);
         const subMark = existing?.subjects?.find(sub => sub.subjectName === bs.name);
+        const isPrePriStudent = isPrePrimaryClass(s.className || bulkClass);
         if (subMark) {
           const total = subMark.marks != null ? subMark.marks : '';
           const theory = subMark.theoryMarks != null ? subMark.theoryMarks : '';
+          const oral = subMark.oralMarks != null ? subMark.oralMarks : '';
           const practical = subMark.practicalMarks != null ? subMark.practicalMarks : '';
           const internal = subMark.internalMarks != null ? subMark.internalMarks : '';
-          initial[bs.id][s.id] = { marks: total, theory, practical, internal };
+          const grade = subMark.grade || (total !== '' ? marksToGradePill(total, bs.totalMarks) : '');
+          const evalType = subMark.evalType || (isPrePriStudent && grade && subMark.marks == null ? 'grade' : 'marks');
+          initial[bs.id][s.id] = { marks: total, theory, oral, practical, internal, grade, evalType };
         } else {
-          initial[bs.id][s.id] = { marks: '', theory: '', practical: '', internal: '' };
+          initial[bs.id][s.id] = { marks: '', theory: '', oral: '', practical: '', internal: '', grade: '', evalType: 'marks' };
         }
       });
     });
@@ -496,15 +604,59 @@ export default function ResultsView() {
 
   const handleDeskMarkChange = (subjectId, studentId, field, val) => {
     setMarkEntries(prev => {
-      const prevEntry = prev[subjectId]?.[studentId] || { marks: '', theory: '', practical: '', internal: '' };
+      const prevEntry = prev[subjectId]?.[studentId] || { marks: '', theory: '', oral: '', practical: '', internal: '', grade: '', evalType: 'marks' };
+      const sub = deskSubjects.find(s => s.id === subjectId);
+      const maxM = Number(sub?.totalMarks) || 100;
+
+      if (field === 'grade') {
+        const numMarks = val ? gradeToEstimatedMarks(val, maxM) : '';
+        return {
+          ...prev,
+          [subjectId]: {
+            ...(prev[subjectId] || {}),
+            [studentId]: {
+              ...prevEntry,
+              grade: val,
+              marks: numMarks,
+              evalType: 'grade'
+            }
+          }
+        };
+      }
+
+      if (field === 'toggleEvalType') {
+        const nextEval = prevEntry.evalType === 'grade' ? 'marks' : 'grade';
+        const nextGrade = nextEval === 'grade' && !prevEntry.grade && prevEntry.marks !== ''
+          ? marksToGradePill(prevEntry.marks, maxM)
+          : (nextEval === 'grade' && !prevEntry.grade ? 'A' : prevEntry.grade);
+        const nextMarks = nextEval === 'grade' ? gradeToEstimatedMarks(nextGrade, maxM) : prevEntry.marks;
+        return {
+          ...prev,
+          [subjectId]: {
+            ...(prev[subjectId] || {}),
+            [studentId]: {
+              ...prevEntry,
+              evalType: nextEval,
+              grade: nextGrade,
+              marks: nextMarks
+            }
+          }
+        };
+      }
+
       const parsedVal = val === '' ? '' : Math.max(0, Number(val));
       const nextEntry = { ...prevEntry, [field]: parsedVal };
 
-      if (field === 'theory' || field === 'practical' || field === 'internal') {
+      if (field === 'theory' || field === 'oral' || field === 'practical' || field === 'internal') {
         const t = Number(nextEntry.theory) || 0;
+        const o = Number(nextEntry.oral) || 0;
         const p = Number(nextEntry.practical) || 0;
         const i = Number(nextEntry.internal) || 0;
-        nextEntry.marks = t + p + i;
+        nextEntry.marks = t + o + p + i;
+      }
+
+      if (field === 'marks') {
+        nextEntry.grade = parsedVal !== '' ? marksToGradePill(parsedVal, maxM) : '';
       }
 
       return {
@@ -517,10 +669,11 @@ export default function ResultsView() {
     });
   };
 
-  // Save single student's marks from desk
+  // Save single student's marks from desk with strict docId binding
   const handleSaveStudentMarks = async (student) => {
     const existing = getStudentResult(student);
     let updatedSubjects = existing ? [...existing.subjects] : [];
+    const isPrePri = isPrePrimaryClass(student.className || bulkClass);
 
     deskSubjects.forEach(bs => {
       const entry = markEntries[bs.id]?.[student.id];
@@ -530,34 +683,45 @@ export default function ResultsView() {
       const passMarks = Number(bs.passingMarks) || Math.round(maxMarks * 0.33);
 
       if (isDetailedBreakdownMode) {
-        if (entry.theory === '' && entry.practical === '' && entry.internal === '' && entry.marks === '') return;
+        if (entry.theory === '' && entry.oral === '' && entry.practical === '' && entry.internal === '' && entry.marks === '' && !entry.grade) return;
         const theory = Number(entry.theory) || 0;
+        const oral = Number(entry.oral) || 0;
         const practical = Number(entry.practical) || 0;
         const internal = Number(entry.internal) || 0;
-        const total = theory + practical + internal;
+        const total = (entry.theory !== '' || entry.oral !== '' || entry.practical !== '' || entry.internal !== '')
+          ? (theory + oral + practical + internal)
+          : (Number(entry.marks) || 0);
 
         const subIndex = updatedSubjects.findIndex(sub => sub.subjectName === bs.name);
         const subData = {
           subjectName: bs.name,
+          category: bs.category || (bs.name.toLowerCase().includes('oral') ? 'Oral' : 'Written'),
           marks: total,
+          grade: entry.grade || marksToGradePill(total, maxMarks),
+          evalType: entry.evalType || 'marks',
           totalMarks: maxMarks,
           passingMarks: passMarks,
           theoryMarks: theory,
+          oralMarks: oral,
           practicalMarks: practical,
           internalMarks: internal
         };
         if (subIndex >= 0) updatedSubjects[subIndex] = subData;
         else updatedSubjects.push(subData);
       } else {
-        if (entry.marks === '' && entry.marks == null) return;
+        if (entry.marks === '' && entry.marks == null && !entry.grade) return;
         const total = Number(entry.marks) || 0;
         const subIndex = updatedSubjects.findIndex(sub => sub.subjectName === bs.name);
         const subData = {
           subjectName: bs.name,
+          category: bs.category || (bs.name.toLowerCase().includes('oral') ? 'Oral' : 'Written'),
           marks: total,
+          grade: entry.grade || marksToGradePill(total, maxMarks),
+          evalType: entry.evalType || (isPrePri && entry.grade ? 'grade' : 'marks'),
           totalMarks: maxMarks,
           passingMarks: passMarks,
           theoryMarks: 0,
+          oralMarks: 0,
           practicalMarks: 0,
           internalMarks: 0
         };
@@ -567,7 +731,7 @@ export default function ResultsView() {
     });
 
     if (updatedSubjects.length === 0) {
-      showToast('Please enter marks for at least one subject.', 'error');
+      showToast('Please enter marks or grade for at least one subject.', 'error');
       return;
     }
 
@@ -584,6 +748,7 @@ export default function ResultsView() {
 
     const payload = {
       id: existing?.id,
+      studentDocId: student.id, // Strictly bind to student doc id to eliminate same-name collision
       studentId: student.studentId || student.id,
       studentName: student.name,
       rollNumber: student.rollNumber || '',
@@ -1380,10 +1545,15 @@ export default function ResultsView() {
                       <th className="p-3">Class</th>
                       
                       {/* Active Subject Header */}
-                      <th className="p-3 text-center min-w-[140px] bg-indigo-50/70 text-indigo-950 border-x border-indigo-100">
-                        {deskSubjects.find(s => s.id === activeDeskSubjectId)?.name || 'Subject'} Marks
+                      <th className="p-3 text-center min-w-[150px] bg-indigo-50/70 text-indigo-950 border-x border-indigo-100">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span>{deskSubjects.find(s => s.id === activeDeskSubjectId)?.name || 'Subject'}</span>
+                          {deskSubjects.find(s => s.id === activeDeskSubjectId)?.category === 'Oral' && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 font-black border border-purple-200">मौखिक</span>
+                          )}
+                        </div>
                         <span className="block text-[10px] text-indigo-700 font-normal">
-                          Max: {deskSubjects.find(s => s.id === activeDeskSubjectId)?.totalMarks || 100}
+                          Max: {deskSubjects.find(s => s.id === activeDeskSubjectId)?.totalMarks || 100} • {isPrePrimaryClass(bulkClass) ? 'Marks / Grade' : 'Marks'}
                         </span>
                       </th>
 
@@ -1437,24 +1607,100 @@ export default function ResultsView() {
                             {student.className || bulkClass}
                           </td>
 
-                          {/* Active Subject Marks Input Cell */}
-                          <td className="p-2.5 text-center bg-indigo-50/30 border-x border-indigo-100/60">
-                            {isDetailedBreakdownMode ? (
+                          {/* Active Subject Marks / Grade Input Cell */}
+                          <td className="p-2 text-center bg-indigo-50/30 border-x border-indigo-100/60">
+                            {isPrePrimaryClass(student.className || bulkClass) ? (
+                              <div className="flex flex-col items-center justify-center gap-1.5 py-0.5">
+                                {/* Pre-Primary Mode Pill: Choose Marks or Grade */}
+                                <div className="inline-flex rounded-md bg-slate-200/90 p-0.5 text-[9px] font-black shadow-2xs">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeskMarkChange(activeDeskSubjectId, student.id, 'toggleEvalType')}
+                                    className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                                      entry.evalType !== 'grade'
+                                        ? 'bg-white text-indigo-900 shadow-xs font-black'
+                                        : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                    title="Enter Numerical Marks (0-100)"
+                                  >
+                                    123 Marks
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeskMarkChange(activeDeskSubjectId, student.id, 'toggleEvalType')}
+                                    className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                                      entry.evalType === 'grade'
+                                        ? 'bg-indigo-900 text-white shadow-xs font-black'
+                                        : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                    title="Enter Direct Grade (A+, A, B, C, D)"
+                                  >
+                                    ⭐ Grade
+                                  </button>
+                                </div>
+
+                                {entry.evalType === 'grade' ? (
+                                  /* Direct Grade Selector Pills */
+                                  <div className="flex flex-wrap items-center justify-center gap-1">
+                                    {PRE_PRIMARY_GRADES.map(g => (
+                                      <button
+                                        key={g}
+                                        type="button"
+                                        onClick={() => handleDeskMarkChange(activeDeskSubjectId, student.id, 'grade', g)}
+                                        className={`px-2 py-0.5 rounded text-[11px] font-black border transition-all cursor-pointer ${
+                                          entry.grade === g
+                                            ? 'bg-indigo-900 text-white border-indigo-900 shadow-xs scale-105'
+                                            : 'bg-white text-slate-700 border-slate-300 hover:bg-indigo-50'
+                                        }`}
+                                      >
+                                        {g}
+                                      </button>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  /* Numerical Marks Input */
+                                  <div className="flex items-center justify-center gap-1">
+                                    <input
+                                      type="number"
+                                      placeholder="0"
+                                      value={entry.marks}
+                                      onChange={(e) => handleDeskMarkChange(activeDeskSubjectId, student.id, 'marks', e.target.value)}
+                                      className="w-16 px-2 py-1 text-center bg-white border-2 border-indigo-200 focus:border-indigo-600 rounded-lg text-xs font-black text-indigo-950 shadow-xs"
+                                    />
+                                    {entry.marks !== '' && (
+                                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-900">
+                                        {marksToGradePill(entry.marks, deskSubjects.find(s => s.id === activeDeskSubjectId)?.totalMarks || 100)}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ) : isDetailedBreakdownMode ? (
                               <div className="flex items-center justify-center gap-1">
                                 <input
                                   type="number"
                                   placeholder="Th"
                                   value={entry.theory}
                                   onChange={(e) => handleDeskMarkChange(activeDeskSubjectId, student.id, 'theory', e.target.value)}
-                                  className="w-12 px-1 py-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
+                                  className="w-11 px-1 py-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
                                   title="Theory Marks"
                                 />
+                                {Number(deskSubjects.find(s => s.id === activeDeskSubjectId)?.oralMax || 0) > 0 && (
+                                  <input
+                                    type="number"
+                                    placeholder="Or"
+                                    value={entry.oral}
+                                    onChange={(e) => handleDeskMarkChange(activeDeskSubjectId, student.id, 'oral', e.target.value)}
+                                    className="w-11 px-1 py-1 text-center bg-purple-50 border border-purple-300 rounded-lg text-xs font-bold text-purple-950"
+                                    title="Oral Marks (मौखिक)"
+                                  />
+                                )}
                                 <input
                                   type="number"
                                   placeholder="Pr"
                                   value={entry.practical}
                                   onChange={(e) => handleDeskMarkChange(activeDeskSubjectId, student.id, 'practical', e.target.value)}
-                                  className="w-12 px-1 py-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
+                                  className="w-11 px-1 py-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
                                   title="Practical Marks"
                                 />
                                 <input
@@ -1462,7 +1708,7 @@ export default function ResultsView() {
                                   placeholder="In"
                                   value={entry.internal}
                                   onChange={(e) => handleDeskMarkChange(activeDeskSubjectId, student.id, 'internal', e.target.value)}
-                                  className="w-12 px-1 py-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
+                                  className="w-11 px-1 py-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
                                   title="Internal Marks"
                                 />
                               </div>
@@ -1706,7 +1952,11 @@ export default function ResultsView() {
                       <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600">
                         <div>
                           <span className="text-[10px] uppercase font-bold text-slate-400 block">Class</span>
-                          <span className="font-bold text-slate-800">{exam.className || 'All Classes'}</span>
+                          <span className="font-bold text-slate-800 truncate block" title={exam.className || 'All Classes'}>
+                            {exam.classes && exam.classes.length > 0 && !exam.classes.includes('All Classes')
+                              ? (exam.classes.length <= 2 ? exam.classes.join(', ') : `${exam.classes.slice(0, 2).join(', ')} +${exam.classes.length - 2}`)
+                              : (exam.className || 'All Classes')}
+                          </span>
                         </div>
                         <div>
                           <span className="text-[10px] uppercase font-bold text-slate-400 block">Academic Session</span>
@@ -1917,25 +2167,40 @@ function StudentDetailedMarkEntryModal({
   const [remarks, setRemarks] = useState(existingResult?.remarks || '');
   const [manualStatus, setManualStatus] = useState(existingResult?.status || 'AUTO');
 
+  const isPrePri = isPrePrimaryClass(student?.className);
+
   // Subjects rows state
   const [rows, setRows] = useState(() => {
     if (existingResult?.subjects && existingResult.subjects.length > 0) {
-      return existingResult.subjects.map(s => ({
-        name: s.subjectName,
-        totalMarks: Number(s.totalMarks) || 100,
-        passingMarks: Number(s.passingMarks) || 33,
-        marks: s.marks != null ? String(s.marks) : '',
-        theory: s.theoryMarks != null ? String(s.theoryMarks) : '',
-        practical: s.practicalMarks != null ? String(s.practicalMarks) : '',
-        internal: s.internalMarks != null ? String(s.internalMarks) : ''
-      }));
+      return existingResult.subjects.map(s => {
+        const total = s.marks != null ? String(s.marks) : '';
+        const grade = s.grade || (total !== '' ? marksToGradePill(total, s.totalMarks) : '');
+        const evalType = s.evalType || (isPrePri && grade && s.marks == null ? 'grade' : 'marks');
+        return {
+          name: s.subjectName,
+          category: s.category || (s.subjectName?.toLowerCase().includes('oral') ? 'Oral' : 'Written'),
+          totalMarks: Number(s.totalMarks) || 100,
+          passingMarks: Number(s.passingMarks) || 33,
+          marks: total,
+          grade: grade,
+          evalType: evalType,
+          theory: s.theoryMarks != null ? String(s.theoryMarks) : '',
+          oral: s.oralMarks != null ? String(s.oralMarks) : '',
+          practical: s.practicalMarks != null ? String(s.practicalMarks) : '',
+          internal: s.internalMarks != null ? String(s.internalMarks) : ''
+        };
+      });
     }
     return templateSubjects.map(ts => ({
       name: ts.name,
+      category: ts.category || (ts.name?.toLowerCase().includes('oral') ? 'Oral' : 'Written'),
       totalMarks: Number(ts.totalMarks) || 100,
       passingMarks: Number(ts.passingMarks) || 33,
       marks: '',
+      grade: '',
+      evalType: 'marks',
       theory: '',
+      oral: '',
       practical: '',
       internal: ''
     }));
@@ -1944,14 +2209,49 @@ function StudentDetailedMarkEntryModal({
   const handleRowChange = (idx, field, val) => {
     setRows(prev => {
       const copy = [...prev];
-      const updated = { ...copy[idx], [field]: val };
+      const current = copy[idx];
+      const maxM = Number(current.totalMarks) || 100;
 
-      if (field === 'theory' || field === 'practical' || field === 'internal') {
+      if (field === 'grade') {
+        const estimated = val ? String(gradeToEstimatedMarks(val, maxM)) : '';
+        copy[idx] = {
+          ...current,
+          grade: val,
+          marks: estimated,
+          evalType: 'grade'
+        };
+        return copy;
+      }
+
+      if (field === 'toggleEvalType') {
+        const nextEval = current.evalType === 'grade' ? 'marks' : 'grade';
+        const nextGrade = nextEval === 'grade' && !current.grade && current.marks !== ''
+          ? marksToGradePill(current.marks, maxM)
+          : (nextEval === 'grade' && !current.grade ? 'A' : current.grade);
+        const nextMarks = nextEval === 'grade' ? String(gradeToEstimatedMarks(nextGrade, maxM)) : current.marks;
+        copy[idx] = {
+          ...current,
+          evalType: nextEval,
+          grade: nextGrade,
+          marks: nextMarks
+        };
+        return copy;
+      }
+
+      const updated = { ...current, [field]: val };
+
+      if (field === 'theory' || field === 'oral' || field === 'practical' || field === 'internal') {
         const t = Number(updated.theory) || 0;
+        const o = Number(updated.oral) || 0;
         const p = Number(updated.practical) || 0;
         const i = Number(updated.internal) || 0;
-        updated.marks = String(t + p + i);
+        updated.marks = String(t + o + p + i);
       }
+
+      if (field === 'marks') {
+        updated.grade = val !== '' ? marksToGradePill(val, maxM) : '';
+      }
+
       copy[idx] = updated;
       return copy;
     });
@@ -1979,6 +2279,7 @@ function StudentDetailedMarkEntryModal({
   const buildPayload = () => {
     return {
       id: existingResult?.id,
+      studentDocId: student.id, // Strictly bind to student document ID
       studentId: student.studentId || student.id,
       studentName: student.name,
       rollNumber: student.rollNumber || '',
@@ -1995,10 +2296,14 @@ function StudentDetailedMarkEntryModal({
       remarks,
       subjects: rows.map(r => ({
         subjectName: r.name,
+        category: r.category || (r.name.toLowerCase().includes('oral') ? 'Oral' : 'Written'),
         marks: Number(r.marks) || 0,
+        grade: r.grade || marksToGradePill(Number(r.marks) || 0, Number(r.totalMarks) || 100),
+        evalType: r.evalType || (isPrePri && r.grade ? 'grade' : 'marks'),
         totalMarks: Number(r.totalMarks) || 100,
         passingMarks: Number(r.passingMarks) || Math.round((Number(r.totalMarks) || 100) * 0.33),
         theoryMarks: isDetailed ? (Number(r.theory) || 0) : 0,
+        oralMarks: isDetailed ? (Number(r.oral) || 0) : 0,
         practicalMarks: isDetailed ? (Number(r.practical) || 0) : 0,
         internalMarks: isDetailed ? (Number(r.internal) || 0) : 0
       }))
@@ -2078,21 +2383,86 @@ function StudentDetailedMarkEntryModal({
               Enter Marks for each subject
             </label>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {rows.map((row, idx) => (
                 <div
                   key={idx}
                   className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
                 >
                   <div className="min-w-0">
-                    <span className="text-xs font-black text-slate-900 block truncate">{row.name}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-black text-slate-900 block truncate">{row.name}</span>
+                      {row.category === 'Oral' && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-purple-100 text-purple-800 border border-purple-200">
+                          🗣️ Oral (मौखिक)
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] text-slate-500">
                       Max: {row.totalMarks} • Min Pass: {row.passingMarks}
                     </span>
                   </div>
 
-                  {isDetailed ? (
-                    <div className="flex items-center gap-2">
+                  {isPrePri ? (
+                    /* Pre-Primary Subject Evaluation: Choice between Marks or Grade */
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                      <div className="inline-flex rounded-md bg-slate-200 p-0.5 text-[9px] font-black">
+                        <button
+                          type="button"
+                          onClick={() => handleRowChange(idx, 'toggleEvalType')}
+                          className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                            row.evalType !== 'grade' ? 'bg-white text-indigo-900 shadow-xs font-black' : 'text-slate-600'
+                          }`}
+                        >
+                          123 Marks
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRowChange(idx, 'toggleEvalType')}
+                          className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                            row.evalType === 'grade' ? 'bg-indigo-900 text-white shadow-xs font-black' : 'text-slate-600'
+                          }`}
+                        >
+                          ⭐ Grade
+                        </button>
+                      </div>
+
+                      {row.evalType === 'grade' ? (
+                        <div className="flex items-center gap-1">
+                          {PRE_PRIMARY_GRADES.map(g => (
+                            <button
+                              key={g}
+                              type="button"
+                              onClick={() => handleRowChange(idx, 'grade', g)}
+                              className={`px-2 py-1 rounded text-xs font-black border transition-all cursor-pointer ${
+                                row.grade === g
+                                  ? 'bg-indigo-900 text-white border-indigo-900 shadow-xs scale-105'
+                                  : 'bg-white text-slate-700 border-slate-300 hover:bg-indigo-50'
+                              }`}
+                            >
+                              {g}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            value={row.marks}
+                            placeholder="0"
+                            onChange={(e) => handleRowChange(idx, 'marks', e.target.value)}
+                            className="w-20 px-2 py-1 text-center bg-white border-2 border-indigo-200 focus:border-indigo-600 rounded-lg text-xs font-black text-indigo-950 shadow-xs"
+                          />
+                          {row.marks !== '' && (
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-900">
+                              {marksToGradePill(row.marks, row.totalMarks)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : isDetailed ? (
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                       <div>
                         <span className="text-[9px] font-bold text-slate-400 block text-center">Theory</span>
                         <input
@@ -2100,7 +2470,17 @@ function StudentDetailedMarkEntryModal({
                           value={row.theory}
                           placeholder="0"
                           onChange={(e) => handleRowChange(idx, 'theory', e.target.value)}
-                          className="w-14 px-2 py-1.5 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
+                          className="w-13 px-1.5 py-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black text-purple-700 block text-center">Oral (मौखिक)</span>
+                        <input
+                          type="number"
+                          value={row.oral}
+                          placeholder="0"
+                          onChange={(e) => handleRowChange(idx, 'oral', e.target.value)}
+                          className="w-13 px-1.5 py-1 text-center bg-purple-50 border border-purple-300 rounded-lg text-xs font-bold text-purple-950"
                         />
                       </div>
                       <div>
@@ -2110,7 +2490,7 @@ function StudentDetailedMarkEntryModal({
                           value={row.practical}
                           placeholder="0"
                           onChange={(e) => handleRowChange(idx, 'practical', e.target.value)}
-                          className="w-14 px-2 py-1.5 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
+                          className="w-13 px-1.5 py-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
                         />
                       </div>
                       <div>
@@ -2120,12 +2500,12 @@ function StudentDetailedMarkEntryModal({
                           value={row.internal}
                           placeholder="0"
                           onChange={(e) => handleRowChange(idx, 'internal', e.target.value)}
-                          className="w-14 px-2 py-1.5 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
+                          className="w-13 px-1.5 py-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-bold"
                         />
                       </div>
                       <div>
                         <span className="text-[9px] font-bold text-indigo-700 block text-center">Total</span>
-                        <span className="w-12 py-1.5 block text-center font-black text-indigo-950 text-xs">
+                        <span className="w-12 py-1 block text-center font-black text-indigo-950 text-xs">
                           {row.marks || 0}
                         </span>
                       </div>
