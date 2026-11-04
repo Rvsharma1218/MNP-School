@@ -74,6 +74,27 @@ class MainActivity: FlutterActivity() {
         channelInstance = channel
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
+                "getAppVersion" -> {
+                    try {
+                        val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            packageManager.getPackageInfo(packageName, 0)
+                        }
+                        val vCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            pInfo.longVersionCode.toInt()
+                        } else {
+                            @Suppress("DEPRECATION")
+                            pInfo.versionCode
+                        }
+                        val vName = pInfo.versionName ?: ""
+                        result.success(mapOf("versionCode" to vCode, "versionName" to vName))
+                    } catch (e: Exception) {
+                        result.error("VERSION_ERROR", e.localizedMessage, null)
+                    }
+                }
+
                 "installApk" -> {
                     val filePath = call.argument<String>("filePath") ?: ""
                     try {

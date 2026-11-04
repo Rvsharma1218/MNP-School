@@ -20,8 +20,8 @@ class DeviceSecurityGate extends StatefulWidget {
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProviderStateMixin {
-  static const int currentVersionCode = 2011;
-  static const String currentVersion = '2.0.4';
+  static int currentVersionCode = 2013;
+  static String currentVersion = '2.0.6';
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
@@ -93,6 +93,7 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
   @override
   void initState() {
     super.initState();
+    _initAppVersion();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -135,6 +136,20 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
     super.dispose();
   }
 
+  Future<void> _initAppVersion() async {
+    try {
+      const platform = MethodChannel('school_app/whatsapp');
+      final res = await platform.invokeMapMethod<String, dynamic>('getAppVersion');
+      if (res != null) {
+        final code = int.tryParse(res['versionCode']?.toString() ?? '') ?? 0;
+        final name = (res['versionName']?.toString() ?? '').trim();
+        if (code > 0) currentVersionCode = code;
+        if (name.isNotEmpty) currentVersion = name;
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
+  }
+
   void _listenAppUpdate() {
     _updateSub?.cancel();
     _updateSub = FirebaseFirestore.instance
@@ -166,13 +181,14 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
 
       final isNewerBuild = remoteVersionCode > currentVersionCode;
       final isNewerVersion = remoteVersion.isNotEmpty && _isSemanticVersionHigher(remoteVersion, currentVersion);
-      final shouldPrompt = isNewerBuild || isNewerVersion || (isForced && (remoteVersionCode >= currentVersionCode || remoteVersion != currentVersion));
+      final isSameOrOlder = remoteVersionCode <= currentVersionCode && (remoteVersion == currentVersion || !_isSemanticVersionHigher(remoteVersion, currentVersion));
+      final shouldPrompt = !isSameOrOlder && (isNewerBuild || isNewerVersion || (isForced && (remoteVersionCode > currentVersionCode || remoteVersion != currentVersion)));
 
       // Check if user permanently dismissed this specific update version
       try {
         final prefs = await SharedPreferences.getInstance();
         final dismissedCode = prefs.getInt('dismissed_app_update_version_code') ?? 0;
-        if (remoteVersionCode <= dismissedCode && !isForced && !isNewerVersion) {
+        if (remoteVersionCode <= dismissedCode && !isForced) {
           if (mounted && _pendingUpdate != null) {
             setState(() => _pendingUpdate = null);
           }
