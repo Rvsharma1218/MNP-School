@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:ffi';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
@@ -16,16 +19,29 @@ class DeviceSecurityGate extends StatefulWidget {
   State<DeviceSecurityGate> createState() => _DeviceSecurityGateState();
 }
 
-class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
-    static const int currentVersionCode = 2010;
-  static const String currentVersion = '2.0.3';
+class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProviderStateMixin {
+  static const int currentVersionCode = 2011;
+  static const String currentVersion = '2.0.4';
+
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnimation;
+  late final AnimationController _rotateController;
+
+  HttpClient? _downloadClient;
+  bool _isDownloadingUpdate = false;
+  double _downloadProgress = 0.0;
+  int _downloadedBytes = 0;
+  int _totalBytes = 0;
+  String _downloadStatus = 'Preparing...';
+  String? _downloadError;
+  String? _downloadedApkPath;
 
   bool _isSemanticVersionHigher(String remote, String current) {
     try {
       final rParts = remote.split('.').map((e) => int.tryParse(e.replaceAll(RegExp(r'\D'), '')) ?? 0).toList();
       final cParts = current.split('.').map((e) => int.tryParse(e.replaceAll(RegExp(r'\D'), '')) ?? 0).toList();
-      while (rParts.length < 3) rParts.add(0);
-      while (cParts.length < 3) cParts.add(0);
+      while (rParts.length < 3) { rParts.add(0); }
+      while (cParts.length < 3) { cParts.add(0); }
       for (int i = 0; i < 3; i++) {
         if (rParts[i] > cParts[i]) return true;
         if (rParts[i] < cParts[i]) return false;
@@ -77,6 +93,17 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _rotateController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    );
     // 1. Check initial persistent revocation state
     _isRevoked = DeviceSecurityService.instance.isRevoked;
 
@@ -99,6 +126,9 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
 
   @override
   void dispose() {
+    _pulseController.dispose();
+    _rotateController.dispose();
+    _downloadClient?.close(force: true);
     _revocationSub?.cancel();
     _alertSub?.cancel();
     _updateSub?.cancel();
@@ -230,6 +260,151 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
         backgroundColor: isStillRevoked ? Colors.redAccent : Colors.green,
       ),
     );
+  }
+
+  Future<void> _startInAppUpdate(String apkUrl) async {
+    if (_isDownloadingUpdate) return;
+    if (apkUrl.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Update URL is missing'), backgroundColor: Colors.redAccent),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _isDownloadingUpdate = true;
+      _downloadProgress = 0.0;
+      _downloadedBytes = 0;
+      _totalBytes = 0;
+      _downloadStatus = 'Connecting to high-speed server...';
+      _downloadError = null;
+      _downloadedApkPath = null;
+    });
+
+    _pulseController.repeat(reverse: true);
+    _rotateController.repeat();
+
+    HttpClient? client;
+    try {
+      client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 20);
+      _downloadClient = client;
+
+      final uri = Uri.parse(apkUrl.trim());
+      final request = await client.getUrl(uri);
+      final response = await request.close();
+
+      if (response.statusCode != 200) {
+        throw Exception('Server returned HTTP ${response.statusCode}');
+      }
+
+      final total = response.contentLength;
+      if (mounted) {
+        setState(() {
+          _totalBytes = total > 0 ? total : 0;
+          _downloadStatus = 'Downloading update package...';
+        });
+      }
+
+      final dir = await getTemporaryDirectory();
+      final apkFile = File('${dir.path}/mnp_school_update.apk');
+      if (await apkFile.exists()) {
+        try {
+          await apkFile.delete();
+        } catch (_) {}
+      }
+
+      final sink = apkFile.openWrite();
+      int received = 0;
+      DateTime lastUiTick = DateTime.now();
+
+      await for (final chunk in response) {
+        sink.add(chunk);
+        received += chunk.length;
+
+        final now = DateTime.now();
+        if (now.difference(lastUiTick).inMilliseconds > 60 || (total > 0 && received >= total)) {
+          lastUiTick = now;
+          if (mounted) {
+            setState(() {
+              _downloadedBytes = received;
+              _downloadProgress = total > 0 ? (received / total).clamp(0.0, 1.0) : 0.0;
+              final percent = (_downloadProgress * 100).toInt();
+              _downloadStatus = 'Downloading update: $percent%';
+            });
+          }
+        }
+      }
+
+      await sink.flush();
+      await sink.close();
+
+      if (mounted) {
+        setState(() {
+          _downloadProgress = 1.0;
+          _downloadedBytes = received;
+          _downloadStatus = '✓ Download complete! Launching installer...';
+          _downloadedApkPath = apkFile.path;
+        });
+      }
+
+      _pulseController.stop();
+      _rotateController.stop();
+
+      // Launch native installer
+      await _launchApkInstaller(apkFile.path, fallbackUrl: apkUrl);
+
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _downloadError = 'Download interrupted: $e';
+          _isDownloadingUpdate = false;
+        });
+      }
+      _pulseController.stop();
+      _rotateController.stop();
+    } finally {
+      client?.close();
+      _downloadClient = null;
+    }
+  }
+
+  Future<void> _launchApkInstaller(String filePath, {required String fallbackUrl}) async {
+    try {
+      const platform = MethodChannel('school_app/whatsapp');
+      final res = await platform.invokeMethod('installApk', {'filePath': filePath});
+      if (res != true) {
+        throw Exception('Install intent could not be started');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Opening via browser: $e'),
+            backgroundColor: Colors.orangeAccent,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      await _openUpdateUrl(fallbackUrl);
+    }
+  }
+
+  void _cancelInAppUpdate() {
+    _downloadClient?.close(force: true);
+    _downloadClient = null;
+    _pulseController.stop();
+    _rotateController.stop();
+    if (mounted) {
+      setState(() {
+        _isDownloadingUpdate = false;
+        _downloadProgress = 0.0;
+        _downloadStatus = 'Update cancelled';
+        _downloadError = null;
+      });
+    }
   }
 
   Future<void> _openUpdateUrl(String url) async {
@@ -497,35 +672,72 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
                                   ),
                                   const SizedBox(height: 16),
 
-                                  // Glowing Center Icon
-                                  Container(
-                                    width: 72,
-                                    height: 72,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: isForced
-                                            ? [const Color(0xFFEF4444), const Color(0xFF991B1B)]
-                                            : [const Color(0xFF6366F1), const Color(0xFF3B82F6)],
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: (isForced ? const Color(0xFFEF4444) : const Color(0xFF6366F1))
-                                              .withValues(alpha: 0.45),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 6),
+                                  // Glowing Center Icon with Live Pulse & Rotation Animation
+                                  AnimatedBuilder(
+                                    animation: _pulseAnimation,
+                                    builder: (context, child) {
+                                      return Transform.scale(
+                                        scale: _isDownloadingUpdate ? _pulseAnimation.value : 1.0,
+                                        child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            if (_isDownloadingUpdate)
+                                              RotationTransition(
+                                                turns: _rotateController,
+                                                child: Container(
+                                                  width: 86,
+                                                  height: 86,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: const Color(0xFF38BDF8).withValues(alpha: 0.6),
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            Container(
+                                              width: 76,
+                                              height: 76,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: _downloadedApkPath != null
+                                                      ? [const Color(0xFF10B981), const Color(0xFF059669)]
+                                                      : (isForced
+                                                          ? [const Color(0xFFEF4444), const Color(0xFF991B1B)]
+                                                          : [const Color(0xFF6366F1), const Color(0xFF38BDF8)]),
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: (_downloadedApkPath != null
+                                                            ? const Color(0xFF10B981)
+                                                            : (isForced ? const Color(0xFFEF4444) : const Color(0xFF6366F1)))
+                                                        .withValues(alpha: _isDownloadingUpdate ? 0.7 : 0.45),
+                                                    blurRadius: _isDownloadingUpdate ? 28 : 20,
+                                                    spreadRadius: _isDownloadingUpdate ? 3 : 0,
+                                                    offset: const Offset(0, 6),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Center(
+                                                child: Icon(
+                                                  _downloadedApkPath != null
+                                                      ? Icons.check_circle_rounded
+                                                      : (_isDownloadingUpdate
+                                                          ? Icons.cloud_download_rounded
+                                                          : Icons.rocket_launch_rounded),
+                                                  color: Colors.white,
+                                                  size: 38,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.rocket_launch_rounded,
-                                        color: Colors.white,
-                                        size: 36,
-                                      ),
-                                    ),
+                                      );
+                                    },
                                   ),
                                   const SizedBox(height: 14),
 
@@ -606,57 +818,172 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
                               ),
                             ),
 
-                            // Body: Release notes & Actions
+                            // Body: Release notes, Animated Live Download Progress & Actions
                             Padding(
                               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                               child: Column(
                                 children: [
-                                  // What's New Box
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF0F172A).withValues(alpha: 0.7),
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Row(
-                                          children: [
-                                            Icon(Icons.auto_awesome_rounded, color: Color(0xFFFBBF24), size: 14),
-                                            SizedBox(width: 6),
-                                            Text(
-                                              "WHAT'S NEW",
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w800,
-                                                color: Color(0xFFFBBF24),
-                                                letterSpacing: 0.8,
-                                              ),
-                                            ),
-                                          ],
+                                  // Live Download Progress Card (When updating in-app)
+                                  if (_isDownloadingUpdate || _downloadedApkPath != null) ...[
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0F172A).withValues(alpha: 0.9),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: _downloadedApkPath != null
+                                              ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                                              : const Color(0xFF38BDF8).withValues(alpha: 0.5),
+                                          width: 1.4,
                                         ),
-                                        const SizedBox(height: 8),
-                                        ConstrainedBox(
-                                          constraints: const BoxConstraints(maxHeight: 110),
-                                          child: SingleChildScrollView(
-                                            physics: const BouncingScrollPhysics(),
-                                            child: Text(
-                                              notes,
-                                              style: TextStyle(
-                                                fontSize: 12.5,
-                                                color: Colors.white.withValues(alpha: 0.85),
-                                                height: 1.45,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: (_downloadedApkPath != null ? const Color(0xFF10B981) : const Color(0xFF38BDF8)).withValues(alpha: 0.15),
+                                            blurRadius: 16,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: (_downloadedApkPath != null ? const Color(0xFF10B981) : const Color(0xFF38BDF8)).withValues(alpha: 0.15),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  _downloadedApkPath != null ? Icons.check_circle_rounded : Icons.sync_rounded,
+                                                  size: 16,
+                                                  color: _downloadedApkPath != null ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  _downloadedApkPath != null
+                                                      ? 'UPDATE READY TO INSTALL'
+                                                      : 'DOWNLOADING UPDATE...',
+                                                  style: TextStyle(
+                                                    color: _downloadedApkPath != null ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w800,
+                                                    letterSpacing: 0.8,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(
+                                                '${(_downloadProgress * 100).toInt()}%',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(6),
+                                            child: SizedBox(
+                                              height: 8,
+                                              child: LinearProgressIndicator(
+                                                value: _downloadProgress > 0 ? _downloadProgress : null,
+                                                backgroundColor: Colors.white12,
+                                                valueColor: AlwaysStoppedAnimation<Color>(
+                                                  _downloadedApkPath != null ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(height: 10),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  _downloadStatus,
+                                                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (_totalBytes > 0)
+                                                Text(
+                                                  '${(_downloadedBytes / (1024 * 1024)).toStringAsFixed(1)} / ${(_totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB',
+                                                  style: const TextStyle(color: Colors.white60, fontSize: 10.5, fontWeight: FontWeight.w600),
+                                                ),
+                                            ],
+                                          ),
+                                          if (_downloadError != null) ...[
+                                            const SizedBox(height: 10),
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.redAccent.withValues(alpha: 0.15),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                _downloadError!,
+                                                style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 11),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 18),
+                                    const SizedBox(height: 14),
+                                  ] else ...[
+                                    // What's New Box (Shown before download starts)
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0F172A).withValues(alpha: 0.7),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Row(
+                                            children: [
+                                              Icon(Icons.auto_awesome_rounded, color: Color(0xFFFBBF24), size: 14),
+                                              SizedBox(width: 6),
+                                              Text(
+                                                "WHAT'S NEW",
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: Color(0xFFFBBF24),
+                                                  letterSpacing: 0.8,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          ConstrainedBox(
+                                            constraints: const BoxConstraints(maxHeight: 110),
+                                            child: SingleChildScrollView(
+                                              physics: const BouncingScrollPhysics(),
+                                              child: Text(
+                                                notes,
+                                                style: TextStyle(
+                                                  fontSize: 12.5,
+                                                  color: Colors.white.withValues(alpha: 0.85),
+                                                  height: 1.45,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                  ],
 
                                   if (!hasUrl)
                                     Container(
@@ -682,48 +1009,139 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> {
                                       ),
                                     ),
 
-                                  // Download Button
+                                  // Action Buttons Area
                                   if (hasUrl) ...[
-                                    Container(
-                                      width: double.infinity,
-                                      height: 52,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: isForced
-                                              ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
-                                              : [const Color(0xFF4F46E5), const Color(0xFF2563EB)],
+                                    if (_downloadedApkPath != null) ...[
+                                      // State 3: Download finished, ready to install
+                                      Container(
+                                        width: double.infinity,
+                                        height: 52,
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                          ),
+                                          borderRadius: BorderRadius.circular(14),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                                              blurRadius: 18,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                          ],
                                         ),
-                                        borderRadius: BorderRadius.circular(14),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: (isForced ? const Color(0xFFEF4444) : const Color(0xFF4F46E5))
-                                                .withValues(alpha: 0.4),
-                                            blurRadius: 18,
-                                            offset: const Offset(0, 6),
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.transparent,
+                                            shadowColor: Colors.transparent,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                          ),
+                                          icon: const Icon(Icons.install_mobile_rounded, size: 22),
+                                          label: const Text(
+                                            'Tap to Install Update',
+                                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                                          ),
+                                          onPressed: () => _launchApkInstaller(_downloadedApkPath!, fallbackUrl: effectiveApkUrl),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        '✓ Package downloaded. Tap to launch Android installer.',
+                                        style: TextStyle(fontSize: 10.5, color: Colors.white60),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ] else if (_isDownloadingUpdate) ...[
+                                      // State 2: Actively downloading in popup
+                                      Container(
+                                        width: double.infinity,
+                                        height: 48,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.08),
+                                          borderRadius: BorderRadius.circular(14),
+                                          border: Border.all(color: Colors.white12),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF38BDF8)),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              'Downloading in Progress (${(_downloadProgress * 100).toInt()}%)',
+                                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextButton(
+                                        onPressed: _cancelInAppUpdate,
+                                        style: TextButton.styleFrom(foregroundColor: Colors.white54),
+                                        child: const Text('Cancel Download', style: TextStyle(fontSize: 11)),
+                                      ),
+                                    ] else ...[
+                                      // State 1: Ready to start update
+                                      Container(
+                                        width: double.infinity,
+                                        height: 52,
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: isForced
+                                                ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
+                                                : [const Color(0xFF4F46E5), const Color(0xFF2563EB)],
+                                          ),
+                                          borderRadius: BorderRadius.circular(14),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: (isForced ? const Color(0xFFEF4444) : const Color(0xFF4F46E5))
+                                                  .withValues(alpha: 0.4),
+                                              blurRadius: 18,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.transparent,
+                                            shadowColor: Colors.transparent,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                          ),
+                                          icon: const Icon(Icons.download_for_offline_rounded, size: 20),
+                                          label: Text(
+                                            isForced ? 'Update Now to Continue' : 'Download & Install Update',
+                                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
+                                          ),
+                                          onPressed: () => _startInAppUpdate(effectiveApkUrl),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            '⚡ In-App direct download • ',
+                                            style: TextStyle(fontSize: 10.5, color: Colors.white38),
+                                          ),
+                                          InkWell(
+                                            onTap: () => _openUpdateUrl(effectiveApkUrl),
+                                            child: const Text(
+                                              'Or open in browser',
+                                              style: TextStyle(
+                                                fontSize: 10.5,
+                                                color: Color(0xFF818CF8),
+                                                fontWeight: FontWeight.bold,
+                                                decoration: TextDecoration.underline,
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
-                                      child: ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.transparent,
-                                          shadowColor: Colors.transparent,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                        ),
-                                        icon: const Icon(Icons.download_for_offline_rounded, size: 20),
-                                        label: Text(
-                                          isForced ? 'Update Now to Continue' : 'Download & Install Update',
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
-                                        ),
-                                        onPressed: () => _openUpdateUrl(effectiveApkUrl),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    const Text(
-                                      '⚡ High-speed direct download • Auto-installs over current app',
-                                      style: TextStyle(fontSize: 10, color: Colors.white38),
-                                      textAlign: TextAlign.center,
-                                    ),
+                                    ],
                                   ],
 
                                   // Optional Dismiss actions
