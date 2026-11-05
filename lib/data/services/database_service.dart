@@ -3524,6 +3524,8 @@ CREATE TABLE monthly_fees (
 
   // ─── RESULT CRUD ──────────────────────────────────────────────────────────
 
+  static bool _resultsSchemaMigrated = false;
+
   Future<void> saveResult(ResultModel result) async {
     _cachedResults = null;
     if (kIsWeb) {
@@ -3532,11 +3534,14 @@ CREATE TABLE monthly_fees (
       return;
     }
     final db = await database;
-    try { await db.execute('ALTER TABLE results ADD COLUMN isDetailedMode INTEGER DEFAULT 0'); } catch (_) {}
-    try { await db.execute('ALTER TABLE results ADD COLUMN remarks TEXT'); } catch (_) {}
-    try { await db.execute('ALTER TABLE results ADD COLUMN studentName TEXT'); } catch (_) {}
-    try { await db.execute('ALTER TABLE results ADD COLUMN className TEXT'); } catch (_) {}
-    try { await db.execute('ALTER TABLE results ADD COLUMN rollNumber TEXT'); } catch (_) {}
+    if (!_resultsSchemaMigrated) {
+      try { await db.execute('ALTER TABLE results ADD COLUMN isDetailedMode INTEGER DEFAULT 0'); } catch (_) {}
+      try { await db.execute('ALTER TABLE results ADD COLUMN remarks TEXT'); } catch (_) {}
+      try { await db.execute('ALTER TABLE results ADD COLUMN studentName TEXT'); } catch (_) {}
+      try { await db.execute('ALTER TABLE results ADD COLUMN className TEXT'); } catch (_) {}
+      try { await db.execute('ALTER TABLE results ADD COLUMN rollNumber TEXT'); } catch (_) {}
+      _resultsSchemaMigrated = true;
+    }
 
     final resMap = {
       'id': result.id,

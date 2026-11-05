@@ -437,7 +437,11 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
     }
   }
 
+  bool _saving = false;
+
   Future<void> _saveResult() async {
+    if (_saving) return;
+    setState(() => _saving = true);
     final passCriteria = double.tryParse(_passCriteriaCtrl.text) ?? 33.0;
 
     final subs = _subjectRows.map((r) {
@@ -511,10 +515,14 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
       remarks: _remarksCtrl.text.trim().isNotEmpty ? _remarksCtrl.text.trim() : null,
     );
 
-    await DatabaseService.instance.saveResult(resultModel);
-    if (mounted) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      Navigator.pop(context, resultModel);
+    try {
+      await DatabaseService.instance.saveResult(resultModel);
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        Navigator.pop(context, resultModel);
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 

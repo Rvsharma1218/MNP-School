@@ -44,13 +44,14 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
   String _searchQuery = '';
   String _statusFilter = 'All'; // 'All', 'Completed', 'Pending'
   StreamSubscription? _resultsSub;
+  DateTime? _lastResultsReload;
 
   @override
   void initState() {
     super.initState();
     // Live automatic sync when marks are entered, edited, or saved anywhere
     _resultsSub = DatabaseService.onResultsChanged.stream.listen((_) {
-      if (mounted) _loadData(forceRefresh: true);
+      if (mounted) _loadResultsOnly();
     });
     _loadData(forceRefresh: false);
   }
@@ -59,6 +60,20 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
   void dispose() {
     _resultsSub?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadResultsOnly() async {
+    final now = DateTime.now();
+    if (_lastResultsReload != null && now.difference(_lastResultsReload!).inMilliseconds < 400) {
+      return;
+    }
+    _lastResultsReload = now;
+    final results = await DatabaseService.instance.getAllResults(forceRefresh: true);
+    if (mounted) {
+      setState(() {
+        _allResults = results;
+      });
+    }
   }
 
   Future<void> _loadData({bool forceRefresh = false}) async {
@@ -113,7 +128,10 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     }
 
     // 2. Resolve selected class strictly from the selected exam's classes!
-    if (_selectedExam != null &&
+    final validClasses = _dropdownClasses;
+    if (_selectedClass.isNotEmpty && validClasses.contains(_selectedClass)) {
+      // PRESERVE user selected class filter!
+    } else if (_selectedExam != null &&
         _selectedExam!.className.isNotEmpty &&
         _selectedExam!.className.trim().toLowerCase() != 'all classes') {
       final examClasses = _selectedExam!.className.split(',').map((c) => c.trim()).where((c) => c.isNotEmpty).toList();
@@ -323,8 +341,8 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
       ),
     );
 
-    await _loadData(forceRefresh: true);
     if (saved != null) {
+      await _loadResultsOnly();
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -333,7 +351,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            content: Text('✓ Marks saved for '),
+            content: Text('✓ Marks saved for ${student.name}'),
             backgroundColor: Colors.green.shade700,
           ),
         );
@@ -351,7 +369,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
         ),
       ),
     );
-    await _loadData(forceRefresh: true);
+    await _loadResultsOnly();
   }
 
   Future<void> _deleteStudentResult(StudentModel s, ResultModel r) async {
@@ -373,7 +391,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
 
     if (confirm == true) {
       await DatabaseService.instance.deleteResult(r.id);
-      await _loadData();
+      await _loadResultsOnly();
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(

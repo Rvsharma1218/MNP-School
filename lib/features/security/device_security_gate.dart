@@ -20,7 +20,7 @@ class DeviceSecurityGate extends StatefulWidget {
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProviderStateMixin {
-  static int currentVersionCode = 2018;
+  static int currentVersionCode = 2019;
   static String currentVersion = '2.0.9';
 
   late final AnimationController _pulseController;
