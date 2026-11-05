@@ -11,7 +11,7 @@ const nextConfig = {
           { key: 'Content-Type', value: 'application/vnd.android.package-archive' },
           { key: 'Content-Disposition', value: 'attachment' },
           { key: 'Accept-Ranges', value: 'bytes' },
-          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate, max-age=0' },
+          { key: 'Cache-Control', value: 'public, max-age=3600, s-maxage=31536000, stale-while-revalidate' },
         ],
       },
     ];
