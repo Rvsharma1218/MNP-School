@@ -412,6 +412,10 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
 
         // Check if finished
         if (total > 0 && received >= total) {
+          final fileSize = await apkFile.length();
+          if (fileSize < 15 * 1024 * 1024) {
+            throw Exception('Downloaded package file is incomplete ($fileSize bytes). Expected at least 15MB.');
+          }
           completed = true;
           if (mounted) {
             setState(() {
