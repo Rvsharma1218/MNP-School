@@ -20,7 +20,7 @@ class DeviceSecurityGate extends StatefulWidget {
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProviderStateMixin {
-  static int currentVersionCode = 2020;
+  static int currentVersionCode = 2021;
   static String currentVersion = '2.0.9';
 
   late final AnimationController _pulseController;
@@ -332,8 +332,6 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
 
         final request = await client.getUrl(uri);
         request.headers.set(HttpHeaders.userAgentHeader, 'MNPSchoolApp/2.0');
-        request.headers.set(HttpHeaders.cacheControlHeader, 'no-cache, no-store, must-revalidate');
-        request.headers.set('Pragma', 'no-cache');
         request.headers.set(HttpHeaders.acceptEncodingHeader, 'identity'); // prevent gzip chunking so Content-Length is exact
         if (existingBytes > 0) {
           request.headers.set(HttpHeaders.rangeHeader, 'bytes=$existingBytes-');
@@ -393,7 +391,7 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
           received += chunk.length;
 
           final now = DateTime.now();
-          if (now.difference(lastUiTick).inMilliseconds > 70 || (total > 0 && received >= total)) {
+          if (now.difference(lastUiTick).inMilliseconds > 200 || (total > 0 && received >= total)) {
             lastUiTick = now;
             if (mounted) {
               setState(() {
@@ -477,13 +475,12 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Opening via browser: $e'),
+            content: Text('Installation notice: $e. Please tap "Tap to Install Update".'),
             backgroundColor: Colors.orangeAccent,
             duration: const Duration(seconds: 4),
           ),
         );
       }
-      await _openUpdateUrl(fallbackUrl);
     }
   }
 
@@ -1243,24 +1240,14 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-                                      Row(
+                                      const Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          const Text(
-                                            '⚡ In-App direct download • ',
-                                            style: TextStyle(fontSize: 10.5, color: Colors.white38),
-                                          ),
-                                          InkWell(
-                                            onTap: () => _openUpdateUrl(effectiveApkUrl),
-                                            child: const Text(
-                                              'Or open in browser',
-                                              style: TextStyle(
-                                                fontSize: 10.5,
-                                                color: Color(0xFF818CF8),
-                                                fontWeight: FontWeight.bold,
-                                                decoration: TextDecoration.underline,
-                                              ),
-                                            ),
+                                          Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF38BDF8)),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'Seamless In-App Direct Update',
+                                            style: TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.w600),
                                           ),
                                         ],
                                       ),
