@@ -133,16 +133,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (mounted) setState(() => _now = DateTime.now());
     });
 
-    // Initialize teacher's working class/section from session assignment
+    // Option 1: Default teacher dashboard to All Allowed Classes mode so
+    // Dashboard stat cards show the total count of all students accessible to this teacher (matching Student List).
+    // When teacher picks a specific class from the dropdown, it filters to that class!
     if (SessionService.instance.isTeacher) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final assignedClass = SessionService.instance.assignedClass ?? '';
-        final assignedSection = SessionService.instance.assignedSection ?? '';
-        // Default directly to designated Class and Section if teacher is assigned to one
-        ref.read(teacherSelectedClassProvider.notifier).state = assignedClass;
-        ref.read(classFilterProvider.notifier).state = assignedClass;
-        ref.read(teacherSelectedSectionProvider.notifier).state = assignedSection;
-        ref.read(sectionFilterProvider.notifier).state = assignedSection;
+        ref.read(teacherSelectedClassProvider.notifier).state = '';
+        ref.read(classFilterProvider.notifier).state = '';
+        ref.read(teacherSelectedSectionProvider.notifier).state = '';
+        ref.read(sectionFilterProvider.notifier).state = '';
       });
     }
 

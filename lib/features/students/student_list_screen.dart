@@ -34,17 +34,12 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
     _searchCtrl.addListener(() {
       ref.read(studentSearchProvider.notifier).state = _searchCtrl.text;
     });
-    // For teacher role: If assigned to a single class and no All-Classes access, default filter to that class.
-    // If hasAllClassesAccess is true, keep filter empty so all students are shown!
-    // Never lock section filter on initial load so students without section are visible.
+    // Option 1: For teacher role, preserve class if specifically chosen from dashboard dropdown,
+    // otherwise show all allowed classes so list matches dashboard count.
     if (_isTeacher) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final sessionClass = SessionService.instance.assignedClass ?? '';
-        final hasAll = SessionService.instance.hasAllClassesAccess;
-        if (!hasAll && sessionClass.isNotEmpty && sessionClass != 'All Classes') {
-          ref.read(classFilterProvider.notifier).state = sessionClass;
-          ref.read(teacherSelectedClassProvider.notifier).state = sessionClass;
-        } else {
+        final currentFilter = ref.read(classFilterProvider);
+        if (currentFilter == 'All Classes') {
           ref.read(classFilterProvider.notifier).state = '';
         }
         ref.read(sectionFilterProvider.notifier).state = '';
@@ -86,13 +81,10 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
     ref.read(rollNumberFilterProvider.notifier).state = '';
     ref.read(studentSortProvider.notifier).state = 'none';
     ref.read(admissionTypeFilterProvider.notifier).state = 'all';
-    // Re-apply teacher's working class if single-class restricted
+    // Option 1: Re-apply teacher's working class if set
     if (_isTeacher) {
-      final sessionClass = SessionService.instance.assignedClass ?? '';
-      final hasAll = SessionService.instance.hasAllClassesAccess;
-      if (!hasAll && sessionClass.isNotEmpty && sessionClass != 'All Classes') {
-        ref.read(classFilterProvider.notifier).state = sessionClass;
-      }
+      final currentClass = ref.read(teacherSelectedClassProvider);
+      ref.read(classFilterProvider.notifier).state = currentClass;
     }
   }
 
