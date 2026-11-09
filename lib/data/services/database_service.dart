@@ -3558,13 +3558,22 @@ CREATE TABLE monthly_fees (
     };
 
     // Clean up any stale duplicate result row for the same student & examName
-    if (result.studentId.isNotEmpty && result.examName.isNotEmpty) {
+    if (result.examName.isNotEmpty) {
       try {
         final stale = await db.query(
           'results',
           columns: ['id'],
-          where: 'LOWER(TRIM(studentId)) = ? AND LOWER(TRIM(examName)) = ? AND id != ?',
-          whereArgs: [result.studentId.trim().toLowerCase(), result.examName.trim().toLowerCase(), result.id],
+          where: 'id != ? AND LOWER(TRIM(examName)) = ? AND ('
+              'LOWER(TRIM(studentId)) = ? '
+              'OR (LOWER(TRIM(studentName)) = ? AND LOWER(TRIM(rollNumber)) = ?)'
+              ')',
+          whereArgs: [
+            result.id,
+            result.examName.trim().toLowerCase(),
+            result.studentId.trim().toLowerCase(),
+            (result.studentName ?? '').trim().toLowerCase(),
+            (result.rollNumber ?? '').trim().toLowerCase(),
+          ],
         );
         for (final row in stale) {
           final oldId = row['id'] as String;
@@ -3629,12 +3638,42 @@ CREATE TABLE monthly_fees (
       // Deduplicate: Guarantee strictly 1 latest result per student per exam
       final seenKeys = <String>{};
       final uniqueList = <ResultModel>[];
+      final duplicateIdsToDelete = <String>[];
+
       for (final r in list) {
-        final key = '${r.studentId.trim().toLowerCase()}___${r.examName.trim().toLowerCase()}';
-        if (seenKeys.add(key)) {
-          uniqueList.add(r);
+        final sId = r.studentId.trim().toLowerCase();
+        final sName = (r.studentName ?? '').trim().toLowerCase();
+        final sRoll = (r.rollNumber ?? '').trim().toLowerCase();
+        final ex = r.examName.trim().toLowerCase();
+
+        final primaryKey = (sId.isNotEmpty && ex.isNotEmpty) ? '${sId}___$ex' : null;
+        final secondaryKey = (sName.isNotEmpty && sRoll.isNotEmpty && ex.isNotEmpty) ? '${sName}___${sRoll}___$ex' : null;
+
+        final isDuplicate = (primaryKey != null && seenKeys.contains(primaryKey)) ||
+            (secondaryKey != null && seenKeys.contains(secondaryKey));
+
+        if (isDuplicate) {
+          duplicateIdsToDelete.add(r.id);
+          continue;
         }
+
+        if (primaryKey != null) seenKeys.add(primaryKey);
+        if (secondaryKey != null) seenKeys.add(secondaryKey);
+        uniqueList.add(r);
       }
+
+      // Automatically purge stale duplicate rows from SQLite in background
+      if (duplicateIdsToDelete.isNotEmpty) {
+        unawaited(() async {
+          try {
+            for (final dId in duplicateIdsToDelete) {
+              await db.delete('results', where: 'id = ?', whereArgs: [dId]);
+              await db.delete('subject_results', where: 'resultId = ?', whereArgs: [dId]);
+            }
+          } catch (_) {}
+        }());
+      }
+
       _cachedResults = uniqueList;
       return uniqueList;
     } catch (_) {

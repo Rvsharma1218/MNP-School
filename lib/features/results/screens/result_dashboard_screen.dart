@@ -145,10 +145,21 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     final deduped = <ResultModel>[];
     for (final r in _results) {
       final sId = r.studentId.trim().toLowerCase();
+      final sName = (r.studentName ?? '').trim().toLowerCase();
+      final sRoll = (r.rollNumber ?? '').trim().toLowerCase();
       final ex = r.examName.trim().toLowerCase();
-      final key = '${sId}___$ex';
-      if (sId.isNotEmpty && ex.isNotEmpty && seen.contains(key)) continue;
-      if (sId.isNotEmpty && ex.isNotEmpty) seen.add(key);
+
+      final student = _findStudent(r);
+      final canonicalId = student != null && student.studentId.isNotEmpty ? student.studentId.trim().toLowerCase() : sId;
+
+      final key1 = (canonicalId.isNotEmpty && ex.isNotEmpty) ? '${canonicalId}___$ex' : null;
+      final key2 = (sName.isNotEmpty && sRoll.isNotEmpty && ex.isNotEmpty) ? '${sName}___${sRoll}___$ex' : null;
+
+      final isDup = (key1 != null && seen.contains(key1)) || (key2 != null && seen.contains(key2));
+      if (isDup) continue;
+
+      if (key1 != null) seen.add(key1);
+      if (key2 != null) seen.add(key2);
       deduped.add(r);
     }
     if (SessionService.instance.hasAllClassesAccess) return deduped;

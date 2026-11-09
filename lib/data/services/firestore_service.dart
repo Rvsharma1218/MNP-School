@@ -1120,6 +1120,8 @@ class FirestoreService {
     }
   }
 
+  Future<void> deleteResult(String resultId) => deleteResultRemote(resultId);
+
   Future<List<ResultModel>> fetchResults() async {
     if (!_enabled || _results == null) return [];
     try {
