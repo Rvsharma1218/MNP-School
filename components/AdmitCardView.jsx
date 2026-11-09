@@ -94,7 +94,7 @@ export default function AdmitCardView() {
   };
   // Filter students
   const filteredStudents = useMemo(() => {
-    return students.filter(s => {
+    const list = students.filter(s => {
       const matchClass = selectedClass === 'all' || s.className === selectedClass;
       const q = searchQuery.trim().toLowerCase();
       const matchSearch = !q ||
@@ -103,6 +103,13 @@ export default function AdmitCardView() {
         (s.aadhaarNumber && String(s.aadhaarNumber).toLowerCase().includes(q)) ||
         (s.admissionNumber && String(s.admissionNumber).toLowerCase().includes(q));
       return matchClass && matchSearch;
+    });
+    const seen = new Set();
+    return list.filter(s => {
+      const key = s.id || s.studentId || s.admissionNumber;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
   }, [students, selectedClass, searchQuery]);
 

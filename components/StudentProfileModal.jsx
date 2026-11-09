@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSchoolStore } from '../lib/store';
 import { exportSingleResultPDF, exportSingleAdmitCardPDF } from '../lib/exportUtils';
 import {
@@ -68,6 +68,7 @@ export default function StudentProfileModal({ student, onClose }) {
     payments,
     attendance,
     results,
+    exams,
     saveResult,
     deleteResult,
     setPrintResultData,
@@ -97,14 +98,57 @@ export default function StudentProfileModal({ student, onClose }) {
 
   if (!student) return null;
 
+  const applicableExams = useMemo(() => {
+    if (!exams || !Array.isArray(exams)) return [];
+    const sClass = (student?.studentType === 'school' ? student?.className : student?.course || '').toString().trim().toLowerCase();
+    return exams.filter(ex => {
+      if (!ex.classes || ex.classes.length === 0 || ex.classes.includes('All Classes')) return true;
+      return ex.classes.some(c => c.toString().trim().toLowerCase() === sClass);
+    });
+  }, [exams, student]);
+
+  const handleSelectExamName = (chosenName) => {
+    setResultExamName(chosenName);
+    const cleanChosen = (chosenName || '').trim().toLowerCase();
+    if (!cleanChosen) return;
+
+    const existing = studentResults.find(r => (r.examName || '').trim().toLowerCase() === cleanChosen);
+    if (existing) {
+      setEditingResultItem(existing);
+      setResultSubjects(
+        existing.subjects && existing.subjects.length > 0
+          ? existing.subjects.map(s => ({
+              subjectName: s.subjectName || '',
+              marks: s.marks ?? '',
+              totalMarks: s.totalMarks || 100
+            }))
+          : [{ subjectName: 'General', marks: '', totalMarks: 100 }]
+      );
+    } else {
+      setEditingResultItem(null);
+      const matchedExam = exams?.find(e => (e.title || '').trim().toLowerCase() === cleanChosen);
+      if (matchedExam?.subjects && matchedExam.subjects.length > 0) {
+        setResultSubjects(
+          matchedExam.subjects.map(s => ({
+            subjectName: s.subjectName || '',
+            marks: '',
+            totalMarks: s.totalMarks || 100
+          }))
+        );
+      } else {
+        setResultSubjects([
+          { subjectName: 'Mathematics', marks: '', totalMarks: 100 },
+          { subjectName: 'Science', marks: '', totalMarks: 100 },
+          { subjectName: 'English', marks: '', totalMarks: 100 }
+        ]);
+      }
+    }
+  };
+
   const handleOpenAddResult = () => {
-    setEditingResultItem(null);
-    setResultExamName('Term Examination');
-    setResultSubjects([
-      { subjectName: 'Mathematics', marks: '', totalMarks: 100 },
-      { subjectName: 'Science', marks: '', totalMarks: 100 },
-      { subjectName: 'English', marks: '', totalMarks: 100 }
-    ]);
+    const unrecordedExam = applicableExams.find(ex => !studentResults.some(r => (r.examName || '').trim().toLowerCase() === (ex.title || '').trim().toLowerCase()));
+    const initialExam = unrecordedExam?.title || applicableExams[0]?.title || 'Term Examination';
+    handleSelectExamName(initialExam);
     setIsAddResultOpen(true);
   };
 
@@ -189,7 +233,16 @@ export default function StudentProfileModal({ student, onClose }) {
     (student.studentId && p.studentId === student.studentId) ||
     (student.admissionNumber && (p.admissionNumber === student.admissionNumber || p.admissionNo === student.admissionNumber))
   );
-  const studentResults = results.filter(r => r.studentId === student.id);
+  const studentResults = useMemo(() => {
+    const list = results.filter(r => r.studentId === student.id || (student.studentId && r.studentId === student.studentId));
+    const seen = new Set();
+    return list.filter(r => {
+      const ex = (r.examName || '').trim().toLowerCase();
+      if (!ex || seen.has(ex)) return false;
+      seen.add(ex);
+      return true;
+    });
+  }, [results, student]);
 
   // Real-time calculated financial metrics
   const totalExpectedFees = Number(student.totalFees) > 0 ? Number(student.totalFees) : 0;
@@ -1250,27 +1303,59 @@ export default function StudentProfileModal({ student, onClose }) {
 
             <form onSubmit={handleSaveResultSubmit} className="space-y-4 text-xs font-semibold">
               <div>
-                <label className="block text-text-secondary mb-1">Exam Name</label>
-                <input
-                  type="text"
-                  value={resultExamName}
-                  onChange={e => setResultExamName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-surface2 border border-border text-text font-bold text-xs focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 1st Unit Test, Mid-Term Exam, Annual Exam"
-                  required
-                />
-                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  {['1st Unit Test', 'Mid-Term Exam', 'Term Examination', 'Annual Exam'].map(examTag => (
-                    <button
-                      key={examTag}
-                      type="button"
-                      onClick={() => setResultExamName(examTag)}
-                      className="px-2 py-0.5 rounded-md text-[10px] bg-surface2 hover:bg-surface2/80 text-text-secondary hover:text-text border border-border cursor-pointer transition-colors"
-                    >
-                      {examTag}
-                    </button>
-                  ))}
+                <label className="block text-text-secondary mb-1">Select / Enter Exam</label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    value={applicableExams.some(e => e.title === resultExamName) ? resultExamName : '__custom__'}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') {
+                        setResultExamName('');
+                        setEditingResultItem(null);
+                      } else {
+                        handleSelectExamName(e.target.value);
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 rounded-xl bg-surface2 border border-border text-text font-bold text-xs focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                  >
+                    <option value="" disabled>-- Choose Created Exam --</option>
+                    {applicableExams.map(ex => {
+                      const hasResult = studentResults.some(r => (r.examName || '').trim().toLowerCase() === (ex.title || '').trim().toLowerCase());
+                      return (
+                        <option key={ex.id || ex.title} value={ex.title}>
+                          {ex.title} {hasResult ? '✓ (Recorded - Click to Edit)' : '(Not entered)'}
+                        </option>
+                      );
+                    })}
+                    <option value="__custom__">➕ Other / Custom Exam Name</option>
+                  </select>
                 </div>
+
+                {(!applicableExams.some(e => e.title === resultExamName) || resultExamName === '') && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      value={resultExamName}
+                      onChange={e => handleSelectExamName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-surface2 border border-border text-text font-bold text-xs focus:ring-2 focus:ring-primary/20"
+                      placeholder="Type custom exam title..."
+                      required
+                    />
+                  </div>
+                )}
+
+                {editingResultItem ? (
+                  <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-amber-700 dark:text-amber-300 text-[11px] font-semibold">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-500" />
+                    <span>
+                      Existing result found for <strong>{resultExamName}</strong>. Editing existing marks (will update, not duplicate).
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-2 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-medium flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-emerald-500" />
+                    <span>Creating new marksheet for <strong>{resultExamName || 'exam'}</strong></span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

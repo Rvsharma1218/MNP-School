@@ -251,7 +251,18 @@ export default function ResultsView() {
 
   // Teacher accessible results overall (for total counters and badge counts)
   const scopedResults = useMemo(() => {
-    return results.filter(r => {
+    const seen = new Set();
+    const deduped = [];
+    results.forEach(r => {
+      const sId = (r.studentId || '').trim().toLowerCase();
+      const ex = (r.examName || '').trim().toLowerCase();
+      const key = `${sId}___${ex}`;
+      if (sId && ex && seen.has(key)) return;
+      if (sId && ex) seen.add(key);
+      deduped.push(r);
+    });
+
+    return deduped.filter(r => {
       if (isPrincipal || hasAllClassesAccess) return true;
       const student = findStudent(r);
       const studentClass = student?.className || student?.course || r.className || r.class || r.studentClass || '';

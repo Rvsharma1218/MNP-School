@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSchoolStore } from '../lib/store';
 import {
   X,
@@ -24,7 +24,7 @@ import {
 import ImageCropperModal from './ImageCropperModal';
 
 export default function AddEditStudentModal({ student, isOpen, onClose }) {
-  const { students, settings, currentUser, addStudent, updateStudent, getNextAdmissionNumber, getNextStudentId, showToast, isPrincipal, hasAllClassesAccess, allowedClasses } = useSchoolStore();
+  const { students, settings, currentUser, addStudent, updateStudent, getNextAdmissionNumber, getNextStudentId, showToast, isPrincipal, hasAllClassesAccess, allowedClasses, setViewingStudentProfile } = useSchoolStore();
 
   const isEdit = !!student;
   const teacherAssignedClass = currentUser?.role === 'teacher' ? (currentUser.assignedClass || 'Class Nursery') : '';
@@ -33,6 +33,8 @@ export default function AddEditStudentModal({ student, isOpen, onClose }) {
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState(null);
   const [previewDocModal, setPreviewDocModal] = useState(false);
+  const [confirmDuplicateAllowed, setConfirmDuplicateAllowed] = useState(false);
+  const [viewingDetailStudent, setViewingDetailStudent] = useState(null);
   const photoInputRef = useRef(null);
   const aadhaarInputRef = useRef(null);
 
@@ -137,10 +139,27 @@ export default function AddEditStudentModal({ student, isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  const duplicateMatches = useMemo(() => {
+    const n = (formData.name || '').trim().toLowerCase();
+    const fn = (formData.fatherName || '').trim().toLowerCase();
+    if (n.length < 2 || fn.length < 2) return [];
+    return (students || []).filter(s => {
+      if (isEdit && (s.id === student?.id || s.studentId === student?.studentId)) return false;
+      const sName = (s.name || '').trim().toLowerCase();
+      const sFather = (s.fatherName || '').trim().toLowerCase();
+      return sName === n && sFather === fn;
+    });
+  }, [formData.name, formData.fatherName, students, isEdit, student]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name?.trim()) {
       showToast("Please provide Student Name.", "error");
+      return;
+    }
+
+    if (!isEdit && duplicateMatches.length > 0 && !confirmDuplicateAllowed) {
+      showToast("A student with this Name & Father's Name already exists! Please review existing student or check confirmation to proceed.", "warning");
       return;
     }
 
@@ -446,6 +465,68 @@ export default function AddEditStudentModal({ student, isOpen, onClose }) {
               </div>
             </div>
           </div>
+
+          {/* Live Duplicate Student Warning Alert */}
+          {!isEdit && duplicateMatches.length > 0 && (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 space-y-2.5 animate-in fade-in duration-200">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center font-black text-xs flex-shrink-0">⚠️</div>
+                <div>
+                  <h4 className="text-xs font-black text-amber-900 dark:text-amber-200">
+                    Student Already Exists! ({duplicateMatches.length} matching record{duplicateMatches.length > 1 ? 's' : ''})
+                  </h4>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                    A student with Name "<strong>{formData.name}</strong>" and Father's Name "<strong>{formData.fatherName}</strong>" is already enrolled.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {duplicateMatches.map(m => (
+                  <div key={m.id} className="p-2.5 rounded-xl bg-card border border-amber-300 dark:border-amber-700/50 flex items-center justify-between gap-3 text-xs shadow-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {m.photoPath || m.photoUrl ? (
+                        <img src={m.photoPath || m.photoUrl} alt={m.name} className="w-9 h-9 rounded-full object-cover border border-amber-300" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                          {m.name.charAt(0)}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-text truncate">{m.name}</p>
+                        <p className="text-[10px] text-text-muted truncate">
+                          Father: <strong className="text-text">{m.fatherName}</strong> • {m.studentType === 'school' ? `Class ${m.className || ''}` : m.course || ''} {m.section ? `(${m.section})` : ''} • Roll: {m.rollNumber || '—'}
+                        </p>
+                        <p className="text-[10px] text-text-secondary">
+                          Adm No: <span className="font-mono font-bold text-primary">{m.admissionNumber || m.studentId}</span>
+                          {m.mobile ? ` • Ph: ${m.mobile}` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setViewingDetailStudent(m)}
+                      className="px-2.5 py-1.5 rounded-lg bg-surface2 hover:bg-surface2/80 text-text font-bold text-[11px] border border-border flex items-center gap-1 cursor-pointer flex-shrink-0"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-primary" />
+                      <span>View Details</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <label className="flex items-center gap-2 pt-1 cursor-pointer text-[11px] font-bold text-amber-900 dark:text-amber-200">
+                <input
+                  type="checkbox"
+                  checked={confirmDuplicateAllowed}
+                  onChange={e => setConfirmDuplicateAllowed(e.target.checked)}
+                  className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                />
+                <span>I confirm this is a different student who shares the same name & father's name</span>
+              </label>
+            </div>
+          )}
 
           {/* Academic Particulars */}
           <div className="p-4 rounded-xl bg-surface2/50 border border-border space-y-3">
@@ -765,6 +846,97 @@ export default function AddEditStudentModal({ student, isOpen, onClose }) {
           setImageToCrop(null);
         }}
       />
+
+      {/* Existing Student Detail Quick View Modal */}
+      {viewingDetailStudent && (
+        <div className="fixed inset-0 z-70 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in duration-150">
+          <div className="bg-card border border-border w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4 my-auto">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-extrabold text-sm text-text flex items-center gap-2">
+                <User className="w-4 h-4 text-primary" />
+                <span>Existing Student Details</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setViewingDetailStudent(null)}
+                className="p-1 rounded-lg hover:bg-surface2 text-text-secondary cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-surface2/50 border border-border">
+              {viewingDetailStudent.photoPath || viewingDetailStudent.photoUrl ? (
+                <img src={viewingDetailStudent.photoPath || viewingDetailStudent.photoUrl} alt="" className="w-14 h-14 rounded-full object-cover border" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
+                  {viewingDetailStudent.name?.charAt(0)}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <h4 className="font-bold text-sm text-text">{viewingDetailStudent.name}</h4>
+                <p className="text-xs text-text-secondary">
+                  {viewingDetailStudent.studentType === 'school' ? `Class ${viewingDetailStudent.className || ''}` : viewingDetailStudent.course || ''} {viewingDetailStudent.section ? `• Sec ${viewingDetailStudent.section}` : ''}
+                </p>
+                <p className="text-[11px] text-text-muted font-mono font-bold mt-0.5">
+                  Adm: {viewingDetailStudent.admissionNumber || viewingDetailStudent.studentId} • Roll: {viewingDetailStudent.rollNumber || '—'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2 rounded-lg bg-surface2/30 border border-border/50">
+                <span className="text-[10px] text-text-muted block">Father's Name</span>
+                <span className="font-bold text-text">{viewingDetailStudent.fatherName || '—'}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-surface2/30 border border-border/50">
+                <span className="text-[10px] text-text-muted block">Mother's Name</span>
+                <span className="font-bold text-text">{viewingDetailStudent.motherName || '—'}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-surface2/30 border border-border/50">
+                <span className="text-[10px] text-text-muted block">Mobile</span>
+                <span className="font-bold text-text">{viewingDetailStudent.mobile || '—'}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-surface2/30 border border-border/50">
+                <span className="text-[10px] text-text-muted block">Date of Birth</span>
+                <span className="font-bold text-text">{viewingDetailStudent.dob ? (typeof viewingDetailStudent.dob === 'string' ? viewingDetailStudent.dob.split('T')[0] : '—') : '—'}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-surface2/30 border border-border/50">
+                <span className="text-[10px] text-text-muted block">Aadhaar Number</span>
+                <span className="font-bold text-text">{viewingDetailStudent.aadhaarNumber || '—'}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-surface2/30 border border-border/50">
+                <span className="text-[10px] text-text-muted block">Status</span>
+                <span className={`font-bold capitalize ${viewingDetailStudent.status === 'active' ? 'text-emerald-600' : 'text-text-muted'}`}>{viewingDetailStudent.status || 'Active'}</span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setViewingDetailStudent(null)}
+                className="px-3.5 py-1.5 rounded-xl bg-surface2 text-text font-bold text-xs cursor-pointer hover:bg-border transition-colors"
+              >
+                Close
+              </button>
+              {setViewingStudentProfile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const st = viewingDetailStudent;
+                    setViewingDetailStudent(null);
+                    onClose();
+                    setViewingStudentProfile(st);
+                  }}
+                  className="px-4 py-1.5 rounded-xl bg-primary text-white font-bold text-xs cursor-pointer hover:bg-primary-dark transition-colors"
+                >
+                  Open Full Profile
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Full Document Preview Modal */}
       {previewDocModal && formData.aadhaarDocUrl && (

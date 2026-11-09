@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSchoolStore } from '../lib/store';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -66,11 +66,20 @@ export default function IdCardView() {
     setPrintIdCardsData({ students: list, template: selectedTemplate });
   };
 
-  const filteredStudents = accessibleStudents.filter(s => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return s.name?.toLowerCase().includes(q) || s.studentId?.toLowerCase().includes(q);
-  });
+  const filteredStudents = useMemo(() => {
+    const list = accessibleStudents.filter(s => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return s.name?.toLowerCase().includes(q) || s.studentId?.toLowerCase().includes(q) || s.admissionNumber?.toLowerCase().includes(q);
+    });
+    const seen = new Set();
+    return list.filter(s => {
+      const key = s.id || s.studentId || s.admissionNumber;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [accessibleStudents, searchQuery]);
 
   return (
     <div className="space-y-6 pb-12">
