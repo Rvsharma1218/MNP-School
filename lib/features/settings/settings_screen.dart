@@ -476,9 +476,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Center(
             child: Column(
               children: [
-                const Text('School Management Cloud v2.1', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w600)),
+                const Text('Mission Navodaya Public School (MNP)', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
-                Text('Tenant ID: \${settings.instituteName}', style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 11)),
+                Text('${settings.schoolName.isNotEmpty ? settings.schoolName : "MNP School"} • Version 1.0.0', style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
               ],
             ),
           ),
