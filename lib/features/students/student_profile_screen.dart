@@ -14,6 +14,7 @@ import '../../data/models/fee_model.dart';
 import '../../data/models/student_model.dart';
 import '../../data/models/settings_model.dart';
 import '../../data/models/result_model.dart';
+import '../../data/models/exam_model.dart';
 import '../../data/services/database_service.dart';
 import '../../data/services/providers.dart';
 import '../../data/services/session_service.dart';
@@ -1619,6 +1620,207 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> {
     setState(() => _refreshKey++);
   }
 
+  Future<void> _handleEnterEditMarksheet({
+    required BuildContext context,
+    required StudentModel student,
+    required List<ResultModel> results,
+    required List<ExamModel> exams,
+  }) async {
+    final sClass = (student.className ?? student.course ?? '').trim().toLowerCase();
+    final applicableExams = exams.where((ex) {
+      final cName = ex.className.trim().toLowerCase();
+      if (cName.isEmpty || cName == 'all' || cName == 'all classes' || cName.contains('all')) return true;
+      return cName == sClass || cName.split(',').map((s) => s.trim()).contains(sClass);
+    }).toList();
+
+    if (applicableExams.isEmpty) {
+      final saved = await Navigator.push<ResultModel>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StudentMarkEntryScreen(student: student),
+        ),
+      );
+      if (saved != null) {
+        _refresh();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✓ Marksheet saved for ${student.name}!'),
+              backgroundColor: Colors.green.shade700,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.assignment_turned_in_outlined, color: Color(0xFF1E3A8A), size: 22),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Select Exam for ${student.name}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Class ${student.displayClass} • Select an exam to enter or edit marks',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 14),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(bCtx).size.height * 0.45),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: applicableExams.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final ex = applicableExams[i];
+                    final existingResult = results.where((r) => r.examName.trim().toLowerCase() == ex.title.trim().toLowerCase()).firstOrNull;
+                    final hasResult = existingResult != null;
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      leading: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: hasResult ? Colors.green.shade50 : const Color(0xFFEFF6FF),
+                        child: Icon(
+                          hasResult ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
+                          color: hasResult ? Colors.green.shade700 : const Color(0xFF1E3A8A),
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        ex.title,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      subtitle: Text(
+                        hasResult
+                            ? 'Recorded: ${existingResult.obtainedMarks.round()}/${existingResult.totalMarks.round()} (${existingResult.overallPercentage.toStringAsFixed(1)}%) • Tap to edit'
+                            : '${ex.subjects.length} subjects configured • Tap to enter marks',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: hasResult ? Colors.green.shade700 : Colors.grey.shade600,
+                          fontWeight: hasResult ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: hasResult ? Colors.green.shade50 : const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: hasResult ? Colors.green.shade300 : const Color(0xFFBFDBFE)),
+                        ),
+                        child: Text(
+                          hasResult ? 'Edit Marks' : '+ Enter',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: hasResult ? Colors.green.shade800 : const Color(0xFF1E3A8A),
+                          ),
+                        ),
+                      ),
+                      onTap: () async {
+                        Navigator.pop(bCtx);
+                        final saved = await Navigator.push<ResultModel>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => StudentMarkEntryScreen(
+                              student: student,
+                              exam: ex,
+                              editResult: existingResult,
+                            ),
+                          ),
+                        );
+                        if (saved != null) {
+                          _refresh();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(hasResult
+                                    ? '✓ Marksheet updated for ${student.name}!'
+                                    : '✓ Marksheet saved for ${student.name}!'),
+                                backgroundColor: Colors.green.shade700,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+              const Divider(height: 16),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                leading: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.purple.shade50,
+                  child: Icon(Icons.add_circle_outline_rounded, color: Colors.purple.shade700, size: 20),
+                ),
+                title: const Text('➕ Other / Custom Exam', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                subtitle: const Text('Enter marks for a test or exam not listed above', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                onTap: () async {
+                  Navigator.pop(bCtx);
+                  final saved = await Navigator.push<ResultModel>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StudentMarkEntryScreen(student: student),
+                    ),
+                  );
+                  if (saved != null) {
+                    _refresh();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('✓ Marksheet saved for ${student.name}!'),
+                          backgroundColor: Colors.green.shade700,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
@@ -1628,11 +1830,22 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> {
       future: Future.wait([
         DatabaseService.instance.getResultsByStudentId(widget.studentId),
         DatabaseService.instance.getStudentById(widget.studentId),
+        DatabaseService.instance.getAllExams(),
       ]),
       builder: (ctx, snap) {
         if (snap.connectionState == ConnectionState.waiting) return const LoadingWidget();
-        final results = (snap.data?[0] as List<ResultModel>?) ?? [];
+        final rawResults = (snap.data?[0] as List<ResultModel>?) ?? [];
         final student = snap.data?[1] as StudentModel?;
+        final exams = (snap.data?[2] as List<ExamModel>?) ?? [];
+
+        // Deduplicate results by examName
+        final seenExams = <String>{};
+        final results = rawResults.where((r) {
+          final key = r.examName.trim().toLowerCase();
+          if (key.isEmpty || seenExams.contains(key)) return false;
+          seenExams.add(key);
+          return true;
+        }).toList();
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -1649,28 +1862,12 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> {
                     ),
                     onPressed: () async {
                       if (student != null) {
-                        final saved = await Navigator.push<ResultModel>(
-                          ctx,
-                          MaterialPageRoute(
-                            builder: (_) => StudentMarkEntryScreen(student: student),
-                          ),
+                        await _handleEnterEditMarksheet(
+                          context: ctx,
+                          student: student,
+                          results: results,
+                          exams: exams,
                         );
-                        if (saved != null) {
-                          _refresh();
-                          if (ctx.mounted) {
-                            ScaffoldMessenger.of(ctx).clearSnackBars();
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                duration: const Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.all(16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                content: Text('✓ Marksheet saved for ${student.name}!'),
-                                backgroundColor: Colors.green.shade700,
-                              ),
-                            );
-                          }
-                        }
                       } else {
                         await Navigator.push(
                           ctx,
@@ -1894,12 +2091,14 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> {
                             TextButton.icon(
                               onPressed: () async {
                                 if (student != null) {
+                                  final matchedExam = exams.where((e) => e.title.trim().toLowerCase() == r.examName.trim().toLowerCase()).firstOrNull;
                                   final saved = await Navigator.push<ResultModel>(
                                     ctx,
                                     MaterialPageRoute(
                                       builder: (_) => StudentMarkEntryScreen(
                                         student: student,
                                         editResult: r,
+                                        exam: matchedExam,
                                       ),
                                     ),
                                   );

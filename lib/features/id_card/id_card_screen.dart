@@ -115,6 +115,14 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
             return matchClass && matchSearch;
           }).toList();
 
+          final seen = <String>{};
+          final dedupedFiltered = filtered.where((s) {
+            final key = s.id.isNotEmpty ? s.id : s.admissionNumber;
+            if (key.isEmpty || seen.contains(key)) return false;
+            seen.add(key);
+            return true;
+          }).toList();
+
           if (widget.initialStudent != null) {
             _previewStudent = widget.initialStudent;
           } else if (widget.studentId != null && widget.studentId!.isNotEmpty) {
@@ -125,10 +133,10 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                 s.admissionNumber.toLowerCase() == targetId
             ).firstOrNull;
             if (match != null) _previewStudent = match;
-          } else if (_previewStudent == null && filtered.isNotEmpty) {
-            _previewStudent = filtered.first;
-          } else if (_previewStudent != null && !filtered.any((s) => s.id == _previewStudent!.id) && filtered.isNotEmpty) {
-            _previewStudent = filtered.first;
+          } else if (_previewStudent == null && dedupedFiltered.isNotEmpty) {
+            _previewStudent = dedupedFiltered.first;
+          } else if (_previewStudent != null && !dedupedFiltered.any((s) => s.id == _previewStudent!.id) && dedupedFiltered.isNotEmpty) {
+            _previewStudent = dedupedFiltered.first;
           }
 
           return SingleChildScrollView(
@@ -168,7 +176,7 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                                 icon: _generatingPdf
                                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                     : const Icon(Icons.download, size: 18),
-                                label: Text(_generatingPdf ? 'Generating...' : 'Download All (${filtered.length})'),
+                                label: Text(_generatingPdf ? 'Generating...' : 'Download All (${dedupedFiltered.length})'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF0A1128),
                                   foregroundColor: const Color(0xFFFFD700),
@@ -370,9 +378,9 @@ class _IdCardScreenState extends ConsumerState<IdCardScreen> {
                     : ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: filtered.length,
+                        itemCount: dedupedFiltered.length,
                         itemBuilder: (context, index) {
-                          final s = filtered[index];
+                          final s = dedupedFiltered[index];
                           final isSelected = _previewStudent?.id == s.id;
                           return Card(
                             elevation: isSelected ? 3 : 1,

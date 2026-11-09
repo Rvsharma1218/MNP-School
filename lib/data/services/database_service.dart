@@ -3556,6 +3556,25 @@ CREATE TABLE monthly_fees (
       'subjects': jsonEncode(result.subjects.map((s) => s.toMap()).toList()),
       'createdAt': result.createdAt.toIso8601String(),
     };
+
+    // Clean up any stale duplicate result row for the same student & examName
+    if (result.studentId.isNotEmpty && result.examName.isNotEmpty) {
+      try {
+        final stale = await db.query(
+          'results',
+          columns: ['id'],
+          where: 'LOWER(TRIM(studentId)) = ? AND LOWER(TRIM(examName)) = ? AND id != ?',
+          whereArgs: [result.studentId.trim().toLowerCase(), result.examName.trim().toLowerCase(), result.id],
+        );
+        for (final row in stale) {
+          final oldId = row['id'] as String;
+          await db.delete('results', where: 'id = ?', whereArgs: [oldId]);
+          await db.delete('subject_results', where: 'resultId = ?', whereArgs: [oldId]);
+          unawaited(FirestoreService.instance.deleteResult(oldId).catchError((_) {}));
+        }
+      } catch (_) {}
+    }
+
     await db.insert('results', resMap, conflictAlgorithm: ConflictAlgorithm.replace);
     await db.delete('subject_results', where: 'resultId = ?', whereArgs: [result.id]);
     for (final subject in result.subjects) {
@@ -3606,8 +3625,18 @@ CREATE TABLE monthly_fees (
         final subjects = subjectsByResultId[rId] ?? const <SubjectResult>[];
         return ResultModel.fromMap(result, subjects);
       }).toList();
-      _cachedResults = list;
-      return list;
+
+      // Deduplicate: Guarantee strictly 1 latest result per student per exam
+      final seenKeys = <String>{};
+      final uniqueList = <ResultModel>[];
+      for (final r in list) {
+        final key = '${r.studentId.trim().toLowerCase()}___${r.examName.trim().toLowerCase()}';
+        if (seenKeys.add(key)) {
+          uniqueList.add(r);
+        }
+      }
+      _cachedResults = uniqueList;
+      return uniqueList;
     } catch (_) {
       return [];
     }

@@ -140,11 +140,19 @@ class _AdmitCardScreenState extends ConsumerState<AdmitCardScreen> {
   }
 
   void _filterClassStudents() {
+    List<StudentModel> list;
     if (_selectedClass == 'All Classes') {
-      _classStudents = List.from(_allStudents);
+      list = List.from(_allStudents);
     } else {
-      _classStudents = _allStudents.where((s) => (s.className ?? '').trim().toLowerCase() == _selectedClass.trim().toLowerCase()).toList();
+      list = _allStudents.where((s) => (s.className ?? '').trim().toLowerCase() == _selectedClass.trim().toLowerCase()).toList();
     }
+    final seen = <String>{};
+    _classStudents = list.where((s) {
+      final key = s.id.isNotEmpty ? s.id : s.admissionNumber;
+      if (key.isEmpty || seen.contains(key)) return false;
+      seen.add(key);
+      return true;
+    }).toList();
   }
 
   Future<String> _getClassExamName(String className) async {

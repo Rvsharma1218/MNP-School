@@ -500,14 +500,18 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
     String autoStatus = (failCount > 0 || pct < passCriteria || totalObt == 0) ? 'FAIL' : 'PASS';
     String finalStatus = _selectedStatus == 'AUTO' ? autoStatus : _selectedStatus;
 
-    final resId = widget.editResult?.id ?? 'res_${widget.student.id}_${DateTime.now().millisecondsSinceEpoch}';
+    final examTitle = _examCtrl.text.trim().isNotEmpty ? _examCtrl.text.trim() : 'Term Examination 2026';
+    final cleanExam = examTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+    final sId = widget.student.studentId.isNotEmpty ? widget.student.studentId : widget.student.id;
+    // Deterministic ID ensures duplicate rows are NEVER created for the same student & exam
+    final resId = widget.editResult?.id ?? 'res_${sId}_$cleanExam';
     final resultModel = ResultModel(
       id: resId,
-      studentId: widget.student.studentId.isNotEmpty ? widget.student.studentId : widget.student.id,
+      studentId: sId,
       studentName: widget.student.name,
       className: widget.student.displayClass,
       rollNumber: widget.student.rollNumber,
-      examName: _examCtrl.text.trim().isNotEmpty ? _examCtrl.text.trim() : 'Term Examination 2026',
+      examName: examTitle,
       subjects: subs,
       status: finalStatus,
       createdAt: widget.editResult?.createdAt ?? DateTime.now(),

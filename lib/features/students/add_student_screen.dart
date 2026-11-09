@@ -7,6 +7,7 @@ import '../../data/services/database_service.dart';
 import '../../data/services/providers.dart';
 import '../../data/services/session_service.dart';
 import '../../widgets/student_photo_picker.dart';
+import 'student_profile_screen.dart';
 
 class AddStudentScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -48,6 +49,34 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
   bool _saving = false;
   bool _checkingAdmNo = false;
   bool _admNoExists = false;
+  bool _confirmDuplicate = false;
+  List<StudentModel> _duplicateMatches = [];
+
+  void _checkDuplicateStudent() {
+    final name = _nameCtrl.text.trim().toLowerCase();
+    final father = _fatherCtrl.text.trim().toLowerCase();
+    if (name.length < 2 || father.length < 2) {
+      if (_duplicateMatches.isNotEmpty) {
+        setState(() {
+          _duplicateMatches = [];
+          _confirmDuplicate = false;
+        });
+      }
+      return;
+    }
+
+    final students = ref.read(studentsProvider).valueOrNull ?? [];
+    final matches = students.where((s) {
+      final sName = s.name.trim().toLowerCase();
+      final sFather = s.fatherName.trim().toLowerCase();
+      return sName == name && sFather == father;
+    }).toList();
+
+    setState(() {
+      _duplicateMatches = matches;
+      if (matches.isEmpty) _confirmDuplicate = false;
+    });
+  }
 
   final _courses = SettingsModel.defaultCourses;
   final _classes = SettingsModel.defaultClasses;
@@ -85,6 +114,9 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
     _admissionDateCtrl.text = _formatDate(_admissionDate);
 
     // Load current session from settings and auto-generate next admission number
+    _nameCtrl.addListener(_checkDuplicateStudent);
+    _fatherCtrl.addListener(_checkDuplicateStudent);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final students = ref.read(studentsProvider).valueOrNull ?? [];
       ref.read(settingsProvider).whenData((s) {
@@ -163,6 +195,8 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
 
   @override
   void dispose() {
+    _nameCtrl.removeListener(_checkDuplicateStudent);
+    _fatherCtrl.removeListener(_checkDuplicateStudent);
     _nameCtrl.dispose();
     _fatherCtrl.dispose();
     _motherCtrl.dispose();
@@ -220,6 +254,36 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
         const SnackBar(content: Text('Admission Number already exists!'), backgroundColor: AppColors.error),
       );
       return;
+    }
+
+    if (_duplicateMatches.isNotEmpty && !_confirmDuplicate) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 28),
+              SizedBox(width: 8),
+              Expanded(child: Text('Student Already Exists!')),
+            ],
+          ),
+          content: Text(
+            'A student named "${_nameCtrl.text.trim()}" with father "${_fatherCtrl.text.trim()}" is already enrolled in ${_duplicateMatches.first.displayClass}.\n\nAre you sure this is a different student and you want to proceed with admission?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel / Review'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Yes, Proceed'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
     }
 
     setState(() => _saving = true);
@@ -347,6 +411,126 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
               const SizedBox(height: 14),
               _buildTextField(_fatherCtrl, "Father's Name *", icon: Icons.person_2,
                   validator: (v) => v?.trim().isEmpty == true ? 'Required' : null),
+              if (_duplicateMatches.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.shade400, width: 1.5),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Colors.amber.shade900, size: 20),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Student Already Exists! (${_duplicateMatches.length} matching)',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Colors.amber.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'A student with this Name & Father\'s Name is already enrolled in the school:',
+                        style: TextStyle(fontSize: 11, color: Colors.amber.shade900),
+                      ),
+                      const SizedBox(height: 8),
+                      ..._duplicateMatches.map((m) => Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.amber.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: const Color(0xFFEFF6FF),
+                              child: Text(
+                                m.name.isNotEmpty ? m.name[0].toUpperCase() : 'S',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    m.name,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  Text(
+                                    'Father: ${m.fatherName} • ${m.displayClass} • Roll: ${m.rollNumber ?? "—"}',
+                                    style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                                  ),
+                                  Text(
+                                    'Adm: ${m.admissionNumber}${m.mobile.isNotEmpty ? " • Ph: ${m.mobile}" : ""}',
+                                    style: const TextStyle(fontSize: 10, color: Color(0xFF1E3A8A), fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => StudentProfileScreen(studentId: m.id),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.visibility_outlined, size: 16),
+                              label: const Text('View', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      )),
+                      InkWell(
+                        onTap: () => setState(() => _confirmDuplicate = !_confirmDuplicate),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: _confirmDuplicate,
+                              onChanged: (v) => setState(() => _confirmDuplicate = v ?? false),
+                              activeColor: AppColors.primary,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            Expanded(
+                              child: Text(
+                                'Confirm this is a different student with same name',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber.shade900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
               const SizedBox(height: 14),
               _buildTextField(_motherCtrl, "Mother's Name", icon: Icons.person_2_outlined),
               const SizedBox(height: 14),

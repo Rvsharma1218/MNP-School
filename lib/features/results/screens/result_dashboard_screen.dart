@@ -141,8 +141,18 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
   }
 
   List<ResultModel> get _scopedResults {
-    if (SessionService.instance.hasAllClassesAccess) return _results;
-    return _results.where((r) {
+    final seen = <String>{};
+    final deduped = <ResultModel>[];
+    for (final r in _results) {
+      final sId = r.studentId.trim().toLowerCase();
+      final ex = r.examName.trim().toLowerCase();
+      final key = '${sId}___$ex';
+      if (sId.isNotEmpty && ex.isNotEmpty && seen.contains(key)) continue;
+      if (sId.isNotEmpty && ex.isNotEmpty) seen.add(key);
+      deduped.add(r);
+    }
+    if (SessionService.instance.hasAllClassesAccess) return deduped;
+    return deduped.where((r) {
       final student = _findStudent(r);
       final cls = student?.className ?? student?.course ?? r.className ?? '';
       if (cls.isNotEmpty) {
