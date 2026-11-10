@@ -3764,10 +3764,13 @@ CREATE TABLE monthly_fees (
         orderBy: 'createdAt DESC',
       );
       final List<ResultModel> models = [];
-      final seenIds = <String>{};
+      final seenExams = <String>{};
       for (final result in results) {
         final id = result['id'] as String? ?? '';
-        if (id.isNotEmpty && !seenIds.add(id)) continue;
+        final ex = (result['examName'] as String? ?? '').trim().toLowerCase();
+        final normEx = ex.replaceAll(RegExp(r'[^a-z0-9]'), '');
+        if (normEx.isNotEmpty && !seenExams.add(normEx)) continue;
+        if (id.isEmpty) continue;
         final subjects = await db.query('subject_results', where: 'resultId = ?', whereArgs: [id]);
         models.add(ResultModel.fromMap(result, subjects.map(SubjectResult.fromMap).toList()));
       }

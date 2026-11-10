@@ -223,6 +223,7 @@ class VoiceAssistantService {
     required String pct,
     required String grade,
     required bool isPass,
+    String? division,
     String? finalResultStatus,
   }) {
     final buffer = StringBuffer();
@@ -231,6 +232,9 @@ class VoiceAssistantService {
     buffer.write('प्रतिशत: $pct प्रतिशत है। ');
     if (grade.isNotEmpty) {
       buffer.write('ग्रेड: $grade है। ');
+    }
+    if (division != null && division.isNotEmpty && division != 'FAIL' && division != 'Needs Improvement') {
+      buffer.write('डिवीजन: $division। ');
     }
     if (finalResultStatus == 'PROMOTED') {
       buffer.write('बधाई हो, छात्र अगली कक्षा में प्रोन्नत हो गया है!');

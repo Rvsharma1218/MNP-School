@@ -2651,7 +2651,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                             border: Border.all(color: isPass ? Colors.green : Colors.red),
                           ),
                           child: Text(
-                            isPass ? 'PASSED ($grade)' : 'NEEDS IMPROVEMENT ($grade)',
+                            isPass ? '${res.finalResultStatus} (${res.shortDivision})' : 'NEEDS IMPROVEMENT ($grade)',
                             style: TextStyle(
                               color: isPass ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
                               fontSize: 11,
@@ -2666,6 +2666,18 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                       children: [
                         Text('Obtained: ${res.obtainedMarks.toInt()} / ${res.totalMarks.toInt()}', style: TextStyle(fontSize: 13, color: textSecondary)),
                         const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isPass ? const Color(0xFF1E3A8A).withValues(alpha: 0.08) : Colors.red.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            res.division,
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isPass ? const Color(0xFF1E3A8A) : Colors.red),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Text('Percentage: $pct%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
                       ],
                     ),
@@ -2748,6 +2760,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                                         pct: pct,
                                         grade: grade,
                                         isPass: isPass,
+                                        division: res.division,
                                         finalResultStatus: res.finalResultStatus,
                                       );
                                       VoiceAssistantService.instance.toggleSpeak(id: resultId, text: speech);
@@ -2855,7 +2868,8 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                                       '📊 *प्राप्तांक:* ${res.obtainedMarks.toInt()} / ${res.totalMarks.toInt()}\n'
                                       '📈 *प्रतिशत:* $pct%\n'
                                       '🎯 *ग्रेड:* $grade\n'
-                                      '🏆 *स्थिति:* ${isPass ? "✅ उत्तीर्ण (PASSED)" : "⚠️ सुधार की आवश्यकता (NEEDS IMPROVEMENT)"}\n'
+                                      '🏆 *डिवीजन:* ${res.division}\n'
+                                      '🏅 *स्थिति:* ${isPass ? "✅ उत्तीर्ण (PASSED)" : "⚠️ सुधार की आवश्यकता (NEEDS IMPROVEMENT)"}\n'
                                       '━━━━━━━━━━━━━━━━━━━\n'
                                       'धन्यवाद!';
                                   WhatsAppService.sendMessage(
