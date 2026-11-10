@@ -20,7 +20,7 @@ class DeviceSecurityGate extends StatefulWidget {
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProviderStateMixin {
-  static int currentVersionCode = 2006;
+  static int currentVersionCode = 2007;
   static String currentVersion = '1.0.1';
   bool _versionInitialized = false;
 
