@@ -199,65 +199,120 @@ export default function FeesView() {
     });
   }, [filteredPayments, students, settings.currentSession]);
 
-  // Filter Defaulters using live auto-accrued dues, class filter, and pending date filter
-  const defaultersList = students.map(s => ({
-    ...s,
-    feeMetrics: calculateStudentFeeMetrics(s, payments)
-  })).filter(s => {
-    if (s.feeMetrics.currentDue <= 0) return false;
-
-    // Class filter
-    if (pendingClass !== 'all') {
-      const cls = s.studentType === 'school' ? s.className : s.course;
-      if (String(cls).trim().toLowerCase() !== String(pendingClass).trim().toLowerCase()) {
-        return false;
+  // Pre-calculate student fee metrics in one ultra-fast indexed memoized pass
+  const studentFeeMetricsMap = React.useMemo(() => {
+    const map = new Map();
+    const paymentsByStudent = new Map();
+    (payments || []).forEach(p => {
+      if (p.studentId) {
+        const k = String(p.studentId).trim();
+        if (!paymentsByStudent.has(k)) paymentsByStudent.set(k, []);
+        paymentsByStudent.get(k).push(p);
       }
-    }
+      const adm = String(p.admissionNumber || p.admissionNo || '').trim();
+      if (adm) {
+        if (!paymentsByStudent.has(adm)) paymentsByStudent.set(adm, []);
+        paymentsByStudent.get(adm).push(p);
+      }
+    });
 
-    // Pending Date / Month filter
-    if (pendingFilterMode === 'date') {
-      if (pendingSelectedDate !== todayStr) {
-        const selDate = new Date(pendingSelectedDate);
-        if (s.admissionDate) {
-          const adm = new Date(s.admissionDate);
-          if (adm > selDate) return false;
+    (students || []).forEach(s => {
+      const sId = String(s.id || '').trim();
+      const sStuId = String(s.studentId || '').trim();
+      const sAdm = String(s.admissionNumber || s.admissionNo || '').trim();
+
+      const matchedList = [
+        ...(paymentsByStudent.get(sId) || []),
+        ...(sStuId && sStuId !== sId ? (paymentsByStudent.get(sStuId) || []) : []),
+        ...(sAdm ? (paymentsByStudent.get(sAdm) || []) : [])
+      ];
+      // Dedup matched payments for this student
+      const seenP = new Set();
+      const dedupedP = [];
+      matchedList.forEach(p => {
+        const pk = p.id || `${p.amount}_${p.paymentDate}`;
+        if (!seenP.has(pk)) {
+          seenP.add(pk);
+          dedupedP.push(p);
         }
-      }
-    } else if (pendingFilterMode === 'month') {
-      const [selYear, selMonth] = pendingSelectedMonth.split('-').map(Number);
-      if (s.admissionDate) {
-        const adm = new Date(s.admissionDate);
-        if (adm.getFullYear() > selYear || (adm.getFullYear() === selYear && (adm.getMonth() + 1) > selMonth)) {
+      });
+
+      map.set(s.id, calculateStudentFeeMetrics(s, dedupedP));
+    });
+    return map;
+  }, [students, payments]);
+
+  // Filter Defaulters using memoized live auto-accrued dues, class filter, and pending date filter
+  const defaultersList = React.useMemo(() => {
+    return students.map(s => ({
+      ...s,
+      feeMetrics: studentFeeMetricsMap.get(s.id) || { currentDue: 0 }
+    })).filter(s => {
+      if ((s.feeMetrics.currentDue || 0) <= 0) return false;
+
+      // Class filter
+      if (pendingClass !== 'all') {
+        const cls = s.studentType === 'school' ? s.className : s.course;
+        if (String(cls).trim().toLowerCase() !== String(pendingClass).trim().toLowerCase()) {
           return false;
         }
       }
-    }
 
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      s.name?.toLowerCase().includes(q) ||
-      s.studentId?.toLowerCase().includes(q) ||
-      s.mobile?.includes(q) ||
-      (s.className && String(s.className).toLowerCase().includes(q))
-    );
-  });
+      // Pending Date / Month filter
+      if (pendingFilterMode === 'date') {
+        if (pendingSelectedDate !== todayStr) {
+          const selDate = new Date(pendingSelectedDate);
+          if (s.admissionDate) {
+            const adm = new Date(s.admissionDate);
+            if (adm > selDate) return false;
+          }
+        }
+      } else if (pendingFilterMode === 'month') {
+        const [selYear, selMonth] = pendingSelectedMonth.split('-').map(Number);
+        if (s.admissionDate) {
+          const adm = new Date(s.admissionDate);
+          if (adm.getFullYear() > selYear || (adm.getFullYear() === selYear && (adm.getMonth() + 1) > selMonth)) {
+            return false;
+          }
+        }
+      }
 
-  const totalDefaultersDue = defaultersList.reduce((acc, s) => acc + (Number(s.feeMetrics.currentDue) || 0), 0);
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        s.name?.toLowerCase().includes(q) ||
+        s.studentId?.toLowerCase().includes(q) ||
+        s.mobile?.includes(q) ||
+        (s.className && String(s.className).toLowerCase().includes(q))
+      );
+    });
+  }, [students, studentFeeMetricsMap, pendingClass, pendingFilterMode, pendingSelectedDate, pendingSelectedMonth, todayStr, searchQuery]);
+
+  const totalDefaultersDue = React.useMemo(() => {
+    return defaultersList.reduce((acc, s) => acc + (Number(s.feeMetrics.currentDue) || 0), 0);
+  }, [defaultersList]);
 
   // Global Dynamic Fee Totals (respecting selected class)
-  const classStudents = collectedClass === 'all'
-    ? students
-    : students.filter(s => {
-        const cls = s.studentType === 'school' ? s.className : s.course;
-        return String(cls).trim().toLowerCase() === String(collectedClass).trim().toLowerCase();
-      });
+  const classStudents = React.useMemo(() => {
+    return collectedClass === 'all'
+      ? students
+      : students.filter(s => {
+          const cls = s.studentType === 'school' ? s.className : s.course;
+          return String(cls).trim().toLowerCase() === String(collectedClass).trim().toLowerCase();
+        });
+  }, [students, collectedClass]);
 
-  const totalCollected = classFilteredPayments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
-  const totalPending = classStudents.reduce((acc, s) => {
-    const m = calculateStudentFeeMetrics(s, payments);
-    return acc + (Number(m.currentDue) || 0);
-  }, 0);
+  const totalCollected = React.useMemo(() => {
+    return classFilteredPayments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+  }, [classFilteredPayments]);
+
+  const totalPending = React.useMemo(() => {
+    return classStudents.reduce((acc, s) => {
+      const m = studentFeeMetricsMap.get(s.id);
+      return acc + (Number(m?.currentDue) || 0);
+    }, 0);
+  }, [classStudents, studentFeeMetricsMap]);
+
   const totalExpected = totalCollected + totalPending;
 
   // Today's Real Collections
