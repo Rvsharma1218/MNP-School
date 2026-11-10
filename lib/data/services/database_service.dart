@@ -934,6 +934,9 @@ CREATE TABLE monthly_fees (
         await db.execute('ALTER TABLE students ADD COLUMN $col');
       } catch (_) {}
     }
+    try {
+      await db.rawUpdate("UPDATE students SET createdBy = 'Principal' WHERE createdBy IS NULL OR createdBy = '' OR LOWER(createdBy) = 'admin' OR LOWER(createdBy) = 'school admin' OR LOWER(createdBy) = 'mnpschooledu'");
+    } catch (_) {}
     _studentColumnsVerified = true;
   }
 

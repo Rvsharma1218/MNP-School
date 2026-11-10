@@ -35,6 +35,29 @@ String _formatAuditDate(DateTime dt) {
   }
 }
 
+String _formatCreatedBy(String? createdBy) {
+  if (createdBy == null || createdBy.trim().isEmpty) return 'Principal';
+  final trimmed = createdBy.trim();
+  final lower = trimmed.toLowerCase();
+  if (lower == 'admin' || lower == 'school admin' || lower == 'mnpschooledu' || lower == 'principal') {
+    return 'Principal';
+  }
+  const teacherMap = {
+    't001': 'Ashish Sir',
+    't003': 'Neha Miss',
+    't004': 'Soni Mam',
+    't006': 'Roshani Miss',
+    't007': 'Anshika Miss',
+    't008': 'Anjali Miss',
+    't009': 'Ravi Sir',
+    'mnpsm_t010': 'Rozi Miss',
+  };
+  if (teacherMap.containsKey(lower)) {
+    return teacherMap[lower]!;
+  }
+  return trimmed;
+}
+
 class StudentProfileScreen extends ConsumerStatefulWidget {
   final String studentId;
   const StudentProfileScreen({super.key, required this.studentId});
@@ -362,7 +385,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
                               Icon(Icons.history_edu_rounded, size: 12, color: Colors.amber.shade300),
                               const SizedBox(width: 5),
                               Text(
-                                'Entry: ${_formatAuditDate(student.createdAt)} • By ${student.createdBy?.isNotEmpty == true ? student.createdBy! : "Admin"}',
+                                'Entry: ${_formatAuditDate(student.createdAt)} • By ${_formatCreatedBy(student.createdBy)}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10.5,
@@ -529,7 +552,7 @@ class _InfoTab extends StatelessWidget {
           _buildRow(context, Icons.location_on_outlined, 'Address', student.address),
           _buildRow(context, Icons.event_outlined, 'Admission Date', AppUtils.formatDate(student.admissionDate)),
           _buildRow(context, Icons.access_time_rounded, 'Registration Date & Time', _formatAuditDate(student.createdAt)),
-          _buildRow(context, Icons.person_add_alt_1_outlined, 'Registered By', student.createdBy?.isNotEmpty == true ? student.createdBy! : 'Admin'),
+          _buildRow(context, Icons.person_add_alt_1_outlined, 'Registered By', _formatCreatedBy(student.createdBy)),
         ]),
         const SizedBox(height: 16),
         if (student.studentType == 'school')

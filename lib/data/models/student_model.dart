@@ -204,6 +204,13 @@ class StudentModel {
     return double.tryParse(val.toString().trim());
   }
 
+  static String? _resolveCreatedBy(String? val) {
+    if (val == null || val.trim().isEmpty) return 'Principal';
+    final lower = val.trim().toLowerCase();
+    if (lower == 'admin' || lower == 'school admin' || lower == 'mnpschooledu') return 'Principal';
+    return val.trim();
+  }
+
   factory StudentModel.fromMap(Map<String, dynamic> map) {
     final rawPhoto = map['photoPath']?.toString() ?? map['photoUrl']?.toString();
     final resolvedPhoto = (rawPhoto == null || rawPhoto.trim().isEmpty) ? null : rawPhoto.trim();
@@ -270,7 +277,7 @@ class StudentModel {
       session: map['session']?.toString(),
       admissionDate: _parseDate(map['admissionDate'] ?? map['joiningDate'], DateTime.now()),
       createdAt: _parseDate(map['createdAt'], DateTime.now()),
-      createdBy: map['createdBy']?.toString() ?? map['createdByName']?.toString(),
+      createdBy: _resolveCreatedBy(map['createdBy']?.toString() ?? map['createdByName']?.toString()),
       initialTotalFees: _safeDouble(map['totalFees'] ?? map['totalFee']),
       initialPaidFees: _safeDouble(map['paidFees'] ?? map['totalPaid']),
       monthlyFee: resolvedMonthlyFee,

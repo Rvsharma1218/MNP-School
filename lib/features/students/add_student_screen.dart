@@ -326,8 +326,12 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
         admissionDate: _admissionDate,
         createdAt: DateTime.now(),
         createdBy: SessionService.instance.isTeacher
-            ? (SessionService.instance.teacherName?.isNotEmpty == true ? SessionService.instance.teacherName! : 'Teacher')
-            : 'School Admin',
+            ? (SessionService.instance.teacherName?.isNotEmpty == true
+                ? SessionService.instance.teacherName!
+                : (SessionService.instance.teacherId?.isNotEmpty == true
+                    ? 'Teacher (${SessionService.instance.teacherId!})'
+                    : 'Teacher'))
+            : 'Principal',
       );
 
       await ref.read(studentsProvider.notifier).addStudent(student);
