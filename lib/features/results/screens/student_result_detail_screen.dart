@@ -425,7 +425,7 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                   Expanded(
                     child: _buildMetricItem(
                       'Result',
-                      _status == 'FAIL' ? 'NEEDS IMPROVEMENT' : _status,
+                      _status == 'FAIL' ? 'NEEDS IMPROVEMENT' : '$_status (${_currentResult.shortDivision})',
                       isPass ? Colors.green : Colors.red,
                     ),
                   ),

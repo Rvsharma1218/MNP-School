@@ -1921,7 +1921,7 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> {
                   ),
                   title: Text(r.examName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
                   subtitle: Text(
-                    '${r.obtainedMarks.toInt()}/${r.totalMarks.toInt()} • ${r.overallPercentage.toStringAsFixed(1)}% • Grade: ${r.overallGrade}',
+                    '${r.obtainedMarks.toInt()}/${r.totalMarks.toInt()} • ${r.overallPercentage.toStringAsFixed(1)}% • Grade: ${r.overallGrade} • ${r.shortDivision}',
                     style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700, fontSize: 12),
                   ),
                   trailing: Row(

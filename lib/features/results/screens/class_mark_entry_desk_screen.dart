@@ -266,32 +266,43 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     final sName = s.name.trim().toLowerCase();
     final rRoll = (r.rollNumber ?? '').trim().toLowerCase();
     final sRoll = (s.rollNumber ?? '').trim().toLowerCase();
-    final rClass = (r.className ?? '').trim().toLowerCase();
-    final sClass = (s.className ?? s.course ?? '').trim().toLowerCase();
+    final rClass = _normalizeClass(r.className ?? '');
+    final sClass = _normalizeClass(s.className ?? s.course ?? '');
 
     // 1. Strict ID Match (Primary & Unique identity)
     if (rId.isNotEmpty) {
       if (rId == sId || rId == sStuId || rId == sAdm) return true;
     }
 
-    // 2. Strict Roll + Class + Name match (Never match by name alone!)
-    if (rRoll.isNotEmpty && sRoll.isNotEmpty && rRoll == sRoll) {
-      final classMatches = rClass.isEmpty || sClass.isEmpty || rClass == sClass;
-      if (classMatches) {
-        if (rName.isEmpty || sName.isEmpty || rName == sName) return true;
+    // 2. Strict Roll + Class match (with leading zero normalization e.g. '01' == '1')
+    if (rRoll.isNotEmpty && sRoll.isNotEmpty) {
+      final rNum = int.tryParse(rRoll);
+      final sNum = int.tryParse(sRoll);
+      final rollMatches = (rNum != null && sNum != null && rNum == sNum) || rRoll == sRoll;
+      if (rollMatches) {
+        final classMatches = rClass.isEmpty || sClass.isEmpty || rClass == sClass || rClass.contains(sClass) || sClass.contains(rClass);
+        if (classMatches) {
+          if (rName.isEmpty || sName.isEmpty || rName == sName) return true;
+        }
       }
     }
+
+    // 3. Name + Class match
+    if (rName.isNotEmpty && sName.isNotEmpty && rName == sName) {
+      final classMatches = rClass.isEmpty || sClass.isEmpty || rClass == sClass || rClass.contains(sClass) || sClass.contains(rClass);
+      if (classMatches) return true;
+    }
+
     return false;
   }
 
   ResultModel? _getResultForStudent(StudentModel s) {
+    final selTitle = (_selectedExam?.title ?? _examTitle).trim().toLowerCase();
     return _allResults.where((r) {
       final isStud = _matchesStudent(r, s);
       if (!isStud) return false;
-      if (_selectedExam != null) {
-        return r.examName.trim().toLowerCase() == _selectedExam!.title.trim().toLowerCase();
-      }
-      return r.examName.trim().toLowerCase() == _examTitle.trim().toLowerCase();
+      final rEx = r.examName.trim().toLowerCase();
+      return rEx == selTitle || rEx.contains(selTitle) || selTitle.contains(rEx);
     }).firstOrNull;
   }
 
@@ -342,7 +353,20 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     );
 
     if (saved != null) {
+      // 1. Instantly update in-memory list with zero delay (Optimistic UI Update)
+      setState(() {
+        final idx = _allResults.indexWhere((r) => r.id == saved.id || _matchesStudent(r, student));
+        if (idx >= 0) {
+          _allResults[idx] = saved;
+        } else {
+          _allResults.insert(0, saved);
+        }
+      });
+
+      // 2. Clear reload throttle and persist fresh from DB
+      _lastResultsReload = null;
       await _loadResultsOnly();
+
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -351,7 +375,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            content: Text('✓ Marks saved for ${student.name}'),
+            content: Text('✓ Marks saved for ${student.name} • ${saved.division}'),
             backgroundColor: Colors.green.shade700,
           ),
         );
@@ -866,7 +890,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                                     ),
                                   ),
 
-                                  // Status Chip
+                                  // Status Chip with Division
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
@@ -876,7 +900,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      isFilled ? res.finalResultStatus : 'PENDING',
+                                      isFilled ? (isPass ? '\ (\)' : res.finalResultStatus) : 'PENDING',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,

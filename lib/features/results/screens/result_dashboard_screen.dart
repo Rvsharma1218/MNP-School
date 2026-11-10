@@ -145,21 +145,35 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     final deduped = <ResultModel>[];
     for (final r in _results) {
       final sId = r.studentId.trim().toLowerCase();
-      final sName = (r.studentName ?? '').trim().toLowerCase();
-      final sRoll = (r.rollNumber ?? '').trim().toLowerCase();
       final ex = r.examName.trim().toLowerCase();
+      final normEx = ex.replaceAll(RegExp(r'[^a-z0-9]'), '');
 
       final student = _findStudent(r);
-      final canonicalId = student != null && student.studentId.isNotEmpty ? student.studentId.trim().toLowerCase() : sId;
+      final cId = student != null ? student.id.trim().toLowerCase() : '';
+      final cStuId = student != null ? student.studentId.trim().toLowerCase() : '';
+      final cAdm = student != null ? student.admissionNumber.trim().toLowerCase() : '';
+      final sEffectiveName = (student?.name ?? r.studentName ?? '').trim().toLowerCase();
+      final sEffectiveRoll = (student?.rollNumber ?? r.rollNumber ?? '').trim().toLowerCase();
+      final sNormRoll = int.tryParse(sEffectiveRoll)?.toString() ?? sEffectiveRoll;
+      final sClass = (student?.className ?? student?.course ?? r.className ?? '').trim().toLowerCase();
+      final normClass = sClass.replaceAll(RegExp(r'class|th|st|nd|rd|\s|-'), '');
 
-      final key1 = (canonicalId.isNotEmpty && ex.isNotEmpty) ? '${canonicalId}___$ex' : null;
-      final key2 = (sName.isNotEmpty && sRoll.isNotEmpty && ex.isNotEmpty) ? '${sName}___${sRoll}___$ex' : null;
+      final keys = <String>[];
+      if (sId.isNotEmpty && normEx.isNotEmpty) keys.add('id_${sId}_$normEx');
+      if (cId.isNotEmpty && normEx.isNotEmpty) keys.add('cid_${cId}_$normEx');
+      if (cStuId.isNotEmpty && normEx.isNotEmpty) keys.add('cstuid_${cStuId}_$normEx');
+      if (cAdm.isNotEmpty && normEx.isNotEmpty) keys.add('cadm_${cAdm}_$normEx');
+      if (sEffectiveName.isNotEmpty && sNormRoll.isNotEmpty && normEx.isNotEmpty) {
+        keys.add('nameroll_${sEffectiveName}_${sNormRoll}_$normEx');
+      }
+      if (normClass.isNotEmpty && sNormRoll.isNotEmpty && normEx.isNotEmpty) {
+        keys.add('classroll_${normClass}_${sNormRoll}_$normEx');
+      }
 
-      final isDup = (key1 != null && seen.contains(key1)) || (key2 != null && seen.contains(key2));
+      final isDup = keys.any((k) => seen.contains(k));
       if (isDup) continue;
 
-      if (key1 != null) seen.add(key1);
-      if (key2 != null) seen.add(key2);
+      seen.addAll(keys);
       deduped.add(r);
     }
     if (SessionService.instance.hasAllClassesAccess) return deduped;
@@ -1397,7 +1411,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      "${r.obtainedMarks.toInt()}/${r.totalMarks.toInt()} (${r.overallPercentage.toStringAsFixed(1)}%) • Grade: ${r.overallGrade}",
+                                      "${r.obtainedMarks.toInt()}/${r.totalMarks.toInt()} (${r.overallPercentage.toStringAsFixed(1)}%) • Grade: ${r.overallGrade} • ${r.shortDivision}",
                                       style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF1E3A8A)),
                                     ),
                                   ],
@@ -1410,7 +1424,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  r.finalResultStatus,
+                                  isPass ? "${r.finalResultStatus} (${r.shortDivision})" : r.finalResultStatus,
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,

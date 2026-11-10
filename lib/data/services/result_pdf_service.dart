@@ -411,7 +411,7 @@ class ResultPdfService {
                         pw.SizedBox(width: 8),
                         pw.Text('Division: ', style: pw.TextStyle(font: ttf, fontSize: 9.5, color: textDark)),
                         pw.Text(
-                          !isPass ? 'Needs Improvement' : (pct >= 60 ? '1st Division' : pct >= 45 ? '2nd Division' : '3rd Division'),
+                          !isPass ? 'Needs Improvement' : result.division,
                           style: pw.TextStyle(font: ttfBold, fontSize: 9.5, color: textDark),
                         ),
                       ],

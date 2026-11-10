@@ -294,10 +294,14 @@ class _FeeScreenState extends ConsumerState<FeeScreen> {
   }
 
   Future<void> _saveDemand() async {
+    setState(() => _saving = true);
     try {
       final updated = await _saveDemandInternal();
       if (!mounted) return;
-      setState(() => _fee = updated);
+      setState(() {
+        _fee = updated;
+        _saving = false;
+      });
       _fillControllers(updated);
 
       ref.invalidate(feeProvider(widget.studentId));
@@ -716,21 +720,32 @@ class _FeeScreenState extends ConsumerState<FeeScreen> {
     );
   }
 
-  void _previousMonth() {
+  Future<void> _switchMonth(int delta) async {
+    final newMonth = DateTime(_selectedMonth.year, _selectedMonth.month + delta);
     setState(() {
-      _selectedMonth =
-          DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+      _selectedMonth = newMonth;
     });
-    _load();
+
+    // Instant smooth load of only the target month's record — NO full screen blanking!
+    try {
+      final monthly = await DatabaseService.instance.ensureMonthlyFee(
+        studentId: widget.studentId,
+        month: _monthKey,
+        autoCreate: false,
+      );
+      if (!mounted) return;
+      setState(() {
+        _fee = monthly;
+      });
+      _fillControllers(monthly);
+    } catch (e) {
+      if (mounted) _error(e.toString());
+    }
   }
 
-  void _nextMonth() {
-    setState(() {
-      _selectedMonth =
-          DateTime(_selectedMonth.year, _selectedMonth.month + 1);
-    });
-    _load();
-  }
+  void _previousMonth() => _switchMonth(-1);
+
+  void _nextMonth() => _switchMonth(1);
 
   void _error(String message) {
     if (!mounted) return;

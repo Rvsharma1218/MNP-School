@@ -3607,16 +3607,18 @@ class _BulkWhatsAppReminderDialogState extends State<_BulkWhatsAppReminderDialog
   }
 
   Future<void> _preloadPayments() async {
-    for (final row in widget.rows) {
-      try {
-        final pList = await DatabaseService.instance.getPayments(row.student.id);
-        if (mounted) {
-          setState(() {
-            _studentPaymentsCache[row.student.id] = pList;
-          });
-        }
-      } catch (_) {}
-    }
+    try {
+      final allPayments = await DatabaseService.instance.getAllPayments();
+      final map = <String, List<PaymentModel>>{};
+      for (final p in allPayments) {
+        map.putIfAbsent(p.studentId, () => []).add(p);
+      }
+      if (mounted) {
+        setState(() {
+          _studentPaymentsCache.addAll(map);
+        });
+      }
+    } catch (_) {}
   }
 
   String _buildMessageForStudent(_StudentFeeRow row) {

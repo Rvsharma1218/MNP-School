@@ -184,6 +184,24 @@ class DatabaseService {
           ''');
         } catch (_) {}
 
+        // Auto-heal duplicate results (keep only latest row per student per exam)
+        try {
+          await db.execute('''
+            DELETE FROM results 
+            WHERE rowid NOT IN (
+              SELECT MAX(rowid) FROM results GROUP BY LOWER(TRIM(studentId)), LOWER(TRIM(examName))
+            )
+          ''');
+          await db.execute('''
+            DELETE FROM results 
+            WHERE rowid NOT IN (
+              SELECT MAX(rowid) FROM results 
+              GROUP BY LOWER(TRIM(COALESCE(studentName, ''))), LOWER(TRIM(COALESCE(rollNumber, ''))), LOWER(TRIM(COALESCE(className, ''))), LOWER(TRIM(examName))
+            ) AND TRIM(COALESCE(studentName, '')) != ''
+          ''');
+          await db.execute('DELETE FROM subject_results WHERE resultId NOT IN (SELECT id FROM results)');
+        } catch (_) {}
+
         // Auto-heal orphan fees (remove fees for students not in students table)
         try {
           await db.execute('''
@@ -870,7 +888,14 @@ CREATE TABLE monthly_fees (
     final y = year ?? DateTime.now().year;
     if (kIsWeb) return FirestoreService.instance.nextReceiptNumber();
     final db = await database;
-    final rows = await db.query('payments');
+    final rows = await db.query(
+      'payments',
+      columns: ['receiptNumber'],
+      where: 'receiptNumber LIKE ? OR receiptNumber LIKE ?',
+      whereArgs: ['REC-$y-%', 'REC%'],
+      orderBy: 'rowid DESC',
+      limit: 100,
+    );
     final regExp = RegExp('REC-$y-(\\d+)', caseSensitive: false);
     final altRegExp = RegExp('REC(\\d+)', caseSensitive: false);
     int maxSeq = 0;
@@ -1314,6 +1339,22 @@ CREATE TABLE monthly_fees (
       }
     }
     await batch.commit(noResult: true);
+    try {
+      await db.execute('''
+        DELETE FROM results 
+        WHERE rowid NOT IN (
+          SELECT MAX(rowid) FROM results GROUP BY LOWER(TRIM(studentId)), LOWER(TRIM(examName))
+        )
+      ''');
+      await db.execute('''
+        DELETE FROM results 
+        WHERE rowid NOT IN (
+          SELECT MAX(rowid) FROM results 
+          GROUP BY LOWER(TRIM(COALESCE(studentName, ''))), LOWER(TRIM(COALESCE(rollNumber, ''))), LOWER(TRIM(COALESCE(className, ''))), LOWER(TRIM(examName))
+        ) AND TRIM(COALESCE(studentName, '')) != ''
+      ''');
+      await db.execute('DELETE FROM subject_results WHERE resultId NOT IN (SELECT id FROM results)');
+    } catch (_) {}
     _cachedResults = null;
     onResultsChanged.add(null);
   }
@@ -2623,8 +2664,8 @@ CREATE TABLE monthly_fees (
       );
     }
 
-    await _propagatePreviousDueForward(studentId, month);
-    await refreshLegacyFeeAggregate(studentId);
+    unawaited(_propagatePreviousDueForward(studentId, month).catchError((_) {}));
+    unawaited(refreshLegacyFeeAggregate(studentId).catchError((_) {}));
     return fee;
   }
 
