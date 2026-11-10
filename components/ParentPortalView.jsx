@@ -1167,8 +1167,8 @@ export default function ParentPortalView() {
                   let division = 'Needs Improvement';
                   let shortDivision = 'FAIL';
                   if (r.status === 'PROMOTED' || isPass) {
-                    if (numPct >= 75) { division = '1st Division (Distinction)'; shortDivision = '1st (Dist.)'; }
-                    else if (numPct >= 60) { division = '1st Division'; shortDivision = '1st Div'; }
+                    if (numPct >= 85) { division = '1st Division (Distinction)'; shortDivision = '1st (Dist.)'; }
+                    else if (numPct >= 65) { division = '1st Division'; shortDivision = '1st Div'; }
                     else if (numPct >= 45) { division = '2nd Division'; shortDivision = '2nd Div'; }
                     else if (numPct >= 33) { division = '3rd Division'; shortDivision = '3rd Div'; }
                   }
