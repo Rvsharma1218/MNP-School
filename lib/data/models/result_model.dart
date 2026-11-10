@@ -162,12 +162,12 @@ class ResultModel {
     return 'F';
   }
 
-  /// Official standard division classification (CBSE / State Boards)
+  /// Official school division classification
   String get division {
     if (failedSubjectsCount > 0 || overallPercentage < 33.0) return 'FAIL';
     final p = overallPercentage;
-    if (p >= 75.0) return '1st Division (Distinction)';
-    if (p >= 60.0) return '1st Division';
+    if (p >= 85.0) return '1st Division (Distinction)';
+    if (p >= 65.0) return '1st Division';
     if (p >= 45.0) return '2nd Division';
     if (p >= 33.0) return '3rd Division';
     return 'FAIL';
@@ -176,8 +176,8 @@ class ResultModel {
   String get shortDivision {
     if (failedSubjectsCount > 0 || overallPercentage < 33.0) return 'FAIL';
     final p = overallPercentage;
-    if (p >= 75.0) return '1st (Dist.)';
-    if (p >= 60.0) return '1st Div';
+    if (p >= 85.0) return '1st (Dist.)';
+    if (p >= 65.0) return '1st Div';
     if (p >= 45.0) return '2nd Div';
     if (p >= 33.0) return '3rd Div';
     return 'FAIL';
