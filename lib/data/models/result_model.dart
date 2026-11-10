@@ -28,7 +28,13 @@ class SubjectResult {
 
   double get percentage => totalMarks > 0 ? (marks / totalMarks) * 100 : 0;
 
-  bool get isPass => marks >= passingMarks;
+  bool get isPass {
+    if (totalMarks <= 0) return true;
+    final threshold = (passingMarks > 0 && passingMarks <= totalMarks)
+        ? passingMarks
+        : (totalMarks * 0.33);
+    return marks >= threshold;
+  }
 
   String get grade {
     if (gradeOverride != null && gradeOverride!.trim().isNotEmpty) {
@@ -62,7 +68,9 @@ class SubjectResult {
   factory SubjectResult.fromMap(Map<String, dynamic> map) {
     final obt = (map['marks'] as num?)?.toDouble() ?? 0.0;
     final maxM = (map['totalMarks'] as num?)?.toDouble() ?? 100.0;
-    final passM = (map['passingMarks'] as num?)?.toDouble() ?? 33.0;
+    final defaultPass = maxM * 0.33;
+    final rawPass = (map['passingMarks'] as num?)?.toDouble();
+    final passM = (rawPass != null && rawPass > 0 && rawPass <= maxM) ? rawPass : defaultPass;
     final th = (map['theoryMarks'] as num?)?.toDouble() ?? 0.0;
     final pr = (map['practicalMarks'] as num?)?.toDouble() ?? 0.0;
     final inM = (map['internalMarks'] as num?)?.toDouble() ?? 0.0;
@@ -120,11 +128,13 @@ class ResultModel {
 
   /// Strict Pass/Fail/Promoted calculation:
   /// If status is explicitly set to 'PROMOTED', returns true (Passed with promotion).
+  /// If all subjects are passed and percentage >= 33, student is PASS (auto-heals stale FAIL doc status).
   /// If status is 'FAIL', returns false.
   /// Otherwise, if any subject is failed, student is FAIL.
   bool get isPass {
     final s = status?.toUpperCase().trim();
     if (s == 'PROMOTED') return true;
+    if (failedSubjectsCount == 0 && overallPercentage >= 33.0) return true;
     if (s == 'FAIL') return false;
     if (s == 'PASS') return true;
     return failedSubjectsCount == 0 && overallPercentage >= 33.0;
@@ -134,9 +144,10 @@ class ResultModel {
   String get finalResultStatus {
     final s = status?.toUpperCase().trim();
     if (s == 'PROMOTED') return 'PROMOTED';
+    if (failedSubjectsCount == 0 && overallPercentage >= 33.0) return 'PASS';
+    if (failedSubjectsCount > 0 || overallPercentage < 33.0) return 'FAIL';
     if (s == 'FAIL') return 'FAIL';
     if (s == 'PASS') return 'PASS';
-    if (failedSubjectsCount > 0) return 'FAIL';
     return overallPercentage >= 33.0 ? 'PASS' : 'FAIL';
   }
 

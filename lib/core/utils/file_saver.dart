@@ -43,14 +43,32 @@ class FileSaver {
         ? schoolName.trim().replaceAll(RegExp(r'[^\w\s-]'), '').replaceAll(' ', '_')
         : mainSchoolFolder;
 
-    // ─── Try public Downloads folder (/storage/emulated/0/Download)
+    // ─── 1. Try public storage root (Internal Storage / $sanitizedSchool - outside/before Download)
+    try {
+      final extDir = await getExternalStorageDirectory();
+      if (extDir != null) {
+        final parts = extDir.path.split('/Android');
+        if (parts.length >= 2) {
+          final rootDir = parts[0]; // e.g. /storage/emulated/0
+          final targetDir = Directory('$rootDir/$sanitizedSchool');
+          await targetDir.create(recursive: true);
+          final file = File('${targetDir.path}/$filename');
+          await file.writeAsBytes(bytes, flush: true);
+          return file.path;
+        }
+      }
+    } catch (e) {
+      debugPrint('Root storage dir error: $e');
+    }
+
+    // ─── 2. Try public Download folder fallback ($downloadsRoot / $sanitizedSchool)
     try {
       final extDir = await getExternalStorageDirectory();
       if (extDir != null) {
         final parts = extDir.path.split('/Android');
         if (parts.length >= 2) {
           final downloadsRoot = '${parts[0]}/Download';
-          final targetDir = Directory('$downloadsRoot/$sanitizedSchool/${category.folderName}');
+          final targetDir = Directory('$downloadsRoot/$sanitizedSchool');
           await targetDir.create(recursive: true);
           final file = File('${targetDir.path}/$filename');
           await file.writeAsBytes(bytes, flush: true);
@@ -61,10 +79,10 @@ class FileSaver {
       debugPrint('External download dir error: $e');
     }
 
-    // ─── Fallback: App external or documents directory
+    // ─── 3. Fallback: App documents directory
     try {
       final appDir = await getApplicationDocumentsDirectory();
-      final targetDir = Directory('${appDir.path}/$sanitizedSchool/${category.folderName}');
+      final targetDir = Directory('${appDir.path}/$sanitizedSchool');
       await targetDir.create(recursive: true);
       final file = File('${targetDir.path}/$filename');
       await file.writeAsBytes(bytes, flush: true);
