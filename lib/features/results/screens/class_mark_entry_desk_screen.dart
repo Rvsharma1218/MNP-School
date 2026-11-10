@@ -287,6 +287,12 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
         final classMatches = rClass.isEmpty || sClass.isEmpty || rClass == sClass || rClass.contains(sClass) || sClass.contains(rClass);
         if (classMatches) {
           if (rName.isEmpty || sName.isEmpty || rName == sName) return true;
+          // Handles partial/spelling variations like "Adit Kumar" vs "Aditya Kumar" when Roll and Class are identical
+          final rFirst = rName.split(' ').first;
+          final sFirst = sName.split(' ').first;
+          if (rFirst == sFirst || rFirst.startsWith(sFirst) || sFirst.startsWith(rFirst) || rName.contains(sFirst) || sName.contains(rFirst)) {
+            return true;
+          }
         }
       }
     }
