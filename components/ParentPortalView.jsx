@@ -155,22 +155,34 @@ export default function ParentPortalView() {
   attLogs.sort((a, b) => b.date.localeCompare(a.date));
   const attendanceRate = totalMarkedDays > 0 ? Math.round((presentDays / totalMarkedDays) * 100) : 100;
 
-  // Filter results for this student (supports doc id, studentId, admissionNo, and student name fallback)
-  const studentResults = results.filter((r) => {
-    if (!student) return false;
-    const matchId =
-      r.studentId === student.id ||
-      (student.studentId && r.studentId === student.studentId) ||
-      (student.admissionNo && (r.studentId === student.admissionNo || r.admissionNumber === student.admissionNo || r.admissionNo === student.admissionNo)) ||
-      (student.admissionNumber && (r.studentId === student.admissionNumber || r.admissionNumber === student.admissionNumber || r.admissionNo === student.admissionNumber));
-    if (matchId) return true;
-    if (r.studentName && student.name && r.studentName.trim().toLowerCase() === student.name.trim().toLowerCase()) {
-      if (!r.className || !student.className || r.className.trim().toLowerCase() === student.className.trim().toLowerCase()) {
-        return true;
+  // Filter results for this student (supports doc id, studentId, admissionNo, and student name fallback) with deduplication
+  const studentResults = useMemo(() => {
+    if (!student) return [];
+    const matched = results.filter((r) => {
+      const matchId =
+        r.studentId === student.id ||
+        (student.studentId && r.studentId === student.studentId) ||
+        (student.admissionNo && (r.studentId === student.admissionNo || r.admissionNumber === student.admissionNo || r.admissionNo === student.admissionNo)) ||
+        (student.admissionNumber && (r.studentId === student.admissionNumber || r.admissionNumber === student.admissionNumber || r.admissionNo === student.admissionNumber));
+      if (matchId) return true;
+      if (r.studentName && student.name && r.studentName.trim().toLowerCase() === student.name.trim().toLowerCase()) {
+        if (!r.className || !student.className || r.className.trim().toLowerCase() === student.className.trim().toLowerCase()) {
+          return true;
+        }
       }
-    }
-    return false;
-  });
+      return false;
+    });
+
+    const seenExams = new Set();
+    const deduped = [];
+    matched.forEach(r => {
+      const ex = (r.examName || r.exam || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (ex && seenExams.has(ex)) return;
+      if (ex) seenExams.add(ex);
+      deduped.push(r);
+    });
+    return deduped;
+  }, [results, student]);
 
   // Filter notices for students/parents
   const studentNotices = notices.filter((n) => {
@@ -1150,6 +1162,16 @@ export default function ParentPortalView() {
                   const obt = rawSubjects.reduce((sum, s) => sum + (Number(s.marks) || 0), 0);
                   const pct = total > 0 ? ((obt / total) * 100).toFixed(1) : '0.0';
                   const grade = Number(pct) >= 90 ? 'A+' : Number(pct) >= 80 ? 'A' : Number(pct) >= 70 ? 'B+' : Number(pct) >= 60 ? 'B' : Number(pct) >= 50 ? 'C' : Number(pct) >= 40 ? 'D' : 'F';
+                  const numPct = Number(pct);
+                  const isPass = Number(pct) >= 33;
+                  let division = 'Needs Improvement';
+                  let shortDivision = 'FAIL';
+                  if (r.status === 'PROMOTED' || isPass) {
+                    if (numPct >= 75) { division = '1st Division (Distinction)'; shortDivision = '1st (Dist.)'; }
+                    else if (numPct >= 60) { division = '1st Division'; shortDivision = '1st Div'; }
+                    else if (numPct >= 45) { division = '2nd Division'; shortDivision = '2nd Div'; }
+                    else if (numPct >= 33) { division = '3rd Division'; shortDivision = '3rd Div'; }
+                  }
 
                   return (
                     <div
@@ -1163,15 +1185,15 @@ export default function ParentPortalView() {
                               {r.examName || r.exam || 'Terminal Examination'}
                             </h4>
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${
-                              Number(pct) >= 33
+                              isPass
                                 ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/60'
                                 : 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200/60'
                             }`}>
-                              {Number(pct) >= 33 ? `PASSED • ${grade} (${pct}%)` : `NEEDS IMPROVEMENT • ${grade} (${pct}%)`}
+                              {isPass ? `PASSED (${shortDivision}) • ${grade} (${pct}%)` : `NEEDS IMPROVEMENT • ${grade} (${pct}%)`}
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
-                            Class: {r.className || student?.className || '10th'} • Date: {r.examDate || r.createdAt || 'Recent'}
+                            Class: {r.className || student?.className || '10th'} • Division: <strong className="text-slate-800 dark:text-slate-200">{division}</strong> • Date: {r.examDate || r.createdAt || 'Recent'}
                           </p>
                         </div>
 
@@ -1187,7 +1209,8 @@ export default function ParentPortalView() {
                                 totalMarks: total,
                                 percentage: pct,
                                 grade,
-                                isPass: Number(pct) >= 33,
+                                isPass,
+                                division,
                               });
                               toggleSpeech(`res_${r.id}`, speech);
                             }}
@@ -1207,8 +1230,7 @@ export default function ParentPortalView() {
                             onClick={() => {
                               const sName = student?.name || 'Student';
                               const schName = settings?.instituteName || settings?.schoolName || 'School';
-                              const isPass = Number(pct) >= 33;
-                              const msg = `📢 *परीक्षा परिणाम (Exam Result)*\n━━━━━━━━━━━━━━━━━━━\n👤 *छात्र:* ${sName}\n🏫 *स्कूल:* ${schName}\n📝 *परीक्षा:* ${r.examName || r.exam || 'Exam'}\n📊 *प्राप्तांक:* ${obt} / ${total}\n📈 *प्रतिशत:* ${pct}%\n🎯 *ग्रेड:* ${grade}\n🏆 *स्थिति:* ${isPass ? '✅ उत्तीर्ण (PASSED)' : '⚠️ सुधार की आवश्यकता (NEEDS IMPROVEMENT)'}\n━━━━━━━━━━━━━━━━━━━\nधन्यवाद!`;
+                              const msg = `📢 *परीक्षा परिणाम (Exam Result)*\n━━━━━━━━━━━━━━━━━━━\n👤 *छात्र:* ${sName}\n🏫 *स्कूल:* ${schName}\n📝 *परीक्षा:* ${r.examName || r.exam || 'Exam'}\n📊 *प्राप्तांक:* ${obt} / ${total}\n📈 *प्रतिशत:* ${pct}%\n🎯 *ग्रेड:* ${grade}\n🏆 *डिवीजन:* ${division}\n🏅 *स्थिति:* ${isPass ? '✅ उत्तीर्ण (PASSED)' : '⚠️ सुधार की आवश्यकता (NEEDS IMPROVEMENT)'}\n━━━━━━━━━━━━━━━━━━━\nधन्यवाद!`;
                               const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
                               window.open(url, '_blank');
                             }}

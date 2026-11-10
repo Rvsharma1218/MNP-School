@@ -249,16 +249,37 @@ export default function ResultsView() {
     });
   }, [students, settings, isPrincipal, hasAllClassesAccess, allowedClasses]);
 
-  // Teacher accessible results overall (for total counters and badge counts)
+  // Teacher accessible results overall (for total counters and badge counts with rock-solid deduplication)
   const scopedResults = useMemo(() => {
     const seen = new Set();
     const deduped = [];
     results.forEach(r => {
       const sId = (r.studentId || '').trim().toLowerCase();
       const ex = (r.examName || '').trim().toLowerCase();
-      const key = `${sId}___${ex}`;
-      if (sId && ex && seen.has(key)) return;
-      if (sId && ex) seen.add(key);
+      const normEx = ex.replace(/[^a-z0-9]/g, '');
+
+      const stu = findStudent(r);
+      const cId = stu?.id ? String(stu.id).trim().toLowerCase() : '';
+      const cStuId = stu?.studentId ? String(stu.studentId).trim().toLowerCase() : '';
+      const cAdm = stu?.admissionNumber ? String(stu.admissionNumber).trim().toLowerCase() : '';
+      const sName = (stu?.name || r.studentName || '').trim().toLowerCase();
+      const sRoll = String(stu?.rollNumber || r.rollNumber || '').trim().toLowerCase();
+      const sNormRoll = parseInt(sRoll, 10) ? String(parseInt(sRoll, 10)) : sRoll;
+      const sCls = (stu?.className || stu?.course || r.className || r.class || '').trim().toLowerCase();
+      const normCls = sCls.replace(/class|th|st|nd|rd|\s|-/g, '');
+
+      const keys = [];
+      if (sId && normEx) keys.push(`id_${sId}_${normEx}`);
+      if (cId && normEx) keys.push(`cid_${cId}_${normEx}`);
+      if (cStuId && normEx) keys.push(`cstuid_${cStuId}_${normEx}`);
+      if (cAdm && normEx) keys.push(`cadm_${cAdm}_${normEx}`);
+      if (sName && sNormRoll && normEx) keys.push(`nameroll_${sName}_${sNormRoll}_${normEx}`);
+      if (normCls && sNormRoll && normEx) keys.push(`clsroll_${normCls}_${sNormRoll}_${normEx}`);
+
+      const isDup = keys.some(k => seen.has(k));
+      if (isDup) return;
+
+      keys.forEach(k => seen.add(k));
       deduped.push(r);
     });
 
@@ -1076,6 +1097,15 @@ export default function ResultsView() {
                 });
                 const isPass = res.status === 'PROMOTED' ? true : (res.status !== 'FAIL' && failedSubs.length === 0 && Number(pct) >= passCrit);
                 const grade = Number(pct) >= 90 ? 'A+' : Number(pct) >= 80 ? 'A' : Number(pct) >= 70 ? 'B+' : Number(pct) >= 60 ? 'B' : Number(pct) >= 50 ? 'C' : Number(pct) >= 40 ? 'D' : 'F';
+                const numPct = Number(pct);
+                let division = 'Needs Improvement';
+                let shortDivision = 'FAIL';
+                if (res.status === 'PROMOTED' || isPass) {
+                  if (numPct >= 75) { division = '1st Division (Distinction)'; shortDivision = '1st (Dist.)'; }
+                  else if (numPct >= 60) { division = '1st Division'; shortDivision = '1st Div'; }
+                  else if (numPct >= 45) { division = '2nd Division'; shortDivision = '2nd Div'; }
+                  else if (numPct >= 33) { division = '3rd Division'; shortDivision = '3rd Div'; }
+                }
 
                 return (
                   <div
@@ -1117,7 +1147,7 @@ export default function ResultsView() {
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                             : 'bg-rose-100 text-rose-800 border border-rose-200'
                         }`}>
-                          {res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? 'PASSED' : 'NEEDS IMPROVEMENT'}
+                          {res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? `PASSED (${shortDivision})` : 'NEEDS IMPROVEMENT'}
                         </span>
                       </div>
 
@@ -1133,6 +1163,13 @@ export default function ResultsView() {
                             <span className="text-[10px] uppercase font-bold text-slate-400 block">Marks</span>
                             <span className="font-black text-slate-900 text-sm">
                               {totalObt} <span className="text-slate-400 font-normal text-xs">/ {grandMax}</span>
+                            </span>
+                          </div>
+
+                          <div className="text-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Division</span>
+                            <span className={`font-black text-xs ${isPass ? 'text-indigo-950 font-bold' : 'text-rose-600'}`}>
+                              {shortDivision}
                             </span>
                           </div>
 
@@ -1229,6 +1266,15 @@ export default function ResultsView() {
                       const pct = grandMax > 0 ? (totalObt / grandMax * 100).toFixed(1) : '0.0';
                       const isPass = res.status === 'PROMOTED' ? true : res.status !== 'FAIL' && Number(pct) >= 33;
                       const grade = Number(pct) >= 90 ? 'A+' : Number(pct) >= 80 ? 'A' : Number(pct) >= 70 ? 'B+' : Number(pct) >= 60 ? 'B' : Number(pct) >= 50 ? 'C' : Number(pct) >= 40 ? 'D' : 'F';
+                      const numPct = Number(pct);
+                      let division = 'Needs Improvement';
+                      let shortDivision = 'FAIL';
+                      if (res.status === 'PROMOTED' || isPass) {
+                        if (numPct >= 75) { division = '1st Division (Distinction)'; shortDivision = '1st (Dist.)'; }
+                        else if (numPct >= 60) { division = '1st Division'; shortDivision = '1st Div'; }
+                        else if (numPct >= 45) { division = '2nd Division'; shortDivision = '2nd Div'; }
+                        else if (numPct >= 33) { division = '3rd Division'; shortDivision = '3rd Div'; }
+                      }
 
                       return (
                         <tr key={res.id || idx} className="hover:bg-slate-50 transition-colors">
@@ -1248,7 +1294,7 @@ export default function ResultsView() {
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                               res.status === 'PROMOTED' ? 'bg-amber-100 text-amber-800' : isPass ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                             }`}>
-                              {res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? 'PASS' : 'NEEDS IMPROVEMENT'}
+                              {res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? `PASS (${shortDivision})` : 'NEEDS IMPROVEMENT'}
                             </span>
                           </td>
                           <td className="p-3 text-right">

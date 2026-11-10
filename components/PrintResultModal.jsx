@@ -163,9 +163,11 @@ export default function PrintResultModal({ result: propResult, student: propStud
   let division = 'Needs Improvement';
   if (finalStatus === 'PASS' || finalStatus === 'PROMOTED') {
     const numPct = Number(pct);
-    if (numPct >= 60) division = '1st Division (Distinction)';
+    if (numPct >= 75) division = '1st Division (Distinction)';
+    else if (numPct >= 60) division = '1st Division';
     else if (numPct >= 45) division = '2nd Division';
     else if (numPct >= 33) division = '3rd Division';
+    else division = 'Needs Improvement';
   }
 
   const handlePrint = () => {
