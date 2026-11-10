@@ -20,8 +20,9 @@ class DeviceSecurityGate extends StatefulWidget {
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProviderStateMixin {
-  static int currentVersionCode = 2003;
+  static int currentVersionCode = 2006;
   static String currentVersion = '1.0.1';
+  bool _versionInitialized = false;
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
@@ -70,11 +71,14 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
     try {
       final abi = Abi.current();
       if (abi == Abi.androidArm) {
-        // 32-bit ARM (armeabi-v7a)
+        // 32-bit ARM (armeabi-v7a) — never fallback to 64-bit on 32-bit phones
         if (v7.isNotEmpty) return v7;
+        return universal;
       } else if (abi == Abi.androidArm64) {
-        // 64-bit ARM (arm64-v8a)
+        // 64-bit ARM (arm64-v8a) — can run 64-bit or 32-bit fallback
         if (v8.isNotEmpty) return v8;
+        if (v7.isNotEmpty) return v7;
+        return universal;
       }
     } catch (_) {}
 
@@ -149,7 +153,20 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
         if (code > 0) currentVersionCode = code;
         if (name.isNotEmpty) currentVersion = name;
       }
+      _versionInitialized = true;
+
+      // Clean up any old update APKs once the new app is running
+      try {
+        final dir = await getTemporaryDirectory();
+        final files = dir.listSync();
+        for (final f in files) {
+          if (f is File && f.path.contains('mnp_school_update')) {
+            f.deleteSync();
+          }
+        }
+      } catch (_) {}
     } catch (_) {} finally {
+      _versionInitialized = true;
       if (_lastUpdateData != null) {
         await _evaluateAppUpdate(_lastUpdateData!);
       } else if (mounted) {
@@ -177,6 +194,7 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
 
   Future<void> _evaluateAppUpdate(Map<String, dynamic> data) async {
     _lastUpdateData = data;
+    if (!_versionInitialized) return; // Wait until device's real version is fetched
     final active = data['active'] == true;
     if (!active) {
       if (mounted && _pendingUpdate != null) {
@@ -313,13 +331,25 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
     _pulseController.repeat(reverse: true);
     _rotateController.repeat();
 
+    final remoteVersionCode = int.tryParse(_lastUpdateData?['versionCode']?.toString() ?? '0') ?? 0;
     final dir = await getTemporaryDirectory();
-    final apkFile = File('${dir.path}/mnp_school_update.apk');
+    final targetApkName = 'mnp_school_update_v${remoteVersionCode > 0 ? remoteVersionCode : "latest"}.apk';
+    final apkFile = File('${dir.path}/$targetApkName');
+
+    // Clean up any outdated partial packages from different build versions
+    try {
+      final files = dir.listSync();
+      for (final f in files) {
+        if (f is File && f.path.contains('mnp_school_update') && !f.path.endsWith(targetApkName)) {
+          f.deleteSync();
+        }
+      }
+    } catch (_) {}
 
     // Primary: GitHub Releases (free, unlimited, no CDN caching issues)
     // Mirror: empty — APKs removed from Vercel to reduce storage
     final primaryUrl = apkUrl.trim();
-    final String mirrorUrl = '';
+    const String mirrorUrl = '';
 
     int retryCount = 0;
     const maxRetries = 7;
@@ -331,8 +361,10 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
       try {
         // Switch between primary and high-speed mirror CDN if retrying
         final currentUrl = (retryCount >= 2 && mirrorUrl.isNotEmpty) ? mirrorUrl : primaryUrl;
-        final cacheBuster = 't=${DateTime.now().millisecondsSinceEpoch}';
-        final finalDownloadUrl = currentUrl.contains('?') ? '$currentUrl&$cacheBuster' : '$currentUrl?$cacheBuster';
+        // GitHub release URLs are immutable by tag; only append query string if non-GitHub
+        final finalDownloadUrl = currentUrl.startsWith('https://github.com')
+            ? currentUrl
+            : (currentUrl.contains('?') ? '$currentUrl&t=${DateTime.now().millisecondsSinceEpoch}' : '$currentUrl?t=${DateTime.now().millisecondsSinceEpoch}');
         final uri = Uri.parse(finalDownloadUrl);
 
         client = HttpClient();
@@ -1065,9 +1097,31 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
                                                 color: Colors.redAccent.withValues(alpha: 0.15),
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
-                                              child: Text(
-                                                _downloadError!,
-                                                style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 11),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                children: [
+                                                  Text(
+                                                    _downloadError!,
+                                                    style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 11),
+                                                  ),
+                                                  if (effectiveApkUrl.isNotEmpty) ...[
+                                                    const SizedBox(height: 6),
+                                                    InkWell(
+                                                      onTap: () => _openUpdateUrl(effectiveApkUrl),
+                                                      child: const Row(
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        children: [
+                                                          Icon(Icons.open_in_browser_rounded, size: 14, color: Color(0xFF38BDF8)),
+                                                          SizedBox(width: 4),
+                                                          Text(
+                                                            'Or download directly in Browser',
+                                                            style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, decoration: TextDecoration.underline),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
                                               ),
                                             ),
                                           ],
