@@ -35,6 +35,55 @@ class ResultPdfService {
   static const PdfColor promotedText = PdfColor.fromInt(0xFFB45309);
   static const PdfColor promotedBorder = PdfColor.fromInt(0xFFF59E0B);
 
+  static int _getClassSortRank(String? rawClass) {
+    if (rawClass == null || rawClass.trim().isEmpty) return 999;
+    final s = rawClass.toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '').trim();
+    if (s.contains('play') || s.contains('pg') || s.contains('pre-nur')) return 1;
+    if (s.contains('nur')) return 2;
+    if (s.contains('lkg') || s.contains('l.k.g') || s.contains('lower')) return 3;
+    if (s.contains('ukg') || s.contains('u.k.g') || s.contains('upper') || s.contains('kg')) return 4;
+
+    final numMatch = RegExp(r'\b(\d+)(?:st|nd|rd|th)?\b').firstMatch(s);
+    if (numMatch != null) {
+      final n = int.tryParse(numMatch.group(1) ?? '') ?? 0;
+      return 10 + n;
+    }
+    return 900;
+  }
+
+  static Map<String, String> _parseCleanClassAndSection(String? rawClass, String? rawSection) {
+    String c = (rawClass ?? '').trim();
+    String s = (rawSection ?? '').trim();
+
+    // Strip leading 'Class '
+    c = c.replaceAll(RegExp(r'^class\s+', caseSensitive: false), '').trim();
+
+    // Check if class string already has "- A" or " - A"
+    final dashMatch = RegExp(r'^(.+?)\s*[-–]\s*([a-zA-Z0-9]+)$').firstMatch(c);
+    if (dashMatch != null) {
+      c = dashMatch.group(1)!.trim();
+      if (s.isEmpty || s == 'A') s = dashMatch.group(2)!.trim().toUpperCase();
+    } else {
+      final parenMatch = RegExp(r'^(.+?)\s*\((?:sec\s*)?([a-zA-Z0-9]+)\)$', caseSensitive: false).firstMatch(c);
+      if (parenMatch != null) {
+        c = parenMatch.group(1)!.trim();
+        if (s.isEmpty || s == 'A') s = parenMatch.group(2)!.trim().toUpperCase();
+      }
+    }
+
+    if (s.isEmpty) s = 'A';
+    final isPre = ['nursery', 'lkg', 'ukg', 'play', 'pre-nursery'].contains(c.toLowerCase());
+    final displayClass = c.isNotEmpty ? (isPre ? c.toUpperCase() : 'Class $c') : '-';
+    final combined = c.isNotEmpty ? '$displayClass - $s' : '-';
+
+    return {
+      'pureClass': c.isEmpty ? '-' : c,
+      'displayClass': displayClass,
+      'section': s,
+      'combined': combined,
+    };
+  }
+
   // ─── Single Marksheet Page Builder ──────────────────────────────────────────
   pw.Page buildMarksheetPage({
     required ResultModel result,
@@ -94,8 +143,10 @@ class ResultPdfService {
 
     final studentName = (student.name).isNotEmpty ? student.name : 'Student';
     final fatherName = (student.fatherName).isNotEmpty ? student.fatherName : '—';
+    final sClass = (student.className != null && student.className!.isNotEmpty) ? student.className : result.className;
+    final parsedCls = _parseCleanClassAndSection(sClass, student.section);
     final classStr = student.studentType == 'school'
-        ? 'Class ${student.className ?? ""}${(student.section != null && student.section!.isNotEmpty) ? " - ${student.section}" : ""}'
+        ? parsedCls['combined']!
         : ((student.course != null && student.course!.isNotEmpty) ? student.course! : '—');
     final stuId = student.studentId.isNotEmpty ? student.studentId : '—';
     final rollNo = (student.rollNumber != null && student.rollNumber!.isNotEmpty) ? student.rollNumber! : 'N/A';
@@ -907,6 +958,23 @@ class ResultPdfService {
         : (settings.schoolName.isNotEmpty ? settings.schoolName : 'MISSION NAVODAYA PUBLIC SCHOOL');
     final session = academicYear ?? (settings.currentSession.isNotEmpty ? settings.currentSession : '2026-27');
 
+    final sortedItems = List<MapEntry<StudentModel, ResultModel>>.from(items);
+    sortedItems.sort((a, b) {
+      final clsA = (a.key.className != null && a.key.className!.isNotEmpty) ? a.key.className : a.value.className;
+      final clsB = (b.key.className != null && b.key.className!.isNotEmpty) ? b.key.className : b.value.className;
+      final rankA = _getClassSortRank(clsA);
+      final rankB = _getClassSortRank(clsB);
+      if (rankA != rankB) return rankA.compareTo(rankB);
+
+      final pA = _parseCleanClassAndSection(a.key.className, a.key.section);
+      final pB = _parseCleanClassAndSection(b.key.className, b.key.section);
+      if (pA['section'] != pB['section']) return pA['section']!.compareTo(pB['section']!);
+
+      final rollA = int.tryParse(a.key.rollNumber?.replaceAll(RegExp(r'\D'), '') ?? '') ?? 0;
+      final rollB = int.tryParse(b.key.rollNumber?.replaceAll(RegExp(r'\D'), '') ?? '') ?? 0;
+      return rollA.compareTo(rollB);
+    });
+
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4.landscape,
@@ -1083,9 +1151,9 @@ class ResultPdfService {
                 ],
               ),
               // Table Data Rows
-              ...List.generate(items.length, (i) {
-                final student = items[i].key;
-                final result = items[i].value;
+              ...List.generate(sortedItems.length, (i) {
+                final student = sortedItems[i].key;
+                final result = sortedItems[i].value;
                 final isEven = i % 2 == 0;
                 final status = result.finalResultStatus;
                 PdfColor statusColor = passText;
@@ -1099,8 +1167,10 @@ class ResultPdfService {
                 final roll = student.rollNumber ?? '-';
                 final father = student.fatherName.isNotEmpty ? student.fatherName : '-';
                 final mother = student.motherName ?? '-';
-                final cls = student.displayClass.isNotEmpty ? student.displayClass : className;
-                final sec = student.section ?? 'A';
+                final sClass = (student.className != null && student.className!.isNotEmpty) ? student.className : className;
+                final parsedCls = _parseCleanClassAndSection(sClass, student.section);
+                final cls = student.studentType == 'school' ? parsedCls['displayClass']! : (student.course ?? parsedCls['pureClass']!);
+                final sec = student.studentType == 'school' ? parsedCls['section']! : '-';
 
                 return pw.TableRow(
                   decoration: pw.BoxDecoration(color: isEven ? PdfColors.white : cardBg),
