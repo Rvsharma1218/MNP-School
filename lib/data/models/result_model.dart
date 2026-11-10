@@ -126,12 +126,28 @@ class ResultModel {
 
   int get failedSubjectsCount => subjects.where((s) => !s.isPass).length;
 
+  /// Check if this result belongs to Pre-Primary (Nursery, LKG, UKG, Play, etc.)
+  bool get isPrePrimary {
+    final c = (className ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return c.contains('nursery') ||
+        c.contains('lkg') ||
+        c.contains('ukg') ||
+        c.contains('kg') ||
+        c.contains('prep') ||
+        c.contains('play') ||
+        c.contains('balvatika') ||
+        c.contains('preprimary') ||
+        c.contains('infant');
+  }
+
   /// Strict Pass/Fail/Promoted calculation:
+  /// Pre-primary students are always promoted without negative ranking.
   /// If status is explicitly set to 'PROMOTED', returns true (Passed with promotion).
   /// If all subjects are passed and percentage >= 33, student is PASS (auto-heals stale FAIL doc status).
   /// If status is 'FAIL', returns false.
   /// Otherwise, if any subject is failed, student is FAIL.
   bool get isPass {
+    if (isPrePrimary) return true;
     final s = status?.toUpperCase().trim();
     if (s == 'PROMOTED') return true;
     if (failedSubjectsCount == 0 && overallPercentage >= 33.0) return true;
@@ -142,6 +158,7 @@ class ResultModel {
 
   /// Evaluated display status: 'PASS', 'FAIL', or 'PROMOTED'
   String get finalResultStatus {
+    if (isPrePrimary) return 'PROMOTED';
     final s = status?.toUpperCase().trim();
     if (s == 'PROMOTED') return 'PROMOTED';
     if (failedSubjectsCount == 0 && overallPercentage >= 33.0) return 'PASS';
@@ -164,6 +181,13 @@ class ResultModel {
 
   /// Official school division classification
   String get division {
+    if (isPrePrimary) {
+      final p = overallPercentage;
+      if (p >= 85.0) return 'Promoted (Outstanding - A+)';
+      if (p >= 70.0) return 'Promoted (Excellent - A)';
+      if (p >= 50.0) return 'Promoted (Very Good - B)';
+      return 'Promoted (Good - C)';
+    }
     if (failedSubjectsCount > 0 || overallPercentage < 33.0) return 'FAIL';
     final p = overallPercentage;
     if (p >= 85.0) return '1st Division (Distinction)';
@@ -174,6 +198,13 @@ class ResultModel {
   }
 
   String get shortDivision {
+    if (isPrePrimary) {
+      final p = overallPercentage;
+      if (p >= 85.0) return 'A+ (Outst.)';
+      if (p >= 70.0) return 'A (Excell.)';
+      if (p >= 50.0) return 'B (V.Good)';
+      return 'C (Good)';
+    }
     if (failedSubjectsCount > 0 || overallPercentage < 33.0) return 'FAIL';
     final p = overallPercentage;
     if (p >= 85.0) return '1st (Dist.)';
