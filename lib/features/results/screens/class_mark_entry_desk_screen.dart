@@ -215,7 +215,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     return false;
   }
 
-  List<StudentModel> get _filteredStudents {
+  List<StudentModel> get _scopeCandidates {
     var list = _allStudents;
 
     // 1. If an exam is selected and has specific classes, restrict strictly to the exam's classes!
@@ -233,8 +233,8 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
       }).toList();
     }
 
-    // 2. If a specific class dropdown filter is active (not All Classes), apply it:
-    if (_selectedClass != 'All Classes' && _selectedClass.isNotEmpty) {
+    // 2. If a specific class dropdown filter is active (not All Classes / All Exam Classes), apply it:
+    if (_selectedClass != 'All Classes' && _selectedClass != 'All Exam Classes' && _selectedClass.isNotEmpty) {
       list = list.where((s) => _matchesClass(s, _selectedClass)).toList();
     }
 
@@ -248,12 +248,16 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
       }).toList();
     }
 
-    if (_statusFilter == 'Completed') {
-      list = list.where((s) => _getResultForStudent(s) != null).toList();
-    } else if (_statusFilter == 'Pending') {
-      list = list.where((s) => _getResultForStudent(s) == null).toList();
-    }
+    return list;
+  }
 
+  List<StudentModel> get _filteredStudents {
+    final list = _scopeCandidates;
+    if (_statusFilter == 'Completed') {
+      return list.where((s) => _getResultForStudent(s) != null).toList();
+    } else if (_statusFilter == 'Pending') {
+      return list.where((s) => _getResultForStudent(s) == null).toList();
+    }
     return list;
   }
 
@@ -313,8 +317,9 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
     bool matchesClass(ExamModel e) {
       final eClass = e.className.trim().toLowerCase();
       if (eClass.isEmpty || eClass == 'all classes') return true;
-      final split = eClass.split(',').map((c) => c.trim()).toList();
-      return split.contains(sClass);
+      final split = eClass.split(',').map((c) => _normalizeClass(c)).where((c) => c.isNotEmpty).toList();
+      final normStudentClass = _normalizeClass(sClass);
+      return split.any((ec) => ec == normStudentClass || ec.contains(normStudentClass) || normStudentClass.contains(ec));
     }
 
     // 1. Exact match for this student's class and exam title
@@ -595,13 +600,15 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final students = _filteredStudents;
+    final candidates = _scopeCandidates;
 
     int completedCount = 0;
-    for (final s in students) {
+    for (final s in candidates) {
       if (_getResultForStudent(s) != null) completedCount++;
     }
-    final pendingCount = students.length - completedCount;
+    final totalCount = candidates.length;
+    final pendingCount = totalCount - completedCount;
+    final students = _filteredStudents;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
@@ -799,7 +806,7 @@ class _ClassMarkEntryDeskScreenState extends ConsumerState<ClassMarkEntryDeskScr
                       // Status Quick Pills
                       Row(
                         children: [
-                          _buildFilterChip('All', students.length.toString(), Colors.blueGrey),
+                          _buildFilterChip('All', totalCount.toString(), Colors.blueGrey),
                           const SizedBox(width: 8),
                           _buildFilterChip('Completed', completedCount.toString(), Colors.green),
                           const SizedBox(width: 8),
