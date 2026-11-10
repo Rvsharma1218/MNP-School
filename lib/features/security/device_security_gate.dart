@@ -20,8 +20,8 @@ class DeviceSecurityGate extends StatefulWidget {
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProviderStateMixin {
-  static int currentVersionCode = 1;
-  static String currentVersion = '1.0.0';
+  static int currentVersionCode = 2003;
+  static String currentVersion = '1.0.1';
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
@@ -57,6 +57,7 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _updateSub;
 
   Map<String, dynamic>? _pendingUpdate;
+  Map<String, dynamic>? _lastUpdateData;
   bool _dismissedOptionalUpdate = false;
 
   String _resolveDeviceApkUrl(Map<String, dynamic> data) {
@@ -145,9 +146,14 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
         final name = (res['versionName']?.toString() ?? '').trim();
         if (code > 0) currentVersionCode = code;
         if (name.isNotEmpty) currentVersion = name;
-        if (mounted) setState(() {});
       }
-    } catch (_) {}
+    } catch (_) {} finally {
+      if (_lastUpdateData != null) {
+        await _evaluateAppUpdate(_lastUpdateData!);
+      } else if (mounted) {
+        setState(() {});
+      }
+    }
   }
 
   void _listenAppUpdate() {
@@ -163,51 +169,58 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
         }
         return;
       }
+      await _evaluateAppUpdate(snap.data()!);
+    }, onError: (_) {});
+  }
 
-      final data = snap.data()!;
-      // Must be explicitly active: true (or not false)
-      final active = data['active'] == true;
-      if (!active) {
+  Future<void> _evaluateAppUpdate(Map<String, dynamic> data) async {
+    _lastUpdateData = data;
+    final active = data['active'] == true;
+    if (!active) {
+      if (mounted && _pendingUpdate != null) {
+        setState(() => _pendingUpdate = null);
+      }
+      return;
+    }
+
+    final remoteVersionCode = int.tryParse(data['versionCode']?.toString() ?? '0') ?? 0;
+    final remoteVersion = (data['latestVersion']?.toString() ?? '').trim();
+    final effectiveApkUrl = _resolveDeviceApkUrl(data);
+    final isForced = data['forceUpdate'] == true && effectiveApkUrl.isNotEmpty;
+
+    // Normalize ABI split build offsets:
+    // Split APKs offset build codes (arm64: +2000, armeabi-v7a: +1000).
+    final localBuild = currentVersionCode > 1000 ? (currentVersionCode % 1000) : currentVersionCode;
+    final remoteBuild = remoteVersionCode > 1000 ? (remoteVersionCode % 1000) : remoteVersionCode;
+
+    final isNewerBuild = remoteBuild > localBuild;
+    final isNewerVersion = remoteVersion.isNotEmpty && _isSemanticVersionHigher(remoteVersion, currentVersion);
+    final isSameOrOlder = !isNewerBuild && !isNewerVersion;
+    final shouldPrompt = !isSameOrOlder && (isNewerBuild || isNewerVersion || (isForced && (remoteBuild > localBuild || remoteVersion != currentVersion)));
+
+    // Check if user permanently dismissed this specific update version
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final dismissedCode = prefs.getInt('dismissed_app_update_version_code') ?? 0;
+      if (remoteVersionCode <= dismissedCode && !isForced) {
         if (mounted && _pendingUpdate != null) {
           setState(() => _pendingUpdate = null);
         }
         return;
       }
+    } catch (_) {}
 
-      final remoteVersionCode = int.tryParse(data['versionCode']?.toString() ?? '0') ?? 0;
-      final remoteVersion = (data['latestVersion']?.toString() ?? '').trim();
-      final effectiveApkUrl = _resolveDeviceApkUrl(data);
-      final isForced = data['forceUpdate'] == true && effectiveApkUrl.isNotEmpty;
-
-      final isNewerBuild = remoteVersionCode > currentVersionCode;
-      final isNewerVersion = remoteVersion.isNotEmpty && _isSemanticVersionHigher(remoteVersion, currentVersion);
-      final isSameOrOlder = remoteVersionCode <= currentVersionCode && (remoteVersion == currentVersion || !_isSemanticVersionHigher(remoteVersion, currentVersion));
-      final shouldPrompt = !isSameOrOlder && (isNewerBuild || isNewerVersion || (isForced && (remoteVersionCode > currentVersionCode || remoteVersion != currentVersion)));
-
-      // Check if user permanently dismissed this specific update version
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final dismissedCode = prefs.getInt('dismissed_app_update_version_code') ?? 0;
-        if (remoteVersionCode <= dismissedCode && !isForced) {
-          if (mounted && _pendingUpdate != null) {
-            setState(() => _pendingUpdate = null);
-          }
-          return;
-        }
-      } catch (_) {}
-
-      if (shouldPrompt) {
-        if (mounted) {
-          setState(() {
-            _pendingUpdate = data;
-          });
-        }
-      } else {
-        if (mounted && _pendingUpdate != null) {
-          setState(() => _pendingUpdate = null);
-        }
+    if (shouldPrompt) {
+      if (mounted) {
+        setState(() {
+          _pendingUpdate = data;
+        });
       }
-    }, onError: (_) {});
+    } else {
+      if (mounted && _pendingUpdate != null) {
+        setState(() => _pendingUpdate = null);
+      }
+    }
   }
 
   void _showInAppAlertBanner(String title, String body) {
