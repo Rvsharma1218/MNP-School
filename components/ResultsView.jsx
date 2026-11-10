@@ -1212,9 +1212,16 @@ export default function ResultsView() {
                 const isPass = res.status === 'PROMOTED' ? true : (res.status !== 'FAIL' && failedSubs.length === 0 && Number(pct) >= passCrit);
                 const grade = Number(pct) >= 90 ? 'A+' : Number(pct) >= 80 ? 'A' : Number(pct) >= 70 ? 'B+' : Number(pct) >= 60 ? 'B' : Number(pct) >= 50 ? 'C' : Number(pct) >= 40 ? 'D' : 'F';
                 const numPct = Number(pct);
-                let division = 'Needs Improvement';
-                let shortDivision = 'FAIL';
-                if (res.status === 'PROMOTED' || isPass) {
+                const isPrePri = isPrePrimaryClass(res.className || stu?.className);
+                const effectivePass = isPrePri || res.status === 'PROMOTED' || isPass;
+                let division = isPrePri ? 'Promoted (Good)' : 'Needs Improvement';
+                let shortDivision = isPrePri ? 'PROMOTED' : 'FAIL';
+                if (isPrePri) {
+                  if (numPct >= 85) { division = 'Promoted (Outstanding - A+)'; shortDivision = 'A+ (Outst.)'; }
+                  else if (numPct >= 70) { division = 'Promoted (Excellent - A)'; shortDivision = 'A (Excell.)'; }
+                  else if (numPct >= 50) { division = 'Promoted (Very Good - B)'; shortDivision = 'B (V.Good)'; }
+                  else { division = 'Promoted (Good - C)'; shortDivision = 'C (Good)'; }
+                } else if (res.status === 'PROMOTED' || isPass) {
                   if (numPct >= 85) { division = '1st Division (Distinction)'; shortDivision = '1st (Dist.)'; }
                   else if (numPct >= 65) { division = '1st Division'; shortDivision = '1st Div'; }
                   else if (numPct >= 45) { division = '2nd Division'; shortDivision = '2nd Div'; }
@@ -1255,13 +1262,13 @@ export default function ResultsView() {
 
                         {/* Status Badge */}
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${
-                          res.status === 'PROMOTED'
+                          isPrePri || res.status === 'PROMOTED'
                             ? 'bg-amber-100 text-amber-800 border border-amber-200'
                             : isPass
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                             : 'bg-rose-100 text-rose-800 border border-rose-200'
                         }`}>
-                          {res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? `PASSED (${shortDivision})` : 'NEEDS IMPROVEMENT'}
+                          {isPrePri ? `PROMOTED (${shortDivision})` : res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? `PASSED (${shortDivision})` : 'NEEDS IMPROVEMENT'}
                         </span>
                       </div>
 
@@ -1381,9 +1388,15 @@ export default function ResultsView() {
                       const isPass = res.status === 'PROMOTED' ? true : res.status !== 'FAIL' && Number(pct) >= 33;
                       const grade = Number(pct) >= 90 ? 'A+' : Number(pct) >= 80 ? 'A' : Number(pct) >= 70 ? 'B+' : Number(pct) >= 60 ? 'B' : Number(pct) >= 50 ? 'C' : Number(pct) >= 40 ? 'D' : 'F';
                       const numPct = Number(pct);
-                      let division = 'Needs Improvement';
-                      let shortDivision = 'FAIL';
-                      if (res.status === 'PROMOTED' || isPass) {
+                      const isPrePri = isPrePrimaryClass(res.className || stu?.className);
+                      let division = isPrePri ? 'Promoted (Good)' : 'Needs Improvement';
+                      let shortDivision = isPrePri ? 'PROMOTED' : 'FAIL';
+                      if (isPrePri) {
+                        if (numPct >= 85) { division = 'Promoted (Outstanding - A+)'; shortDivision = 'A+ (Outst.)'; }
+                        else if (numPct >= 70) { division = 'Promoted (Excellent - A)'; shortDivision = 'A (Excell.)'; }
+                        else if (numPct >= 50) { division = 'Promoted (Very Good - B)'; shortDivision = 'B (V.Good)'; }
+                        else { division = 'Promoted (Good - C)'; shortDivision = 'C (Good)'; }
+                      } else if (res.status === 'PROMOTED' || isPass) {
                         if (numPct >= 85) { division = '1st Division (Distinction)'; shortDivision = '1st (Dist.)'; }
                         else if (numPct >= 65) { division = '1st Division'; shortDivision = '1st Div'; }
                         else if (numPct >= 45) { division = '2nd Division'; shortDivision = '2nd Div'; }
@@ -1406,9 +1419,9 @@ export default function ResultsView() {
                           <td className="p-3 text-center font-black text-indigo-900">{grade}</td>
                           <td className="p-3 text-center">
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                              res.status === 'PROMOTED' ? 'bg-amber-100 text-amber-800' : isPass ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                              isPrePri || res.status === 'PROMOTED' ? 'bg-amber-100 text-amber-800' : isPass ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                             }`}>
-                              {res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? `PASS (${shortDivision})` : 'NEEDS IMPROVEMENT'}
+                              {isPrePri ? `PROMOTED (${shortDivision})` : res.status === 'PROMOTED' ? 'PROMOTED' : isPass ? `PASS (${shortDivision})` : 'NEEDS IMPROVEMENT'}
                             </span>
                           </td>
                           <td className="p-3 text-right">

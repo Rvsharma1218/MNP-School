@@ -40,7 +40,7 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { exportSingleAdmitCardPDF, exportIdCardsPDF, openWhatsAppIdCardShare } from '../lib/exportUtils';
+import { exportSingleAdmitCardPDF, exportIdCardsPDF, openWhatsAppIdCardShare, isPrePrimaryClass } from '../lib/exportUtils';
 import { QRCodeSVG } from 'qrcode.react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
@@ -1163,10 +1163,16 @@ export default function ParentPortalView() {
                   const pct = total > 0 ? ((obt / total) * 100).toFixed(1) : '0.0';
                   const grade = Number(pct) >= 90 ? 'A+' : Number(pct) >= 80 ? 'A' : Number(pct) >= 70 ? 'B+' : Number(pct) >= 60 ? 'B' : Number(pct) >= 50 ? 'C' : Number(pct) >= 40 ? 'D' : 'F';
                   const numPct = Number(pct);
-                  const isPass = Number(pct) >= 33;
-                  let division = 'Needs Improvement';
-                  let shortDivision = 'FAIL';
-                  if (r.status === 'PROMOTED' || isPass) {
+                  const isPrePri = isPrePrimaryClass(r.className || student?.className);
+                  const isPass = isPrePri || Number(pct) >= 33;
+                  let division = isPrePri ? 'Promoted (Good)' : 'Needs Improvement';
+                  let shortDivision = isPrePri ? 'PROMOTED' : 'FAIL';
+                  if (isPrePri) {
+                    if (numPct >= 85) { division = 'Promoted (Outstanding - A+)'; shortDivision = 'A+ (Outst.)'; }
+                    else if (numPct >= 70) { division = 'Promoted (Excellent - A)'; shortDivision = 'A (Excell.)'; }
+                    else if (numPct >= 50) { division = 'Promoted (Very Good - B)'; shortDivision = 'B (V.Good)'; }
+                    else { division = 'Promoted (Good - C)'; shortDivision = 'C (Good)'; }
+                  } else if (r.status === 'PROMOTED' || isPass) {
                     if (numPct >= 85) { division = '1st Division (Distinction)'; shortDivision = '1st (Dist.)'; }
                     else if (numPct >= 65) { division = '1st Division'; shortDivision = '1st Div'; }
                     else if (numPct >= 45) { division = '2nd Division'; shortDivision = '2nd Div'; }
@@ -1185,11 +1191,13 @@ export default function ParentPortalView() {
                               {r.examName || r.exam || 'Terminal Examination'}
                             </h4>
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${
-                              isPass
+                              isPrePri || r.status === 'PROMOTED'
+                                ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200/60'
+                                : isPass
                                 ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/60'
                                 : 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200/60'
                             }`}>
-                              {isPass ? `PASSED (${shortDivision}) • ${grade} (${pct}%)` : `NEEDS IMPROVEMENT • ${grade} (${pct}%)`}
+                              {isPrePri ? `PROMOTED (${shortDivision}) • ${grade} (${pct}%)` : (isPass ? `PASSED (${shortDivision}) • ${grade} (${pct}%)` : `NEEDS IMPROVEMENT • ${grade} (${pct}%)`)}
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 mt-1">

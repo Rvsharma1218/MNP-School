@@ -6,7 +6,7 @@ import {
   User, Calendar, Hash, ChevronLeft, ChevronRight, Search, Share2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { exportSingleResultPDF, exportBulkResultMarksheetsPDF, openWhatsAppResultShare, parseCleanClassAndSection } from '../lib/exportUtils';
+import { exportSingleResultPDF, exportBulkResultMarksheetsPDF, openWhatsAppResultShare, parseCleanClassAndSection, isPrePrimaryClass } from '../lib/exportUtils';
 import { useSchoolStore } from '../lib/store';
 
 export default function PrintResultModal({ result: propResult, student: propStudent, data, onClose }) {
@@ -151,8 +151,11 @@ export default function PrintResultModal({ result: propResult, student: propStud
   });
   const failCount = failedSubjects.length;
 
+  const isPrePri = isPrePrimaryClass(currentStudent?.className || currentResult?.className || currentResult?.class);
   let finalStatus = 'PASS';
-  if (currentResult.status === 'PROMOTED') {
+  if (isPrePri) {
+    finalStatus = 'PROMOTED';
+  } else if (currentResult.status === 'PROMOTED') {
     finalStatus = 'PROMOTED';
   } else if (failCount > 0 || !isPass || currentResult.status === 'FAIL') {
     finalStatus = 'NEEDS IMPROVEMENT';
@@ -160,9 +163,14 @@ export default function PrintResultModal({ result: propResult, student: propStud
     finalStatus = 'PASS';
   }
 
-  let division = 'Needs Improvement';
-  if (finalStatus === 'PASS' || finalStatus === 'PROMOTED') {
-    const numPct = Number(pct);
+  const numPct = Number(pct);
+  let division = isPrePri ? 'Promoted (Good)' : 'Needs Improvement';
+  if (isPrePri) {
+    if (numPct >= 85) division = 'Promoted (Outstanding - A+)';
+    else if (numPct >= 70) division = 'Promoted (Excellent - A)';
+    else if (numPct >= 50) division = 'Promoted (Very Good - B)';
+    else division = 'Promoted (Good - C)';
+  } else if (finalStatus === 'PASS' || finalStatus === 'PROMOTED') {
     if (numPct >= 85) division = '1st Division (Distinction)';
     else if (numPct >= 65) division = '1st Division';
     else if (numPct >= 45) division = '2nd Division';
