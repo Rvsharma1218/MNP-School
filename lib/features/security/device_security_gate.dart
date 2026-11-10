@@ -38,8 +38,10 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
 
   bool _isSemanticVersionHigher(String remote, String current) {
     try {
-      final rParts = remote.split('.').map((e) => int.tryParse(e.replaceAll(RegExp(r'\D'), '')) ?? 0).toList();
-      final cParts = current.split('.').map((e) => int.tryParse(e.replaceAll(RegExp(r'\D'), '')) ?? 0).toList();
+      final rClean = remote.split('+').first.trim();
+      final cClean = current.split('+').first.trim();
+      final rParts = rClean.split('.').map((e) => int.tryParse(e.replaceAll(RegExp(r'\D'), '')) ?? 0).toList();
+      final cParts = cClean.split('.').map((e) => int.tryParse(e.replaceAll(RegExp(r'\D'), '')) ?? 0).toList();
       while (rParts.length < 3) { rParts.add(0); }
       while (cParts.length < 3) { cParts.add(0); }
       for (int i = 0; i < 3; i++) {
