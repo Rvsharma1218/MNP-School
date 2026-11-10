@@ -81,6 +81,27 @@ const formatAuditDate = (dateVal) => {
   }
 };
 
+const formatCreatedBy = (createdBy) => {
+  if (!createdBy || !String(createdBy).trim()) return 'Principal';
+  const trimmed = String(createdBy).trim();
+  const lower = trimmed.toLowerCase();
+  if (lower === 'admin' || lower === 'school admin' || lower === 'mnpschooledu' || lower === 'principal') {
+    return 'Principal';
+  }
+  const teacherMap = {
+    't001': 'Ashish Sir',
+    't003': 'Neha Miss',
+    't004': 'Soni Mam',
+    't006': 'Roshani Miss',
+    't007': 'Anshika Miss',
+    't008': 'Anjali Miss',
+    't009': 'Ravi Sir',
+    'mnpsm_t010': 'Rozi Miss',
+  };
+  if (teacherMap[lower]) return teacherMap[lower];
+  return trimmed;
+};
+
 export default function StudentProfileModal({ student, onClose }) {
   const {
     settings,
@@ -344,7 +365,7 @@ export default function StudentProfileModal({ student, onClose }) {
                   <Clock className="w-3 h-3 text-amber-300 flex-shrink-0" />
                   <span>Entry: <strong className="text-white font-semibold">{formatAuditDate(student.createdAt)}</strong></span>
                   <span className="text-white/40">•</span>
-                  <span>By: <strong className="text-amber-300 font-semibold">{student.createdBy || student.createdByName || 'Admin'}</strong></span>
+                  <span>By: <strong className="text-amber-300 font-semibold">{formatCreatedBy(student.createdBy || student.createdByName)}</strong></span>
                 </span>
               </div>
             </div>
@@ -522,7 +543,7 @@ export default function StudentProfileModal({ student, onClose }) {
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-text-secondary">Entry Created By</span>
-                      <span className="font-semibold text-primary">{student.createdBy || student.createdByName || 'Admin'}</span>
+                      <span className="font-semibold text-primary">{formatCreatedBy(student.createdBy || student.createdByName)}</span>
                     </div>
                   </div>
                 </div>
