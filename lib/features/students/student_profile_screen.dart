@@ -27,6 +27,14 @@ import 'package:intl/intl.dart';
 import '../../data/services/student_full_report_service.dart';
 import '../admit_card/admit_card_screen.dart';
 
+String _formatAuditDate(DateTime dt) {
+  try {
+    return DateFormat('dd MMM yyyy, hh:mm a').format(dt);
+  } catch (_) {
+    return dt.toIso8601String();
+  }
+}
+
 class StudentProfileScreen extends ConsumerStatefulWidget {
   final String studentId;
   const StudentProfileScreen({super.key, required this.studentId});
@@ -195,7 +203,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
       body: NestedScrollView(
         headerSliverBuilder: (ctx, innerScrolled) => [
           SliverAppBar(
-            expandedHeight: 350,
+            expandedHeight: 375,
             pinned: true,
             floating: false,
             backgroundColor: AppColors.primary,
@@ -337,6 +345,31 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
                                 const SizedBox(width: 6),
                                 _headerChip('${student.session}', Icons.calendar_today),
                               ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 7),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.history_edu_rounded, size: 12, color: Colors.amber.shade300),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Entry: ${_formatAuditDate(student.createdAt)} • By ${student.createdBy?.isNotEmpty == true ? student.createdBy! : "Admin"}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -495,6 +528,8 @@ class _InfoTab extends StatelessWidget {
             _buildRow(context, Icons.email_outlined, 'Email', student.email!),
           _buildRow(context, Icons.location_on_outlined, 'Address', student.address),
           _buildRow(context, Icons.event_outlined, 'Admission Date', AppUtils.formatDate(student.admissionDate)),
+          _buildRow(context, Icons.access_time_rounded, 'Registration Date & Time', _formatAuditDate(student.createdAt)),
+          _buildRow(context, Icons.person_add_alt_1_outlined, 'Registered By', student.createdBy?.isNotEmpty == true ? student.createdBy! : 'Admin'),
         ]),
         const SizedBox(height: 16),
         if (student.studentType == 'school')

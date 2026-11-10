@@ -410,6 +410,7 @@ class DatabaseService {
       email TEXT,
       admissionDate TEXT NOT NULL,
       createdAt TEXT NOT NULL,
+      createdBy TEXT,
       monthlyFee REAL DEFAULT 0,
       totalFees REAL DEFAULT 0,
       paidFees REAL DEFAULT 0,
@@ -927,6 +928,7 @@ CREATE TABLE monthly_fees (
       'aadhaarDocPath TEXT',
       'aadhaarDocUrl TEXT',
       'aadhaarCardUrl TEXT',
+      'createdBy TEXT',
     ]) {
       try {
         await db.execute('ALTER TABLE students ADD COLUMN $col');

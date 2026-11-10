@@ -34,6 +34,7 @@ class StudentModel {
   final String? session; // e.g. '2026-27'
   final DateTime admissionDate;
   final DateTime createdAt;
+  final String? createdBy;
 
   // Optional fee metadata embedded by web/cloud
   final double? initialTotalFees;
@@ -74,6 +75,7 @@ class StudentModel {
     this.session,
     required this.admissionDate,
     required this.createdAt,
+    this.createdBy,
     this.initialTotalFees,
     this.initialPaidFees,
     this.monthlyFee,
@@ -116,6 +118,7 @@ class StudentModel {
       'session': session,
       'admissionDate': admissionDate.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
+      if (createdBy != null) 'createdBy': createdBy,
       if (monthlyFee != null) 'monthlyFee': monthlyFee,
       if (initialTotalFees != null) 'totalFees': initialTotalFees,
       if (initialPaidFees != null) 'paidFees': initialPaidFees,
@@ -158,6 +161,7 @@ class StudentModel {
       if (session != null) 'session': session,
       'admissionDate': admissionDate.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
+      if (createdBy != null) 'createdBy': createdBy,
       if (monthlyFee != null) 'monthlyFee': monthlyFee,
       if (initialTotalFees != null) 'totalFees': initialTotalFees,
       if (initialPaidFees != null) 'paidFees': initialPaidFees,
@@ -266,6 +270,7 @@ class StudentModel {
       session: map['session']?.toString(),
       admissionDate: _parseDate(map['admissionDate'] ?? map['joiningDate'], DateTime.now()),
       createdAt: _parseDate(map['createdAt'], DateTime.now()),
+      createdBy: map['createdBy']?.toString() ?? map['createdByName']?.toString(),
       initialTotalFees: _safeDouble(map['totalFees'] ?? map['totalFee']),
       initialPaidFees: _safeDouble(map['paidFees'] ?? map['totalPaid']),
       monthlyFee: resolvedMonthlyFee,
@@ -308,6 +313,7 @@ class StudentModel {
     String? session,
     DateTime? admissionDate,
     DateTime? createdAt,
+    String? createdBy,
     double? initialTotalFees,
     double? initialPaidFees,
     double? monthlyFee,
@@ -346,6 +352,7 @@ class StudentModel {
       session: session ?? this.session,
       admissionDate: admissionDate ?? this.admissionDate,
       createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
       initialTotalFees: initialTotalFees ?? this.initialTotalFees,
       initialPaidFees: initialPaidFees ?? this.initialPaidFees,
       monthlyFee: monthlyFee ?? this.monthlyFee,
