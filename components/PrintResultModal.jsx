@@ -6,7 +6,7 @@ import {
   User, Calendar, Hash, ChevronLeft, ChevronRight, Search, Share2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { exportSingleResultPDF, exportBulkResultMarksheetsPDF, openWhatsAppResultShare } from '../lib/exportUtils';
+import { exportSingleResultPDF, exportBulkResultMarksheetsPDF, openWhatsAppResultShare, parseCleanClassAndSection } from '../lib/exportUtils';
 import { useSchoolStore } from '../lib/store';
 
 export default function PrintResultModal({ result: propResult, student: propStudent, data, onClose }) {
@@ -395,7 +395,10 @@ export default function PrintResultModal({ result: propResult, student: propStud
                     Father's Name: <strong className="text-slate-800">{currentStudent?.fatherName || '—'}</strong>
                   </div>
                   <div className="text-[10px] sm:text-[11px] text-slate-600 truncate">
-                    Class / Course: <strong className="text-blue-900">{currentStudent?.studentType === 'school' ? `Class ${currentStudent?.className || ''} - ${currentStudent?.section || 'A'}` : (currentStudent?.course || currentResult?.className || currentResult?.class || 'General')}</strong>
+                    Class / Course: <strong className="text-blue-900">{(() => {
+                      const parsed = parseCleanClassAndSection(currentStudent?.className || currentResult?.className || currentResult?.class, currentStudent?.section || currentResult?.section);
+                      return currentStudent?.studentType === 'school' ? parsed.combined : (currentStudent?.course || parsed.combined);
+                    })()}</strong>
                   </div>
                 </div>
               </div>
