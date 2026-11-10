@@ -83,6 +83,37 @@ export const marksToGradePill = (marks, maxMarks = 100) => {
   return 'F';
 };
 
+export const normalizeClassStr = (raw) => {
+  if (!raw) return '';
+  return String(raw)
+    .trim()
+    .toLowerCase()
+    .replace(/^class\s*/i, '')
+    .replace(/\s*-\s*[a-z]$/i, '')
+    .trim();
+};
+
+export const normalizeRoll = (raw) => {
+  if (raw === null || raw === undefined || raw === '') return '';
+  const num = parseInt(String(raw).trim(), 10);
+  return isNaN(num) ? String(raw).trim().toLowerCase() : String(num);
+};
+
+export const matchNamesLoosely = (n1, n2) => {
+  if (!n1 || !n2) return true;
+  const a = String(n1).trim().toLowerCase();
+  const b = String(n2).trim().toLowerCase();
+  if (a === b) return true;
+  const firstA = a.split(' ')[0] || '';
+  const firstB = b.split(' ')[0] || '';
+  if (firstA && firstB) {
+    if (firstA === firstB || firstA.startsWith(firstB) || firstB.startsWith(firstA) || a.includes(firstB) || b.includes(firstA)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 
 export default function ResultsView() {
   const {
@@ -148,20 +179,19 @@ export default function ResultsView() {
     });
   };
 
-  // Student Matcher - Strict Unique Identity Binding (Eliminates Same-Name Collisions)
+  // Student Matcher - Strict Unique Identity Binding with Roll+Class and Name Normalization
   const findStudent = (r) => {
     if (!r) return null;
     const rDocId = (r.studentDocId ? String(r.studentDocId) : '').trim().toLowerCase();
     const rId = (r.studentId ? String(r.studentId) : '').trim().toLowerCase();
     const rAdm = (r.admissionNumber ? String(r.admissionNumber) : '').trim().toLowerCase();
-    const rRoll = (r.rollNumber ? String(r.rollNumber) : '').trim().toLowerCase();
+    const rRoll = normalizeRoll(r.rollNumber);
     const rName = (r.studentName ? String(r.studentName) : '').trim().toLowerCase();
-    const rClass = (r.className || r.class || r.studentClass || '').trim().toLowerCase();
-    const rSec = (r.section || '').trim().toLowerCase();
+    const rClass = normalizeClassStr(r.className || r.class || r.studentClass || '');
 
     // 1. Strict doc ID match
     if (rDocId) {
-      const match = students.find(s => String(s.id).toLowerCase() === rDocId);
+      const match = students.find(s => String(s.id).toLowerCase() === rDocId || String(s.studentId).toLowerCase() === rDocId);
       if (match) return match;
     }
 
@@ -177,20 +207,28 @@ export default function ResultsView() {
       if (match) return match;
     }
 
-    // 3. Fallback: ONLY if RollNumber, Class, AND Name all match together!
-    // (Never match solely by name alone when multiple students share the same name)
+    // 3. Roll + Class Match (with loose name matching e.g. "Adit" vs "Aditya")
     if (rRoll && rClass) {
       const match = students.find(s => {
-        const sRoll = String(s.rollNumber || '').trim().toLowerCase();
-        const sClass = String(s.className || s.course || '').trim().toLowerCase();
-        const sSec = String(s.section || '').trim().toLowerCase();
+        const sRoll = normalizeRoll(s.rollNumber);
+        const sClass = normalizeClassStr(s.className || s.course || '');
         const sName = String(s.name || '').trim().toLowerCase();
-        if (sRoll === rRoll && sClass === rClass) {
-          if (!rSec || !sSec || rSec === sSec) {
-            if (!rName || sName === rName) return true;
+        if (sRoll === rRoll && (sClass === rClass || sClass.includes(rClass) || rClass.includes(sClass))) {
+          if (!rName || !sName || rName === sName || matchNamesLoosely(rName, sName)) {
+            return true;
           }
         }
         return false;
+      });
+      if (match) return match;
+    }
+
+    // 4. Exact Name + Class match
+    if (rName && rClass) {
+      const match = students.find(s => {
+        const sClass = normalizeClassStr(s.className || s.course || '');
+        const sName = String(s.name || '').trim().toLowerCase();
+        return sName === rName && (sClass === rClass || sClass.includes(rClass) || rClass.includes(sClass));
       });
       if (match) return match;
     }
@@ -203,25 +241,38 @@ export default function ResultsView() {
     const sId = String(s.id || '').trim().toLowerCase();
     const sStuId = String(s.studentId || '').trim().toLowerCase();
     const sAdm = String(s.admissionNumber || s.admissionNo || '').trim().toLowerCase();
-    const sRoll = String(s.rollNumber || '').trim().toLowerCase();
-    const sClass = String(s.className || s.course || '').trim().toLowerCase();
+    const sRoll = normalizeRoll(s.rollNumber);
+    const sClass = normalizeClassStr(s.className || s.course || '');
     const sName = String(s.name || '').trim().toLowerCase();
 
     const rDocId = String(r.studentDocId || '').trim().toLowerCase();
     const rId = String(r.studentId || '').trim().toLowerCase();
     const rAdm = String(r.admissionNumber || '').trim().toLowerCase();
-    const rRoll = String(r.rollNumber || '').trim().toLowerCase();
-    const rClass = String(r.className || r.class || '').trim().toLowerCase();
+    const rRoll = normalizeRoll(r.rollNumber);
+    const rClass = normalizeClassStr(r.className || r.class || '');
     const rName = String(r.studentName || '').trim().toLowerCase();
 
-    if (rDocId && rDocId === sId) return true;
+    // 1. Strict ID match
+    if (rDocId && (rDocId === sId || rDocId === sStuId)) return true;
     if (rId && (rId === sId || rId === sStuId || rId === sAdm)) return true;
     if (rAdm && (rAdm === sAdm || rAdm === sStuId)) return true;
 
-    // Only if IDs absent: roll + class + name must all match together
-    if (rRoll && sRoll && rRoll === sRoll && rClass && sClass && rClass === sClass && rName && sName && rName === sName) {
-      return true;
+    // 2. Roll + Class match (handles "Adit" vs "Aditya" when Roll and Class are identical)
+    if (rRoll && sRoll && rRoll === sRoll) {
+      const classMatches = !rClass || !sClass || rClass === sClass || rClass.includes(sClass) || sClass.includes(rClass);
+      if (classMatches) {
+        if (!rName || !sName || rName === sName || matchNamesLoosely(rName, sName)) {
+          return true;
+        }
+      }
     }
+
+    // 3. Exact Name + Class match
+    if (rName && sName && rName === sName) {
+      const classMatches = !rClass || !sClass || rClass === sClass || rClass.includes(sClass) || sClass.includes(rClass);
+      if (classMatches) return true;
+    }
+
     return false;
   };
 
@@ -527,22 +578,39 @@ export default function ResultsView() {
     setActiveTab('entry');
   };
 
-  // Students in selected class
+  // Students in selected class (with multi-class exam restriction support)
   const classStudents = useMemo(() => {
+    const selectedExam = selectedExamId ? exams.find(e => e.id === selectedExamId) : null;
+    const examClasses = (selectedExam?.classes && Array.isArray(selectedExam.classes) && selectedExam.classes.length > 0)
+      ? selectedExam.classes.map(normalizeClassStr).filter(Boolean)
+      : (selectedExam?.className && selectedExam.className !== 'All Classes')
+        ? selectedExam.className.split(',').map(normalizeClassStr).filter(Boolean)
+        : [];
+
     return students.filter(s => {
       const sClass = (s.studentType === 'school' ? s.className : s.course) || '';
       if (!isPrincipal && !hasAllClassesAccess && !canAccessClass(sClass)) {
         return false;
       }
-      if (!bulkClass || bulkClass === 'All Classes') return true;
-      return String(sClass).trim().toLowerCase() === String(bulkClass).trim().toLowerCase();
+
+      const normSClass = normalizeClassStr(sClass);
+
+      // If an exam has specific classes and "All Classes" or "All Exam Classes" is chosen, filter strictly to exam classes
+      if (examClasses.length > 0 && (!bulkClass || bulkClass === 'All Classes' || bulkClass === 'All Exam Classes')) {
+        const inExam = examClasses.some(ec => ec === normSClass || ec.includes(normSClass) || normSClass.includes(ec));
+        if (!inExam) return false;
+      }
+
+      if (!bulkClass || bulkClass === 'All Classes' || bulkClass === 'All Exam Classes') return true;
+      const normBulkClass = normalizeClassStr(bulkClass);
+      return normSClass === normBulkClass || normSClass.includes(normBulkClass) || normBulkClass.includes(normSClass);
     }).sort((a, b) => {
       const rA = parseInt(a.rollNumber, 10);
       const rB = parseInt(b.rollNumber, 10);
       if (!isNaN(rA) && !isNaN(rB)) return rA - rB;
       return (a.name || '').localeCompare(b.name || '');
     });
-  }, [students, bulkClass, isPrincipal, hasAllClassesAccess, canAccessClass]);
+  }, [students, bulkClass, selectedExamId, exams, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
   // High-performance O(1) indexed Map for active exam results strictly by student unique IDs
   const examResultsMap = useMemo(() => {
@@ -550,8 +618,13 @@ export default function ResultsView() {
     const targetExam = String(bulkExamTitle || '').trim().toLowerCase();
     if (!targetExam) return map;
 
+    const list = [];
+
     for (const r of results) {
-      if (String(r.examName || '').trim().toLowerCase() !== targetExam) continue;
+      const rExam = String(r.examName || '').trim().toLowerCase();
+      if (rExam !== targetExam && !rExam.includes(targetExam) && !targetExam.includes(rExam)) continue;
+      list.push(r);
+
       if (r.studentDocId) map.set(`doc_${String(r.studentDocId).trim().toLowerCase()}`, r);
       if (r.studentId) {
         map.set(`id_${String(r.studentId).trim().toLowerCase()}`, r);
@@ -563,12 +636,17 @@ export default function ResultsView() {
       }
       if (r.id) map.set(`res_${String(r.id).trim().toLowerCase()}`, r);
 
-      const rRoll = String(r.rollNumber || '').trim().toLowerCase();
-      const rClass = String(r.className || r.class || '').trim().toLowerCase();
+      const rRoll = normalizeRoll(r.rollNumber);
+      const rClass = normalizeClassStr(r.className || r.class || '');
       if (rRoll && rClass) {
         map.set(`roll_${rRoll}_class_${rClass}`, r);
       }
+      const rName = String(r.studentName || '').trim().toLowerCase();
+      if (rName && rClass) {
+        map.set(`name_${rName}_class_${rClass}`, r);
+      }
     }
+    map.set('__list', list);
     return map;
   }, [results, bulkExamTitle]);
 
@@ -577,20 +655,56 @@ export default function ResultsView() {
     const sDocId = String(s.id || '').trim().toLowerCase();
     const sStuId = String(s.studentId || '').trim().toLowerCase();
     const sAdm = String(s.admissionNumber || s.admissionNo || '').trim().toLowerCase();
-    const sRoll = String(s.rollNumber || '').trim().toLowerCase();
-    const sClass = String(s.className || s.course || bulkClass || '').trim().toLowerCase();
+    const sRoll = normalizeRoll(s.rollNumber);
+    const sClass = normalizeClassStr(s.className || s.course || bulkClass || '');
+    const sName = String(s.name || '').trim().toLowerCase();
 
-    return (
-      (sDocId && examResultsMap.get(`doc_${sDocId}`)) ||
-      (sDocId && examResultsMap.get(sDocId)) ||
-      (sStuId && examResultsMap.get(`id_${sStuId}`)) ||
-      (sStuId && examResultsMap.get(sStuId)) ||
-      (sAdm && examResultsMap.get(`adm_${sAdm}`)) ||
-      (sAdm && examResultsMap.get(sAdm)) ||
-      (sRoll && sClass && examResultsMap.get(`roll_${sRoll}_class_${sClass}`)) ||
-      null
-    );
+    // 1. Direct ID lookups
+    const byDoc = (sDocId && (examResultsMap.get(`doc_${sDocId}`) || examResultsMap.get(sDocId)));
+    if (byDoc) return byDoc;
+    const byId = (sStuId && (examResultsMap.get(`id_${sStuId}`) || examResultsMap.get(sStuId)));
+    if (byId) return byId;
+    const byAdm = (sAdm && (examResultsMap.get(`adm_${sAdm}`) || examResultsMap.get(sAdm)));
+    if (byAdm) return byAdm;
+
+    // 2. Roll + Class lookup (with loose name match to handle "Adit" vs "Aditya")
+    if (sRoll && sClass) {
+      const byRollClass = examResultsMap.get(`roll_${sRoll}_class_${sClass}`);
+      if (byRollClass) {
+        if (!byRollClass.studentName || !sName || matchNamesLoosely(byRollClass.studentName, sName)) {
+          return byRollClass;
+        }
+      }
+    }
+
+    // 3. Name + Class lookup
+    if (sName && sClass) {
+      const byName = examResultsMap.get(`name_${sName}_class_${sClass}`);
+      if (byName) return byName;
+    }
+
+    // 4. Fallback search in exam results list
+    const list = examResultsMap.get('__list');
+    if (list && list.length > 0) {
+      const fallback = list.find(r => matchesStudent(r, s));
+      if (fallback) return fallback;
+    }
+
+    return null;
   };
+
+  // Pre-calculated live counters across all candidates for active class/exam
+  const deskScopeCounts = useMemo(() => {
+    let completed = 0;
+    classStudents.forEach(s => {
+      if (getStudentResult(s)) completed++;
+    });
+    return {
+      total: classStudents.length,
+      completed,
+      pending: classStudents.length - completed
+    };
+  }, [classStudents, examResultsMap]);
 
   // Filtered students for mark entry desk (status + search) - O(1) matching
   const deskFilteredStudents = useMemo(() => {
@@ -1551,15 +1665,26 @@ export default function ResultsView() {
                 </div>
 
                 <div className="flex items-center p-0.5 bg-slate-100 rounded-lg text-xs">
-                  {['All', 'Pending', 'Completed'].map(st => (
+                  {[
+                    { label: 'All', count: deskScopeCounts.total },
+                    { label: 'Completed', count: deskScopeCounts.completed },
+                    { label: 'Pending', count: deskScopeCounts.pending }
+                  ].map(tab => (
                     <button
-                      key={st}
-                      onClick={() => setDeskStatusFilter(st)}
-                      className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition-all cursor-pointer ${
-                        deskStatusFilter === st ? 'bg-white text-indigo-900 shadow-xs' : 'text-slate-500'
+                      key={tab.label}
+                      onClick={() => setDeskStatusFilter(tab.label)}
+                      className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                        deskStatusFilter === tab.label ? 'bg-white text-indigo-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
                       }`}
                     >
-                      {st}
+                      <span>{tab.label}</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                        deskStatusFilter === tab.label
+                          ? 'bg-indigo-100 text-indigo-900'
+                          : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {tab.count}
+                      </span>
                     </button>
                   ))}
                 </div>
