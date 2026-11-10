@@ -29,7 +29,8 @@ import {
   FileSpreadsheet,
   Share2,
   Filter,
-  Eye
+  Eye,
+  Clock
 } from 'lucide-react';
 import { 
   openWhatsAppFeeReminder, 
@@ -61,6 +62,24 @@ const STANDARD_PROFILE_SUBJECTS = [
   'Accountancy',
   'Other'
 ];
+
+const formatAuditDate = (dateVal) => {
+  if (!dateVal) return 'N/A';
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return String(dateVal);
+    return d.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch {
+    return String(dateVal);
+  }
+};
 
 export default function StudentProfileModal({ student, onClose }) {
   const {
@@ -318,6 +337,16 @@ export default function StudentProfileModal({ student, onClose }) {
                 <span>Admission No: <strong className="text-white">{student.admissionNumber}</strong></span>
                 <span>Mobile: <strong className="text-white">{student.mobile}</strong></span>
               </div>
+
+              {/* Audit Badge / Tag */}
+              <div className="pt-1.5 flex flex-wrap items-center justify-center sm:justify-start">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/35 border border-white/20 text-[11px] font-medium text-white shadow-xs">
+                  <Clock className="w-3 h-3 text-amber-300 flex-shrink-0" />
+                  <span>Entry: <strong className="text-white font-semibold">{formatAuditDate(student.createdAt)}</strong></span>
+                  <span className="text-white/40">•</span>
+                  <span>By: <strong className="text-amber-300 font-semibold">{student.createdBy || student.createdByName || 'Admin'}</strong></span>
+                </span>
+              </div>
             </div>
 
             {/* Top Quick Actions */}
@@ -483,9 +512,17 @@ export default function StudentProfileModal({ student, onClose }) {
                       <span className="text-text-secondary">Academic Session</span>
                       <span className="font-semibold text-text">{student.session || '2026-27'}</span>
                     </div>
-                    <div className="flex justify-between py-1">
+                    <div className="flex justify-between py-1 border-b border-border/50">
                       <span className="text-text-secondary">Admission Date</span>
                       <span className="font-semibold text-text">{student.admissionDate || '—'}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-border/50">
+                      <span className="text-text-secondary">Entry Date & Time</span>
+                      <span className="font-semibold text-text">{formatAuditDate(student.createdAt)}</span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-text-secondary">Entry Created By</span>
+                      <span className="font-semibold text-primary">{student.createdBy || student.createdByName || 'Admin'}</span>
                     </div>
                   </div>
                 </div>
