@@ -61,9 +61,9 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
   bool _dismissedOptionalUpdate = false;
 
   String _resolveDeviceApkUrl(Map<String, dynamic> data) {
-    final v8 = (data['apk_v8_url']?.toString() ?? '').trim();
-    final v7 = (data['apk_v7_url']?.toString() ?? '').trim();
-    final universal = (data['apkUrl']?.toString() ?? '').trim();
+    final v8 = (data['apk_v8_url']?.toString() ?? data['apkArm64Url']?.toString() ?? '').trim();
+    final v7 = (data['apk_v7_url']?.toString() ?? data['apkArmeabiUrl']?.toString() ?? '').trim();
+    final universal = (data['apkUrl']?.toString() ?? data['apkDownloadUrl']?.toString() ?? data['downloadUrl']?.toString() ?? '').trim();
 
     try {
       final abi = Abi.current();
