@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mnpschool.in/sitemap.xml
+Sitemap: https://www.mnpschool.in/sitemap.xml
