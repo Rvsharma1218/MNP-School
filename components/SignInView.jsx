@@ -825,6 +825,65 @@ export default function SignInView() {
               </div>
             </section>
 
+            {/* ── SECTION 2: INSTITUTIONAL TRUST & KEY METRICS (220+ Active Students, Nursery-8th, 100% Care) ── */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 sm:-mt-8 relative z-20">
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-xl shadow-slate-900/5 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+
+                {/* Metric 1: 220+ Students */}
+                <div className="flex items-center gap-3.5 sm:gap-4 p-2 sm:p-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[#0c2340] flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <GraduationCap className="w-6 h-6 text-[#F4B323]" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#0c2340] tracking-tight">220+</div>
+                    <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      {isHi ? 'नामांकित विद्यार्थी' : 'Active Students'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metric 2: Nursery to 8th */}
+                <div className="flex items-center gap-3.5 sm:gap-4 p-2 sm:p-3 pt-3 sm:pt-3">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-[#0c2340] flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <BookOpen className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#0c2340] tracking-tight">Nursery – 8th</div>
+                    <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      {isHi ? 'अंग्रेजी माध्यम कक्षाएं' : 'Co-Ed Classes'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metric 3: 100% Care & Guidance */}
+                <div className="flex items-center gap-3.5 sm:gap-4 p-2 sm:p-3 pt-3 sm:pt-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-[#0c2340] flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <Award className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#0c2340] tracking-tight">100%</div>
+                    <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      {isHi ? 'व्यक्तिगत मार्गदर्शन' : 'Individual Care'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metric 4: Safe Disciplined Campus */}
+                <div className="flex items-center gap-3.5 sm:gap-4 p-2 sm:p-3 pt-3 sm:pt-3">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-[#0c2340] flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <ShieldCheck className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#0c2340] tracking-tight">Smart Campus</div>
+                    <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      {isHi ? 'CCTV व सुरक्षित परिसर' : 'Safe & Disciplined'}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
             {/* ── SECTION 3: 5 SIGNATURE CAMPUS FEATURES (From Banner Cards) ── */}
             <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
               <div className="text-center space-y-2 mb-8 sm:mb-10">
@@ -845,12 +904,12 @@ export default function SignInView() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
 
                 {/* 1. Enriched Library */}
-                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
-                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1.5 hover:border-[#F4B323]/40 transition-all duration-300 space-y-3 group relative overflow-hidden">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center font-bold group-hover:scale-110 transition-transform shadow-2xs">
                     <BookOpen className="w-6 h-6 text-[#F4B323]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'समृद्ध पुस्तकालय' : 'Enriched Library'}</h3>
+                    <h3 className="text-sm font-black text-[#14243B] group-hover:text-[#102747] transition-colors">{isHi ? 'समृद्ध पुस्तकालय' : 'Enriched Library'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
                       {isHi
                         ? 'ज्ञानवर्धक पुस्तकों, NCERT पाठ्यपुस्तकों और प्रेरक पठन सामग्रियों का विशाल संग्रह।'
@@ -860,12 +919,12 @@ export default function SignInView() {
                 </div>
 
                 {/* 2. Computer & Tech Wing */}
-                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1.5 hover:border-blue-400/40 transition-all duration-300 space-y-3 group relative overflow-hidden">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-700 flex items-center justify-center font-bold group-hover:scale-110 transition-transform shadow-2xs">
                     <Monitor className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'कंप्यूटर व तकनीक विंग' : 'Computer & Tech Wing'}</h3>
+                    <h3 className="text-sm font-black text-[#14243B] group-hover:text-blue-700 transition-colors">{isHi ? 'कंप्यूटर व तकनीक विंग' : 'Computer & Tech Wing'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
                       {isHi
                         ? 'आधुनिक डिजिटल शिक्षा, सुसज्जित कंप्यूटर लैब और प्रायोगिक तकनीकी कौशल।'
@@ -875,12 +934,12 @@ export default function SignInView() {
                 </div>
 
                 {/* 3. Sports & Physical Fitness */}
-                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1.5 hover:border-emerald-400/40 transition-all duration-300 space-y-3 group relative overflow-hidden">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center font-bold group-hover:scale-110 transition-transform shadow-2xs">
                     <Trophy className="w-6 h-6 text-emerald-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'खेलकूद एवं शारीरिक विकास' : 'Sports & Physical Fitness'}</h3>
+                    <h3 className="text-sm font-black text-[#14243B] group-hover:text-emerald-700 transition-colors">{isHi ? 'खेलकूद एवं शारीरिक विकास' : 'Sports & Physical Fitness'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
                       {isHi
                         ? 'फुटबॉल, एथलेटिक्स और शारीरिक तंदुरुस्ती के लिए विशाल खुला खेल का मैदान।'
@@ -890,12 +949,12 @@ export default function SignInView() {
                 </div>
 
                 {/* 4. Safe & Secure Campus */}
-                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1.5 hover:border-indigo-400/40 transition-all duration-300 space-y-3 group relative overflow-hidden">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-700 flex items-center justify-center font-bold group-hover:scale-110 transition-transform shadow-2xs">
                     <ShieldCheck className="w-6 h-6 text-indigo-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'सुरक्षित एवं अनुशासित परिसर' : 'Safe & Secure Campus'}</h3>
+                    <h3 className="text-sm font-black text-[#14243B] group-hover:text-indigo-700 transition-colors">{isHi ? 'सुरक्षित एवं अनुशासित परिसर' : 'Safe & Secure Campus'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
                       {isHi
                         ? 'चारदीवारी से सुरक्षित, अनुशासित और स्नेहमयी वातावरण जिससे बच्चे सुरक्षित रहें।'
@@ -905,12 +964,12 @@ export default function SignInView() {
                 </div>
 
                 {/* 5. Dedicated Teachers */}
-                <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all space-y-3 group">
-                  <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold group-hover:scale-105 transition-transform shadow-2xs">
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1.5 hover:border-purple-400/40 transition-all duration-300 space-y-3 group relative overflow-hidden">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-700 flex items-center justify-center font-bold group-hover:scale-110 transition-transform shadow-2xs">
                     <Users className="w-6 h-6 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#14243B]">{isHi ? 'समर्पित एवं अनुभवी शिक्षक' : 'Dedicated Teachers'}</h3>
+                    <h3 className="text-sm font-black text-[#14243B] group-hover:text-purple-700 transition-colors">{isHi ? 'समर्पित एवं अनुभवी शिक्षक' : 'Dedicated Teachers'}</h3>
                     <p className="text-xs text-[#65748B] mt-1 leading-relaxed">
                       {isHi
                         ? 'प्रत्येक बच्चे के सर्वांगीण विकास के लिए समर्पित, अनुभवी और स्नेही शिक्षक गण।'
