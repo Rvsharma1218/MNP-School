@@ -120,18 +120,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     SystemNavigator.pop();
   }
-  Timer? _clockTimer;
-  DateTime _now = DateTime.now();
   StreamSubscription? _securityRevokeSub;
   StreamSubscription? _sessionSub;
 
   @override
   void initState() {
     super.initState();
-    // Update live clock every minute
-    _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (mounted) setState(() => _now = DateTime.now());
-    });
 
     // Option 1: Default teacher dashboard to All Allowed Classes mode so
     // Dashboard stat cards show the total count of all students accessible to this teacher (matching Student List).
@@ -162,7 +156,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void dispose() {
-    _clockTimer?.cancel();
     _securityRevokeSub?.cancel();
     _sessionSub?.cancel();
     super.dispose();
@@ -893,7 +886,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          _LiveDateTimeWidget(now: _now),
+                          const _LiveDateTimeWidget(),
                           const SizedBox(height: 10),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -2600,16 +2593,37 @@ class _TeacherClassSectionSelector extends ConsumerWidget {
   }
 }
 
-class _LiveDateTimeWidget extends StatelessWidget {
-  final DateTime now;
-  const _LiveDateTimeWidget({required this.now});
+class _LiveDateTimeWidget extends StatefulWidget {
+  const _LiveDateTimeWidget();
 
+  @override
+  State<_LiveDateTimeWidget> createState() => _LiveDateTimeWidgetState();
+}
+
+class _LiveDateTimeWidgetState extends State<_LiveDateTimeWidget> {
+  DateTime _now = DateTime.now();
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _now = DateTime.now();
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final dayName = DateFormat('EEEE').format(now);
-    final dateStr = DateFormat('dd MMM yyyy').format(now);
-    final timeStr = DateFormat('hh:mm a').format(now);
+    final dayName = DateFormat('EEEE').format(_now);
+    final dateStr = DateFormat('dd MMM yyyy').format(_now);
+    final timeStr = DateFormat('hh:mm a').format(_now);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),

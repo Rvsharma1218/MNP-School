@@ -23,6 +23,7 @@ import '../../core/utils/app_utils.dart';
 import '../../data/services/database_service.dart';
 import 'campus_geofence_settings_screen.dart';
 import '../../data/models/teacher_model.dart';
+import '../security/device_security_gate.dart';
 import '../../data/services/teacher_service.dart';
 import '../dashboard/dashboard_screen.dart';
 
@@ -478,7 +479,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 const Text('Mission Navodaya Public School (MNP)', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
-                Text('${settings.schoolName.isNotEmpty ? settings.schoolName : "MNP School"} • Version 1.0.0', style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+                Text('${settings.schoolName.isNotEmpty ? settings.schoolName : "MNP School"} • ${DeviceSecurityGate.dynamicAppVersion}', style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
               ],
             ),
           ),
@@ -2064,7 +2065,7 @@ class _SecurityPinSettingsScreenState extends State<SecurityPinSettingsScreen> {
 class HelpSupportSettingsScreen extends ConsumerWidget {
   const HelpSupportSettingsScreen({super.key});
 
-  static const String appVersion = 'Version 1.0.0';
+  static String get appVersion => DeviceSecurityGate.dynamicAppVersion;
 
   Future<void> _launchWhatsApp(BuildContext context, String phone, String schoolName) async {
     final clean = phone.replaceAll(RegExp(r'[^0-9]'), '');

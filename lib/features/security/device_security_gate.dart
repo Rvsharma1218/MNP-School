@@ -15,13 +15,29 @@ class DeviceSecurityGate extends StatefulWidget {
 
   const DeviceSecurityGate({super.key, required this.child});
 
+  static int currentVersionCode = 2007;
+  static String currentVersion = '1.0.1';
+
+  /// Returns dynamically resolved human-readable app version & build number
+  static String get dynamicAppVersion {
+    final build = currentVersionCode > 1000 ? (currentVersionCode % 1000) : currentVersionCode;
+    if (build > 0) {
+      return 'Version $currentVersion (Build $build)';
+    }
+    return 'Version $currentVersion';
+  }
+
   @override
   State<DeviceSecurityGate> createState() => _DeviceSecurityGateState();
 }
 
 class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProviderStateMixin {
-  static int currentVersionCode = 2007;
-  static String currentVersion = '1.0.1';
+  static int get currentVersionCode => DeviceSecurityGate.currentVersionCode;
+  static set currentVersionCode(int v) => DeviceSecurityGate.currentVersionCode = v;
+
+  static String get currentVersion => DeviceSecurityGate.currentVersion;
+  static set currentVersion(String v) => DeviceSecurityGate.currentVersion = v;
+
   bool _versionInitialized = false;
 
   late final AnimationController _pulseController;

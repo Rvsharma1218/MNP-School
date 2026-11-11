@@ -108,15 +108,25 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
     _load();
   }
 
+  static DateTime? _lastRemoteSync;
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool forceRemote = false}) async {
     // 1. Instantly load & render from SQLite cache with zero waiting
     await _processAndRenderLocalData();
+
+    final now = DateTime.now();
+    final shouldSyncRemote = forceRemote ||
+        _lastRemoteSync == null ||
+        now.difference(_lastRemoteSync!) > const Duration(minutes: 5);
+
+    if (!shouldSyncRemote) return;
+    _lastRemoteSync = now;
 
     // 2. Fetch fresh updates from Firestore in the background
     () async {
@@ -138,13 +148,13 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
           await DatabaseService.instance.bulkUpsertMonthlyFeesFromRemote(remoteMonthly);
         }
         if (mounted) {
-          await _processAndRenderLocalData();
+          await _processAndRenderLocalData(fromRemote: true);
         }
       } catch (_) {}
     }();
   }
 
-  Future<void> _processAndRenderLocalData() async {
+  Future<void> _processAndRenderLocalData({bool fromRemote = false}) async {
     try {
       final students = await DatabaseService.instance.getAllStudents();
       final feesMap = await DatabaseService.instance.getAllFeesMap();
@@ -218,7 +228,9 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
           _studentMap = sMap;
           _loading = false;
         });
-        ref.invalidate(dashboardStatsProvider);
+        if (fromRemote) {
+          ref.invalidate(dashboardStatsProvider);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -1155,7 +1167,7 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: () => _load(forceRemote: true),
       child: Column(
         children: [
           // Sleek Compact Collected Summary Banner
@@ -1438,7 +1450,7 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
     final pending = _pendingRows;
 
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: () => _load(forceRemote: true),
       child: Column(
         children: [
           // Sleek Compact Summary Banner
@@ -1715,7 +1727,7 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
     final defaulters = _defaulterRows;
 
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: () => _load(forceRemote: true),
       child: Column(
         children: [
           // Sleek Compact Defaulters Summary Banner
@@ -2076,7 +2088,7 @@ class _FeesCollectedScreenState extends ConsumerState<FeesCollectedScreen>
     final transactions = _filteredTransactions;
 
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: () => _load(forceRemote: true),
       child: Column(
         children: [
           // Filter Bar
