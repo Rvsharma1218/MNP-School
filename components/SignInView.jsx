@@ -244,6 +244,10 @@ export default function SignInView() {
             <a href="#leadership" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'नेतृत्व' : 'Leadership'}</a>
             <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'गैलरी' : 'Gallery'}</a>
             <a href="#reviews" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'समीक्षाएं' : 'Reviews'}</a>
+            <a href="#download" className="hover:text-[#F4B323] transition-colors py-1 inline-flex items-center gap-1 text-amber-300 font-black">
+              <Smartphone className="w-3.5 h-3.5 text-[#F4B323]" />
+              <span>{isHi ? 'ऐप डाउनलोड' : 'App Download'}</span>
+            </a>
             <a href="#contact" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'संपर्क' : 'Contact'}</a>
           </nav>
 
@@ -555,7 +559,15 @@ export default function SignInView() {
 
                   <button
                     type="button"
-                    onClick={() => closeMobileMenuAndNavigate('#contact')}
+                    onClick={() => closeMobileMenuAndNavigate('#download')}
+                  className="px-4 py-2.5 rounded-xl hover:bg-white/5 text-amber-300 font-bold transition-colors text-left flex items-center gap-2"
+                >
+                  <Smartphone className="w-4 h-4 text-[#F4B323]" />
+                  <span>{isHi ? 'मोबाइल ऐप डाउनलोड' : 'Download Mobile App'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeMobileMenuAndNavigate('#contact')}
                     className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
                   >
                     <div className="flex items-center gap-3">
@@ -1398,6 +1410,141 @@ export default function SignInView() {
             </section>
 
             {/* ── SECTION 7: CONTACT & CAMPUS HELPLINE (Direct from Banner Footer Strip) ── */}
+            
+            {/* ── SECTION 6: OFFICIAL MNP SCHOOL MOBILE APP DOWNLOAD ── */}
+            <section id="download" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
+              <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#0c2340] via-[#102747] to-[#091A32] border border-[#F4B323]/30 shadow-2xl p-6 sm:p-10 lg:p-12 text-white">
+                
+                {/* Background decorative glow */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+                  
+                  {/* Left Column: App Information & Features */}
+                  <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F4B323]/15 border border-[#F4B323]/30 text-amber-300 text-xs font-black uppercase tracking-wider">
+                      <Smartphone className="w-4 h-4 text-[#F4B323]" />
+                      <span>{isHi ? 'आधिकारिक मोबाइल ऐप (Android)' : 'Official Android App v2.0.10'}</span>
+                    </div>
+
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
+                      {isHi ? (
+                        <>मिशन नवोदय स्कूल ऐप <span className="text-[#F4B323]">अपने फोन में डाउनलोड करें</span></>
+                      ) : (
+                        <>Download the Official <span className="text-[#F4B323]">MNP School Mobile App</span></>
+                      )}
+                    </h2>
+
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                      {isHi
+                        ? 'अभिभावकों, विद्यार्थियों एवं शिक्षकों के लिए विशेष रूप से निर्मित। अब बच्चे की दैनिक उपस्थिति, परीक्षा परिणाम, फीस रसीद और स्कूल नोटिस सीधे अपने मोबाइल पर देखें।'
+                        : 'Built exclusively for parents, students, and faculty. Check real-time attendance, examination results, fee receipts, timetable, and school announcements on your phone.'}
+                    </p>
+
+                    {/* 4 Feature Badges */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                      <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
+                        <div className="text-base sm:text-lg font-black text-[#F4B323]">📊 100%</div>
+                        <div className="text-[11px] font-bold text-slate-300 mt-0.5">{isHi ? 'दैनिक उपस्थिति' : 'Attendance'}</div>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
+                        <div className="text-base sm:text-lg font-black text-emerald-400">📄 लाइव</div>
+                        <div className="text-[11px] font-bold text-slate-300 mt-0.5">{isHi ? 'रिजल्ट व मार्कशीट' : 'Results'}</div>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
+                        <div className="text-base sm:text-lg font-black text-blue-400">💳 डिजिटल</div>
+                        <div className="text-[11px] font-bold text-slate-300 mt-0.5">{isHi ? 'फीस रसीद' : 'Fee Receipts'}</div>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
+                        <div className="text-base sm:text-lg font-black text-purple-400">📢 तुरंत</div>
+                        <div className="text-[11px] font-bold text-slate-300 mt-0.5">{isHi ? 'स्कूल नोटिस' : 'Notices'}</div>
+                      </div>
+                    </div>
+
+                    {/* Download CTA Buttons */}
+                    <div className="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
+                      {/* Primary 64-bit APK Download */}
+                      <a
+                        href="/MNP_School_arm64-v8a.apk"
+                        download="MNP_School_v2.0.10.apk"
+                        className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-sm transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-3 cursor-pointer hover:scale-105 active:scale-95"
+                      >
+                        <Download className="w-5 h-5 text-[#0c2340]" />
+                        <span>{isHi ? 'Android ऐप डाउनलोड करें (APK)' : 'Download Android App (APK)'}</span>
+                      </a>
+
+                      {/* Fallback 32-bit APK for older phones */}
+                      <a
+                        href="/MNP_School_armeabi-v7a.apk"
+                        download="MNP_School_v2.0.10_v7a.apk"
+                        className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Smartphone className="w-4 h-4 text-slate-300" />
+                        <span>{isHi ? 'पुराने फोन के लिए (v7a APK)' : 'Older Devices (32-bit v7a)'}</span>
+                      </a>
+                    </div>
+
+                    <div className="text-[11px] text-slate-400 flex items-center justify-center lg:justify-start gap-2 pt-1 font-medium">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>{isHi ? 'सुरक्षित एवं सत्यापित एपीके · साइज: ~50 MB · Android 6.0+' : 'Verified Secure APK · Size: ~50 MB · Android 6.0+'}</span>
+                    </div>
+
+                  </div>
+
+                  {/* Right Column: Visual App Mockup Preview */}
+                  <div className="lg:col-span-5 flex justify-center">
+                    <div className="w-64 sm:w-72 rounded-[2.5rem] p-3 bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 border-4 border-slate-600 shadow-2xl shadow-black/60">
+                      <div className="rounded-[2rem] overflow-hidden bg-[#0c2340] border border-white/10 p-5 text-center space-y-4">
+                        
+                        {/* Speaker Notch */}
+                        <div className="w-16 h-1.5 bg-white/20 rounded-full mx-auto" />
+
+                        {/* App Logo & Badge */}
+                        <div className="w-16 h-16 rounded-2xl bg-white p-2 mx-auto shadow-md">
+                          <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
+                        </div>
+
+                        <div>
+                          <div className="text-xs font-black text-white uppercase tracking-wider">MNP SCHOOL APP</div>
+                          <div className="text-[10px] text-[#F4B323] font-bold mt-0.5">Mora-Mairi, Siwan</div>
+                        </div>
+
+                        {/* Sample App Screen Mockup Items */}
+                        <div className="space-y-2 text-left text-xs">
+                          <div className="p-2 rounded-xl bg-white/10 flex items-center justify-between text-white">
+                            <span className="font-bold">आज की उपस्थिति</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">उपस्थित ✓</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-white/10 flex items-center justify-between text-white">
+                            <span className="font-bold">सत्र परिणाम</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">A+ ग्रेड</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-white/10 flex items-center justify-between text-white">
+                            <span className="font-bold">स्कूल नोटिस</span>
+                            <span className="text-[10px] text-slate-300">नया अलर्ट</span>
+                          </div>
+                        </div>
+
+                        {/* Mock Button */}
+                        <a
+                          href="/MNP_School_arm64-v8a.apk"
+                          download="MNP_School_v2.0.10.apk"
+                          className="block w-full py-2.5 rounded-xl bg-[#F4B323] text-[#0c2340] font-black text-xs hover:brightness-110 transition-all shadow-md"
+                        >
+                          {isHi ? 'इंस्टॉल करें' : 'Install APK'}
+                        </a>
+
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            </section>
+
+
             <section id="contact" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
               <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-10 space-y-8">
 
