@@ -22,17 +22,71 @@ export const metadata = {
     default: "MNP School | Mission Navodaya Public School, Mora, Bihar",
     template: "%s | MNP School"
   },
-  description: "Official portal of Mission Navodaya Public School (MNP School), Mora, Bihar. Online Admissions, Student Results, Parent Portal, Academic Calendar, and Quality Education.",
+  description: "Official portal of Mission Navodaya Public School (MNP School), Mora, Bihar. Top school in Mora, Mora Bazar, Mairi, Ratauli & Siwan. Founded by Chairman Uday Shankar Patel (Uday Sir) & Director Vishal Patel (Vishal Sir). Online Admissions, Student Results & Quality Education.",
   keywords: [
-    "mnpschool",
+    // Brand & Variations
     "mnp school",
+    "mnpschool",
     "mnpschool.in",
     "mission navodaya public school",
-    "mnp school mora",
-    "mnp school bihar",
+    "mission navodaya school mora",
+    "mission navodaya school",
+    "mnp public school",
+    "mnp",
+
+    // Mora & Village Keywords
+    "mora school",
+    "mora shool",
+    "school in mora",
+    "mora ka school",
+    "mora mai school",
+    "mora bihar school",
+    "mora public school",
+    "mora navodaya school",
+
+    // Mora Bazaar & Nearby Markets
+    "mora bazaar school",
+    "mora bazar school",
+    "moara bazaar school",
+    "mora market school",
+
+    // Mairi & Nearby Localities
+    "mora mairi school",
+    "mairi school",
+    "mora mairwa school",
+    "mairi ka school",
+    "mairi school bihar",
+
+    // Ratauli & Nearby Localities
+    "mora ratauli ka school",
+    "mora ratauli school",
+    "ratauli school",
+    "ratauli ka school",
+    "ratauli mora school",
+
+    // Siwan District
+    "siwan school",
+    "siwan sschool",
+    "best school in siwan",
+    "school in siwan bihar",
+    "top school in siwan",
+    "siwan bihar school",
+
+    // Founders & Leadership Known Locally
+    "vishal sir school",
+    "vishal sir ka school",
+    "vishal sir mora school",
+    "director vishal patel school",
+    "uday sir ka school",
+    "uday sir school",
+    "uday patel school mora",
+    "chairman uday shankar patel school",
+
+    // Academic & Services
     "mnp school admission",
     "mnp school result",
-    "mission navodaya school"
+    "mnp school fees",
+    "mnp school parent portal"
   ],
   authors: [{ name: "Mission Navodaya Public School" }],
   creator: "Mission Navodaya Public School",
@@ -51,7 +105,7 @@ export const metadata = {
   },
   openGraph: {
     title: "MNP School | Mission Navodaya Public School, Mora, Bihar",
-    description: "Official portal of Mission Navodaya Public School (MNP School), Mora, Bihar. Online Admissions, Student Results, Parent Portal, and Academic Updates.",
+    description: "Official portal of Mission Navodaya Public School (MNP School), Mora, Bihar. Serving Mora, Mairi, Ratauli, Mora Bazar, and Siwan. Online Admissions & Results.",
     url: "https://mnpschool.in",
     siteName: "MNP School",
     locale: "en_IN",
@@ -60,7 +114,7 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "MNP School | Mission Navodaya Public School, Mora, Bihar",
-    description: "Official portal of Mission Navodaya Public School (MNP School), Mora, Bihar.",
+    description: "Official portal of Mission Navodaya Public School (MNP School), Mora, Bihar. Serving Mora, Mairi, Ratauli, Mora Bazar, and Siwan.",
   },
   verification: {
     google: "DucDVR_DeLe1mqmmL8JQZ8sl3SiSav2Ux1Tyie_9CqA",
@@ -83,15 +137,47 @@ export default function RootLayout({ children }) {
     "@context": "https://schema.org",
     "@type": "School",
     "name": "Mission Navodaya Public School",
-    "alternateName": "MNP School",
+    "alternateName": [
+      "MNP School",
+      "MNP Public School",
+      "Mora School",
+      "Vishal Sir School",
+      "Uday Sir Ka School",
+      "Mora Mairi School",
+      "Mora Ratauli School",
+      "Mora Bazaar School"
+    ],
     "url": "https://mnpschool.in",
     "logo": "https://mnpschool.in/logo.png",
+    "image": "https://mnpschool.in/logo.png",
+    "description": "Mission Navodaya Public School (MNP School) located in Mora, Bihar. Serving students across Mora, Mairi, Ratauli, Mora Bazar, and Siwan district.",
     "address": {
       "@type": "PostalAddress",
+      "streetAddress": "Mora Bazar, Near Mairi - Ratauli Road",
       "addressLocality": "Mora",
       "addressRegion": "Bihar",
       "addressCountry": "IN"
     },
+    "areaServed": [
+      "Mora",
+      "Mora Bazar",
+      "Mairi",
+      "Ratauli",
+      "Siwan",
+      "Bihar"
+    ],
+    "founder": [
+      {
+        "@type": "Person",
+        "name": "Uday Shankar Patel",
+        "jobTitle": "Chairman"
+      },
+      {
+        "@type": "Person",
+        "name": "Vishal Patel",
+        "jobTitle": "Director"
+      }
+    ],
     "geo": {
       "@type": "GeoCoordinates",
       "latitude": 26.115206775039834,
@@ -99,7 +185,8 @@ export default function RootLayout({ children }) {
     },
     "hasMap": "https://www.google.com/maps?q=26.115206775039834,84.62215723091671",
     "sameAs": [
-      "https://mnpschool.in"
+      "https://mnpschool.in",
+      "https://www.mnpschool.in"
     ]
   };
 

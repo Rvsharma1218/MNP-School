@@ -1920,8 +1920,24 @@ export default function SignInView() {
 
           </div>
 
+          {/* Local Area & SEO Coverage Strip */}
+          <div className="mt-8 pt-4 border-t border-[#1E3A60]/60 text-[11px] text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-bold text-[#F4B323]">{isHi ? 'प्रमुख क्षेत्र:' : 'Areas Served:'}</span>
+            <span>Mora (मोरा)</span>
+            <span>&bull;</span>
+            <span>Mora Bazar (मोरा बाजार)</span>
+            <span>&bull;</span>
+            <span>Mairi (मैरी)</span>
+            <span>&bull;</span>
+            <span>Ratauli (रतौली)</span>
+            <span>&bull;</span>
+            <span>Siwan (सीवान, बिहार)</span>
+            <span className="hidden sm:inline">&bull;</span>
+            <span className="hidden sm:inline">{isHi ? 'संस्थापक: उदय शंकर पटेल (उदय सर) एवं विशाल पटेल (विशाल सर)' : 'Leadership: Chairman Uday Shankar Patel (Uday Sir) & Director Vishal Patel (Vishal Sir)'}</span>
+          </div>
+
           {/* Bottom Navy Footer Strip (Matching Image) */}
-          <div className="mt-12 pt-6 border-t border-[#1E3A60] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <div className="mt-6 pt-4 border-t border-[#1E3A60] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
             <div>
               &copy; {new Date().getFullYear()} <strong>{isHi ? 'मिशन नवोदय पब्लिक स्कूल' : schoolName}</strong>. {isHi ? 'सर्वाधिकार सुरक्षित।' : 'All rights reserved.'}
             </div>
