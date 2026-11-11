@@ -760,7 +760,7 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
             
             <div className="lg:col-span-7 space-y-5">
               <span className="px-3.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold text-xs uppercase border border-amber-500/30">
-                Android APK v2.0.10
+                Android APK v1.0.1 (Build 8)
               </span>
               <h2 className="text-2xl sm:text-4xl font-black text-white">
                 {isHi ? 'स्मार्ट स्कूल अब आपके हाथ में' : 'Next-Gen School Portal in Your Pocket'}
@@ -774,16 +774,17 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
               {/* Download Buttons */}
               <div className="pt-3 flex flex-col sm:flex-row gap-4">
                 <a
-                  href={`https://wa.me/91${primaryPhone}?text=${encodeURIComponent('नमस्ते सर, मुझे MNP School Android Mobile App (APK v2.0.10) चाहिए। कृपया ऐप की फाइल भेजें।')}`} target="_blank" rel="noopener noreferrer"
+                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build8/MNP_School_arm64-v8a.apk"
+                  download="MNP_School_v1.0.1.apk"
                   className="px-6 py-4 rounded-2xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-sm flex items-center justify-center gap-3 shadow-xl cursor-pointer hover:scale-105 active:scale-95 transition-all"
                 >
                   <Download className="w-5 h-5" />
-                  <span>{isHi ? 'व्हाट्सएप पर ऐप फाइल प्राप्त करें' : 'Get App on WhatsApp'}</span>
+                  <span>{isHi ? 'Android APK सीधे डाउनलोड करें (v1.0.1)' : 'Direct Download APK (v1.0.1)'}</span>
                 </a>
 
                 <a
-                  href="/MNP_School_armeabi-v7a.apk"
-                  download="MNP_School_v2.0.10_v7a.apk"
+                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build8/MNP_School_armeabi-v7a.apk"
+                  download="MNP_School_v1.0.1_v7a.apk"
                   className="px-5 py-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition-all cursor-pointer"
                 >
                   <Smartphone className="w-4 h-4 text-slate-300" />
@@ -791,8 +792,17 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
                 </a>
               </div>
 
-              <div className="text-xs text-slate-400 pt-1">
-                ✓ 100% वायरस-मुक्त एवं सुरक्षित · साइज: ~50 MB · Android 6.0 और उससे नए फोन पर समर्थित
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 pt-1">
+                <span>✓ 100% सुरक्षित · 52 MB · Android 6.0+</span>
+                <span className="text-slate-600">|</span>
+                <a
+                  href={`https://wa.me/91${primaryPhone}?text=${encodeURIComponent('नमस्ते सर, मुझे MNP School App (v1.0.1) इनस्टॉल करने में सहायता चाहिए।')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-400 hover:text-amber-300 font-bold inline-flex items-center gap-1 hover:underline"
+                >
+                  <span>{isHi ? 'व्हाट्सएप सहायता चाहिए?' : 'Need WhatsApp Help?'}</span>
+                </a>
               </div>
             </div>
 

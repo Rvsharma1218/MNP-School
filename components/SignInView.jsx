@@ -1514,7 +1514,7 @@ export default function SignInView() {
                   <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F4B323]/15 border border-[#F4B323]/30 text-amber-300 text-xs font-black uppercase tracking-wider">
                       <Smartphone className="w-4 h-4 text-[#F4B323]" />
-                      <span>{isHi ? 'आधिकारिक मोबाइल ऐप (Android)' : 'Official Android App v2.0.10'}</span>
+                      <span>{isHi ? 'आधिकारिक मोबाइल ऐप (Android)' : 'Official Android App v1.0.1 (Build 8)'}</span>
                     </div>
 
                     <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
@@ -1555,18 +1555,18 @@ export default function SignInView() {
                     <div className="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
                       {/* Primary 64-bit APK Download */}
                       <a
-                        href="/MNP_School_arm64-v8a.apk"
-                        download="MNP_School_v2.0.10.apk"
+                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build8/MNP_School_arm64-v8a.apk"
+                        download="MNP_School_v1.0.1.apk"
                         className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-sm transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-3 cursor-pointer hover:scale-105 active:scale-95"
                       >
                         <Download className="w-5 h-5 text-[#0c2340]" />
-                        <span>{isHi ? 'Android ऐप डाउनलोड करें (APK)' : 'Download Android App (APK)'}</span>
+                        <span>{isHi ? 'Android ऐप सीधे डाउनलोड करें (v1.0.1)' : 'Direct Download Android App (v1.0.1)'}</span>
                       </a>
 
                       {/* Fallback 32-bit APK for older phones */}
                       <a
-                        href="/MNP_School_armeabi-v7a.apk"
-                        download="MNP_School_v2.0.10_v7a.apk"
+                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build8/MNP_School_armeabi-v7a.apk"
+                        download="MNP_School_v1.0.1_v7a.apk"
                         className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Smartphone className="w-4 h-4 text-slate-300" />
@@ -1617,8 +1617,8 @@ export default function SignInView() {
 
                         {/* Mock Button */}
                         <a
-                          href="/MNP_School_arm64-v8a.apk"
-                          download="MNP_School_v2.0.10.apk"
+                          href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build8/MNP_School_arm64-v8a.apk"
+                          download="MNP_School_v1.0.1.apk"
                           className="block w-full py-2.5 rounded-xl bg-[#F4B323] text-[#0c2340] font-black text-xs hover:brightness-110 transition-all shadow-md"
                         >
                           {isHi ? 'इंस्टॉल करें' : 'Install APK'}
