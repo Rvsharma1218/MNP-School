@@ -1,5 +1,13 @@
 'use client';
 
+import {
+  AboutPageView,
+  AdmissionsPageView,
+  AcademicsPageView,
+  GalleryPageView,
+  ContactPageView,
+  DownloadPageView
+} from './PublicPages';
 import React, { useState, useEffect } from 'react';
 import { useSchoolStore } from '../lib/store';
 import { translations } from '../lib/translations';
@@ -33,6 +41,7 @@ export default function SignInView() {
 
   const t = translations[language] || translations.en;
   const isHi = language === 'hi';
+  const activeRoute = (currentPath || '/').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -97,13 +106,18 @@ export default function SignInView() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const closeMobileMenuAndNavigate = (hash) => {
+  const closeMobileMenuAndNavigate = (target) => {
     setIsMobileMenuOpen(false);
     if (isLoginModalOpen) {
       setIsLoginModalOpen(false);
     }
+    if (target.startsWith('/')) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      navigate(target);
+      return;
+    }
     setTimeout(() => {
-      const el = document.querySelector(hash);
+      const el = document.querySelector(target);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth' });
       }
@@ -235,20 +249,94 @@ export default function SignInView() {
           </a>
 
           {/* Desktop Navigation Links — Visible on all Laptops & Desktops (lg and above) */}
-          <nav className="hidden lg:flex items-center gap-3.5 xl:gap-5 text-xs font-bold text-slate-200">
-            <a href="#about" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'परिचय' : 'About'}</a>
+          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2.5 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => { setIsLoginModalOpen(false); navigate('/'); }}
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                activeRoute === '/' 
+                  ? 'bg-[#F4B323] text-[#0c2340] font-black shadow-xs' 
+                  : 'text-slate-200 hover:text-[#F4B323] hover:bg-white/5'
+              }`}
+            >
+              {isHi ? 'होम' : 'Home'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsLoginModalOpen(false); navigate('/about'); }}
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                activeRoute === '/about' 
+                  ? 'bg-[#F4B323] text-[#0c2340] font-black shadow-xs' 
+                  : 'text-slate-200 hover:text-[#F4B323] hover:bg-white/5'
+              }`}
+            >
+              {isHi ? 'परिचय' : 'About'}
+            </button>
             {isAdmissionOpen && (
-              <a href="#admissions" className="hover:text-[#F4B323] transition-colors py-1 text-[#F4B323]">{isHi ? 'प्रवेश' : 'Admissions'}</a>
+              <button
+                type="button"
+                onClick={() => { setIsLoginModalOpen(false); navigate('/admissions'); }}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                  activeRoute === '/admissions' 
+                    ? 'bg-[#F4B323] text-[#0c2340] font-black shadow-xs' 
+                    : 'text-amber-300 hover:text-[#F4B323] hover:bg-white/5 font-black'
+                }`}
+              >
+                {isHi ? 'दाखिला (2026-27)' : 'Admissions'}
+              </button>
             )}
-            <a href="#features" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'विशेषताएं' : 'Features'}</a>
-            <a href="#leadership" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'नेतृत्व' : 'Leadership'}</a>
-            <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'गैलरी' : 'Gallery'}</a>
-            <a href="#reviews" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'समीक्षाएं' : 'Reviews'}</a>
-            <a href="#download" className="hover:text-[#F4B323] transition-colors py-1 inline-flex items-center gap-1 text-amber-300 font-black">
+            <button
+              type="button"
+              onClick={() => { setIsLoginModalOpen(false); navigate('/academics'); }}
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                activeRoute === '/academics' 
+                  ? 'bg-[#F4B323] text-[#0c2340] font-black shadow-xs' 
+                  : 'text-slate-200 hover:text-[#F4B323] hover:bg-white/5'
+              }`}
+            >
+              {isHi ? 'शिक्षा व सुविधाएं' : 'Academics'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsLoginModalOpen(false); navigate('/gallery'); }}
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                activeRoute === '/gallery' 
+                  ? 'bg-[#F4B323] text-[#0c2340] font-black shadow-xs' 
+                  : 'text-slate-200 hover:text-[#F4B323] hover:bg-white/5'
+              }`}
+            >
+              {isHi ? 'गैलरी' : 'Gallery'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsLoginModalOpen(false); navigate('/download'); }}
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                activeRoute === '/download' 
+                  ? 'bg-[#F4B323] text-[#0c2340] font-black shadow-xs' 
+                  : 'text-slate-200 hover:text-[#F4B323] hover:bg-white/5'
+              }`}
+            >
               <Smartphone className="w-3.5 h-3.5 text-[#F4B323]" />
-              <span>{isHi ? 'ऐप डाउनलोड' : 'App Download'}</span>
-            </a>
-            <a href="#contact" className="hover:text-[#F4B323] transition-colors py-1">{isHi ? 'संपर्क' : 'Contact'}</a>
+              <span>{isHi ? 'ऐप' : 'App'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsLoginModalOpen(false); navigate('/contact'); }}
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                activeRoute === '/contact' 
+                  ? 'bg-[#F4B323] text-[#0c2340] font-black shadow-xs' 
+                  : 'text-slate-200 hover:text-[#F4B323] hover:bg-white/5'
+              }`}
+            >
+              {isHi ? 'संपर्क' : 'Contact'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/results')}
+              className="px-3 py-1.5 rounded-xl text-emerald-400 hover:text-emerald-300 hover:bg-white/5 transition-all cursor-pointer font-bold"
+            >
+              {isHi ? 'रिजल्ट' : 'Results'}
+            </button>
           </nav>
 
           {/* Adaptive Navigation Dropdown for Medium Screens (md to lg) */}
@@ -438,7 +526,7 @@ export default function SignInView() {
                 <div className="divide-y divide-white/5 rounded-2xl bg-[#0c1f38] border border-white/10 overflow-hidden shadow-sm">
                   <button
                     type="button"
-                    onClick={() => closeMobileMenuAndNavigate('#about')}
+                    onClick={() => closeMobileMenuAndNavigate('/about')}
                     className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
                   >
                     <div className="flex items-center gap-3">
@@ -456,7 +544,7 @@ export default function SignInView() {
                   {isAdmissionOpen && (
                     <button
                       type="button"
-                      onClick={() => closeMobileMenuAndNavigate('#admissions')}
+                      onClick={() => closeMobileMenuAndNavigate('/admissions')}
                       className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group bg-amber-500/5"
                     >
                       <div className="flex items-center gap-3">
@@ -474,7 +562,7 @@ export default function SignInView() {
 
                   <button
                     type="button"
-                    onClick={() => closeMobileMenuAndNavigate('#features')}
+                    onClick={() => closeMobileMenuAndNavigate('/academics')}
                     className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
                   >
                     <div className="flex items-center gap-3">
@@ -491,7 +579,7 @@ export default function SignInView() {
 
                   <button
                     type="button"
-                    onClick={() => closeMobileMenuAndNavigate('#leadership')}
+                    onClick={() => closeMobileMenuAndNavigate('/about')}
                     className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
                   >
                     <div className="flex items-center gap-3">
@@ -525,7 +613,7 @@ export default function SignInView() {
 
                   <button
                     type="button"
-                    onClick={() => closeMobileMenuAndNavigate('#campus-gallery')}
+                    onClick={() => closeMobileMenuAndNavigate('/gallery')}
                     className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
                   >
                     <div className="flex items-center gap-3">
@@ -559,7 +647,7 @@ export default function SignInView() {
 
                   <button
                     type="button"
-                    onClick={() => closeMobileMenuAndNavigate('#download')}
+                    onClick={() => closeMobileMenuAndNavigate('/download')}
                   className="px-4 py-2.5 rounded-xl hover:bg-white/5 text-amber-300 font-bold transition-colors text-left flex items-center gap-2"
                 >
                   <Smartphone className="w-4 h-4 text-[#F4B323]" />
@@ -567,7 +655,7 @@ export default function SignInView() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => closeMobileMenuAndNavigate('#contact')}
+                  onClick={() => closeMobileMenuAndNavigate('/contact')}
                     className="w-full text-left px-3.5 py-2.5 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer flex items-center justify-between group"
                   >
                     <div className="flex items-center gap-3">
@@ -654,7 +742,42 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
         {!isLoginModalOpen ? (
-          <div className="w-full max-w-full overflow-x-hidden space-y-12 sm:space-y-16 pb-10">
+          activeRoute === '/about' ? (
+            <AboutPageView
+              isHi={isHi}
+              schoolName={schoolName}
+              schoolSubtitle={schoolSubtitle}
+              schoolLocation={schoolLocation}
+              primaryPhone={primaryPhone}
+              navigate={navigate}
+            />
+          ) : activeRoute === '/admissions' ? (
+            <AdmissionsPageView
+              isHi={isHi}
+              currentSession={currentSession}
+              admissionClasses={admissionClasses}
+              primaryPhone={primaryPhone}
+              openEnquiriesModal={openEnquiriesModal}
+            />
+          ) : activeRoute === '/academics' ? (
+            <AcademicsPageView isHi={isHi} />
+          ) : activeRoute === '/gallery' ? (
+            <GalleryPageView isHi={isHi} />
+          ) : activeRoute === '/contact' ? (
+            <ContactPageView
+              isHi={isHi}
+              schoolLocation={schoolLocation}
+              primaryPhone={primaryPhone}
+              officialEmail={officialEmail}
+            />
+          ) : activeRoute === '/download' ? (
+            <DownloadPageView
+              isHi={isHi}
+              schoolName={schoolName}
+              primaryPhone={primaryPhone}
+            />
+          ) : (
+            <div className="w-full max-w-full overflow-x-hidden space-y-12 sm:space-y-16 pb-10">
 
             {/* ── SECTION 1: FULL-WIDTH PANORAMIC HERO BANNER (Left to Right Full Width, Balanced Height) ── */}
             <section id="about" className="w-full max-w-full relative overflow-hidden bg-[#07162C] border-b-2 border-[#1E3A60] shadow-2xl scroll-mt-24">
@@ -1679,6 +1802,7 @@ export default function SignInView() {
             </section>
 
           </div>
+          )
         ) : (
           /* ───────────────────────────────────────────────────────────── */
           /* STAGE 2: PRESERVED AUTHENTICATION MODAL (100% WORKING LOGIC)  */
@@ -2051,29 +2175,29 @@ export default function SignInView() {
               </h4>
               <ul className="space-y-2 text-xs text-slate-300 font-medium">
                 <li>
-                  <a href="#about" className="hover:text-[#F4B323] transition-colors">{isHi ? 'स्कूल के बारे में' : 'About the School'}</a>
+                  <button type="button" onClick={() => { window.scrollTo({top: 0, behavior: "smooth"}); navigate("/about"); }} className="hover:text-[#F4B323] transition-colors cursor-pointer text-left">{isHi ? 'स्कूल के बारे में' : 'About the School'}</button>
                 </li>
                 {isAdmissionOpen && (
                   <li>
-                    <a href="#admissions" className="hover:text-[#F4B323] transition-colors text-[#F4B323] font-bold">
+                    <button type="button" onClick={() => { window.scrollTo({top: 0, behavior: "smooth"}); navigate("/admissions"); }} className="hover:text-[#F4B323] transition-colors text-[#F4B323] font-bold cursor-pointer text-left">
                       {isHi ? `दाखिला ${currentSession} →` : `Admissions ${currentSession} →`}
-                    </a>
+                    </button>
                   </li>
                 )}
                 <li>
-                  <a href="#features" className="hover:text-[#F4B323] transition-colors">{isHi ? '5 मुख्य आधार' : '5 Campus Pillars'}</a>
+                  <button type="button" onClick={() => { window.scrollTo({top: 0, behavior: "smooth"}); navigate("/academics"); }} className="hover:text-[#F4B323] transition-colors cursor-pointer text-left">{isHi ? 'शिक्षा व 5 मुख्य आधार' : 'Academics & Pillars'}</button>
                 </li>
                 <li>
                   <a href="#leadership" className="hover:text-[#F4B323] transition-colors">{isHi ? 'मार्गदर्शन एवं नेतृत्व' : 'Leadership & Vision'}</a>
                 </li>
                 <li>
-                  <a href="#campus-gallery" className="hover:text-[#F4B323] transition-colors">{isHi ? 'फोटो गैलरी' : 'Photo Gallery'}</a>
+                  <button type="button" onClick={() => { window.scrollTo({top: 0, behavior: "smooth"}); navigate("/gallery"); }} className="hover:text-[#F4B323] transition-colors cursor-pointer text-left">{isHi ? 'फोटो गैलरी' : 'Photo Gallery'}</button>
                 </li>
                 <li>
                   <a href="#reviews" className="hover:text-[#F4B323] transition-colors text-amber-300">{isHi ? 'अभिभावक समीक्षाएं' : 'Parent Reviews & Ratings'}</a>
                 </li>
                 <li>
-                  <a href="#contact" className="hover:text-[#F4B323] transition-colors">{isHi ? 'हेल्प एवं ऑफिस डेस्क' : 'Help & Office Desk'}</a>
+                  <button type="button" onClick={() => { window.scrollTo({top: 0, behavior: "smooth"}); navigate("/contact"); }} className="hover:text-[#F4B323] transition-colors cursor-pointer text-left">{isHi ? 'संपर्क व हेल्प डेस्क' : 'Contact & Help Desk'}</button>
                 </li>
               </ul>
             </div>

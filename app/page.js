@@ -243,9 +243,10 @@ function AppContent() {
     if (!mounted) return;
     const cleanPath = (currentPath || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
 
-    // 1. Force Sign In if unauthenticated
+    // 1. Allow public website and auth routes if unauthenticated
+    const publicPages = ['/', '/signin', '/signup', '/forgot-password', '/about', '/admissions', '/academics', '/gallery', '/contact', '/download', '/results'];
     if (!currentUser) {
-      if (!['/signin', '/signup', '/forgot-password'].includes(cleanPath)) {
+      if (!publicPages.includes(cleanPath)) {
         navigate('/signin');
       }
       return;
@@ -317,11 +318,12 @@ function AppContent() {
     );
   }
 
-  // ── Render 1: Public full-screen auth routes
+  // ── Render 1: Public website and auth routes
   const cleanPath = (currentPath || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
   if (!currentUser) {
     if (cleanPath === '/signup') return <SignUpView />;
     if (cleanPath === '/forgot-password') return <ForgotPasswordView />;
+    if (cleanPath === '/results') return <ResultsView />;
     return <SignInView />;
   }
 
