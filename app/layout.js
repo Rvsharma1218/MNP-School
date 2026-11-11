@@ -53,6 +53,9 @@ export const metadata = {
     title: "MNP School | Mission Navodaya Public School, Mora, Bihar",
     description: "Official portal of Mission Navodaya Public School (MNP School), Mora, Bihar.",
   },
+  verification: {
+    google: "DucDVR_DeLe1mqmmL8JQZ8sl3SiSav2Ux1Tyie_9CqA",
+  },
   robots: {
     index: true,
     follow: true,
@@ -88,6 +91,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
+        <meta name="google-site-verification" content="DucDVR_DeLe1mqmmL8JQZ8sl3SiSav2Ux1Tyie_9CqA" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schoolJsonLd) }}
