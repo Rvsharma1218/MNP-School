@@ -19,7 +19,7 @@ import {
   Award, Heart, Compass, Sparkles, Building, Quote, Check,
   Activity, Monitor, Trophy, HelpCircle, MapPin, Clock, MessageSquare,
   Globe, Briefcase, Menu, X, ExternalLink, Calendar, Star,
-  TrendingUp, QrCode, CheckCircle as CheckIcon
+  TrendingUp, QrCode, CheckCircle as CheckIcon, Smartphone, Download
 } from 'lucide-react';
 
 export default function SignInView() {
@@ -31,6 +31,7 @@ export default function SignInView() {
     teachers,
     settings,
     currentUser,
+    currentPath,
     navigate,
     language = 'en',
     toggleLanguage,
