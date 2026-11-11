@@ -1354,6 +1354,46 @@ export default function SignInView() {
                   </div>
                 </div>
 
+                {/* ── INTERACTIVE GOOGLE MAP WITH PRECISE GPS PIN (26.115206775039834, 84.62215723091671) ── */}
+                <div className="mt-8 rounded-2xl overflow-hidden border border-slate-200/90 shadow-md">
+                  <div className="bg-[#0c2340] text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-amber-500/20 text-[#F4B323] flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-black text-white text-xs sm:text-sm">
+                          {isHi 
+                            ? 'स्कूल का सटीक स्थान: मोरा-मैरी, सीवान (Google Map)' 
+                            : 'Exact Campus Location: Mora-Mairi, Siwan'}
+                        </div>
+                        <div className="text-[10px] text-amber-300 font-mono">
+                          GPS: 26.115207° N, 84.622157° E
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href="https://www.google.com/maps/dir/?api=1&destination=26.115206775039834,84.62215723091671"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black transition-all shadow-md text-xs cursor-pointer"
+                    >
+                      <span>{isHi ? 'सीधे रास्ता देखें (Get Directions)' : 'Get Live Directions'}</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                  <div className="relative w-full h-80 sm:h-96 bg-slate-100">
+                    <iframe
+                      title="Mission Navodaya Public School Mora-Mairi Google Map"
+                      src="https://maps.google.com/maps?q=26.115206775039834,84.62215723091671&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                      className="w-full h-full border-0"
+                      loading="lazy"
+                      allowFullScreen
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                </div>
+
               </div>
             </section>
 
@@ -1413,7 +1453,7 @@ export default function SignInView() {
                       )}
                     </p>
                     <a
-                      href="https://maps.google.com/?q=Mission+Navodaya+Public+School+Mora+Bihar"
+                      href="https://www.google.com/maps/dir/?api=1&destination=26.115206775039834,84.62215723091671"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[11px] font-bold text-[#102747] hover:underline inline-flex items-center gap-1 pt-1"
