@@ -40,6 +40,15 @@ export const metadata = {
   alternates: {
     canonical: "https://mnpschool.in"
   },
+  icons: {
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+      { url: '/logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/logo.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
   openGraph: {
     title: "MNP School | Mission Navodaya Public School, Mora, Bihar",
     description: "Official portal of Mission Navodaya Public School (MNP School), Mora, Bihar. Online Admissions, Student Results, Parent Portal, and Academic Updates.",
@@ -91,6 +100,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
+        <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
         <meta name="google-site-verification" content="DucDVR_DeLe1mqmmL8JQZ8sl3SiSav2Ux1Tyie_9CqA" />
         <script
           type="application/ld+json"
