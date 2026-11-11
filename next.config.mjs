@@ -3,30 +3,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  async redirects() {
-    return [
-      {
-        source: '/app-arm64-v8a-release.apk',
-        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v2.0.10-build2024/app-arm64-v8a-release.apk',
-        permanent: false,
-      },
-      {
-        source: '/app-armeabi-v7a-release.apk',
-        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v2.0.10-build2024/app-armeabi-v7a-release.apk',
-        permanent: false,
-      },
-      {
-        source: '/MNP_School_arm64-v8a.apk',
-        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v2.0.10-build2024/app-arm64-v8a-release.apk',
-        permanent: false,
-      },
-      {
-        source: '/MNP_School_armeabi-v7a.apk',
-        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v2.0.10-build2024/app-armeabi-v7a-release.apk',
-        permanent: false,
-      },
-    ];
-  },
+  
   async headers() {
     return [
       {

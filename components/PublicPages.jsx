@@ -202,7 +202,7 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
 /**
  * 2. ADMISSIONS PAGE VIEW (/admissions)
  */
-export function AdmissionsPageView({ isHi, currentSession, admissionClasses, primaryPhone, openEnquiriesModal }) {
+export function AdmissionsPageView({ isHi, currentSession, admissionClasses, primaryPhone, onOpenInquiry }) {
   const ageCriteria = [
     { class: 'Nursery', ageHi: '3+ वर्ष', ageEn: '3+ Years', seats: 'उपलब्ध / Open' },
     { class: 'LKG', ageHi: '4+ वर्ष', ageEn: '4+ Years', seats: 'उपलब्ध / Open' },
@@ -296,7 +296,7 @@ export function AdmissionsPageView({ isHi, currentSession, admissionClasses, pri
             </div>
             <button
               type="button"
-              onClick={openEnquiriesModal}
+              onClick={onOpenInquiry}
               className="px-5 py-2.5 rounded-xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-xs transition-all shadow-md cursor-pointer self-start sm:self-auto"
             >
               {isHi ? 'ऑनलाइन आवेदन करें' : 'Apply Online Now'}
@@ -360,7 +360,7 @@ export function AdmissionsPageView({ isHi, currentSession, admissionClasses, pri
               </a>
               <button
                 type="button"
-                onClick={openEnquiriesModal}
+                onClick={onOpenInquiry}
                 className="px-5 py-3 rounded-xl bg-[#F4B323] text-[#0c2340] font-black text-xs inline-flex items-center gap-2 shadow-md hover:bg-amber-400 cursor-pointer"
               >
                 <span>{isHi ? 'पूछताछ फॉर्म भरें' : 'Submit Admission Inquiry'}</span>
@@ -714,15 +714,22 @@ export function ContactPageView({ isHi, schoolLocation, primaryPhone, officialEm
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
-          <div className="relative w-full h-96 sm:h-[450px] bg-slate-100">
-            <iframe
-              title="Mission Navodaya Public School Mora-Mairi Google Map"
-              src="https://maps.google.com/maps?q=26.115206775039834,84.62215723091671&t=&z=16&ie=UTF8&iwloc=&output=embed"
-              className="w-full h-full border-0"
-              loading="lazy"
-              allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+          <div className="p-6 sm:p-8 bg-gradient-to-br from-slate-50 to-amber-50/30 text-center space-y-4">
+            <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
+              {isHi
+                ? 'स्कूल परिसर: मोरा-मैरी, मोरा बाजार, सीवान (बिहार)। नीचे दिए गए बटन पर क्लिक करके अपने फोन में गूगल मैप्स नेविगेशन चालू करें।'
+                : 'Campus: Mora-Mairi, Mora Bazar, Siwan (Bihar). Click the button below to launch turn-by-turn navigation on your mobile.'}
+            </p>
+            <a
+              href="https://www.google.com/maps/dir/?api=1&destination=26.115206775039834,84.62215723091671"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-lg transition-all"
+            >
+              <MapPin className="w-4 h-4 text-[#F4B323]" />
+              <span>{isHi ? 'गूगल मैप्स पर सीधा रास्ता देखें (Open in Google Maps)' : 'Open in Google Maps Application'}</span>
+              <ExternalLink className="w-4 h-4" />
+            </a>
           </div>
         </div>
       </div>
@@ -767,12 +774,11 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
               {/* Download Buttons */}
               <div className="pt-3 flex flex-col sm:flex-row gap-4">
                 <a
-                  href="/MNP_School_arm64-v8a.apk"
-                  download="MNP_School_v2.0.10.apk"
+                  href={`https://wa.me/91${primaryPhone}?text=${encodeURIComponent('नमस्ते सर, मुझे MNP School Android Mobile App (APK v2.0.10) चाहिए। कृपया ऐप की फाइल भेजें।')}`} target="_blank" rel="noopener noreferrer"
                   className="px-6 py-4 rounded-2xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-sm flex items-center justify-center gap-3 shadow-xl cursor-pointer hover:scale-105 active:scale-95 transition-all"
                 >
                   <Download className="w-5 h-5" />
-                  <span>{isHi ? 'Android APK डाउनलोड करें (v2.0.10)' : 'Download Android App (APK)'}</span>
+                  <span>{isHi ? 'व्हाट्सएप पर ऐप फाइल प्राप्त करें' : 'Get App on WhatsApp'}</span>
                 </a>
 
                 <a
@@ -809,3 +815,4 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
     </div>
   );
 }
+
