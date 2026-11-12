@@ -22,7 +22,7 @@ export const metadata = {
     default: "MNP School | Mission Navodaya Public School, Mora-Mairi, Siwan, Bihar",
     template: "%s | MNP School"
   },
-  description: "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan. Features 24/7 Online Admissions, Live Student Attendance, Exam Results, Fee Portal & Mobile App for Parents.",
+  description: "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan. Founded by Chairman Uday Shankar Patel (Uday Sir) & Director Vishal Patel (Vishal Sir). Features 24/7 Online Admissions, Live Student Attendance, Exam Results, Fee Portal & Mobile App for Parents.",
   keywords: [
     // Brand & Variations
     "mnp school",
