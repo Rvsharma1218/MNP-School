@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -847,24 +848,59 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
         });
       }
 
-      // ── Students stream ─────────────────────────────────────────────────
-      final studentsStream = FirestoreService.instance.watchStudents();
-      if (studentsStream != null) {
-        dataSubs.add(studentsStream.listen((remoteStudents) async {
-          final remoteIds = remoteStudents.map((s) => s.id).toSet();
-          final localStudents = await DatabaseService.instance.getAllStudents();
-
-          // Remove any local student that has been deleted on Firestore
-          for (final local in localStudents) {
-            if (!remoteIds.contains(local.id)) {
-              await DatabaseService.instance.deleteStudentLocalOnly(local.id);
-            }
+      // ── Students stream with Smart Incremental Delta Sync ────────────────
+      final studentsSnapshotStream = FirestoreService.instance.watchStudentsSnapshot();
+      if (studentsSnapshotStream != null) {
+        bool isInitialSnapshot = true;
+        dataSubs.add(studentsSnapshotStream.listen((snap) async {
+          final changes = snap.docChanges;
+          if (changes.isEmpty && !isInitialSnapshot) {
+            // Nothing changed on Firestore — 0 overhead!
+            return;
           }
 
-          // Fast batch upsert all remote students in single SQLite transaction
-          await DatabaseService.instance.bulkUpsertStudentsFromRemote(remoteStudents);
-          triggerSyncSettled(students: true, stats: true);
-          // Update sync status — data is live!
+          if (isInitialSnapshot) {
+            isInitialSnapshot = false;
+            // On initial connect, reconcile remote list with local SQLite cache:
+            final remoteStudents = snap.docs.map((d) {
+              final raw = d.data();
+              final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+              data['id'] = (data['id'] != null && data['id'].toString().isNotEmpty) ? data['id'] : d.id;
+              data['studentId'] = (data['studentId'] != null && data['studentId'].toString().isNotEmpty) ? data['studentId'] : d.id;
+              return StudentModel.fromMap(data);
+            }).toList();
+
+            final remoteIds = remoteStudents.map((s) => s.id).toSet();
+            final localStudents = await DatabaseService.instance.getAllStudents();
+
+            for (final local in localStudents) {
+              if (!remoteIds.contains(local.id)) {
+                await DatabaseService.instance.deleteStudentLocalOnly(local.id);
+              }
+            }
+
+            await DatabaseService.instance.bulkUpsertStudentsFromRemote(remoteStudents);
+            ref.read(studentsProvider.notifier).loadStudents();
+            ref.invalidate(dashboardStatsProvider);
+          } else {
+            // INCREMENTAL DELTA SYNC: Only apply added, modified, or removed students!
+            for (final change in changes) {
+              final d = change.doc;
+              if (change.type == DocumentChangeType.removed) {
+                await DatabaseService.instance.deleteStudentLocalOnly(d.id);
+              } else {
+                final raw = d.data();
+                final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+                data['id'] = (data['id'] != null && data['id'].toString().isNotEmpty) ? data['id'] : d.id;
+                data['studentId'] = (data['studentId'] != null && data['studentId'].toString().isNotEmpty) ? data['studentId'] : d.id;
+                final s = StudentModel.fromMap(data);
+                await DatabaseService.instance.upsertStudentFromRemote(s);
+              }
+            }
+            // Instant in-memory refresh with 0 delay!
+            ref.read(studentsProvider.notifier).loadStudents();
+            ref.invalidate(dashboardStatsProvider);
+          }
           ref.read(syncStatusProvider.notifier).state = 'synced';
         }, onError: (e) {
           debugPrint('[FirestoreSync] students error: $e');
@@ -913,35 +949,102 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
         }, onError: (e) => debugPrint('[FirestoreSync] results error: $e')));
       }
 
-      // ── Monthly Fees stream ─────────────────────────────────────────────
-      final monthlyFeesStream = FirestoreService.instance.watchMonthlyFees();
-      if (monthlyFeesStream != null) {
-        dataSubs.add(monthlyFeesStream.listen((remoteMonthlyFees) async {
-          final affectedStudentIds = <String>{};
-          for (final entry in remoteMonthlyFees.entries) {
-            final data = entry.value;
-            final studentId = data['studentId']?.toString() ?? '';
-            if (studentId.isNotEmpty) {
-              await DatabaseService.instance.upsertMonthlyFeeFromRemote(studentId, data);
-              affectedStudentIds.add(studentId);
+      // ── Monthly Fees stream with Smart Incremental Delta Sync ────────────
+      final monthlyFeesSnapshotStream = FirestoreService.instance.watchMonthlyFeesSnapshot();
+      if (monthlyFeesSnapshotStream != null) {
+        bool isInitialMonthlyFees = true;
+        dataSubs.add(monthlyFeesSnapshotStream.listen((snap) async {
+          final changes = snap.docChanges;
+          if (changes.isEmpty && !isInitialMonthlyFees) return;
+
+          if (isInitialMonthlyFees) {
+            isInitialMonthlyFees = false;
+            final affected = <String>{};
+            for (final d in snap.docs) {
+              final raw = d.data();
+              if (raw is! Map) continue;
+              final data = Map<String, dynamic>.from(raw);
+              final sId = data['studentId']?.toString() ?? '';
+              if (sId.isNotEmpty) {
+                await DatabaseService.instance.upsertMonthlyFeeFromRemote(sId, data);
+                affected.add(sId);
+              }
             }
-          }
-          triggerSyncSettled(stats: true);
-          for (final id in affectedStudentIds) {
-            ref.invalidate(feeProvider(id));
+            triggerSyncSettled(stats: true);
+            for (final id in affected) {
+              ref.invalidate(feeProvider(id));
+            }
+          } else {
+            // Delta update: only update affected students
+            final affected = <String>{};
+            for (final change in changes) {
+              final raw = change.doc.data();
+              if (raw is! Map) continue;
+              final data = Map<String, dynamic>.from(raw);
+              final sId = data['studentId']?.toString() ?? '';
+              if (sId.isNotEmpty) {
+                await DatabaseService.instance.upsertMonthlyFeeFromRemote(sId, data);
+                affected.add(sId);
+              }
+            }
+            for (final id in affected) {
+              ref.invalidate(feeProvider(id));
+            }
+            ref.invalidate(dashboardStatsProvider);
           }
         }, onError: (e) => debugPrint('[FirestoreSync] monthly_fees error: $e')));
       }
 
-      // ── Payments stream ─────────────────────────────────────────────────
-      final paymentsStream = FirestoreService.instance.watchPayments();
-      if (paymentsStream != null) {
-        dataSubs.add(paymentsStream.listen((payments) async {
-          await DatabaseService.instance.bulkUpsertPaymentsFromRemote(payments);
-          triggerSyncSettled(stats: true);
-          final ids = payments.map((p) => p.studentId).toSet();
-          for (final id in ids) {
-            ref.invalidate(feeProvider(id));
+      // ── Payments stream with Smart Incremental Delta Sync ────────────────
+      final paymentsSnapshotStream = FirestoreService.instance.watchPaymentsSnapshot();
+      if (paymentsSnapshotStream != null) {
+        bool isInitialPayments = true;
+        dataSubs.add(paymentsSnapshotStream.listen((snap) async {
+          final changes = snap.docChanges;
+          if (changes.isEmpty && !isInitialPayments) return;
+
+          if (isInitialPayments) {
+            isInitialPayments = false;
+            final payments = snap.docs.map((d) {
+              final raw = d.data();
+              final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+              final recNo = (data['receiptNumber'] ?? data['receiptNo'] ?? d.id).toString().trim();
+              final canonicalId = recNo.isNotEmpty ? recNo : (data['id']?.toString() ?? d.id);
+              data['id'] = canonicalId;
+              data['receiptNumber'] = canonicalId;
+              data['receiptNo'] = canonicalId;
+              return PaymentModel.fromMap(data);
+            }).toList();
+            await DatabaseService.instance.bulkUpsertPaymentsFromRemote(payments);
+            triggerSyncSettled(stats: true);
+            final ids = payments.map((p) => p.studentId).toSet();
+            for (final id in ids) {
+              ref.invalidate(feeProvider(id));
+            }
+          } else {
+            // Delta update: only upsert newly added or modified payments
+            final affectedIds = <String>{};
+            for (final change in changes) {
+              final d = change.doc;
+              if (change.type != DocumentChangeType.removed) {
+                final raw = d.data();
+                final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+                final recNo = (data['receiptNumber'] ?? data['receiptNo'] ?? d.id).toString().trim();
+                final canonicalId = recNo.isNotEmpty ? recNo : (data['id']?.toString() ?? d.id);
+                data['id'] = canonicalId;
+                data['receiptNumber'] = canonicalId;
+                data['receiptNo'] = canonicalId;
+                final payment = PaymentModel.fromMap(data);
+                await DatabaseService.instance.bulkUpsertPaymentsFromRemote([payment]);
+                if (payment.studentId.isNotEmpty) {
+                  affectedIds.add(payment.studentId);
+                }
+              }
+            }
+            for (final id in affectedIds) {
+              ref.invalidate(feeProvider(id));
+            }
+            ref.invalidate(dashboardStatsProvider);
           }
         }, onError: (e) => debugPrint('[FirestoreSync] payments error: $e')));
       }

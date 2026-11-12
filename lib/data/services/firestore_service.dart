@@ -175,6 +175,21 @@ class FirestoreService {
 
   // ─── Real-time Streams (Firestore → App) ────────────────────────────────
 
+  Stream<QuerySnapshot>? watchStudentsSnapshot() {
+    if (!_enabled || _students == null) return null;
+    return _students!.snapshots();
+  }
+
+  Stream<QuerySnapshot>? watchMonthlyFeesSnapshot() {
+    if (!_enabled || _monthlyFees == null) return null;
+    return _monthlyFees!.snapshots();
+  }
+
+  Stream<QuerySnapshot>? watchPaymentsSnapshot() {
+    if (!_enabled || _payments == null) return null;
+    return _payments!.snapshots();
+  }
+
   Stream<List<StudentModel>>? watchStudents() {
     if (!_enabled || _students == null) return null;
     return _students!.snapshots().map(
