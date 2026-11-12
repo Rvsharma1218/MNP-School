@@ -96,11 +96,13 @@ export const metadata = {
   },
   icons: {
     icon: [
-      { url: '/logo.png', type: 'image/png' },
-      { url: '/logo.png', sizes: '32x32', type: 'image/png' },
-      { url: '/logo.png', sizes: '192x192', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/logo.png', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/logo.png',
+    shortcut: '/favicon.ico',
     apple: '/logo.png',
   },
   openGraph: {
@@ -150,11 +152,11 @@ export default function RootLayout({ children }) {
     "url": "https://mnpschool.in",
     "logo": "https://mnpschool.in/logo.png",
     "image": "https://mnpschool.in/logo.png",
-    "description": "Mission Navodaya Public School (MNP School) located in Mora, Bihar. Serving students across Mora, Mairi, Ratauli, Mora Bazar, and Siwan district.",
+    "description": "Mission Navodaya Public School (MNP School) located in Mora-Mairi, Siwan, Bihar. Serving students across Mora, Mairi, Ratauli, Mora Bazar, and Siwan district.",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "Mora Bazar, Near Mairi - Ratauli Road",
-      "addressLocality": "Mora-Mairi",
+      "addressLocality": "Mora-Mairi, Siwan",
       "addressRegion": "Bihar",
       "addressCountry": "IN"
     },
@@ -193,7 +195,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
-        <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
         <link rel="apple-touch-icon" href="/logo.png" />
         <meta name="google-site-verification" content="DucDVR_DeLe1mqmmL8JQZ8sl3SiSav2Ux1Tyie_9CqA" />
         <script
