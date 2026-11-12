@@ -102,7 +102,7 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
                 className="w-full h-80 sm:h-96 object-cover"
               />
               <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-[#0c2340] to-transparent text-white">
-                <div className="font-bold text-sm">मोरा-मैरी परिसर · सीवान (बिहार)</div>
+                <div className="font-bold text-sm">{isHi ? 'मोरा-मैरी परिसर · सीवान (बिहार)' : 'Mora-Mairi Campus · Siwan (Bihar)'}</div>
                 <div className="text-[11px] text-amber-300">Mission Navodaya Public School</div>
               </div>
             </div>
@@ -348,12 +348,12 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
  */
 export function AdmissionsPageView({ isHi, currentSession, admissionClasses, primaryPhone, onOpenInquiry }) {
   const ageCriteria = [
-    { class: 'Nursery', ageHi: '3+ वर्ष', ageEn: '3+ Years', seats: 'उपलब्ध / Open' },
-    { class: 'LKG', ageHi: '4+ वर्ष', ageEn: '4+ Years', seats: 'उपलब्ध / Open' },
-    { class: 'UKG', ageHi: '5+ वर्ष', ageEn: '5+ Years', seats: 'उपलब्ध / Open' },
-    { class: 'Class 1st', ageHi: '6+ वर्ष', ageEn: '6+ Years', seats: 'सीमित / Limited' },
-    { class: 'Class 2nd to 5th', ageHi: '7 से 10 वर्ष', ageEn: '7 to 10 Years', seats: 'मेरिट आधारित / Merit' },
-    { class: 'Class 6th to 8th', ageHi: '11 से 14 वर्ष', ageEn: '11 to 14 Years', seats: 'प्रवेश परीक्षा / Test' },
+    { class: 'Nursery', ageHi: '3+ वर्ष', ageEn: '3+ Years', seatsHi: 'उपलब्ध / Open', seatsEn: 'Open / Available' },
+    { class: 'LKG', ageHi: '4+ वर्ष', ageEn: '4+ Years', seatsHi: 'उपलब्ध / Open', seatsEn: 'Open / Available' },
+    { class: 'UKG', ageHi: '5+ वर्ष', ageEn: '5+ Years', seatsHi: 'उपलब्ध / Open', seatsEn: 'Open / Available' },
+    { class: 'Class 1st', ageHi: '6+ वर्ष', ageEn: '6+ Years', seatsHi: 'सीमित / Limited', seatsEn: 'Limited Seats' },
+    { class: 'Class 2nd to 5th', ageHi: '7 से 10 वर्ष', ageEn: '7 to 10 Years', seatsHi: 'मेरिट आधारित', seatsEn: 'Merit Based' },
+    { class: 'Class 6th to 8th', ageHi: '11 से 14 वर्ष', ageEn: '11 to 14 Years', seatsHi: 'प्रवेश परीक्षा', seatsEn: 'Admission Test' },
   ];
 
   const documents = [
@@ -451,9 +451,9 @@ export function AdmissionsPageView({ isHi, currentSession, admissionClasses, pri
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
-                  <th className="py-3 px-4">कक्षा (Class)</th>
-                  <th className="py-3 px-4">आयु सीमा (Age Criteria)</th>
-                  <th className="py-3 px-4">सीट स्थिति (Seats)</th>
+                  <th className="py-3 px-4">{isHi ? 'कक्षा (Class)' : 'Class'}</th>
+                  <th className="py-3 px-4">{isHi ? 'आयु सीमा (Age Criteria)' : 'Age Criteria'}</th>
+                  <th className="py-3 px-4">{isHi ? 'सीट स्थिति (Seats)' : 'Seats Status'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -461,7 +461,7 @@ export function AdmissionsPageView({ isHi, currentSession, admissionClasses, pri
                   <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                     <td className="py-3.5 px-4 font-black text-[#0c2340]">{item.class}</td>
                     <td className="py-3.5 px-4 text-slate-600 font-medium">{isHi ? item.ageHi : item.ageEn}</td>
-                    <td className="py-3.5 px-4 font-bold text-emerald-600">{item.seats}</td>
+                    <td className="py-3.5 px-4 font-bold text-emerald-600">{isHi ? item.seatsHi : item.seatsEn}</td>
                   </tr>
                 ))}
               </tbody>
@@ -948,7 +948,7 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
               {/* Download Buttons */}
               <div className="pt-3 flex flex-col sm:flex-row gap-4">
                 <a
-                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build10/MNP_School_arm64-v8a.apk"
+                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_arm64-v8a.apk"
                   download="MNP_School_v1.0.1.apk"
                   className="px-6 py-4 rounded-2xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-sm flex items-center justify-center gap-3 shadow-xl cursor-pointer hover:scale-105 active:scale-95 transition-all"
                 >
@@ -957,7 +957,7 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
                 </a>
 
                 <a
-                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build10/MNP_School_armeabi-v7a.apk"
+                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_armeabi-v7a.apk"
                   download="MNP_School_v1.0.1_v7a.apk"
                   className="px-5 py-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition-all cursor-pointer"
                 >
@@ -967,10 +967,14 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 pt-1">
-                <span>✓ 100% सुरक्षित · 52 MB · Android 6.0+</span>
+                <span>{isHi ? '✓ 100% सुरक्षित · 52 MB · Android 6.0+' : '✓ 100% Safe & Verified · 52 MB · Android 6.0+'}</span>
                 <span className="text-slate-600">|</span>
                 <a
-                  href={`https://wa.me/91${primaryPhone}?text=${encodeURIComponent('नमस्ते सर, मुझे MNP School App (v1.0.1) इनस्टॉल करने में सहायता चाहिए।')}`}
+                  href={`https://wa.me/91${primaryPhone}?text=${encodeURIComponent(
+                    isHi
+                      ? 'नमस्ते सर, मुझे MNP School App (v1.0.1) इनस्टॉल करने में सहायता चाहिए।'
+                      : 'Hello Sir, I need assistance installing the MNP School App (v1.0.1).'
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-amber-400 hover:text-amber-300 font-bold inline-flex items-center gap-1 hover:underline"

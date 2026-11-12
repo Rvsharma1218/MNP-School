@@ -223,15 +223,21 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 0. LIVE FLASH MARQUEE / BREAKING NEWS BAR (Controlled via App)*/}
       {/* ───────────────────────────────────────────────────────────── */}
-      {websiteConfig?.flashNotice?.enabled && websiteConfig?.flashNotice?.text && (
+      {websiteConfig?.flashNotice?.enabled && (websiteConfig?.flashNotice?.text || websiteConfig?.flashNotice?.textEn) && (
         <div className="bg-gradient-to-r from-red-700 via-amber-600 to-red-700 text-white text-[11px] sm:text-xs font-bold py-1.5 px-4 overflow-hidden relative shadow-md flex items-center justify-between gap-3 border-b border-red-800/40">
           <div className="flex items-center gap-2.5 overflow-hidden flex-1">
             <span className="flex-shrink-0 bg-white text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs tracking-wider animate-pulse flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping inline-block" />
-              {websiteConfig.flashNotice.badge || (isHi ? 'नवीन सूचना' : 'FLASH NOTICE')}
+              {isHi
+                ? (websiteConfig.flashNotice.badgeHi || websiteConfig.flashNotice.badge || 'नवीन सूचना')
+                : (websiteConfig.flashNotice.badgeEn || (!/[\u0900-\u097F]/.test(websiteConfig.flashNotice.badge || '') ? websiteConfig.flashNotice.badge : null) || 'FLASH NOTICE')
+              }
             </span>
             <div className="truncate text-slate-100 font-semibold tracking-wide">
-              {websiteConfig.flashNotice.text}
+              {isHi
+                ? (websiteConfig.flashNotice.textHi || websiteConfig.flashNotice.text || '📢 सत्र 2026-27 के लिए नवीन नामांकन प्रारंभ है। सीमित सीटें उपलब्ध। विशेष नवोदय प्रवेश परीक्षा तैयारी बैच।')
+                : (websiteConfig.flashNotice.textEn || (!/[\u0900-\u097F]/.test(websiteConfig.flashNotice.text || '') ? websiteConfig.flashNotice.text : null) || '📢 Admissions Open for Session 2026-27. Limited seats available. Special Navodaya entrance prep batch. Helpline: +91 8603481865')
+              }
             </div>
           </div>
           <a
@@ -239,7 +245,7 @@ export default function SignInView() {
             className="flex-shrink-0 hidden md:inline-flex items-center gap-1.5 text-[11px] font-black bg-black/25 hover:bg-black/40 text-amber-300 px-3 py-0.5 rounded-full border border-white/20 transition-colors"
           >
             <Phone className="w-3 h-3 text-amber-300" />
-            <span>हेल्पलाइन: +91 {primaryPhone}</span>
+            <span>{isHi ? 'हेल्पलाइन:' : 'Helpline:'} +91 {primaryPhone}</span>
           </a>
         </div>
       )}
@@ -260,14 +266,23 @@ export default function SignInView() {
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
-                {websiteConfig.popupAlert.badge || (isHi ? 'विशेष विद्यालय सूचना' : 'SCHOOL ANNOUNCEMENT')}
+                {isHi
+                  ? (websiteConfig.popupAlert.badgeHi || websiteConfig.popupAlert.badge || 'विशेष विद्यालय सूचना')
+                  : (websiteConfig.popupAlert.badgeEn || (!/[\u0900-\u097F]/.test(websiteConfig.popupAlert.badge || '') ? websiteConfig.popupAlert.badge : null) || 'SCHOOL ANNOUNCEMENT')
+                }
               </span>
             </div>
             <h3 className="text-xl font-black text-[#0c2340] tracking-tight">
-              {websiteConfig.popupAlert.title || (isHi ? 'आवश्यक विद्यालय सूचना' : 'Official Notice')}
+              {isHi
+                ? (websiteConfig.popupAlert.titleHi || websiteConfig.popupAlert.title || 'आवश्यक विद्यालय सूचना')
+                : (websiteConfig.popupAlert.titleEn || (!/[\u0900-\u097F]/.test(websiteConfig.popupAlert.title || '') ? websiteConfig.popupAlert.title : null) || 'Official Notice')
+              }
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-              {websiteConfig.popupAlert.message}
+              {isHi
+                ? (websiteConfig.popupAlert.messageHi || websiteConfig.popupAlert.message || 'सत्र 2026-27 हेतु कक्षा नर्सरी से 8वीं तक में नामांकन हेतु ऑनलाइन आवेदन स्वीकार किए जा रहे हैं।')
+                : (websiteConfig.popupAlert.messageEn || (!/[\u0900-\u097F]/.test(websiteConfig.popupAlert.message || '') ? websiteConfig.popupAlert.message : null) || 'Online admissions for Session 2026-27 are now open from Nursery to Class 8th. Limited seats available.')
+              }
             </p>
             <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
               <button
@@ -278,7 +293,12 @@ export default function SignInView() {
                 }}
                 className="px-5 py-2.5 rounded-xl bg-[#0c2340] hover:bg-[#143763] text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
               >
-                <span>{websiteConfig.popupAlert.actionText || (isHi ? 'नामांकन फॉर्म भरें →' : 'Apply Online →')}</span>
+                <span>
+                  {isHi
+                    ? (websiteConfig.popupAlert.actionTextHi || websiteConfig.popupAlert.actionText || 'नामांकन फॉर्म भरें →')
+                    : (websiteConfig.popupAlert.actionTextEn || (!/[\u0900-\u097F]/.test(websiteConfig.popupAlert.actionText || '') ? websiteConfig.popupAlert.actionText : null) || 'Apply Online →')
+                  }
+                </span>
               </button>
               <button
                 onClick={() => setIsPopupAlertDismissed(true)}
@@ -1005,9 +1025,17 @@ export default function SignInView() {
                   const bStyle = bConf.style || 'royal_navy';
                   const bSession = bConf.session || currentSession || '2026-27';
                   const bClasses = bConf.classes || admissionClasses || 'Nursery to 8th';
-                  const bTag = bConf.tagText || (isHi ? 'विशेष छात्रवृत्ति एवं प्रारंभिक नामांकन छूट उपलब्ध' : 'Special Scholarship & Early Admission Offer Available');
-                  const bHead = bConf.headline || (isHi ? 'नामांकन प्रारंभ' : 'ADMISSIONS OPEN');
-                  const bSub = bConf.subheadline || (isHi ? `${bClasses} • नए दाखिले के लिए सीटें उपलब्ध` : `${bClasses} • Limited Seats Available for New Enrolments`);
+                  const bTag = isHi
+                    ? (bConf.tagTextHi || bConf.tagText || 'विशेष छात्रवृत्ति एवं प्रारंभिक नामांकन छूट उपलब्ध')
+                    : (bConf.tagTextEn || (!/[\u0900-\u097F]/.test(bConf.tagText || '') ? bConf.tagText : null) || 'Special Scholarship & Early Admission Offer Available');
+
+                  const bHead = isHi
+                    ? (bConf.headlineHi || bConf.headline || 'सत्र 2026-27 हेतु नवीन नामांकन प्रारंभ')
+                    : (bConf.headlineEn || (!/[\u0900-\u097F]/.test(bConf.headline || '') ? bConf.headline : null) || `ADMISSIONS OPEN FOR SESSION ${bSession}`);
+
+                  const bSub = isHi
+                    ? (bConf.subheadlineHi || bConf.subheadline || `${bClasses} • सीवान एवं मोरा बाज़ार का अग्रणी सीबीएसई पैटर्न अंग्रेजी माध्यम विद्यालय`)
+                    : (bConf.subheadlineEn || (!/[\u0900-\u097F]/.test(bConf.subheadline || '') ? bConf.subheadline : null) || `${bClasses} • Leading CBSE Pattern English Medium School in Siwan & Mora Bazar`);
                   const bPhone = bConf.phone || primaryPhone || '8603481865';
                   const bWhatsapp = bConf.whatsapp || primaryPhone || '8603481865';
 
@@ -1638,7 +1666,72 @@ export default function SignInView() {
                     ],
                     footerText: isHi ? 'लेखा एवं वित्त कार्यालय' : 'Accounts & Finance Department'
                   }
-                ]).map((leader, idx) => (
+                ]).map((rawLeader, idx) => {
+                  const enMap = {
+                    lead_ravi: {
+                      name: 'Ravi Sir',
+                      role: 'Vice-Principal',
+                      subtitle: 'Vice-Principal (Admin)',
+                      bio: 'Oversees daily school administration, faculty coordination, and student discipline. Dedicated to building strong parent-school communication and elevating academic standards.',
+                      keyRoles: [
+                        'Daily school operations & academic routine management',
+                        'Classroom teaching quality monitoring & teacher guidance',
+                        'Student welfare, PTM counseling & admin coordination'
+                      ],
+                      footerText: 'Administration & Student Welfare Desk'
+                    },
+                    lead_ashish: {
+                      name: 'Ashish Sir',
+                      role: 'Academic Head',
+                      subtitle: 'Academic Head (Syllabus & Exams)',
+                      bio: 'Leads curriculum planning, exam assessments, teacher training, and academic standards across all grades. Focused on deep foundational learning and student merit.',
+                      keyRoles: [
+                        'Timely curriculum completion & comprehensive exam schedules',
+                        'Modern pedagogy implementation & periodic teacher workshops',
+                        'Result performance analysis & remedial learning support'
+                      ],
+                      footerText: 'Academic Excellence & Examination Wing'
+                    },
+                    lead_rozi: {
+                      name: 'Rozi Miss',
+                      role: 'Discipline Incharge',
+                      subtitle: 'School Discipline Incharge',
+                      bio: 'Nurtures student self-discipline, moral ethics, punctuality, and neatness. Ensures a secure, respectful, and motivating school environment for every child.',
+                      keyRoles: [
+                        'Morning assembly, proper uniform & punctuality enforcement',
+                        'Inculcating moral values, polite etiquette & positive student behavior',
+                        'Campus safety, peaceful environment & strict adherence to rules'
+                      ],
+                      footerText: 'Discipline Council & Student Conduct'
+                    },
+                    lead_neha: {
+                      name: 'Neha Miss',
+                      role: 'Accountant',
+                      subtitle: 'School Accountant',
+                      bio: 'Manages school financial accounting, automated fee collection, and digital ledger. Committed to providing instant fee receipts, transparent records, and prompt parent support.',
+                      keyRoles: [
+                        'Online & counter fee collection with instant digital receipt generation',
+                        'Daily revenue & expense reconciliation, audit ledgers & records',
+                        'Prompt parent assistance with fee inquiries, statements & receipts'
+                      ],
+                      footerText: 'Accounts & Finance Department'
+                    }
+                  };
+
+                  const enFb = enMap[rawLeader.id] || {};
+                  const isDeval = (s) => typeof s === 'string' && /[\u0900-\u097F]/.test(s);
+
+                  const leader = {
+                    ...rawLeader,
+                    name: isHi ? (rawLeader.nameHi || rawLeader.name) : (rawLeader.nameEn || (!isDeval(rawLeader.name) ? rawLeader.name : null) || enFb.name || rawLeader.name),
+                    role: isHi ? (rawLeader.roleHi || rawLeader.role) : (rawLeader.roleEn || (!isDeval(rawLeader.role) ? rawLeader.role : null) || enFb.role || rawLeader.role),
+                    subtitle: isHi ? (rawLeader.subtitleHi || rawLeader.subtitle) : (rawLeader.subtitleEn || (!isDeval(rawLeader.subtitle) ? rawLeader.subtitle : null) || enFb.subtitle || rawLeader.role),
+                    bio: isHi ? (rawLeader.bioHi || rawLeader.bio) : (rawLeader.bioEn || (!isDeval(rawLeader.bio) ? rawLeader.bio : null) || enFb.bio || rawLeader.bio),
+                    keyRoles: isHi ? (rawLeader.keyRolesHi || rawLeader.keyRoles) : (rawLeader.keyRolesEn || (Array.isArray(rawLeader.keyRoles) && rawLeader.keyRoles.length > 0 && !isDeval(rawLeader.keyRoles[0]) ? rawLeader.keyRoles : null) || enFb.keyRoles || rawLeader.keyRoles),
+                    footerText: isHi ? (rawLeader.footerText || 'प्रशासनिक संकाय') : (rawLeader.footerTextEn || enFb.footerText || 'Administrative Faculty')
+                  };
+
+                  return (
                   <div key={leader.id || idx} className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1">
                     <div>
                       {/* Header Banner */}
@@ -1701,7 +1794,8 @@ export default function SignInView() {
                       <span>{leader.footerText || (isHi ? 'प्रशासनिक संकाय' : 'Administrative Faculty')}</span>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -1743,27 +1837,55 @@ export default function SignInView() {
                   },
                   {
                     id: 'gal_4',
-                    title: isHi ? 'विद्यार्थी आगमन एवं कैंपस जीवन' : 'Student Arrival & Life',
+                    title: isHi ? 'विद्यार्थी आगमन एवं कैंपस जीवन' : 'Student Arrival & Campus Life',
                     description: isHi ? 'अनुशासित कैंपस गेट, साइकिल पार्किंग और आगमन' : 'Disciplined campus gates, bicycle parking and arrival',
                     imageUrl: '/school_entrance.jpg'
                   }
-                ]).map((photo, pIdx) => (
-                  <div key={photo.id || pIdx} className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
-                    <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                      <img
-                        src={photo.imageUrl || photo.src || '/school_campus_banner.jpg'}
-                        alt={photo.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/school_campus_banner.jpg'; }}
-                      />
+                ]).map((rawPhoto, pIdx) => {
+                  const isDeval = (s) => typeof s === 'string' && /[\u0900-\u097F]/.test(s);
+                  const galEnMap = {
+                    gal_1: {
+                      title: 'Main Campus Entrance',
+                      description: 'Secure entrance with official school identification'
+                    },
+                    gal_2: {
+                      title: 'Sports & Football Arena',
+                      description: 'Expansive open playground for athletics and football'
+                    },
+                    gal_3: {
+                      title: 'Academic Building Block',
+                      description: 'Spacious, ventilated classrooms and digital study points'
+                    },
+                    gal_4: {
+                      title: 'Student Arrival & Campus Life',
+                      description: 'Disciplined campus gates, bicycle parking and daily arrival'
+                    }
+                  };
+                  const gFb = galEnMap[rawPhoto.id] || {};
+                  const photo = {
+                    ...rawPhoto,
+                    title: isHi ? (rawPhoto.titleHi || rawPhoto.title) : (rawPhoto.titleEn || (!isDeval(rawPhoto.title) ? rawPhoto.title : null) || gFb.title || rawPhoto.title),
+                    description: isHi ? (rawPhoto.descriptionHi || rawPhoto.description) : (rawPhoto.descriptionEn || (!isDeval(rawPhoto.description) ? rawPhoto.description : null) || gFb.description || rawPhoto.description)
+                  };
+
+                  return (
+                    <div key={photo.id || pIdx} className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
+                      <div className="aspect-[4/3] overflow-hidden bg-slate-100">
+                        <img
+                          src={photo.imageUrl || photo.src || '/school_campus_banner.jpg'}
+                          alt={photo.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/school_campus_banner.jpg'; }}
+                        />
+                      </div>
+                      <div className="p-4 space-y-1 bg-white">
+                        <h3 className="text-sm font-bold text-[#14243B]">{photo.title}</h3>
+                        <p className="text-[11px] text-[#65748B]">{photo.description}</p>
+                      </div>
                     </div>
-                    <div className="p-4 space-y-1 bg-white">
-                      <h3 className="text-sm font-bold text-[#14243B]">{photo.title}</h3>
-                      <p className="text-[11px] text-[#65748B]">{photo.description}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -1839,38 +1961,71 @@ export default function SignInView() {
                       ? '“एक्टिविटी बेस्ड लर्निंग और फोनिक्स से मेरी बेटी बहुत तेजी से सीख रही है। सोनी मैडम और सभी शिक्षक हर बच्चे का पूरा ख्याल रखते हैं।”'
                       : '“Activity based learning aur phonics se meri beti bahut tezi se seekh rahi hai. Soni Madam aur sabhi teachers har bachhe ka pura khayal rakhte hain.”'
                   }
-                ]).map((rev, rIdx) => (
-                  <div key={rev.id || rIdx} className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-amber-500">
-                          {[...Array(Number(rev.rating) || 5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 fill-current" />
-                          ))}
-                        </div>
-                        <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
-                      </div>
-                      <p className="text-xs text-[#475569] leading-relaxed italic">
-                        {rev.text}
-                      </p>
-                    </div>
+                ]).map((rawRev, rIdx) => {
+                  const isDeval = (s) => typeof s === 'string' && /[\u0900-\u097F]/.test(s);
+                  const revEnMap = {
+                    rev_1: {
+                      authorName: 'Rajesh Kumar Singh',
+                      relation: 'Father of Aarav • Grade 4',
+                      text: '“The school excels in both academics and discipline. Aarav’s English communication and foundational mathematics have improved tremendously. The teachers are always approachable and caring.”'
+                    },
+                    rev_2: {
+                      authorName: 'Sunita Devi',
+                      relation: 'Mother of Priya Kumari • Grade 1',
+                      text: '“It is a privilege to have such a disciplined, secure, and inspiring school environment in the Mora Bazar area. Every child receives dedicated, personalized attention.”'
+                    },
+                    rev_3: {
+                      authorName: 'Md. Shamim Ansari',
+                      relation: 'Father of Rehan • Grade 7',
+                      text: '“The sports playground and computer lab are excellent. Rehan actively participates in football and digital learning. The management’s vision is crystal clear and dedicated.”'
+                    },
+                    rev_4: {
+                      authorName: 'Pooja Sharma',
+                      relation: 'Mother of Ananya • UKG',
+                      text: '“Activity-based learning and phonics have accelerated my daughter’s learning curve. Soni Madam and all the faculty members take genuine care of each child.”'
+                    }
+                  };
+                  const rFb = revEnMap[rawRev.id] || {};
+                  const rev = {
+                    ...rawRev,
+                    authorName: isHi ? (rawRev.authorNameHi || rawRev.authorName) : (rawRev.authorNameEn || (!isDeval(rawRev.authorName) ? rawRev.authorName : null) || rFb.authorName || rawRev.authorName),
+                    relation: isHi ? (rawRev.relationHi || rawRev.relation) : (rawRev.relationEn || (!isDeval(rawRev.relation) ? rawRev.relation : null) || rFb.relation || rawRev.relation),
+                    text: isHi ? (rawRev.textHi || rawRev.text) : (rawRev.textEn || (!isDeval(rawRev.text) ? rawRev.text : null) || rFb.text || rawRev.text)
+                  };
 
-                    <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#102747] text-[#F4B323] font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
-                        {rev.authorName ? rev.authorName.substring(0, 2).toUpperCase() : 'MN'}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
-                          <span>{rev.authorName}</span>
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                  return (
+                    <div key={rev.id || rIdx} className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-amber-500">
+                            {[...Array(Number(rev.rating) || 5)].map((_, i) => (
+                              <Star key={i} className="w-4 h-4 fill-current" />
+                            ))}
+                          </div>
+                          <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
                         </div>
-                        <div className="text-[10px] text-[#65748B] font-medium truncate">
-                          {rev.relation}
+                        <p className="text-xs text-[#475569] leading-relaxed italic">
+                          {rev.text}
+                        </p>
+                      </div>
+
+                      <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#102747] text-[#F4B323] font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
+                          {rev.authorName ? rev.authorName.substring(0, 2).toUpperCase() : 'MN'}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
+                            <span>{rev.authorName}</span>
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                          </div>
+                          <div className="text-[10px] text-[#65748B] font-medium truncate">
+                            {rev.relation}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -1890,7 +2045,7 @@ export default function SignInView() {
                   <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F4B323]/15 border border-[#F4B323]/30 text-amber-300 text-xs font-black uppercase tracking-wider">
                       <Smartphone className="w-4 h-4 text-[#F4B323]" />
-                      <span>{isHi ? 'आधिकारिक मोबाइल ऐप (Android)' : 'Official Android App v1.0.1 (Build 8)'}</span>
+                      <span>{isHi ? 'आधिकारिक मोबाइल ऐप (Android)' : 'Official Android App v1.0.1 (Build 12)'}</span>
                     </div>
 
                     <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
@@ -1914,15 +2069,15 @@ export default function SignInView() {
                         <div className="text-[11px] font-bold text-slate-300 mt-0.5">{isHi ? 'दैनिक उपस्थिति' : 'Attendance'}</div>
                       </div>
                       <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
-                        <div className="text-base sm:text-lg font-black text-emerald-400">📄 लाइव</div>
+                        <div className="text-base sm:text-lg font-black text-emerald-400">{isHi ? '📄 लाइव' : '📄 LIVE'}</div>
                         <div className="text-[11px] font-bold text-slate-300 mt-0.5">{isHi ? 'रिजल्ट व मार्कशीट' : 'Results'}</div>
                       </div>
                       <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
-                        <div className="text-base sm:text-lg font-black text-blue-400">💳 डिजिटल</div>
+                        <div className="text-base sm:text-lg font-black text-blue-400">{isHi ? '💳 डिजिटल' : '💳 DIGITAL'}</div>
                         <div className="text-[11px] font-bold text-slate-300 mt-0.5">{isHi ? 'फीस रसीद' : 'Fee Receipts'}</div>
                       </div>
                       <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
-                        <div className="text-base sm:text-lg font-black text-purple-400">📢 तुरंत</div>
+                        <div className="text-base sm:text-lg font-black text-purple-400">{isHi ? '📢 तुरंत' : '📢 INSTANT'}</div>
                         <div className="text-[11px] font-bold text-slate-300 mt-0.5">{isHi ? 'स्कूल नोटिस' : 'Notices'}</div>
                       </div>
                     </div>
@@ -1931,7 +2086,7 @@ export default function SignInView() {
                     <div className="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
                       {/* Primary 64-bit APK Download */}
                       <a
-                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build10/MNP_School_arm64-v8a.apk"
+                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_arm64-v8a.apk"
                         download="MNP_School_v1.0.1.apk"
                         className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-sm transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-3 cursor-pointer hover:scale-105 active:scale-95"
                       >
@@ -1941,7 +2096,7 @@ export default function SignInView() {
 
                       {/* Fallback 32-bit APK for older phones */}
                       <a
-                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build10/MNP_School_armeabi-v7a.apk"
+                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_armeabi-v7a.apk"
                         download="MNP_School_v1.0.1_v7a.apk"
                         className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
@@ -1978,22 +2133,22 @@ export default function SignInView() {
                         {/* Sample App Screen Mockup Items */}
                         <div className="space-y-2 text-left text-xs">
                           <div className="p-2 rounded-xl bg-white/10 flex items-center justify-between text-white">
-                            <span className="font-bold">आज की उपस्थिति</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">उपस्थित ✓</span>
+                            <span className="font-bold">{isHi ? 'आज की उपस्थिति' : "Today's Attendance"}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">{isHi ? 'उपस्थित ✓' : 'Present ✓'}</span>
                           </div>
                           <div className="p-2 rounded-xl bg-white/10 flex items-center justify-between text-white">
-                            <span className="font-bold">सत्र परिणाम</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">A+ ग्रेड</span>
+                            <span className="font-bold">{isHi ? 'सत्र परिणाम' : 'Session Result'}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">{isHi ? 'A+ ग्रेड' : 'Grade A+'}</span>
                           </div>
                           <div className="p-2 rounded-xl bg-white/10 flex items-center justify-between text-white">
-                            <span className="font-bold">स्कूल नोटिस</span>
-                            <span className="text-[10px] text-slate-300">नया अलर्ट</span>
+                            <span className="font-bold">{isHi ? 'स्कूल नोटिस' : 'School Notice'}</span>
+                            <span className="text-[10px] text-slate-300">{isHi ? 'नया अलर्ट' : 'New Alert'}</span>
                           </div>
                         </div>
 
                         {/* Mock Button */}
                         <a
-                          href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build10/MNP_School_arm64-v8a.apk"
+                          href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_arm64-v8a.apk"
                           download="MNP_School_v1.0.1.apk"
                           className="block w-full py-2.5 rounded-xl bg-[#F4B323] text-[#0c2340] font-black text-xs hover:brightness-110 transition-all shadow-md"
                         >
@@ -2640,15 +2795,15 @@ export default function SignInView() {
           {/* Local Area & SEO Coverage Strip */}
           <div className="mt-8 pt-4 border-t border-[#1E3A60]/60 text-[11px] text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="font-bold text-[#F4B323]">{isHi ? 'प्रमुख क्षेत्र:' : 'Areas Served:'}</span>
-            <span>Mora (मोरा)</span>
+            <span>{isHi ? 'Mora (मोरा)' : 'Mora'}</span>
             <span>&bull;</span>
-            <span>Mora Bazar (मोरा बाजार)</span>
+            <span>{isHi ? 'Mora Bazar (मोरा बाजार)' : 'Mora Bazar'}</span>
             <span>&bull;</span>
-            <span>Mairi (मैरी)</span>
+            <span>{isHi ? 'Mairi (मैरी)' : 'Mairi'}</span>
             <span>&bull;</span>
-            <span>Ratauli (रतौली)</span>
+            <span>{isHi ? 'Ratauli (रतौली)' : 'Ratauli'}</span>
             <span>&bull;</span>
-            <span>Siwan (सीवान, बिहार)</span>
+            <span>{isHi ? 'Siwan (सीवान, बिहार)' : 'Siwan (Bihar)'}</span>
             <span className="hidden sm:inline">&bull;</span>
             <span className="hidden sm:inline">{isHi ? 'संस्थापक: उदय शंकर पटेल (उदय सर) एवं विशाल पटेल (विशाल सर)' : 'Leadership: Chairman Uday Shankar Patel (Uday Sir) & Director Vishal Patel (Vishal Sir)'}</span>
           </div>
@@ -2687,7 +2842,7 @@ export default function SignInView() {
               +91 {primaryPhone}
             </div>
           </div>
-          <span className="sm:hidden text-xs font-bold text-white">कॉल करें</span>
+          <span className="sm:hidden text-xs font-bold text-white">{isHi ? 'कॉल करें' : 'Call'}</span>
         </a>
 
         {/* WhatsApp Voice / Chat Button */}
@@ -2714,7 +2869,7 @@ export default function SignInView() {
               WhatsApp
             </div>
           </div>
-          <span className="sm:hidden text-xs font-bold text-white">व्हाट्सएप</span>
+          <span className="sm:hidden text-xs font-bold text-white">{isHi ? 'व्हाट्सएप' : 'WhatsApp'}</span>
         </a>
       </div>
 
@@ -2756,13 +2911,15 @@ export default function SignInView() {
                 <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
                   <a
                     href={`https://wa.me/91${primaryPhone}?text=${encodeURIComponent(
-                      `नमस्ते सर, मैंने स्कूल में दाखिले के लिए ऑनलाइन फॉर्म भरा है (Ref: ${inquirySuccess})। कृपया जानकारी दें।`
+                      isHi
+                        ? `नमस्ते सर, मैंने स्कूल में दाखिले के लिए ऑनलाइन फॉर्म भरा है (Ref: ${inquirySuccess})। कृपया जानकारी दें।`
+                        : `Hello Sir, I submitted an admission inquiry online (Ref: ${inquirySuccess}). Kindly assist with admission details.`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-5 py-2.5 rounded-xl bg-[#25D366] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md"
                   >
-                    <span>व्हाट्सएप पर बात करें</span>
+                    <span>{isHi ? 'व्हाट्सएप पर बात करें' : 'Chat on WhatsApp'}</span>
                   </a>
                   <button
                     type="button"
