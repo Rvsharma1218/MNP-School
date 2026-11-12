@@ -18,12 +18,18 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
   String _selectedBannerStyle = 'royal_navy';
   final _bannerSessionCtrl = TextEditingController(text: '2026-27');
   final _bannerClassesCtrl = TextEditingController(text: 'Nursery to 8th');
-  final _bannerTagCtrl = TextEditingController(
+  final _bannerTagEnCtrl = TextEditingController(
+      text: 'Special Scholarship & Early Admission Offer Available');
+  final _bannerTagHiCtrl = TextEditingController(
       text: 'विशेष छात्रवृत्ति एवं प्रारंभिक नामांकन छूट उपलब्ध');
-  final _bannerHeadlineCtrl = TextEditingController(
-      text: 'सत्र 2026-27 हेतु नवीन नामांकन प्रारंभ');
-  final _bannerSubheadlineCtrl = TextEditingController(
+  final _bannerHeadlineEnCtrl =
+      TextEditingController(text: 'Admissions Open for Session 2026-27');
+  final _bannerHeadlineHiCtrl =
+      TextEditingController(text: 'सत्र 2026-27 हेतु नवीन नामांकन प्रारंभ');
+  final _bannerSubheadlineEnCtrl = TextEditingController(
       text: 'For Classes Nursery to 8th • Limited Seats Available');
+  final _bannerSubheadlineHiCtrl = TextEditingController(
+      text: 'कक्षा नर्सरी से 8वीं तक • सीमित सीटें उपलब्ध');
   final _bannerPhoneCtrl = TextEditingController(text: '8603481865');
   final _bannerWhatsappCtrl = TextEditingController(text: '8603481865');
   bool _isAdmissionOpen = true;
@@ -31,18 +37,32 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
 
   // ─── Flash Notice & Popup Form State ──────────────────────────────────
   bool _flashNoticeEnabled = true;
-  final _flashNoticeBadgeCtrl = TextEditingController(text: 'नवीन सूचना');
-  final _flashNoticeTextCtrl = TextEditingController(
+  final _flashNoticeBadgeEnCtrl = TextEditingController(text: 'NEW NOTICE');
+  final _flashNoticeBadgeHiCtrl = TextEditingController(text: 'नवीन सूचना');
+  final _flashNoticeTextEnCtrl = TextEditingController(
+      text:
+          '📢 Admissions Open for Session 2026-27. Limited seats available. Special Navodaya entrance prep batch. Helpline: +91 8603481865');
+  final _flashNoticeTextHiCtrl = TextEditingController(
       text:
           '📢 सत्र 2026-27 के लिए नवीन नामांकन प्रारंभ है। सीमित सीटें उपलब्ध। विशेष नवोदय प्रवेश परीक्षा तैयारी बैच। संपर्क: 8603481865');
 
   bool _popupAlertEnabled = false;
-  final _popupAlertBadgeCtrl = TextEditingController(text: 'नामांकन सूचना');
-  final _popupAlertTitleCtrl = TextEditingController(text: 'विशेष विद्यालय सूचना');
-  final _popupAlertMessageCtrl = TextEditingController(
+  final _popupAlertBadgeEnCtrl = TextEditingController(text: 'ADMISSION ALERT');
+  final _popupAlertBadgeHiCtrl = TextEditingController(text: 'नामांकन सूचना');
+  final _popupAlertTitleEnCtrl =
+      TextEditingController(text: 'Official School Announcement');
+  final _popupAlertTitleHiCtrl =
+      TextEditingController(text: 'विशेष विद्यालय सूचना');
+  final _popupAlertMessageEnCtrl = TextEditingController(
+      text:
+          'Online applications are accepted for Admission in session 2026-27 from Nursery to 8th class.');
+  final _popupAlertMessageHiCtrl = TextEditingController(
       text:
           'सत्र 2026-27 हेतु कक्षा नर्सरी से 8वीं तक में नामांकन हेतु ऑनलाइन आवेदन स्वीकार किए जा रहे हैं।');
-  final _popupAlertActionCtrl = TextEditingController(text: 'नामांकन फॉर्म भरें');
+  final _popupAlertActionEnCtrl =
+      TextEditingController(text: 'Apply Online');
+  final _popupAlertActionHiCtrl =
+      TextEditingController(text: 'नामांकन फॉर्म भरें');
   bool _noticesLoaded = false;
 
   @override
@@ -56,17 +76,26 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
     _tabController.dispose();
     _bannerSessionCtrl.dispose();
     _bannerClassesCtrl.dispose();
-    _bannerTagCtrl.dispose();
-    _bannerHeadlineCtrl.dispose();
-    _bannerSubheadlineCtrl.dispose();
+    _bannerTagEnCtrl.dispose();
+    _bannerTagHiCtrl.dispose();
+    _bannerHeadlineEnCtrl.dispose();
+    _bannerHeadlineHiCtrl.dispose();
+    _bannerSubheadlineEnCtrl.dispose();
+    _bannerSubheadlineHiCtrl.dispose();
     _bannerPhoneCtrl.dispose();
     _bannerWhatsappCtrl.dispose();
-    _flashNoticeBadgeCtrl.dispose();
-    _flashNoticeTextCtrl.dispose();
-    _popupAlertBadgeCtrl.dispose();
-    _popupAlertTitleCtrl.dispose();
-    _popupAlertMessageCtrl.dispose();
-    _popupAlertActionCtrl.dispose();
+    _flashNoticeBadgeEnCtrl.dispose();
+    _flashNoticeBadgeHiCtrl.dispose();
+    _flashNoticeTextEnCtrl.dispose();
+    _flashNoticeTextHiCtrl.dispose();
+    _popupAlertBadgeEnCtrl.dispose();
+    _popupAlertBadgeHiCtrl.dispose();
+    _popupAlertTitleEnCtrl.dispose();
+    _popupAlertTitleHiCtrl.dispose();
+    _popupAlertMessageEnCtrl.dispose();
+    _popupAlertMessageHiCtrl.dispose();
+    _popupAlertActionEnCtrl.dispose();
+    _popupAlertActionHiCtrl.dispose();
     super.dispose();
   }
 
@@ -78,9 +107,19 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
         _selectedBannerStyle = b['style']?.toString() ?? 'royal_navy';
         _bannerSessionCtrl.text = b['session']?.toString() ?? '2026-27';
         _bannerClassesCtrl.text = b['classes']?.toString() ?? 'Nursery to 8th';
-        _bannerTagCtrl.text = b['tagText']?.toString() ?? '';
-        _bannerHeadlineCtrl.text = b['headline']?.toString() ?? '';
-        _bannerSubheadlineCtrl.text = b['subheadline']?.toString() ?? '';
+
+        final rawTag = b['tagText']?.toString() ?? '';
+        _bannerTagEnCtrl.text = b['tagTextEn']?.toString() ?? rawTag;
+        _bannerTagHiCtrl.text = b['tagTextHi']?.toString() ?? (b['tagTextEn'] != null ? '' : rawTag);
+
+        final rawHead = b['headline']?.toString() ?? '';
+        _bannerHeadlineEnCtrl.text = b['headlineEn']?.toString() ?? rawHead;
+        _bannerHeadlineHiCtrl.text = b['headlineHi']?.toString() ?? (b['headlineEn'] != null ? '' : rawHead);
+
+        final rawSub = b['subheadline']?.toString() ?? '';
+        _bannerSubheadlineEnCtrl.text = b['subheadlineEn']?.toString() ?? rawSub;
+        _bannerSubheadlineHiCtrl.text = b['subheadlineHi']?.toString() ?? (b['subheadlineEn'] != null ? '' : rawSub);
+
         _bannerPhoneCtrl.text = b['phone']?.toString() ?? '8603481865';
         _bannerWhatsappCtrl.text = b['whatsapp']?.toString() ?? '8603481865';
         _isAdmissionOpen = b['isAdmissionOpen'] != false;
@@ -91,16 +130,32 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
       if (data.containsKey('flashNotice')) {
         final f = Map<String, dynamic>.from(data['flashNotice'] as Map? ?? {});
         _flashNoticeEnabled = f['enabled'] == true;
-        if (f['badge'] != null) _flashNoticeBadgeCtrl.text = f['badge'].toString();
-        if (f['text'] != null) _flashNoticeTextCtrl.text = f['text'].toString();
+        final rawBadge = f['badge']?.toString() ?? '';
+        _flashNoticeBadgeEnCtrl.text = f['badgeEn']?.toString() ?? rawBadge;
+        _flashNoticeBadgeHiCtrl.text = f['badgeHi']?.toString() ?? (f['badgeEn'] != null ? '' : rawBadge);
+
+        final rawText = f['text']?.toString() ?? '';
+        _flashNoticeTextEnCtrl.text = f['textEn']?.toString() ?? rawText;
+        _flashNoticeTextHiCtrl.text = f['textHi']?.toString() ?? (f['textEn'] != null ? '' : rawText);
       }
       if (data.containsKey('popupAlert')) {
         final p = Map<String, dynamic>.from(data['popupAlert'] as Map? ?? {});
         _popupAlertEnabled = p['enabled'] == true;
-        if (p['badge'] != null) _popupAlertBadgeCtrl.text = p['badge'].toString();
-        if (p['title'] != null) _popupAlertTitleCtrl.text = p['title'].toString();
-        if (p['message'] != null) _popupAlertMessageCtrl.text = p['message'].toString();
-        if (p['actionText'] != null) _popupAlertActionCtrl.text = p['actionText'].toString();
+        final rawBadge = p['badge']?.toString() ?? '';
+        _popupAlertBadgeEnCtrl.text = p['badgeEn']?.toString() ?? rawBadge;
+        _popupAlertBadgeHiCtrl.text = p['badgeHi']?.toString() ?? (p['badgeEn'] != null ? '' : rawBadge);
+
+        final rawTitle = p['title']?.toString() ?? '';
+        _popupAlertTitleEnCtrl.text = p['titleEn']?.toString() ?? rawTitle;
+        _popupAlertTitleHiCtrl.text = p['titleHi']?.toString() ?? (p['titleEn'] != null ? '' : rawTitle);
+
+        final rawMsg = p['message']?.toString() ?? '';
+        _popupAlertMessageEnCtrl.text = p['messageEn']?.toString() ?? rawMsg;
+        _popupAlertMessageHiCtrl.text = p['messageHi']?.toString() ?? (p['messageEn'] != null ? '' : rawMsg);
+
+        final rawAct = p['actionText']?.toString() ?? '';
+        _popupAlertActionEnCtrl.text = p['actionTextEn']?.toString() ?? rawAct;
+        _popupAlertActionHiCtrl.text = p['actionTextHi']?.toString() ?? (p['actionTextEn'] != null ? '' : rawAct);
       }
       _noticesLoaded = true;
     }
@@ -110,14 +165,27 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
   Future<void> _saveAdmissionBanner() async {
     setState(() => _saving = true);
     try {
+      final tagEn = _bannerTagEnCtrl.text.trim();
+      final tagHi = _bannerTagHiCtrl.text.trim();
+      final headEn = _bannerHeadlineEnCtrl.text.trim();
+      final headHi = _bannerHeadlineHiCtrl.text.trim();
+      final subEn = _bannerSubheadlineEnCtrl.text.trim();
+      final subHi = _bannerSubheadlineHiCtrl.text.trim();
+
       final config = {
         'admissionBanner': {
           'style': _selectedBannerStyle,
           'session': _bannerSessionCtrl.text.trim(),
           'classes': _bannerClassesCtrl.text.trim(),
-          'tagText': _bannerTagCtrl.text.trim(),
-          'headline': _bannerHeadlineCtrl.text.trim(),
-          'subheadline': _bannerSubheadlineCtrl.text.trim(),
+          'tagText': tagEn.isNotEmpty ? tagEn : tagHi,
+          'tagTextEn': tagEn,
+          'tagTextHi': tagHi,
+          'headline': headEn.isNotEmpty ? headEn : headHi,
+          'headlineEn': headEn,
+          'headlineHi': headHi,
+          'subheadline': subEn.isNotEmpty ? subEn : subHi,
+          'subheadlineEn': subEn,
+          'subheadlineHi': subHi,
           'phone': _bannerPhoneCtrl.text.trim(),
           'whatsapp': _bannerWhatsappCtrl.text.trim(),
           'isAdmissionOpen': _isAdmissionOpen,
@@ -150,18 +218,44 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
   Future<void> _saveNotices() async {
     setState(() => _saving = true);
     try {
+      final fBadgeEn = _flashNoticeBadgeEnCtrl.text.trim();
+      final fBadgeHi = _flashNoticeBadgeHiCtrl.text.trim();
+      final fTextEn = _flashNoticeTextEnCtrl.text.trim();
+      final fTextHi = _flashNoticeTextHiCtrl.text.trim();
+
+      final pBadgeEn = _popupAlertBadgeEnCtrl.text.trim();
+      final pBadgeHi = _popupAlertBadgeHiCtrl.text.trim();
+      final pTitleEn = _popupAlertTitleEnCtrl.text.trim();
+      final pTitleHi = _popupAlertTitleHiCtrl.text.trim();
+      final pMsgEn = _popupAlertMessageEnCtrl.text.trim();
+      final pMsgHi = _popupAlertMessageHiCtrl.text.trim();
+      final pActEn = _popupAlertActionEnCtrl.text.trim();
+      final pActHi = _popupAlertActionHiCtrl.text.trim();
+
       final config = {
         'flashNotice': {
           'enabled': _flashNoticeEnabled,
-          'badge': _flashNoticeBadgeCtrl.text.trim(),
-          'text': _flashNoticeTextCtrl.text.trim(),
+          'badge': fBadgeEn.isNotEmpty ? fBadgeEn : fBadgeHi,
+          'badgeEn': fBadgeEn,
+          'badgeHi': fBadgeHi,
+          'text': fTextEn.isNotEmpty ? fTextEn : fTextHi,
+          'textEn': fTextEn,
+          'textHi': fTextHi,
         },
         'popupAlert': {
           'enabled': _popupAlertEnabled,
-          'badge': _popupAlertBadgeCtrl.text.trim(),
-          'title': _popupAlertTitleCtrl.text.trim(),
-          'message': _popupAlertMessageCtrl.text.trim(),
-          'actionText': _popupAlertActionCtrl.text.trim(),
+          'badge': pBadgeEn.isNotEmpty ? pBadgeEn : pBadgeHi,
+          'badgeEn': pBadgeEn,
+          'badgeHi': pBadgeHi,
+          'title': pTitleEn.isNotEmpty ? pTitleEn : pTitleHi,
+          'titleEn': pTitleEn,
+          'titleHi': pTitleHi,
+          'message': pMsgEn.isNotEmpty ? pMsgEn : pMsgHi,
+          'messageEn': pMsgEn,
+          'messageHi': pMsgHi,
+          'actionText': pActEn.isNotEmpty ? pActEn : pActHi,
+          'actionTextEn': pActEn,
+          'actionTextHi': pActHi,
         }
       };
       await FirestoreService.instance.saveWebsiteConfig(config);
@@ -431,9 +525,11 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _bannerHeadlineCtrl.text.isNotEmpty
-                                  ? _bannerHeadlineCtrl.text
-                                  : 'नामांकन प्रारंभ',
+                              _bannerHeadlineEnCtrl.text.isNotEmpty
+                                  ? _bannerHeadlineEnCtrl.text
+                                  : (_bannerHeadlineHiCtrl.text.isNotEmpty
+                                      ? _bannerHeadlineHiCtrl.text
+                                      : 'Admissions Open'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w900,
@@ -441,7 +537,7 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                               ),
                             ),
                             Text(
-                              'सत्र ${_bannerSessionCtrl.text} • ${_bannerClassesCtrl.text}',
+                              'Session ${_bannerSessionCtrl.text} • ${_bannerClassesCtrl.text}',
                               style: TextStyle(
                                 color: currentStyleMeta['accent'] as Color,
                                 fontWeight: FontWeight.w700,
@@ -455,13 +551,15 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _bannerSubheadlineCtrl.text,
+                    _bannerSubheadlineEnCtrl.text.isNotEmpty
+                        ? _bannerSubheadlineEnCtrl.text
+                        : _bannerSubheadlineHiCtrl.text,
                     style: const TextStyle(color: Colors.white70, fontSize: 11),
                   ),
-                  if (_bannerTagCtrl.text.isNotEmpty) ...[
+                  if (_bannerTagEnCtrl.text.isNotEmpty || _bannerTagHiCtrl.text.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
-                      '✨ ${_bannerTagCtrl.text}',
+                      '✨ ${_bannerTagEnCtrl.text.isNotEmpty ? _bannerTagEnCtrl.text : _bannerTagHiCtrl.text}',
                       style: TextStyle(
                         color: currentStyleMeta['accent'] as Color,
                         fontWeight: FontWeight.bold,
@@ -551,19 +649,25 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
             ),
             const SizedBox(height: 10),
 
-            _buildInputField('शैक्षणिक सत्र (Academic Session)', _bannerSessionCtrl,
+            _buildInputField('Academic Session (शैक्षणिक सत्र)', _bannerSessionCtrl,
                 'e.g. 2026-27'),
-            _buildInputField('नामांकन कक्षाएं (Classes Enrolling)',
+            _buildInputField('Eligible Classes (नामांकन कक्षाएं)',
                 _bannerClassesCtrl, 'e.g. Nursery to 8th'),
-            _buildInputField('मुख्य हेडलाइन (Main Headline)',
-                _bannerHeadlineCtrl, 'e.g. सत्र 2026-27 हेतु नामांकन प्रारंभ'),
-            _buildInputField('सब-हेडलाइन (Sub-Headline)',
-                _bannerSubheadlineCtrl, 'e.g. Limited Seats Available'),
-            _buildInputField('विशेष छूट / टैगलाइन (Special Offer Tag)',
-                _bannerTagCtrl, 'e.g. विशेष छात्रवृत्ति एवं प्रारंभिक छूट'),
-            _buildInputField('हेल्पलाइन फोन नंबर', _bannerPhoneCtrl, '8603481865',
+            _buildInputField('Headline - English (अंग्रेजी मुख्य हेडलाइन)',
+                _bannerHeadlineEnCtrl, 'e.g. Admissions Open for Session 2026-27'),
+            _buildInputField('Headline - Hindi (हिन्दी हेडलाइन - वैकल्पिक)',
+                _bannerHeadlineHiCtrl, 'e.g. सत्र 2026-27 हेतु नवीन नामांकन प्रारंभ'),
+            _buildInputField('Subheadline - English (सब-हेडलाइन)',
+                _bannerSubheadlineEnCtrl, 'e.g. For Classes Nursery to 8th • Limited Seats Available'),
+            _buildInputField('Subheadline - Hindi (हिन्दी सब-हेडलाइन - वैकल्पिक)',
+                _bannerSubheadlineHiCtrl, 'e.g. कक्षा नर्सरी से 8वीं तक • सीमित सीटें उपलब्ध'),
+            _buildInputField('Special Offer Tag - English (ऑफर टैग)',
+                _bannerTagEnCtrl, 'e.g. Special Scholarship Available (हटाने के लिए खाली छोड़ें)'),
+            _buildInputField('Special Offer Tag - Hindi (हिन्दी ऑफर टैग - वैकल्पिक)',
+                _bannerTagHiCtrl, 'e.g. विशेष छात्रवृत्ति एवं प्रारंभिक छूट (हटाने के लिए खाली छोड़ें)'),
+            _buildInputField('Helpline Phone Number', _bannerPhoneCtrl, '8603481865',
                 keyboard: TextInputType.phone),
-            _buildInputField('व्हाट्सएप नंबर', _bannerWhatsappCtrl, '8603481865',
+            _buildInputField('WhatsApp Number', _bannerWhatsappCtrl, '8603481865',
                 keyboard: TextInputType.phone),
 
             const SizedBox(height: 24),
@@ -749,8 +853,10 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
   }
 
   void _showAddPhotoDialog(List<Map<String, dynamic>> currentItems) {
-    final titleCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
+    final titleEnCtrl = TextEditingController();
+    final titleHiCtrl = TextEditingController();
+    final descEnCtrl = TextEditingController();
+    final descHiCtrl = TextEditingController();
     final urlCtrl = TextEditingController();
     String category = 'campus';
 
@@ -767,18 +873,36 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
-                  controller: titleCtrl,
+                  controller: titleEnCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Photo Title *',
+                    labelText: 'Photo Title - English *',
+                    hintText: 'e.g. Annual Sports Meet 2026',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: titleHiCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Photo Title - Hindi (Optional)',
                     hintText: 'e.g. वार्षिक खेलकूद प्रतियोगिता 2026',
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 TextField(
-                  controller: descCtrl,
+                  controller: descEnCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Description',
+                    labelText: 'Description - English',
+                    hintText: 'e.g. 100m sprint race and award ceremony',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: descHiCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Description - Hindi (Optional)',
                     hintText: 'e.g. 100m दौड़ व पुरस्कार वितरण समारोह',
                     border: OutlineInputBorder(),
                   ),
@@ -817,7 +941,6 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                     final picker = ImagePicker();
                     final xfile = await picker.pickImage(source: ImageSource.gallery);
                     if (xfile != null) {
-                      // Note: Set path or URL
                       urlCtrl.text = xfile.path;
                     }
                   },
@@ -837,9 +960,13 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
               ),
               child: const Text('Add to Live Gallery'),
               onPressed: () async {
-                final title = titleCtrl.text.trim();
+                final titleEn = titleEnCtrl.text.trim();
+                final titleHi = titleHiCtrl.text.trim();
+                final descEn = descEnCtrl.text.trim();
+                final descHi = descHiCtrl.text.trim();
                 final url = urlCtrl.text.trim();
-                if (title.isEmpty || url.isEmpty) {
+
+                if ((titleEn.isEmpty && titleHi.isEmpty) || url.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                         content: Text('Kripya Title aur Image URL darj karein')),
@@ -849,8 +976,12 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                 Navigator.pop(ctx);
                 final newItem = {
                   'id': 'gal_${DateTime.now().millisecondsSinceEpoch}',
-                  'title': title,
-                  'description': descCtrl.text.trim(),
+                  'title': titleEn.isNotEmpty ? titleEn : titleHi,
+                  'titleEn': titleEn,
+                  'titleHi': titleHi,
+                  'description': descEn.isNotEmpty ? descEn : descHi,
+                  'descriptionEn': descEn,
+                  'descriptionHi': descHi,
                   'category': category,
                   'imageUrl': url,
                   'createdAt': DateTime.now().toIso8601String(),
@@ -1032,9 +1163,12 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
   }
 
   void _showAddReviewDialog(List<Map<String, dynamic>> currentItems) {
-    final nameCtrl = TextEditingController();
-    final relationCtrl = TextEditingController();
-    final textCtrl = TextEditingController();
+    final nameEnCtrl = TextEditingController();
+    final nameHiCtrl = TextEditingController();
+    final relationEnCtrl = TextEditingController();
+    final relationHiCtrl = TextEditingController();
+    final textEnCtrl = TextEditingController();
+    final textHiCtrl = TextEditingController();
     int rating = 5;
 
     showDialog(
@@ -1042,7 +1176,7 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlgState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Add Parent Review (समीक्षा)',
+          title: const Text('Add Parent Review (अभिभावक समीक्षा)',
               style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
           content: SingleChildScrollView(
             child: Column(
@@ -1050,18 +1184,36 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
-                  controller: nameCtrl,
+                  controller: nameEnCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Parent / Guardian Name *',
+                    labelText: 'Parent / Guardian Name - English *',
+                    hintText: 'e.g. Rajesh Kumar Singh',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: nameHiCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Parent Name - Hindi (Optional)',
                     hintText: 'e.g. राजेश कुमार सिंह',
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 TextField(
-                  controller: relationCtrl,
+                  controller: relationEnCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Student / Class Relation *',
+                    labelText: 'Student / Class Relation - English *',
+                    hintText: 'e.g. Father of Aarav • Grade 4',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: relationHiCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Student Relation - Hindi (Optional)',
                     hintText: 'e.g. आरव के पिता • कक्षा 4',
                     border: OutlineInputBorder(),
                   ),
@@ -1087,11 +1239,21 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: textCtrl,
+                  controller: textEnCtrl,
                   maxLines: 3,
                   decoration: const InputDecoration(
-                    labelText: 'Review Feedback Text *',
-                    hintText: 'स्कूल के बारे में अभिभावक का विचार...',
+                    labelText: 'Review Feedback Text - English *',
+                    hintText: 'e.g. Excellent academics, discipline and supportive teachers.',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: textHiCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Review Feedback Text - Hindi (Optional)',
+                    hintText: 'e.g. स्कूल में पढ़ाई और अनुशासन दोनों बहुत बढ़िया है।',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -1110,21 +1272,32 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
               ),
               child: const Text('Publish Review'),
               onPressed: () async {
-                final name = nameCtrl.text.trim();
-                final text = textCtrl.text.trim();
-                if (name.isEmpty || text.isEmpty) {
+                final nameEn = nameEnCtrl.text.trim();
+                final nameHi = nameHiCtrl.text.trim();
+                final relEn = relationEnCtrl.text.trim();
+                final relHi = relationHiCtrl.text.trim();
+                final textEn = textEnCtrl.text.trim();
+                final textHi = textHiCtrl.text.trim();
+
+                if ((nameEn.isEmpty && nameHi.isEmpty) || (textEn.isEmpty && textHi.isEmpty)) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Kripya sabhi fields bharein')),
+                    const SnackBar(content: Text('Kripya Name aur Review text bharein')),
                   );
                   return;
                 }
                 Navigator.pop(ctx);
                 final newRev = {
                   'id': 'rev_${DateTime.now().millisecondsSinceEpoch}',
-                  'authorName': name,
-                  'relation': relationCtrl.text.trim(),
+                  'authorName': nameEn.isNotEmpty ? nameEn : nameHi,
+                  'authorNameEn': nameEn,
+                  'authorNameHi': nameHi,
+                  'relation': relEn.isNotEmpty ? relEn : relHi,
+                  'relationEn': relEn,
+                  'relationHi': relHi,
                   'rating': rating,
-                  'text': text,
+                  'text': textEn.isNotEmpty ? textEn : textHi,
+                  'textEn': textEn,
+                  'textHi': textHi,
                   'createdAt': DateTime.now().toIso8601String(),
                 };
                 final updated = List<Map<String, dynamic>>.from(currentItems)
@@ -1226,11 +1399,17 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                     style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                   ),
                   const SizedBox(height: 12),
-                  _buildInputField('Tag / Badge Text', _flashNoticeBadgeCtrl,
-                      'e.g. नवीन सूचना ya आवश्यक सूचना'),
+                  _buildInputField('Tag / Badge Text - English', _flashNoticeBadgeEnCtrl,
+                      'e.g. FLASH NOTICE'),
+                  _buildInputField('Tag / Badge Text - Hindi (Optional)', _flashNoticeBadgeHiCtrl,
+                      'e.g. नवीन सूचना'),
                   _buildInputField(
-                      'News / Notice Content', _flashNoticeTextCtrl,
-                      'Headline line jo upar chalegi...',
+                      'News Content - English', _flashNoticeTextEnCtrl,
+                      'Headline text for top breaking ticker...',
+                      maxLines: 2),
+                  _buildInputField(
+                      'News Content - Hindi (Optional)', _flashNoticeTextHiCtrl,
+                      'शीर्ष पट्टी में चलने वाला समाचार हिन्दी में...',
                       maxLines: 2),
                 ],
               ),
@@ -1279,14 +1458,23 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                   ),
                   const SizedBox(height: 12),
                   _buildInputField(
-                      'Popup Badge', _popupAlertBadgeCtrl, 'e.g. अवकाश सूचना'),
-                  _buildInputField('Popup Title', _popupAlertTitleCtrl,
-                      'e.g. शीतकालीन अवकाश की सूचना'),
-                  _buildInputField('Popup Message', _popupAlertMessageCtrl,
-                      'Vistrit suchna...',
+                      'Popup Badge - English', _popupAlertBadgeEnCtrl, 'e.g. ADMISSION ALERT'),
+                  _buildInputField(
+                      'Popup Badge - Hindi (Optional)', _popupAlertBadgeHiCtrl, 'e.g. नामांकन सूचना'),
+                  _buildInputField('Popup Title - English', _popupAlertTitleEnCtrl,
+                      'e.g. Official School Announcement'),
+                  _buildInputField('Popup Title - Hindi (Optional)', _popupAlertTitleHiCtrl,
+                      'e.g. विशेष विद्यालय सूचना'),
+                  _buildInputField('Popup Message - English', _popupAlertMessageEnCtrl,
+                      'Detailed notice announcement...',
                       maxLines: 3),
-                  _buildInputField('Action Button Text', _popupAlertActionCtrl,
-                      'e.g. समझ गया / नामांकन फॉर्म भरें'),
+                  _buildInputField('Popup Message - Hindi (Optional)', _popupAlertMessageHiCtrl,
+                      'विस्तृत सूचना हिन्दी में...',
+                      maxLines: 3),
+                  _buildInputField('Action Button Text - English', _popupAlertActionEnCtrl,
+                      'e.g. Apply Online'),
+                  _buildInputField('Action Button Text - Hindi (Optional)', _popupAlertActionHiCtrl,
+                      'e.g. नामांकन फॉर्म भरें'),
                 ],
               ),
             ),
