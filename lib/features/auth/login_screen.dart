@@ -1179,24 +1179,6 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 16),
-                  if (_role == _LoginRole.principal)
-                    TextButton(
-                      onPressed: _submitting ? null : _toggleMode,
-                      child: RichText(
-                        text: TextSpan(
-                          style: const TextStyle(color: Colors.white70, fontSize: 13.5),
-                          children: [
-                            TextSpan(text: _isSignUp ? 'Already have an account? ' : "Don't have an account? "),
-                            TextSpan(
-                              text: _isSignUp ? 'Sign In' : 'Create Account',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
                   SizedBox(height: MediaQuery.of(context).padding.bottom + (isShort ? 16 : 28)),
                 ],
               ),

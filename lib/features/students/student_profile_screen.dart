@@ -21,6 +21,7 @@ import '../../data/services/session_service.dart';
 import '../attendance/attendance_report_service.dart';
 import '../whatsapp/whatsapp_service.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/pdf_view_screen.dart';
 import '../../data/services/receipt_pdf_service.dart';
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
@@ -1228,10 +1229,14 @@ class _ReceiptHistoryCard extends StatelessWidget {
 
       final file = await _createReceiptPdf(student, payment);
 
-      await Printing.layoutPdf(
-        onLayout: (format) async {
-          return File(file).readAsBytes();
-        },
+      if (!context.mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PdfViewScreen(
+            title: 'Fee Receipt #${payment.receiptNumber.isNotEmpty ? payment.receiptNumber : payment.id}',
+            filePath: file,
+          ),
+        ),
       );
     } catch (e) {
       if (!context.mounted) return;

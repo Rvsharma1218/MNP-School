@@ -9,6 +9,7 @@ import '../../core/constants/app_colors.dart';
 import '../../data/models/student_model.dart';
 import '../../data/models/settings_model.dart';
 import '../../data/models/fee_model.dart';
+import '../../widgets/pdf_view_screen.dart';
 import 'widgets/whatsapp_fee_reminder_dialog.dart';
 
 class WhatsAppService {
@@ -1424,16 +1425,21 @@ class _DocumentShareSheetState extends State<_DocumentShareSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-              // 1. PREVIEW PDF BUTTON
+              // 1. PREVIEW PDF BUTTON (Interactive Full-Screen PDF Viewer)
               if (widget.filePath != null && widget.filePath!.isNotEmpty) ...[
                 ElevatedButton.icon(
                   onPressed: () async {
                     try {
                       final file = File(widget.filePath!);
                       if (await file.exists()) {
-                        await Printing.layoutPdf(
-                          name: widget.title,
-                          onLayout: (format) async => file.readAsBytes(),
+                        if (!context.mounted) return;
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => PdfViewScreen(
+                              title: widget.title,
+                              filePath: widget.filePath,
+                            ),
+                          ),
                         );
                       } else {
                         if (context.mounted) {
