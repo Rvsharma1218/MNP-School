@@ -10,8 +10,8 @@ import {
 } from './PublicPages';
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { useSchoolStore } from '../lib/store';
+import { doc, onSnapshot, setDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { useSchoolStore, getActiveSchoolId } from '../lib/store';
 import { translations } from '../lib/translations';
 import {
   GraduationCap, Mail, Lock, Eye, EyeOff, ShieldCheck,
@@ -21,7 +21,8 @@ import {
   Award, Heart, Compass, Sparkles, Building, Quote, Check,
   Activity, Monitor, Trophy, HelpCircle, MapPin, Clock, MessageSquare,
   Globe, Briefcase, Menu, X, ExternalLink, Calendar, Star,
-  TrendingUp, QrCode, CheckCircle as CheckIcon, Smartphone, Download
+  TrendingUp, QrCode, CheckCircle as CheckIcon, Smartphone, Download,
+  Send, Bus
 } from 'lucide-react';
 
 // Smart CMS Bilingual & Deletion Field Resolver
@@ -76,6 +77,7 @@ export default function SignInView() {
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAdmissionInquiryOpen, setIsAdmissionInquiryOpen] = useState(false);
+  const [admissionModalTab, setAdmissionModalTab] = useState('online'); // 'online' | 'inquiry' | 'whatsapp'
   const [inquirySuccess, setInquirySuccess] = useState(null);
   const [inquiryLoading, setInquiryLoading] = useState(false);
   const [inquiryForm, setInquiryForm] = useState({
@@ -83,9 +85,15 @@ export default function SignInView() {
     fatherName: '',
     mobile: '',
     admissionClass: 'Nursery',
+    gender: 'Male',
+    dob: '',
     address: '',
+    transportRequired: 'No',
+    previousSchool: '',
     message: ''
   });
+  const [waTopic, setWaTopic] = useState('admission');
+  const [waCustomMsg, setWaCustomMsg] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNavDropdownOpen, setIsNavDropdownOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -991,7 +999,9 @@ export default function SignInView() {
               currentSession={currentSession}
               admissionClasses={admissionClasses}
               primaryPhone={primaryPhone}
-              onOpenInquiry={() => setIsAdmissionInquiryOpen(true)}
+              onOpenInquiry={() => { setInquirySuccess(null); setAdmissionModalTab('inquiry'); setIsAdmissionInquiryOpen(true); }}
+              onApplyOnline={() => { setInquirySuccess(null); setAdmissionModalTab('online'); setIsAdmissionInquiryOpen(true); }}
+              onOpenWhatsApp={() => { setInquirySuccess(null); setAdmissionModalTab('whatsapp'); setIsAdmissionInquiryOpen(true); }}
             />
           ) : activeRoute === '/academics' ? (
             <AcademicsPageView isHi={isHi} />
@@ -2955,17 +2965,16 @@ export default function SignInView() {
           <span className="sm:hidden text-xs font-bold text-white">{isHi ? 'कॉल करें' : 'Call'}</span>
         </a>
 
-        {/* WhatsApp Voice / Chat Button */}
-        <a
-          href={`https://wa.me/91${primaryPhone}?text=${encodeURIComponent(
-            isHi 
-              ? 'नमस्ते सर, मुझे मिशन नवोदय पब्लिक स्कूल (मोरा-मैरी) में एडमिशन / स्कूल की जानकारी चाहिए।' 
-              : 'Hello, I want to inquire about admissions / information for Mission Navodaya Public School, Mora-Mairi.'
-          )}`}
-          target="_blank"
-          rel="noopener noreferrer"
+        {/* WhatsApp Voice / Chat Button (Opens In-Page WhatsApp & Admission Desk) */}
+        <button
+          type="button"
+          onClick={() => {
+            setInquirySuccess(null);
+            setAdmissionModalTab('whatsapp');
+            setIsAdmissionInquiryOpen(true);
+          }}
           aria-label="Chat or Voice Message on WhatsApp"
-          className="group flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white pl-3.5 pr-4 py-2.5 rounded-full shadow-2xl shadow-emerald-900/30 transition-all duration-300 hover:scale-105 active:scale-95"
+          className="group flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white pl-3.5 pr-4 py-2.5 rounded-full shadow-2xl shadow-emerald-900/30 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
         >
           {/* WhatsApp SVG Icon */}
           <svg className="w-7 h-7 text-white fill-current flex-shrink-0" viewBox="0 0 24 24">
@@ -2980,22 +2989,22 @@ export default function SignInView() {
             </div>
           </div>
           <span className="sm:hidden text-xs font-bold text-white">{isHi ? 'व्हाट्सएप' : 'WhatsApp'}</span>
-        </a>
+        </button>
       </div>
 
 
 
     
-      {/* ── 100% WORKING POPUP: ADMISSION INQUIRY MODAL FOR PARENTS ── */}
+      {/* ── 100% RELIABLE IN-PAGE MODAL: ADMISSIONS, INQUIRY & WHATSAPP DESK ── */}
       {isAdmissionInquiryOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto border border-slate-200 shadow-2xl p-5 sm:p-7 relative text-[#0c2340]">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto border border-slate-200 shadow-2xl p-5 sm:p-7 relative text-[#0c2340]">
             
             {/* Close button */}
             <button
               type="button"
               onClick={() => { setIsAdmissionInquiryOpen(false); setInquirySuccess(null); }}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold transition-colors cursor-pointer"
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold transition-colors cursor-pointer z-10"
             >
               <X className="w-5 h-5" />
             </button>
@@ -3007,7 +3016,9 @@ export default function SignInView() {
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <h3 className="text-xl font-black text-[#0c2340]">
-                  {isHi ? 'पूछताछ सफलतापूर्वक जमा हो गई!' : 'Admission Inquiry Submitted!'}
+                  {admissionModalTab === 'online'
+                    ? (isHi ? 'ऑनलाइन आवेदन सफलतापूर्वक प्राप्त हुआ!' : 'Online Admission Form Submitted!')
+                    : (isHi ? 'पूछताछ सफलतापूर्वक दर्ज हो गई!' : 'Admission Inquiry Submitted!')}
                 </h3>
                 <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-[#0c2340] space-y-1">
                   <div className="font-bold">{isHi ? 'आपकी संदर्भ संख्या (Reference No):' : 'Application Reference ID:'}</div>
@@ -3022,178 +3033,549 @@ export default function SignInView() {
                   <a
                     href={`https://wa.me/91${primaryPhone}?text=${encodeURIComponent(
                       isHi
-                        ? `नमस्ते सर, मैंने स्कूल में दाखिले के लिए ऑनलाइन फॉर्म भरा है (Ref: ${inquirySuccess})। कृपया जानकारी दें।`
-                        : `Hello Sir, I submitted an admission inquiry online (Ref: ${inquirySuccess}). Kindly assist with admission details.`
+                        ? `नमस्ते सर, मैंने स्कूल में दाखिले के लिए ऑनलाइन फॉर्म भरा है (Ref: ${inquirySuccess}, विद्यार्थी: ${inquiryForm.studentName || ''}, कक्षा: ${inquiryForm.admissionClass || ''})। कृपया जानकारी दें।`
+                        : `Hello Sir, I submitted an admission form online (Ref: ${inquirySuccess}, Student: ${inquiryForm.studentName || ''}, Class: ${inquiryForm.admissionClass || ''}). Kindly assist with admission details.`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-5 py-2.5 rounded-xl bg-[#25D366] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md"
+                    className="px-5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer"
                   >
-                    <span>{isHi ? 'व्हाट्सएप पर बात करें' : 'Chat on WhatsApp'}</span>
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                    </svg>
+                    <span>{isHi ? 'व्हाट्सएप पर शेयर करें' : 'Share on WhatsApp'}</span>
                   </a>
                   <button
                     type="button"
                     onClick={() => { setIsAdmissionInquiryOpen(false); setInquirySuccess(null); }}
                     className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0c2340] font-bold text-xs cursor-pointer"
                   >
-                    {isHi ? 'बंद करें' : 'Close'}
+                    {isHi ? 'पूर्ण हुआ (Close)' : 'Done'}
                   </button>
                 </div>
               </div>
             ) : (
-              /* Inquiry Form */
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!inquiryForm.studentName || !inquiryForm.mobile) {
-                    alert(isHi ? 'कृपया विद्यार्थी का नाम और मोबाइल नंबर भरें।' : 'Please enter Student Name and Mobile.');
-                    return;
-                  }
-                  setInquiryLoading(true);
-                  const refId = `MNP-ADM-${Date.now().toString().slice(-6)}`;
-                  try {
-                    const { db } = await import('../lib/firebase');
-                    const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-                    await addDoc(collection(db, 'admissionEnquiries'), {
-                      refNo: refId,
-                      studentName: inquiryForm.studentName,
-                      fatherName: inquiryForm.fatherName,
-                      mobile: inquiryForm.mobile,
-                      admissionClass: inquiryForm.admissionClass,
-                      address: inquiryForm.address,
-                      message: inquiryForm.message,
-                      status: 'pending',
-                      createdAt: serverTimestamp()
-                    });
-                  } catch (err) {
-                    console.warn('Saved inquiry locally:', err);
-                  }
-                  setInquiryLoading(false);
-                  setInquirySuccess(refId);
-                }}
-                className="space-y-4 pt-1"
-              >
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+              <div className="space-y-4 pt-1">
+                {/* Modal Title Bar */}
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-3 pr-8">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold flex-shrink-0">
                     <GraduationCap className="w-5 h-5 text-[#F4B323]" />
                   </div>
                   <div>
                     <h3 className="text-base font-black text-[#0c2340]">
-                      {isHi ? 'प्रवेश पूछताछ फॉर्म (सत्र 2026-27)' : 'Admission Inquiry Form 2026-27'}
+                      {isHi ? `दाखिला सहायता केंद्र (सत्र ${currentSession})` : `Admission & Help Desk (${currentSession})`}
                     </h3>
                     <p className="text-[11px] text-slate-500">
-                      {isHi ? 'मोरा-मैरी कैंपस · नर्सरी से 8वीं कक्षा' : 'Mora-Mairi Campus · Classes Nursery to 8th'}
+                      {isHi ? `मोरा-मैरी कैंपस · कक्षा ${admissionClasses}` : `Mora-Mairi Campus · Classes ${admissionClasses}`}
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      {isHi ? 'विद्यार्थी का नाम (Student Name) *' : 'Student Name *'}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder={isHi ? 'जैसे: राहुल कुमार' : 'e.g. Rahul Kumar'}
-                      value={inquiryForm.studentName}
-                      onChange={(e) => setInquiryForm({ ...inquiryForm, studentName: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-xs"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        {isHi ? 'पिता / अभिभावक का नाम' : 'Father / Guardian Name'}
-                      </label>
-                      <input
-                        type="text"
-                        placeholder={isHi ? 'जैसे: राजेश कुमार' : 'e.g. Rajesh Kumar'}
-                        value={inquiryForm.fatherName}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, fatherName: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        {isHi ? 'मोबाइल नंबर (Mobile) *' : 'Mobile Number *'}
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        maxLength={10}
-                        placeholder="10-digit number"
-                        value={inquiryForm.mobile}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, mobile: e.target.value.replace(/\D/g, '') })}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        {isHi ? 'कक्षा (Admission Class)' : 'Class'}
-                      </label>
-                      <select
-                        value={inquiryForm.admissionClass}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, admissionClass: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs bg-white"
-                      >
-                        {['Nursery', 'LKG', 'UKG', 'Class 1st', 'Class 2nd', 'Class 3rd', 'Class 4th', 'Class 5th', 'Class 6th', 'Class 7th', 'Class 8th'].map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        {isHi ? 'गांव / पता (Village / Address)' : 'Village / Address'}
-                      </label>
-                      <input
-                        type="text"
-                        placeholder={isHi ? 'जैसे: मोरा / मैरी / रतौली' : 'e.g. Mora / Mairi / Siwan'}
-                        value={inquiryForm.address}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, address: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      {isHi ? 'कोई संदेश या प्रश्न (Message / Remarks)' : 'Message (Optional)'}
-                    </label>
-                    <textarea
-                      rows={2}
-                      placeholder={isHi ? 'दाखिले या बस सुविधा से जुड़ा कोई सवाल...' : 'Any queries about admission, fees, or transport...'}
-                      value={inquiryForm.message}
-                      onChange={(e) => setInquiryForm({ ...inquiryForm, message: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                {/* 3 Unified Tabs */}
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-2xl text-xs font-bold text-slate-600">
                   <button
                     type="button"
-                    onClick={() => setIsAdmissionInquiryOpen(false)}
-                    className="px-4 py-2.5 rounded-xl text-slate-600 font-bold hover:bg-slate-100 transition-colors cursor-pointer text-xs"
+                    onClick={() => setAdmissionModalTab('online')}
+                    className={`py-2 px-1 rounded-xl transition-all text-center truncate cursor-pointer ${
+                      admissionModalTab === 'online'
+                        ? 'bg-white text-[#0c2340] shadow-sm font-black'
+                        : 'hover:text-slate-900'
+                    }`}
                   >
-                    {isHi ? 'रद्द करें' : 'Cancel'}
+                    🎓 {isHi ? 'ऑनलाइन फॉर्म' : 'Apply Online'}
                   </button>
                   <button
-                    type="submit"
-                    disabled={inquiryLoading}
-                    className="px-6 py-2.5 rounded-xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-xs transition-all shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                    type="button"
+                    onClick={() => setAdmissionModalTab('inquiry')}
+                    className={`py-2 px-1 rounded-xl transition-all text-center truncate cursor-pointer ${
+                      admissionModalTab === 'inquiry'
+                        ? 'bg-white text-[#0c2340] shadow-sm font-black'
+                        : 'hover:text-slate-900'
+                    }`}
                   >
-                    <span>{inquiryLoading ? (isHi ? 'जमा हो रहा है...' : 'Submitting...') : (isHi ? 'पूछताछ जमा करें' : 'Submit Inquiry')}</span>
-                    <ArrowRight className="w-4 h-4" />
+                    📝 {isHi ? 'पूछताछ फॉर्म' : 'Quick Inquiry'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdmissionModalTab('whatsapp')}
+                    className={`py-2 px-1 rounded-xl transition-all text-center truncate cursor-pointer ${
+                      admissionModalTab === 'whatsapp'
+                        ? 'bg-[#25D366] text-white shadow-sm font-black'
+                        : 'hover:text-emerald-700'
+                    }`}
+                  >
+                    💬 {isHi ? 'व्हाट्सएप' : 'WhatsApp'}
                   </button>
                 </div>
-              </form>
+
+                {/* ── TAB 1: FULL ONLINE ADMISSION FORM ── */}
+                {admissionModalTab === 'online' && (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!inquiryForm.studentName?.trim() || !inquiryForm.mobile?.trim()) {
+                        alert(isHi ? 'कृपया विद्यार्थी का नाम और मोबाइल नंबर भरें।' : 'Please enter Student Name and Mobile.');
+                        return;
+                      }
+                      setInquiryLoading(true);
+                      const refId = `MNP-ADM-${Date.now().toString().slice(-6)}`;
+                      const targetSchoolId = getActiveSchoolId() || 'SCHOOL_007';
+                      const payload = {
+                        refNo: refId,
+                        studentName: inquiryForm.studentName.trim(),
+                        fatherName: (inquiryForm.fatherName || '').trim(),
+                        mobile: inquiryForm.mobile.trim(),
+                        admissionClass: inquiryForm.admissionClass || 'Nursery',
+                        gender: inquiryForm.gender || 'Male',
+                        dob: inquiryForm.dob || '',
+                        address: (inquiryForm.address || '').trim(),
+                        transportRequired: inquiryForm.transportRequired || 'No',
+                        previousSchool: (inquiryForm.previousSchool || '').trim(),
+                        message: (inquiryForm.message || '').trim(),
+                        status: 'pending',
+                        type: 'student_admission_enquiry',
+                        schoolId: targetSchoolId,
+                        createdAt: serverTimestamp(),
+                        submittedAt: new Date().toISOString()
+                      };
+                      try {
+                        await setDoc(doc(db, 'schoolDirectory', targetSchoolId, 'admissionEnquiries', refId), payload);
+                        if (targetSchoolId !== 'SCHOOL_007') {
+                          try { await setDoc(doc(db, 'schoolDirectory', 'SCHOOL_007', 'admissionEnquiries', refId), payload); } catch (_) {}
+                        }
+                        try { await setDoc(doc(db, 'admissionEnquiries', refId), payload); } catch (_) {}
+                      } catch (err) {
+                        console.warn('Saved admission enquiry locally:', err);
+                      }
+                      setInquiryLoading(false);
+                      setInquirySuccess(refId);
+                    }}
+                    className="space-y-3.5 text-xs pt-1"
+                  >
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        {isHi ? 'विद्यार्थी का नाम (Student Full Name) *' : 'Student Full Name *'}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder={isHi ? 'जैसे: आर्यन कुमार' : 'e.g. Aryan Kumar'}
+                        value={inquiryForm.studentName}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, studentName: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-xs"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'दाखिला कक्षा (Class) *' : 'Class for Admission *'}
+                        </label>
+                        <select
+                          value={inquiryForm.admissionClass}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, admissionClass: e.target.value })}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs bg-white font-medium"
+                        >
+                          {['Nursery', 'LKG', 'UKG', 'Class 1st', 'Class 2nd', 'Class 3rd', 'Class 4th', 'Class 5th', 'Class 6th', 'Class 7th', 'Class 8th'].map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'लिंग (Gender)' : 'Gender'}
+                        </label>
+                        <select
+                          value={inquiryForm.gender || 'Male'}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, gender: e.target.value })}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs bg-white"
+                        >
+                          <option value="Male">{isHi ? 'छात्र (Boy)' : 'Male'}</option>
+                          <option value="Female">{isHi ? 'छात्रा (Girl)' : 'Female'}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'जन्म तिथि (DOB)' : 'Date of Birth'}
+                        </label>
+                        <input
+                          type="date"
+                          value={inquiryForm.dob || ''}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, dob: e.target.value })}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'पिता / अभिभावक का नाम *' : 'Father / Guardian Name *'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder={isHi ? 'जैसे: राजेश कुमार' : 'e.g. Rajesh Kumar'}
+                          value={inquiryForm.fatherName}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, fatherName: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'मोबाइल नंबर (Mobile) *' : 'Contact Mobile Number *'}
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          maxLength={10}
+                          placeholder="10-digit mobile"
+                          value={inquiryForm.mobile}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, mobile: e.target.value.replace(/\D/g, '') })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'गांव / शहर का पता' : 'Village / Address'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={isHi ? 'जैसे: मोरा / मैरी / महाराजगंज' : 'e.g. Mora / Mairi / Siwan'}
+                          value={inquiryForm.address}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, address: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'स्कूल बस सुविधा चाहिए?' : 'School Bus / Transport?'}
+                        </label>
+                        <select
+                          value={inquiryForm.transportRequired || 'No'}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, transportRequired: e.target.value })}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs bg-white"
+                        >
+                          <option value="No">{isHi ? 'नहीं (स्वयं लाएंगे)' : 'No (Self Transport)'}</option>
+                          <option value="Yes">{isHi ? 'हाँ, स्कूल बस चाहिए' : 'Yes, Need School Bus'}</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        {isHi ? 'पिछला विद्यालय (यदि लागू हो)' : 'Previous School (Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={isHi ? 'पूर्व स्कूल का नाम...' : 'Previous school name, if any...'}
+                        value={inquiryForm.previousSchool || ''}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, previousSchool: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs"
+                      />
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setIsAdmissionInquiryOpen(false)}
+                        className="px-4 py-2.5 rounded-xl text-slate-600 font-bold hover:bg-slate-100 cursor-pointer text-xs"
+                      >
+                        {isHi ? 'रद्द करें' : 'Cancel'}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={inquiryLoading}
+                        className="px-6 py-2.5 rounded-xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-xs transition-all shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <span>{inquiryLoading ? (isHi ? 'जमा हो रहा है...' : 'Submitting...') : (isHi ? 'ऑनलाइन आवेदन जमा करें' : 'Submit Admission Form')}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* ── TAB 2: QUICK INQUIRY FORM ── */}
+                {admissionModalTab === 'inquiry' && (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!inquiryForm.studentName?.trim() || !inquiryForm.mobile?.trim()) {
+                        alert(isHi ? 'कृपया विद्यार्थी का नाम और मोबाइल नंबर भरें।' : 'Please enter Student Name and Mobile.');
+                        return;
+                      }
+                      setInquiryLoading(true);
+                      const refId = `MNP-ADM-${Date.now().toString().slice(-6)}`;
+                      const targetSchoolId = getActiveSchoolId() || 'SCHOOL_007';
+                      const payload = {
+                        refNo: refId,
+                        studentName: inquiryForm.studentName.trim(),
+                        fatherName: (inquiryForm.fatherName || '').trim(),
+                        mobile: inquiryForm.mobile.trim(),
+                        admissionClass: inquiryForm.admissionClass || 'Nursery',
+                        address: (inquiryForm.address || '').trim(),
+                        message: (inquiryForm.message || '').trim(),
+                        status: 'pending',
+                        type: 'quick_inquiry',
+                        schoolId: targetSchoolId,
+                        createdAt: serverTimestamp(),
+                        submittedAt: new Date().toISOString()
+                      };
+                      try {
+                        await setDoc(doc(db, 'schoolDirectory', targetSchoolId, 'admissionEnquiries', refId), payload);
+                        if (targetSchoolId !== 'SCHOOL_007') {
+                          try { await setDoc(doc(db, 'schoolDirectory', 'SCHOOL_007', 'admissionEnquiries', refId), payload); } catch (_) {}
+                        }
+                        try { await setDoc(doc(db, 'admissionEnquiries', refId), payload); } catch (_) {}
+                      } catch (err) {
+                        console.warn('Saved inquiry locally:', err);
+                      }
+                      setInquiryLoading(false);
+                      setInquirySuccess(refId);
+                    }}
+                    className="space-y-3.5 text-xs pt-1"
+                  >
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        {isHi ? 'विद्यार्थी का नाम (Student Name) *' : 'Student Name *'}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder={isHi ? 'जैसे: राहुल कुमार' : 'e.g. Rahul Kumar'}
+                        value={inquiryForm.studentName}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, studentName: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-xs"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'पिता / अभिभावक का नाम' : 'Father / Guardian Name'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={isHi ? 'जैसे: राजेश कुमार' : 'e.g. Rajesh Kumar'}
+                          value={inquiryForm.fatherName}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, fatherName: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'मोबाइल नंबर (Mobile) *' : 'Mobile Number *'}
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          maxLength={10}
+                          placeholder="10-digit number"
+                          value={inquiryForm.mobile}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, mobile: e.target.value.replace(/\D/g, '') })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'कक्षा (Admission Class)' : 'Class'}
+                        </label>
+                        <select
+                          value={inquiryForm.admissionClass}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, admissionClass: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs bg-white"
+                        >
+                          {['Nursery', 'LKG', 'UKG', 'Class 1st', 'Class 2nd', 'Class 3rd', 'Class 4th', 'Class 5th', 'Class 6th', 'Class 7th', 'Class 8th'].map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'गांव / पता (Village / Address)' : 'Village / Address'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={isHi ? 'जैसे: मोरा / मैरी / रतौली' : 'e.g. Mora / Mairi / Siwan'}
+                          value={inquiryForm.address}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, address: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        {isHi ? 'कोई संदेश या प्रश्न (Message / Remarks)' : 'Message (Optional)'}
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder={isHi ? 'दाखिले या बस सुविधा से जुड़ा कोई सवाल...' : 'Any queries about admission, fees, or transport...'}
+                        value={inquiryForm.message}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, message: e.target.value })}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-amber-500 outline-none text-xs"
+                      />
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setIsAdmissionInquiryOpen(false)}
+                        className="px-4 py-2.5 rounded-xl text-slate-600 font-bold hover:bg-slate-100 cursor-pointer text-xs"
+                      >
+                        {isHi ? 'रद्द करें' : 'Cancel'}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={inquiryLoading}
+                        className="px-6 py-2.5 rounded-xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-xs transition-all shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <span>{inquiryLoading ? (isHi ? 'जमा हो रहा है...' : 'Submitting...') : (isHi ? 'पूछताछ जमा करें' : 'Submit Inquiry')}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* ── TAB 3: IN-PAGE WHATSAPP DESK ── */}
+                {admissionModalTab === 'whatsapp' && (
+                  <div className="space-y-4 text-xs pt-1">
+                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/60 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-bold text-emerald-950">
+                          {isHi ? 'मिशन नवोदय पब्लिक स्कूल व्हाट्सएप डेस्क' : 'MNP School WhatsApp Admission Desk'}
+                        </div>
+                        <div className="text-[11px] text-emerald-700 font-mono font-bold">
+                          +91 {primaryPhone}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block font-bold text-slate-700">
+                        {isHi ? 'पूछताछ का विषय चुनें (Choose Topic):' : 'Select Inquiry Topic:'}
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {[
+                          { id: 'admission', labelHi: '🎓 नए एडमिशन की जानकारी', labelEn: '🎓 New Admission 2026-27' },
+                          { id: 'fees', labelHi: '💳 फीस संरचना एवं स्टडी किट', labelEn: '💳 Fee Structure & Kit' },
+                          { id: 'bus', labelHi: '🚌 बस सुविधा और रूट', labelEn: '🚌 Bus Routes & Timings' },
+                          { id: 'test', labelHi: '📝 प्रवेश संवाद एवं दस्तावेज', labelEn: '📝 Documents & Assessment' },
+                        ].map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setWaTopic(t.id)}
+                            className={`p-2.5 rounded-xl border text-left font-medium transition-all cursor-pointer ${
+                              waTopic === t.id
+                                ? 'border-[#25D366] bg-emerald-50/70 text-emerald-900 font-bold shadow-xs'
+                                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            {isHi ? t.labelHi : t.labelEn}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'आपका नाम (Parent Name)' : 'Parent Name'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={isHi ? 'जैसे: राजेश कुमार' : 'e.g. Rajesh Kumar'}
+                          value={inquiryForm.fatherName}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, fatherName: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-500 outline-none text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          {isHi ? 'विद्यार्थी की कक्षा (Class)' : 'Student Class'}
+                        </label>
+                        <select
+                          value={inquiryForm.admissionClass}
+                          onChange={(e) => setInquiryForm({ ...inquiryForm, admissionClass: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-500 outline-none text-xs bg-white"
+                        >
+                          {['Nursery', 'LKG', 'UKG', 'Class 1st', 'Class 2nd', 'Class 3rd', 'Class 4th', 'Class 5th', 'Class 6th', 'Class 7th', 'Class 8th'].map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        {isHi ? 'अतिरिक्त संदेश (वैकल्पिक)' : 'Custom Note (Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={isHi ? 'जैसे: हम मोरा गांव से बोल रहे हैं...' : 'e.g. Inquiring from Mora village...'}
+                        value={waCustomMsg}
+                        onChange={(e) => setWaCustomMsg(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-500 outline-none text-xs"
+                      />
+                    </div>
+
+                    <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const topicText =
+                            waTopic === 'fees'
+                              ? (isHi ? 'फीस संरचना और स्टडी किट की जानकारी' : 'Fee structure and study kit details')
+                              : waTopic === 'bus'
+                              ? (isHi ? 'स्कूल बस रूट और टाइमिंग की जानकारी' : 'School bus routes and pickup timing')
+                              : waTopic === 'test'
+                              ? (isHi ? 'प्रवेश प्रक्रिया और आवश्यक दस्तावेज' : 'Admission assessment and documents')
+                              : (isHi ? 'सत्र 2026-27 नए दाखिले की जानकारी' : 'Session 2026-27 new admission details');
+                          
+                          const text = isHi
+                            ? `नमस्ते सर, मैं मिशन नवोदय पब्लिक स्कूल (मोरा-मैरी) में ${topicText} के संबंध में संपर्क कर रहा/रही हूँ।${inquiryForm.fatherName ? `\nअभिभावक: ${inquiryForm.fatherName}` : ''}${inquiryForm.studentName ? `\nविद्यार्थी: ${inquiryForm.studentName}` : ''}\nकक्षा: ${inquiryForm.admissionClass}${waCustomMsg ? `\nनोट: ${waCustomMsg}` : ''}`
+                            : `Hello Sir, I am contacting Mission Navodaya Public School, Mora-Mairi regarding ${topicText}.${inquiryForm.fatherName ? `\nParent: ${inquiryForm.fatherName}` : ''}${inquiryForm.studentName ? `\nStudent: ${inquiryForm.studentName}` : ''}\nClass: ${inquiryForm.admissionClass}${waCustomMsg ? `\nNote: ${waCustomMsg}` : ''}`;
+
+                          window.open(`https://wa.me/91${primaryPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                        }}
+                        className="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-transform hover:scale-101 active:scale-98"
+                      >
+                        <svg className="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24">
+                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                        </svg>
+                        <span>{isHi ? 'व्हाट्सएप चैट खोलें (Open WhatsApp)' : 'Open WhatsApp Chat'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAdmissionModalTab('online')}
+                        className="w-full sm:w-auto py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0c2340] font-bold text-xs whitespace-nowrap cursor-pointer"
+                      >
+                        {isHi ? 'या ऑनलाइन फॉर्म भरें' : 'Or Fill Online Form'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
           </div>
