@@ -659,7 +659,8 @@ export function GalleryPageView({ isHi, galleryItems }) {
 
   const photos = (galleryItems && galleryItems.length > 0)
     ? galleryItems.map(g => ({
-        title: g.title,
+        title: isHi ? (g.titleHi || g.title) : (g.titleEn || g.title),
+        description: isHi ? (g.descriptionHi || g.description) : (g.descriptionEn || g.description),
         category: g.category || 'campus',
         src: g.imageUrl || g.src || '/school_campus_banner.jpg'
       }))

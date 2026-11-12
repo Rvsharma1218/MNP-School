@@ -7,22 +7,22 @@ const nextConfig = {
     return [
       {
         source: '/MNP_School_arm64-v8a.apk',
-        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build10/MNP_School_arm64-v8a.apk',
+        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_arm64-v8a.apk',
         permanent: false,
       },
       {
         source: '/app-arm64-v8a-release.apk',
-        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build10/MNP_School_arm64-v8a.apk',
+        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_arm64-v8a.apk',
         permanent: false,
       },
       {
         source: '/MNP_School_armeabi-v7a.apk',
-        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build10/MNP_School_armeabi-v7a.apk',
+        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_armeabi-v7a.apk',
         permanent: false,
       },
       {
         source: '/app-armeabi-v7a-release.apk',
-        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build10/MNP_School_armeabi-v7a.apk',
+        destination: 'https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_armeabi-v7a.apk',
         permanent: false,
       },
     ];
@@ -37,6 +37,12 @@ const nextConfig = {
           { key: 'Content-Disposition', value: 'attachment' },
           { key: 'Accept-Ranges', value: 'bytes' },
           { key: 'Cache-Control', value: 'public, max-age=3600, s-maxage=31536000, stale-while-revalidate' },
+        ],
+      },
+      {
+        source: '/:all*(svg|jpg|jpeg|png|webp|ico|woff|woff2|ttf)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
     ];

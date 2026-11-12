@@ -24,6 +24,34 @@ import {
   TrendingUp, QrCode, CheckCircle as CheckIcon, Smartphone, Download
 } from 'lucide-react';
 
+// Smart CMS Bilingual & Deletion Field Resolver
+function resolveCmsField(obj, keyBase, fallbackEn, fallbackHi, isHi) {
+  if (!obj) return isHi ? (fallbackHi ?? '') : (fallbackEn ?? '');
+  const raw = obj[keyBase];
+  const rawEn = obj[`${keyBase}En`];
+  const rawHi = obj[`${keyBase}Hi`];
+
+  // If the admin deliberately cleared/deleted the field:
+  const isExplicitlyCleared =
+    (raw !== undefined && String(raw).trim() === '') &&
+    (rawEn === undefined || String(rawEn).trim() === '') &&
+    (rawHi === undefined || String(rawHi).trim() === '');
+
+  if (isExplicitlyCleared) return '';
+
+  if (isHi) {
+    if (rawHi !== undefined && String(rawHi).trim() !== '') return String(rawHi).trim();
+    if (raw !== undefined && String(raw).trim() !== '') return String(raw).trim();
+    if (rawEn !== undefined && String(rawEn).trim() !== '') return String(rawEn).trim();
+    return raw === undefined ? (fallbackHi ?? '') : '';
+  } else {
+    if (rawEn !== undefined && String(rawEn).trim() !== '') return String(rawEn).trim();
+    if (raw !== undefined && String(raw).trim() !== '') return String(raw).trim();
+    if (rawHi !== undefined && String(rawHi).trim() !== '') return String(rawHi).trim();
+    return raw === undefined ? (fallbackEn ?? '') : '';
+  }
+}
+
 export default function SignInView() {
   const {
     signIn,
@@ -71,32 +99,68 @@ export default function SignInView() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Live Website CMS Dynamic State (Synced in Real-Time with Admin App)
-  const [websiteConfig, setWebsiteConfig] = useState(null);
-  const [websiteGallery, setWebsiteGallery] = useState([]);
-  const [websiteReviews, setWebsiteReviews] = useState([]);
-  const [websiteLeadership, setWebsiteLeadership] = useState([]);
+  // Live Website CMS Dynamic State (Synced in Real-Time with Admin App & Cached Offline)
+  const [websiteConfig, setWebsiteConfig] = useState(() => {
+    try {
+      const cached = typeof window !== 'undefined' ? localStorage.getItem('mnp_cache_website_config') : null;
+      return cached ? JSON.parse(cached) : null;
+    } catch (_) { return null; }
+  });
+  const [websiteGallery, setWebsiteGallery] = useState(() => {
+    try {
+      const cached = typeof window !== 'undefined' ? localStorage.getItem('mnp_cache_website_gallery') : null;
+      return cached ? JSON.parse(cached) : [];
+    } catch (_) { return []; }
+  });
+  const [websiteReviews, setWebsiteReviews] = useState(() => {
+    try {
+      const cached = typeof window !== 'undefined' ? localStorage.getItem('mnp_cache_website_reviews') : null;
+      return cached ? JSON.parse(cached) : [];
+    } catch (_) { return []; }
+  });
+  const [websiteLeadership, setWebsiteLeadership] = useState(() => {
+    try {
+      const cached = typeof window !== 'undefined' ? localStorage.getItem('mnp_cache_website_leadership') : null;
+      return cached ? JSON.parse(cached) : [];
+    } catch (_) { return []; }
+  });
   const [isPopupAlertDismissed, setIsPopupAlertDismissed] = useState(false);
 
   useEffect(() => {
     // 1. Live Website Config (Banner Style, Marquee, Emergency Popup)
     const unsubConfig = onSnapshot(doc(db, 'schoolDirectory', 'website_config'), (snap) => {
-      if (snap.exists()) setWebsiteConfig(snap.data());
+      if (snap.exists()) {
+        const data = snap.data();
+        setWebsiteConfig(data);
+        try { localStorage.setItem('mnp_cache_website_config', JSON.stringify(data)); } catch (_) {}
+      }
     }, () => {});
 
     // 2. Live Photo Gallery
     const unsubGallery = onSnapshot(doc(db, 'schoolDirectory', 'website_gallery'), (snap) => {
-      if (snap.exists()) setWebsiteGallery(snap.data()?.items || []);
+      if (snap.exists()) {
+        const items = snap.data()?.items || [];
+        setWebsiteGallery(items);
+        try { localStorage.setItem('mnp_cache_website_gallery', JSON.stringify(items)); } catch (_) {}
+      }
     }, () => {});
 
     // 3. Live Parent Reviews & Ratings
     const unsubReviews = onSnapshot(doc(db, 'schoolDirectory', 'website_reviews'), (snap) => {
-      if (snap.exists()) setWebsiteReviews(snap.data()?.items || []);
+      if (snap.exists()) {
+        const items = snap.data()?.items || [];
+        setWebsiteReviews(items);
+        try { localStorage.setItem('mnp_cache_website_reviews', JSON.stringify(items)); } catch (_) {}
+      }
     }, () => {});
 
     // 4. Live Leadership & Staff
     const unsubLeadership = onSnapshot(doc(db, 'schoolDirectory', 'website_leadership'), (snap) => {
-      if (snap.exists()) setWebsiteLeadership(snap.data()?.items || []);
+      if (snap.exists()) {
+        const items = snap.data()?.items || [];
+        setWebsiteLeadership(items);
+        try { localStorage.setItem('mnp_cache_website_leadership', JSON.stringify(items)); } catch (_) {}
+      }
     }, () => {});
 
     return () => {
@@ -223,93 +287,129 @@ export default function SignInView() {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 0. LIVE FLASH MARQUEE / BREAKING NEWS BAR (Controlled via App)*/}
       {/* ───────────────────────────────────────────────────────────── */}
-      {websiteConfig?.flashNotice?.enabled && (websiteConfig?.flashNotice?.text || websiteConfig?.flashNotice?.textEn) && (
-        <div className="bg-gradient-to-r from-red-700 via-amber-600 to-red-700 text-white text-[11px] sm:text-xs font-bold py-1.5 px-4 overflow-hidden relative shadow-md flex items-center justify-between gap-3 border-b border-red-800/40">
-          <div className="flex items-center gap-2.5 overflow-hidden flex-1">
-            <span className="flex-shrink-0 bg-white text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs tracking-wider animate-pulse flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping inline-block" />
-              {isHi
-                ? (websiteConfig.flashNotice.badgeHi || websiteConfig.flashNotice.badge || 'नवीन सूचना')
-                : (websiteConfig.flashNotice.badgeEn || (!/[\u0900-\u097F]/.test(websiteConfig.flashNotice.badge || '') ? websiteConfig.flashNotice.badge : null) || 'FLASH NOTICE')
-              }
-            </span>
-            <div className="truncate text-slate-100 font-semibold tracking-wide">
-              {isHi
-                ? (websiteConfig.flashNotice.textHi || websiteConfig.flashNotice.text || '📢 सत्र 2026-27 के लिए नवीन नामांकन प्रारंभ है। सीमित सीटें उपलब्ध। विशेष नवोदय प्रवेश परीक्षा तैयारी बैच।')
-                : (websiteConfig.flashNotice.textEn || (!/[\u0900-\u097F]/.test(websiteConfig.flashNotice.text || '') ? websiteConfig.flashNotice.text : null) || '📢 Admissions Open for Session 2026-27. Limited seats available. Special Navodaya entrance prep batch. Helpline: +91 8603481865')
-              }
+      {websiteConfig?.flashNotice?.enabled && (() => {
+        const fBadge = resolveCmsField(
+          websiteConfig?.flashNotice,
+          'badge',
+          'FLASH NOTICE',
+          'नवीन सूचना',
+          isHi
+        );
+        const fText = resolveCmsField(
+          websiteConfig?.flashNotice,
+          'text',
+          '📢 Admissions Open for Session 2026-27. Limited seats available. Special Navodaya entrance prep batch. Helpline: +91 8603481865',
+          '📢 सत्र 2026-27 के लिए नवीन नामांकन प्रारंभ है। सीमित सीटें उपलब्ध। विशेष नवोदय प्रवेश परीक्षा तैयारी बैच।',
+          isHi
+        );
+        if (!fText) return null;
+        return (
+          <div className="bg-gradient-to-r from-red-700 via-amber-600 to-red-700 text-white text-[11px] sm:text-xs font-bold py-1.5 px-4 overflow-hidden relative shadow-md flex items-center justify-between gap-3 border-b border-red-800/40">
+            <div className="flex items-center gap-2.5 overflow-hidden flex-1">
+              {fBadge && (
+                <span className="flex-shrink-0 bg-white text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs tracking-wider animate-pulse flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping inline-block" />
+                  {fBadge}
+                </span>
+              )}
+              <div className="truncate text-slate-100 font-semibold tracking-wide">
+                {fText}
+              </div>
             </div>
+            <a
+              href={`tel:${primaryPhone}`}
+              className="flex-shrink-0 hidden md:inline-flex items-center gap-1.5 text-[11px] font-black bg-black/25 hover:bg-black/40 text-amber-300 px-3 py-0.5 rounded-full border border-white/20 transition-colors"
+            >
+              <Phone className="w-3 h-3 text-amber-300" />
+              <span>{isHi ? 'हेल्पलाइन:' : 'Helpline:'} +91 {primaryPhone}</span>
+            </a>
           </div>
-          <a
-            href={`tel:${primaryPhone}`}
-            className="flex-shrink-0 hidden md:inline-flex items-center gap-1.5 text-[11px] font-black bg-black/25 hover:bg-black/40 text-amber-300 px-3 py-0.5 rounded-full border border-white/20 transition-colors"
-          >
-            <Phone className="w-3 h-3 text-amber-300" />
-            <span>{isHi ? 'हेल्पलाइन:' : 'Helpline:'} +91 {primaryPhone}</span>
-          </a>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 0B. EMERGENCY POPUP MODAL (Controlled via Admin App)          */}
       {/* ───────────────────────────────────────────────────────────── */}
-      {websiteConfig?.popupAlert?.enabled && !isPopupAlertDismissed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4 relative animate-scaleUp">
-            <button
-              onClick={() => setIsPopupAlertDismissed(true)}
-              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              aria-label="Close"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
-                {isHi
-                  ? (websiteConfig.popupAlert.badgeHi || websiteConfig.popupAlert.badge || 'विशेष विद्यालय सूचना')
-                  : (websiteConfig.popupAlert.badgeEn || (!/[\u0900-\u097F]/.test(websiteConfig.popupAlert.badge || '') ? websiteConfig.popupAlert.badge : null) || 'SCHOOL ANNOUNCEMENT')
-                }
-              </span>
-            </div>
-            <h3 className="text-xl font-black text-[#0c2340] tracking-tight">
-              {isHi
-                ? (websiteConfig.popupAlert.titleHi || websiteConfig.popupAlert.title || 'आवश्यक विद्यालय सूचना')
-                : (websiteConfig.popupAlert.titleEn || (!/[\u0900-\u097F]/.test(websiteConfig.popupAlert.title || '') ? websiteConfig.popupAlert.title : null) || 'Official Notice')
-              }
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-              {isHi
-                ? (websiteConfig.popupAlert.messageHi || websiteConfig.popupAlert.message || 'सत्र 2026-27 हेतु कक्षा नर्सरी से 8वीं तक में नामांकन हेतु ऑनलाइन आवेदन स्वीकार किए जा रहे हैं।')
-                : (websiteConfig.popupAlert.messageEn || (!/[\u0900-\u097F]/.test(websiteConfig.popupAlert.message || '') ? websiteConfig.popupAlert.message : null) || 'Online admissions for Session 2026-27 are now open from Nursery to Class 8th. Limited seats available.')
-              }
-            </p>
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
-              <button
-                onClick={() => {
-                  setIsPopupAlertDismissed(true);
-                  if (setSignUpFormTab) setSignUpFormTab('student');
-                  navigate('/signup?tab=admission');
-                }}
-                className="px-5 py-2.5 rounded-xl bg-[#0c2340] hover:bg-[#143763] text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
-              >
-                <span>
-                  {isHi
-                    ? (websiteConfig.popupAlert.actionTextHi || websiteConfig.popupAlert.actionText || 'नामांकन फॉर्म भरें →')
-                    : (websiteConfig.popupAlert.actionTextEn || (!/[\u0900-\u097F]/.test(websiteConfig.popupAlert.actionText || '') ? websiteConfig.popupAlert.actionText : null) || 'Apply Online →')
-                  }
-                </span>
-              </button>
+      {websiteConfig?.popupAlert?.enabled && !isPopupAlertDismissed && (() => {
+        const pBadge = resolveCmsField(
+          websiteConfig?.popupAlert,
+          'badge',
+          'SCHOOL ANNOUNCEMENT',
+          'विशेष विद्यालय सूचना',
+          isHi
+        );
+        const pTitle = resolveCmsField(
+          websiteConfig?.popupAlert,
+          'title',
+          'Official Notice',
+          'आवश्यक विद्यालय सूचना',
+          isHi
+        );
+        const pMsg = resolveCmsField(
+          websiteConfig?.popupAlert,
+          'message',
+          'Online admissions for Session 2026-27 are now open from Nursery to Class 8th. Limited seats available.',
+          'सत्र 2026-27 हेतु कक्षा नर्सरी से 8वीं तक में नामांकन हेतु ऑनलाइन आवेदन स्वीकार किए जा रहे हैं।',
+          isHi
+        );
+        const pAction = resolveCmsField(
+          websiteConfig?.popupAlert,
+          'actionText',
+          'Apply Online →',
+          'नामांकन फॉर्म भरें →',
+          isHi
+        );
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4 relative animate-scaleUp">
               <button
                 onClick={() => setIsPopupAlertDismissed(true)}
-                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label="Close"
               >
-                {isHi ? 'बंद करें' : 'Close'}
+                <X className="w-5 h-5" />
               </button>
+              {pBadge && (
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
+                    {pBadge}
+                  </span>
+                </div>
+              )}
+              {pTitle && (
+                <h3 className="text-xl font-black text-[#0c2340] tracking-tight">
+                  {pTitle}
+                </h3>
+              )}
+              {pMsg && (
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+                  {pMsg}
+                </p>
+              )}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setIsPopupAlertDismissed(true)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                >
+                  {isHi ? 'बंद करें' : 'Close'}
+                </button>
+                <button
+                  onClick={() => {
+                    setIsPopupAlertDismissed(true);
+                    if (setSignUpFormTab) setSignUpFormTab('student');
+                    navigate('/signup?tab=admission');
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-[#0c2340] hover:bg-[#143763] text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+                >
+                  <span>{pAction || (isHi ? 'नामांकन फॉर्म भरें →' : 'Apply Online →')}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 1. TOP ANNOUNCEMENT STRIP (Navy #102747 + Gold #F4B323)       */}
@@ -1025,17 +1125,29 @@ export default function SignInView() {
                   const bStyle = bConf.style || 'royal_navy';
                   const bSession = bConf.session || currentSession || '2026-27';
                   const bClasses = bConf.classes || admissionClasses || 'Nursery to 8th';
-                  const bTag = isHi
-                    ? (bConf.tagTextHi || bConf.tagText || 'विशेष छात्रवृत्ति एवं प्रारंभिक नामांकन छूट उपलब्ध')
-                    : (bConf.tagTextEn || (!/[\u0900-\u097F]/.test(bConf.tagText || '') ? bConf.tagText : null) || 'Special Scholarship & Early Admission Offer Available');
+                  const bTag = resolveCmsField(
+                    bConf,
+                    'tagText',
+                    'Special Scholarship & Early Admission Offer Available',
+                    'विशेष छात्रवृत्ति एवं प्रारंभिक नामांकन छूट उपलब्ध',
+                    isHi
+                  );
 
-                  const bHead = isHi
-                    ? (bConf.headlineHi || bConf.headline || 'सत्र 2026-27 हेतु नवीन नामांकन प्रारंभ')
-                    : (bConf.headlineEn || (!/[\u0900-\u097F]/.test(bConf.headline || '') ? bConf.headline : null) || `ADMISSIONS OPEN FOR SESSION ${bSession}`);
+                  const bHead = resolveCmsField(
+                    bConf,
+                    'headline',
+                    `ADMISSIONS OPEN FOR SESSION ${bSession}`,
+                    'सत्र 2026-27 हेतु नवीन नामांकन प्रारंभ',
+                    isHi
+                  );
 
-                  const bSub = isHi
-                    ? (bConf.subheadlineHi || bConf.subheadline || `${bClasses} • सीवान एवं मोरा बाज़ार का अग्रणी सीबीएसई पैटर्न अंग्रेजी माध्यम विद्यालय`)
-                    : (bConf.subheadlineEn || (!/[\u0900-\u097F]/.test(bConf.subheadline || '') ? bConf.subheadline : null) || `${bClasses} • Leading CBSE Pattern English Medium School in Siwan & Mora Bazar`);
+                  const bSub = resolveCmsField(
+                    bConf,
+                    'subheadline',
+                    `${bClasses} • Leading CBSE Pattern English Medium School in Siwan & Mora Bazar`,
+                    `${bClasses} • सीवान एवं मोरा बाज़ार का अग्रणी सीबीएसई पैटर्न अंग्रेजी माध्यम विद्यालय`,
+                    isHi
+                  );
                   const bPhone = bConf.phone || primaryPhone || '8603481865';
                   const bWhatsapp = bConf.whatsapp || primaryPhone || '8603481865';
 
@@ -1719,16 +1831,14 @@ export default function SignInView() {
                   };
 
                   const enFb = enMap[rawLeader.id] || {};
-                  const isDeval = (s) => typeof s === 'string' && /[\u0900-\u097F]/.test(s);
-
                   const leader = {
                     ...rawLeader,
-                    name: isHi ? (rawLeader.nameHi || rawLeader.name) : (rawLeader.nameEn || (!isDeval(rawLeader.name) ? rawLeader.name : null) || enFb.name || rawLeader.name),
-                    role: isHi ? (rawLeader.roleHi || rawLeader.role) : (rawLeader.roleEn || (!isDeval(rawLeader.role) ? rawLeader.role : null) || enFb.role || rawLeader.role),
-                    subtitle: isHi ? (rawLeader.subtitleHi || rawLeader.subtitle) : (rawLeader.subtitleEn || (!isDeval(rawLeader.subtitle) ? rawLeader.subtitle : null) || enFb.subtitle || rawLeader.role),
-                    bio: isHi ? (rawLeader.bioHi || rawLeader.bio) : (rawLeader.bioEn || (!isDeval(rawLeader.bio) ? rawLeader.bio : null) || enFb.bio || rawLeader.bio),
-                    keyRoles: isHi ? (rawLeader.keyRolesHi || rawLeader.keyRoles) : (rawLeader.keyRolesEn || (Array.isArray(rawLeader.keyRoles) && rawLeader.keyRoles.length > 0 && !isDeval(rawLeader.keyRoles[0]) ? rawLeader.keyRoles : null) || enFb.keyRoles || rawLeader.keyRoles),
-                    footerText: isHi ? (rawLeader.footerText || 'प्रशासनिक संकाय') : (rawLeader.footerTextEn || enFb.footerText || 'Administrative Faculty')
+                    name: resolveCmsField(rawLeader, 'name', rawLeader.nameEn || enFb.name || rawLeader.name, rawLeader.nameHi || rawLeader.name, isHi),
+                    role: resolveCmsField(rawLeader, 'role', rawLeader.roleEn || enFb.role || rawLeader.role, rawLeader.roleHi || rawLeader.role, isHi),
+                    subtitle: resolveCmsField(rawLeader, 'subtitle', rawLeader.subtitleEn || enFb.subtitle || rawLeader.role, rawLeader.subtitleHi || rawLeader.subtitle || rawLeader.role, isHi),
+                    bio: resolveCmsField(rawLeader, 'bio', rawLeader.bioEn || enFb.bio || rawLeader.bio, rawLeader.bioHi || rawLeader.bio, isHi),
+                    keyRoles: isHi ? (rawLeader.keyRolesHi || rawLeader.keyRoles) : (rawLeader.keyRolesEn || enFb.keyRoles || rawLeader.keyRoles),
+                    footerText: resolveCmsField(rawLeader, 'footerText', rawLeader.footerTextEn || enFb.footerText || 'Administrative Faculty', rawLeader.footerText || 'प्रशासनिक संकाय', isHi)
                   };
 
                   return (
@@ -1864,8 +1974,8 @@ export default function SignInView() {
                   const gFb = galEnMap[rawPhoto.id] || {};
                   const photo = {
                     ...rawPhoto,
-                    title: isHi ? (rawPhoto.titleHi || rawPhoto.title) : (rawPhoto.titleEn || (!isDeval(rawPhoto.title) ? rawPhoto.title : null) || gFb.title || rawPhoto.title),
-                    description: isHi ? (rawPhoto.descriptionHi || rawPhoto.description) : (rawPhoto.descriptionEn || (!isDeval(rawPhoto.description) ? rawPhoto.description : null) || gFb.description || rawPhoto.description)
+                    title: resolveCmsField(rawPhoto, 'title', rawPhoto.titleEn || gFb.title || rawPhoto.title, rawPhoto.titleHi || rawPhoto.title, isHi),
+                    description: resolveCmsField(rawPhoto, 'description', rawPhoto.descriptionEn || gFb.description || rawPhoto.description, rawPhoto.descriptionHi || rawPhoto.description, isHi)
                   };
 
                   return (
@@ -1988,9 +2098,9 @@ export default function SignInView() {
                   const rFb = revEnMap[rawRev.id] || {};
                   const rev = {
                     ...rawRev,
-                    authorName: isHi ? (rawRev.authorNameHi || rawRev.authorName) : (rawRev.authorNameEn || (!isDeval(rawRev.authorName) ? rawRev.authorName : null) || rFb.authorName || rawRev.authorName),
-                    relation: isHi ? (rawRev.relationHi || rawRev.relation) : (rawRev.relationEn || (!isDeval(rawRev.relation) ? rawRev.relation : null) || rFb.relation || rawRev.relation),
-                    text: isHi ? (rawRev.textHi || rawRev.text) : (rawRev.textEn || (!isDeval(rawRev.text) ? rawRev.text : null) || rFb.text || rawRev.text)
+                    authorName: resolveCmsField(rawRev, 'authorName', rawRev.authorNameEn || rFb.authorName || rawRev.authorName, rawRev.authorNameHi || rawRev.authorName, isHi),
+                    relation: resolveCmsField(rawRev, 'relation', rawRev.relationEn || rFb.relation || rawRev.relation, rawRev.relationHi || rawRev.relation, isHi),
+                    text: resolveCmsField(rawRev, 'text', rawRev.textEn || rFb.text || rawRev.text, rawRev.textHi || rawRev.text, isHi)
                   };
 
                   return (
