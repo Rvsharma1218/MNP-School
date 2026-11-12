@@ -33,6 +33,7 @@ const ParentComplaintsView = dynamic(() => import('../components/ParentComplaint
 const SetupWizardView = dynamic(() => import('../components/SetupWizardView'), { ssr: false });
 const AccessDeniedView = dynamic(() => import('../components/AccessDeniedView'), { ssr: false });
 const ForgotPasswordView = dynamic(() => import('../components/ForgotPasswordView'), { ssr: false });
+const SignUpView = dynamic(() => import('../components/SignUpView'), { ssr: false });
 
 // Lazy-Loaded Action Modals
 const ScreenPinLockModal = dynamic(() => import('../components/ScreenPinLockModal'), { ssr: false });
@@ -248,12 +249,8 @@ function AppContent() {
     const cleanPath = (currentPath || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
 
     // 1. Allow public website and auth routes if unauthenticated
-    const publicPages = ['/', '/signin', '/forgot-password', '/about', '/admissions', '/academics', '/gallery', '/contact', '/download', '/results'];
+    const publicPages = ['/', '/signin', '/signup', '/forgot-password', '/about', '/admissions', '/academics', '/gallery', '/contact', '/download', '/results'];
     if (!currentUser) {
-      if (cleanPath === '/signup') {
-        navigate('/signin');
-        return;
-      }
       if (!publicPages.includes(cleanPath)) {
         navigate('/signin');
       }
@@ -329,9 +326,7 @@ function AppContent() {
   // ── Render 1: Public website and auth routes
   const cleanPath = (currentPath || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
   if (!currentUser) {
-    if (cleanPath === '/signup') {
-      return <SignInView />;
-    }
+    if (cleanPath === '/signup') return <SignUpView />;
     if (cleanPath === '/forgot-password') return <ForgotPasswordView />;
     if (cleanPath === '/results') return <ResultsView />;
     return <SignInView />;

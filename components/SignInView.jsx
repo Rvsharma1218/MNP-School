@@ -236,11 +236,11 @@ export default function SignInView() {
 
           {/* Brand Seal, School Title & Subtitle */}
           <a href="#about" className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1 group">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-white p-1 border-2 border-[#F4B323] shadow-md flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 drop-shadow-md">
               <img
                 src={logoSrc}
                 alt={isHi ? "मिशन नवोदय पब्लिक स्कूल मोरा आधिकारिक मुहर" : "Mission Navodaya Public School Mora Official Seal"}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain rounded-full"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = '/logo.png';
@@ -415,10 +415,38 @@ export default function SignInView() {
               <ShieldCheck className="w-3.5 h-3.5 text-[#F4B323]" />
               <span>{isHi ? 'पोर्टल लॉगिन' : 'Portal Login'}</span>
             </button>
+
+            {/* Online Admission Button */}
+            {isAdmissionOpen && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (setSignUpFormTab) setSignUpFormTab('student');
+                  navigate('/signup?tab=admission');
+                }}
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black text-[#091A32] bg-[#F4B323] hover:bg-[#e0a21a] shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#091A32]" />
+                <span>{isHi ? 'ऑनलाइन प्रवेश' : 'Online Admission'}</span>
+              </button>
+            )}
           </div>
 
-          {/* Mobile Right Action Area (Language + Hamburger) */}
+          {/* Mobile Right Action Area (Admission CTA + Language + Hamburger) */}
           <div className="flex md:hidden items-center gap-1.5 flex-shrink-0">
+            {isAdmissionOpen && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (setSignUpFormTab) setSignUpFormTab('student');
+                  navigate('/signup?tab=admission');
+                }}
+                className="hidden min-[420px]:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F4B323] text-[#091A32] text-xs font-black shadow-xs whitespace-nowrap cursor-pointer flex-shrink-0"
+              >
+                <Sparkles className="w-3 h-3 text-[#091A32]" />
+                <span>{isHi ? 'प्रवेश' : 'Admission'}</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -467,13 +495,28 @@ export default function SignInView() {
               )}
 
               {/* Primary Call to Actions: Online Admission & Portal Login */}
-              <div>
+              <div className={`grid ${isAdmissionOpen ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'} gap-2`}>
+                {isAdmissionOpen && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      if (setSignUpFormTab) setSignUpFormTab('student');
+                      navigate('/signup?tab=admission');
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-[0.98]"
+                  >
+                    <Sparkles className="w-4 h-4 text-[#091A32]" />
+                    <span>{isHi ? `ऑनलाइन प्रवेश प्रपत्र ${currentSession}` : `Online Admission Form ${currentSession}`}</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => openPortalLogin('parent')}
-                  className="w-full py-2.5 px-3 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-[0.98]"
+                  className="w-full py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 cursor-pointer transition-all active:scale-[0.98]"
                 >
-                  <ShieldCheck className="w-4 h-4 text-[#091A32]" />
+                  <ShieldCheck className="w-4 h-4 text-[#F4B323]" />
                   <span>{isHi ? 'स्कूल डिजिटल पोर्टल लॉगिन' : 'School Digital Portal Login'}</span>
                 </button>
               </div>
@@ -792,11 +835,11 @@ export default function SignInView() {
 
                   {/* Official School Crest Logo */}
                   <div className="relative flex-shrink-0 group">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 flex items-center justify-center transition-transform group-hover:scale-105 drop-shadow-2xl">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden bg-white p-2 border-3 border-[#F4B323] shadow-2xl flex items-center justify-center transition-transform group-hover:scale-105 drop-shadow-2xl">
                       <img
                         src={logoSrc}
                         alt="Mission Navodaya Public School Crest"
-                        className="w-full h-full object-contain drop-shadow-xl"
+                        className="w-full h-full object-contain rounded-full drop-shadow-xl"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = '/logo.png';
@@ -878,20 +921,24 @@ export default function SignInView() {
                     <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
                       <button
                         type="button"
-                        onClick={() => openPortalLogin('parent')}
-                        className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        onClick={() => {
+                          if (setSignUpFormTab) setSignUpFormTab('student');
+                          navigate('/signup?tab=admission');
+                        }}
+                        className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
                       >
-                        <ShieldCheck className="w-4 h-4 text-[#091A32]" />
-                        <span>{isHi ? 'डिजिटल पोर्टल लॉगिन →' : 'Digital Portal Login →'}</span>
+                        <Sparkles className="w-4 h-4 text-[#091A32]" />
+                        <span>{isHi ? 'ऑनलाइन एडमिशन फॉर्म →' : 'Online Admission Form →'}</span>
                       </button>
 
-                      <a
-                        href="#contact"
+                      <button
+                        type="button"
+                        onClick={() => openPortalLogin('parent')}
                         className="flex-1 sm:flex-initial px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <Calendar className="w-4 h-4 text-[#F4B323]" />
-                        <span>{isHi ? 'कैंपस विज़िट बुक करें' : 'Book Campus Visit'}</span>
-                      </a>
+                        <ShieldCheck className="w-4 h-4 text-[#F4B323]" />
+                        <span>{isHi ? 'पोर्टल लॉगिन' : 'Portal Login'}</span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1544,8 +1591,8 @@ export default function SignInView() {
                         <div className="w-16 h-1.5 bg-white/20 rounded-full mx-auto" />
 
                         {/* App Logo & Badge */}
-                        <div className="w-16 h-16 rounded-2xl bg-white p-2 mx-auto shadow-md">
-                          <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
+                        <div className="w-16 h-16 rounded-full bg-white p-1.5 mx-auto shadow-md border-2 border-[#F4B323] overflow-hidden">
+                          <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain rounded-full" />
                         </div>
 
                         <div>
@@ -1740,11 +1787,11 @@ export default function SignInView() {
               </button>
 
               <div className="text-center space-y-1.5 mb-5 sm:mb-6">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto flex items-center justify-center drop-shadow-md">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden bg-white p-1 border-2 border-[#F4B323] mx-auto flex items-center justify-center drop-shadow-md shadow-sm">
                   <img
                     src={logoSrc}
                     alt={schoolName}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain rounded-full"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = '/logo.png';
@@ -2067,8 +2114,8 @@ export default function SignInView() {
             {/* Column 1: School Identity */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 flex items-center justify-center flex-shrink-0 drop-shadow-sm">
-                  <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain" />
+                <div className="w-11 h-11 rounded-full overflow-hidden bg-white p-1 border border-[#F4B323] flex items-center justify-center flex-shrink-0 drop-shadow-sm shadow-xs">
+                  <img src={logoSrc} alt={schoolName} className="w-full h-full object-contain rounded-full" />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-white tracking-tight uppercase">
@@ -2146,6 +2193,19 @@ export default function SignInView() {
                   >
                     <Users className="w-3.5 h-3.5 text-[#F4B323]" />
                     <span>{isHi ? 'अभिभावक पोर्टल लॉगिन →' : 'Parent Portal Login →'}</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (setSignUpFormTab) setSignUpFormTab('student');
+                      navigate('/signup?tab=admission');
+                    }}
+                    className="hover:text-[#F4B323] transition-colors cursor-pointer text-left flex items-center gap-1.5 text-[#F4B323] font-bold"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#F4B323]" />
+                    <span>{isHi ? 'विद्यार्थी नामांकन डेस्क →' : 'Student Admission Desk →'}</span>
                   </button>
                 </li>
                 <li>
