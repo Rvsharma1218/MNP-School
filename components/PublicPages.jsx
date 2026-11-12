@@ -645,10 +645,10 @@ export function AcademicsPageView({ isHi }) {
 /**
  * 4. CAMPUS GALLERY PAGE VIEW (/gallery)
  */
-export function GalleryPageView({ isHi }) {
+export function GalleryPageView({ isHi, galleryItems }) {
   const [filter, setFilter] = useState('all');
 
-  const photos = [
+  const defaultPhotos = [
     { title: 'School Building & Panoramic View', category: 'campus', src: '/school_campus_banner.jpg' },
     { title: 'Dedicated Teachers & Academic Session', category: 'class', src: '/school_campus_banner.jpg' },
     { title: 'Morning Assembly & Discipline', category: 'events', src: '/school_campus_banner.jpg' },
@@ -656,6 +656,14 @@ export function GalleryPageView({ isHi }) {
     { title: 'Smart Classroom & Interactive Learning', category: 'class', src: '/school_campus_banner.jpg' },
     { title: 'Annual Day Celebrations & Awards', category: 'events', src: '/school_campus_banner.jpg' },
   ];
+
+  const photos = (galleryItems && galleryItems.length > 0)
+    ? galleryItems.map(g => ({
+        title: g.title,
+        category: g.category || 'campus',
+        src: g.imageUrl || g.src || '/school_campus_banner.jpg'
+      }))
+    : defaultPhotos;
 
   const filtered = filter === 'all' ? photos : photos.filter(p => p.category === filter);
 

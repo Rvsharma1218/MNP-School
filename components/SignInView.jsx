@@ -9,6 +9,8 @@ import {
   DownloadPageView
 } from './PublicPages';
 import React, { useState, useEffect } from 'react';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useSchoolStore } from '../lib/store';
 import { translations } from '../lib/translations';
 import {
@@ -68,6 +70,42 @@ export default function SignInView() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Live Website CMS Dynamic State (Synced in Real-Time with Admin App)
+  const [websiteConfig, setWebsiteConfig] = useState(null);
+  const [websiteGallery, setWebsiteGallery] = useState([]);
+  const [websiteReviews, setWebsiteReviews] = useState([]);
+  const [websiteLeadership, setWebsiteLeadership] = useState([]);
+  const [isPopupAlertDismissed, setIsPopupAlertDismissed] = useState(false);
+
+  useEffect(() => {
+    // 1. Live Website Config (Banner Style, Marquee, Emergency Popup)
+    const unsubConfig = onSnapshot(doc(db, 'schoolDirectory', 'website_config'), (snap) => {
+      if (snap.exists()) setWebsiteConfig(snap.data());
+    }, () => {});
+
+    // 2. Live Photo Gallery
+    const unsubGallery = onSnapshot(doc(db, 'schoolDirectory', 'website_gallery'), (snap) => {
+      if (snap.exists()) setWebsiteGallery(snap.data()?.items || []);
+    }, () => {});
+
+    // 3. Live Parent Reviews & Ratings
+    const unsubReviews = onSnapshot(doc(db, 'schoolDirectory', 'website_reviews'), (snap) => {
+      if (snap.exists()) setWebsiteReviews(snap.data()?.items || []);
+    }, () => {});
+
+    // 4. Live Leadership & Staff
+    const unsubLeadership = onSnapshot(doc(db, 'schoolDirectory', 'website_leadership'), (snap) => {
+      if (snap.exists()) setWebsiteLeadership(snap.data()?.items || []);
+    }, () => {});
+
+    return () => {
+      unsubConfig();
+      unsubGallery();
+      unsubReviews();
+      unsubLeadership();
+    };
+  }, []);
 
   // Institution Verified Details from Official School Settings
   const schoolName = settings?.instituteName || settings?.schoolName || 'MISSION NAVODAYA PUBLIC SCHOOL';
@@ -181,6 +219,77 @@ export default function SignInView() {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden relative flex flex-col justify-between font-sans antialiased text-[#14243B] bg-[#F7F9FC] selection:bg-[#102747] selection:text-white">
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 0. LIVE FLASH MARQUEE / BREAKING NEWS BAR (Controlled via App)*/}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {websiteConfig?.flashNotice?.enabled && websiteConfig?.flashNotice?.text && (
+        <div className="bg-gradient-to-r from-red-700 via-amber-600 to-red-700 text-white text-[11px] sm:text-xs font-bold py-1.5 px-4 overflow-hidden relative shadow-md flex items-center justify-between gap-3 border-b border-red-800/40">
+          <div className="flex items-center gap-2.5 overflow-hidden flex-1">
+            <span className="flex-shrink-0 bg-white text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs tracking-wider animate-pulse flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping inline-block" />
+              {websiteConfig.flashNotice.badge || (isHi ? 'नवीन सूचना' : 'FLASH NOTICE')}
+            </span>
+            <div className="truncate text-slate-100 font-semibold tracking-wide">
+              {websiteConfig.flashNotice.text}
+            </div>
+          </div>
+          <a
+            href={`tel:${primaryPhone}`}
+            className="flex-shrink-0 hidden md:inline-flex items-center gap-1.5 text-[11px] font-black bg-black/25 hover:bg-black/40 text-amber-300 px-3 py-0.5 rounded-full border border-white/20 transition-colors"
+          >
+            <Phone className="w-3 h-3 text-amber-300" />
+            <span>हेल्पलाइन: +91 {primaryPhone}</span>
+          </a>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 0B. EMERGENCY POPUP MODAL (Controlled via Admin App)          */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {websiteConfig?.popupAlert?.enabled && !isPopupAlertDismissed && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4 relative animate-scaleUp">
+            <button
+              onClick={() => setIsPopupAlertDismissed(true)}
+              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
+                {websiteConfig.popupAlert.badge || (isHi ? 'विशेष विद्यालय सूचना' : 'SCHOOL ANNOUNCEMENT')}
+              </span>
+            </div>
+            <h3 className="text-xl font-black text-[#0c2340] tracking-tight">
+              {websiteConfig.popupAlert.title || (isHi ? 'आवश्यक विद्यालय सूचना' : 'Official Notice')}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+              {websiteConfig.popupAlert.message}
+            </p>
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsPopupAlertDismissed(true);
+                  if (setSignUpFormTab) setSignUpFormTab('student');
+                  navigate('/signup?tab=admission');
+                }}
+                className="px-5 py-2.5 rounded-xl bg-[#0c2340] hover:bg-[#143763] text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+              >
+                <span>{websiteConfig.popupAlert.actionText || (isHi ? 'नामांकन फॉर्म भरें →' : 'Apply Online →')}</span>
+              </button>
+              <button
+                onClick={() => setIsPopupAlertDismissed(true)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+              >
+                {isHi ? 'बंद करें' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 1. TOP ANNOUNCEMENT STRIP (Navy #102747 + Gold #F4B323)       */}
@@ -767,7 +876,7 @@ export default function SignInView() {
           ) : activeRoute === '/academics' ? (
             <AcademicsPageView isHi={isHi} />
           ) : activeRoute === '/gallery' ? (
-            <GalleryPageView isHi={isHi} />
+            <GalleryPageView isHi={isHi} galleryItems={websiteGallery} />
           ) : activeRoute === '/contact' ? (
             <ContactPageView
               isHi={isHi}
@@ -890,58 +999,269 @@ export default function SignInView() {
                   </div>
                 </div>
 
-                {/* ── DYNAMIC ADMISSION BANNER CARD (Completely hidden when admission is OFF) ── */}
-                {isAdmissionOpen && (
-                  <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/92 via-[#112F56]/88 to-[#0C223F]/92 border-2 border-[#F4B323]/50 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
-                    {/* Left: Admissions Open Title + Session + Classes */}
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F4B323] to-[#E09B10] text-[#091A32] flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <GraduationCap className="w-6 h-6 text-[#091A32]" />
+                {/* ── DYNAMIC ADMISSION BANNER STUDIO (6 Live Interchangeable Styles via Admin App) ── */}
+                {((websiteConfig?.admissionBanner?.isAdmissionOpen !== false) && isAdmissionOpen) && (() => {
+                  const bConf = websiteConfig?.admissionBanner || {};
+                  const bStyle = bConf.style || 'royal_navy';
+                  const bSession = bConf.session || currentSession || '2026-27';
+                  const bClasses = bConf.classes || admissionClasses || 'Nursery to 8th';
+                  const bTag = bConf.tagText || (isHi ? 'विशेष छात्रवृत्ति एवं प्रारंभिक नामांकन छूट उपलब्ध' : 'Special Scholarship & Early Admission Offer Available');
+                  const bHead = bConf.headline || (isHi ? 'नामांकन प्रारंभ' : 'ADMISSIONS OPEN');
+                  const bSub = bConf.subheadline || (isHi ? `${bClasses} • नए दाखिले के लिए सीटें उपलब्ध` : `${bClasses} • Limited Seats Available for New Enrolments`);
+                  const bPhone = bConf.phone || primaryPhone || '8603481865';
+                  const bWhatsapp = bConf.whatsapp || primaryPhone || '8603481865';
+
+                  // STYLE 1: ROYAL NAVY & GOLD (Classic Prestigious)
+                  if (bStyle === 'royal_navy') {
+                    return (
+                      <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0C223F]/95 via-[#112F56]/90 to-[#0C223F]/95 border-2 border-[#F4B323]/50 backdrop-blur-md shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F4B323] to-[#E09B10] text-[#091A32] flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <GraduationCap className="w-6 h-6 text-[#091A32]" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                              <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+                                <span className="relative flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F4B323] opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#F4B323]"></span>
+                                </span>
+                                {bHead}
+                              </span>
+                              <span className="text-xs font-black px-2.5 py-0.5 rounded-md bg-[#F4B323] text-[#091A32] tracking-wider uppercase shadow-xs">
+                                {isHi ? `सत्र ${bSession}` : `SESSION ${bSession}`}
+                              </span>
+                            </div>
+                            <div className="text-xs text-[#F4B323] font-bold">{bSub}</div>
+                            {bTag && <div className="text-[11px] text-slate-300 font-medium">✨ {bTag}</div>}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (setSignUpFormTab) setSignUpFormTab('student');
+                              navigate('/signup?tab=admission');
+                            }}
+                            className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                          >
+                            <Sparkles className="w-4 h-4 text-[#091A32]" />
+                            <span>{isHi ? 'ऑनलाइन एडमिशन फॉर्म →' : 'Online Admission Form →'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openPortalLogin('parent')}
+                            className="flex-1 sm:flex-initial px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <ShieldCheck className="w-4 h-4 text-[#F4B323]" />
+                            <span>{isHi ? 'पोर्टल लॉगिन' : 'Portal Login'}</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="space-y-0.5">
-                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                          <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase flex items-center gap-2">
-                            <span className="relative flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F4B323] opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#F4B323]"></span>
+                    );
+                  }
+
+                  // STYLE 2: FESTIVE & NEW SESSION CELEBRATION
+                  if (bStyle === 'festive') {
+                    return (
+                      <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] border-2 border-amber-400/60 shadow-[0_0_30px_rgba(245,158,11,0.25)] flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <Sparkles className="w-6 h-6 text-slate-950 animate-spin" style={{ animationDuration: '6s' }} />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                              <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+                                <span>🎉</span>
+                                {bHead}
+                              </span>
+                              <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 tracking-wider uppercase font-black shadow-md">
+                                {isHi ? `उत्सव सत्र ${bSession}` : `CELEBRATION ${bSession}`}
+                              </span>
+                            </div>
+                            <div className="text-xs text-amber-300 font-bold">{bSub}</div>
+                            {bTag && <div className="text-[11px] text-emerald-300 font-bold">🎁 {bTag}</div>}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (setSignUpFormTab) setSignUpFormTab('student');
+                              navigate('/signup?tab=admission');
+                            }}
+                            className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-950 font-black text-xs sm:text-sm shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                          >
+                            <Award className="w-4 h-4 text-slate-950" />
+                            <span>{isHi ? 'दाखिला फॉर्म भरें (उत्सव छूट) →' : 'Apply Now with Fest Offer →'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // STYLE 3: ACADEMIC EXCELLENCE & NAVODAYA PREP
+                  if (bStyle === 'academic') {
+                    return (
+                      <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#082f49] via-[#0369a1] to-[#075985] border-2 border-sky-400/50 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-300 to-blue-500 text-slate-950 flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <Trophy className="w-6 h-6 text-slate-950" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                              <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+                                <span>🏆</span>
+                                {bHead}
+                              </span>
+                              <span className="text-xs font-black px-2.5 py-0.5 rounded-md bg-sky-300 text-sky-950 tracking-wider uppercase shadow-xs">
+                                {isHi ? `नवोदय बैच ${bSession}` : `NAVODAYA SCHOLARS ${bSession}`}
+                              </span>
+                            </div>
+                            <div className="text-xs text-sky-200 font-bold">{bSub}</div>
+                            {bTag && <div className="text-[11px] text-amber-300 font-bold">⭐ {bTag}</div>}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (setSignUpFormTab) setSignUpFormTab('student');
+                              navigate('/signup?tab=admission');
+                            }}
+                            className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#0369a1] font-black text-xs sm:text-sm shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                          >
+                            <BookOpen className="w-4 h-4 text-[#0369a1]" />
+                            <span>{isHi ? 'नवोदय बैच नामांकन फॉर्म →' : 'Enroll in Navodaya Batch →'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // STYLE 4: SPORTS & HOLISTIC DEVELOPMENT
+                  if (bStyle === 'sports') {
+                    return (
+                      <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#064e3b] via-[#047857] to-[#065f46] border-2 border-emerald-400/60 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-300 to-green-500 text-slate-950 flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <Activity className="w-6 h-6 text-slate-950" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                              <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+                                <span>⚽</span>
+                                {bHead}
+                              </span>
+                              <span className="text-xs font-black px-2.5 py-0.5 rounded-md bg-emerald-300 text-emerald-950 tracking-wider uppercase shadow-xs">
+                                {isHi ? `सत्र ${bSession}` : `SESSION ${bSession}`}
+                              </span>
+                            </div>
+                            <div className="text-xs text-emerald-200 font-bold">{bSub}</div>
+                            {bTag && <div className="text-[11px] text-yellow-300 font-bold">🥇 {bTag}</div>}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (setSignUpFormTab) setSignUpFormTab('student');
+                              navigate('/signup?tab=admission');
+                            }}
+                            className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-black text-xs sm:text-sm shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                          >
+                            <Trophy className="w-4 h-4 text-slate-950" />
+                            <span>{isHi ? 'प्रवेश फॉर्म भरें (खेल व शिक्षा) →' : 'Apply for Admission →'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // STYLE 5: HIGH URGENCY / LIMITED SEATS ALERT
+                  if (bStyle === 'limited_seats') {
+                    return (
+                      <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#450a0a] via-[#7f1d1d] to-[#991b1b] border-2 border-red-400/70 shadow-[0_0_25px_rgba(239,68,68,0.35)] flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24 animate-pulse" style={{ animationDuration: '3s' }}>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <AlertCircle className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                              <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+                                <span className="animate-ping text-red-400">⚠️</span>
+                                {bHead}
+                              </span>
+                              <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-red-500 text-white tracking-wider uppercase font-black shadow-md border border-white/20">
+                                {isHi ? 'सीमित सीटें शेष' : 'LIMITED SEATS LEFT'}
+                              </span>
+                            </div>
+                            <div className="text-xs text-red-200 font-bold">{bSub}</div>
+                            {bTag && <div className="text-[11px] text-amber-300 font-bold">⚡ {bTag}</div>}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (setSignUpFormTab) setSignUpFormTab('student');
+                              navigate('/signup?tab=admission');
+                            }}
+                            className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                          >
+                            <Sparkles className="w-4 h-4 text-slate-950" />
+                            <span>{isHi ? 'अपनी सीट तुरंत आरक्षित करें →' : 'Reserve Seat Immediately →'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // STYLE 6: MODERN FROSTED SLATE & MINIMALIST
+                  return (
+                    <div id="admissions" className="mt-6 p-4 sm:p-5 rounded-2xl bg-slate-900/90 border-2 border-slate-700/80 backdrop-blur-xl shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4 scroll-mt-24">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                        <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 text-cyan-400 flex items-center justify-center flex-shrink-0 shadow-lg">
+                          <Compass className="w-6 h-6 text-cyan-400" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                            <span className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+                              {bHead}
                             </span>
-                            {isHi ? 'नामांकन प्रारंभ' : 'ADMISSIONS OPEN'}
-                          </span>
-                          <span className="text-xs font-black px-2.5 py-0.5 rounded-md bg-[#F4B323] text-[#091A32] tracking-wider uppercase shadow-xs">
-                            {isHi ? `सत्र ${currentSession}` : `SESSION ${currentSession}`}
-                          </span>
-                        </div>
-                        <div className="text-xs text-[#F4B323] font-bold">
-                          {isHi ? `${admissionClasses} • नए दाखिले के लिए सीमित सीटें उपलब्ध` : `${admissionClasses} • Limited Seats Available for New Enrolments`}
+                            <span className="text-xs font-black px-2.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 tracking-wider uppercase">
+                              {isHi ? `सत्र ${bSession}` : `SESSION ${bSession}`}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-300 font-semibold">{bSub}</div>
+                          {bTag && <div className="text-[11px] text-cyan-400 font-medium">✨ {bTag}</div>}
                         </div>
                       </div>
+                      <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (setSignUpFormTab) setSignUpFormTab('student');
+                            navigate('/signup?tab=admission');
+                          }}
+                          className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-black text-xs sm:text-sm shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                        >
+                          <ArrowRight className="w-4 h-4 text-slate-950" />
+                          <span>{isHi ? 'ऑनलाइन एडमिशन फॉर्म' : 'Online Admission Form'}</span>
+                        </button>
+                        <a
+                          href={`https://wa.me/91${bWhatsapp}?text=Namaste%2C%20I%20want%20to%20know%20about%20Admissions%20in%20MNP%20School`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex-1 sm:flex-initial px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <MessageSquare className="w-4 h-4 text-white" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </div>
                     </div>
-
-                    {/* Right: Action CTAs */}
-                    <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (setSignUpFormTab) setSignUpFormTab('student');
-                          navigate('/signup?tab=admission');
-                        }}
-                        className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-[#F4B323] hover:bg-[#e0a21a] text-[#091A32] font-black text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
-                      >
-                        <Sparkles className="w-4 h-4 text-[#091A32]" />
-                        <span>{isHi ? 'ऑनलाइन एडमिशन फॉर्म →' : 'Online Admission Form →'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => openPortalLogin('parent')}
-                        className="flex-1 sm:flex-initial px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <ShieldCheck className="w-4 h-4 text-[#F4B323]" />
-                        <span>{isHi ? 'पोर्टल लॉगिन' : 'Portal Login'}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* 4 Pillars Badges from Banner */}
                 <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3">
@@ -1257,253 +1577,131 @@ export default function SignInView() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* 1. Vice-Principal: Ravi Sir */}
-                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1">
-                  <div>
-                    {/* Header Banner */}
-                    <div className="bg-gradient-to-br from-[#0c2340] via-[#102a4d] to-[#173a66] p-6 text-white relative overflow-hidden">
-                      <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/5 blur-xl pointer-events-none" />
-                      <div className="flex items-center gap-3.5 relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-black text-xl text-white shadow-inner flex-shrink-0">
-                          RS
+                {((websiteLeadership && websiteLeadership.length > 0) ? websiteLeadership : [
+                  {
+                    id: 'lead_ravi',
+                    name: isHi ? 'रवि सर' : 'Ravi Sir',
+                    role: isHi ? 'उप-प्रधानाचार्य' : 'Vice-Principal',
+                    subtitle: isHi ? 'उप-प्रधानाचार्य (प्रशासन)' : 'Vice-Principal (Admin)',
+                    avatarText: 'RS',
+                    avatarUrl: '',
+                    bio: isHi ? 'विद्यालय के दैनिक प्रशासनिक संचालन, शिक्षक समन्वय एवं समग्र छात्र अनुशासन के कुशल मार्गदर्शक। विद्यालय प्रबंधन एवं अभिभावकों के बीच निरंतर संवाद स्थापित कर संस्थान के सर्वांगीण विकास और शैक्षणिक गुणवत्ता को नई ऊंचाइयों पर ले जाने हेतु पूर्णतः समर्पित।' : 'Oversees daily school administration, faculty coordination, and student discipline. Dedicated to building strong parent-school communication and elevating academic standards.',
+                    keyRoles: [
+                      isHi ? 'दैनिक विद्यालय संचालन एवं समय-सारणी (Timetable & Routine) प्रबंधन' : 'Daily school operations & academic routine management',
+                      isHi ? 'कक्षा शिक्षण गुणवत्ता निरीक्षण एवं शिक्षक संकाय मार्गदर्शन' : 'Classroom teaching quality monitoring & teacher guidance',
+                      isHi ? 'छात्र कल्याण, अभिभावक परामर्श (PTM) एवं प्रशासनिक समन्वय' : 'Student welfare, PTM counseling & admin coordination'
+                    ],
+                    footerText: isHi ? 'प्रशासनिक सचिवालय एवं छात्र कल्याण' : 'Administration & Student Welfare Desk'
+                  },
+                  {
+                    id: 'lead_ashish',
+                    name: isHi ? 'आशीष सर' : 'Ashish Sir',
+                    role: isHi ? 'शैक्षणिक प्रमुख' : 'Academic Head',
+                    subtitle: isHi ? 'शैक्षणिक प्रमुख (पाठ्यक्रम व परीक्षा)' : 'Academic Head (Syllabus & Exams)',
+                    avatarText: 'AS',
+                    avatarUrl: '',
+                    bio: isHi ? 'आधुनिक पाठ्यक्रम नियोजन, परीक्षा मूल्यांकन, शिक्षक प्रशिक्षण एवं प्रत्येक कक्षा के शिक्षण स्तर को उन्नत बनाने वाले कुशल रणनीतिकार। विद्यार्थियों के बुनियादी ज्ञान से लेकर विशिष्ट प्रतिभा को निखारने हेतु प्रतिबद्ध।' : 'Leads curriculum planning, exam assessments, teacher training, and academic standards across all grades. Focused on deep foundational learning and student merit.',
+                    keyRoles: [
+                      isHi ? 'पाठ्यक्रम (Syllabus) समयबद्ध पूर्णता एवं परीक्षा योजना' : 'Timely curriculum completion & comprehensive exam schedules',
+                      isHi ? 'आधुनिक शिक्षण विधियों (Pedagogy) का क्रियान्वयन व शिक्षक प्रशिक्षण' : 'Modern pedagogy implementation & periodic teacher workshops',
+                      isHi ? 'परीक्षा परिणाम विश्लेषण (Result Analysis) व रेमेडियल कक्षा प्रबंधन' : 'Result performance analysis & remedial learning support'
+                    ],
+                    footerText: isHi ? 'शैक्षणिक उत्कृष्टता एवं परीक्षा प्रकोष्ठ' : 'Academic Excellence & Examination Wing'
+                  },
+                  {
+                    id: 'lead_rozi',
+                    name: isHi ? 'रोजी मिस' : 'Rozi Miss',
+                    role: isHi ? 'अनुशासन प्रभारी' : 'Discipline Incharge',
+                    subtitle: isHi ? 'विद्यालय अनुशासन प्रभारी' : 'School Discipline Incharge',
+                    avatarText: 'RM',
+                    avatarUrl: '',
+                    bio: isHi ? 'विद्यार्थियों में आत्म-अनुशासन, नैतिक संस्कार, स्वच्छता एवं शालीन आचरण के विकास हेतु दृढ़ एवं स्नेहमयी मार्गदर्शिका। परिसर में सुरक्षित, सभ्य और प्रेरणादायक शैक्षिक वातावरण बनाए रखने में अग्रणी भूमिका।' : 'Nurtures student self-discipline, moral ethics, punctuality, and neatness. Ensures a secure, respectful, and motivating school environment for every child.',
+                    keyRoles: [
+                      isHi ? 'प्रार्थना सभा (Assembly), यूनिफॉर्म एवं समयबद्धता (Punctuality) नियमन' : 'Morning assembly, proper uniform & punctuality enforcement',
+                      isHi ? 'विद्यार्थियों में संस्कार, शिष्टाचार और सकारात्मक व्यवहार का विकास' : 'Inculcating moral values, polite etiquette & positive student behavior',
+                      isHi ? 'परिसर में सुरक्षा, शांति और अनुशासन नियमों का निष्ठापूर्ण पालन' : 'Campus safety, peaceful environment & strict adherence to rules'
+                    ],
+                    footerText: isHi ? 'अनुशासन परिषद एवं छात्र आचार संहिता' : 'Discipline Council & Student Conduct'
+                  },
+                  {
+                    id: 'lead_neha',
+                    name: isHi ? 'नेहा मिस' : 'Neha Miss',
+                    role: isHi ? 'लेखापाल' : 'Accountant',
+                    subtitle: isHi ? 'लेखापाल / अकाउंटेंट' : 'School Accountant',
+                    avatarText: 'NM',
+                    avatarUrl: '',
+                    bio: isHi ? 'विद्यालय के समस्त वित्तीय संचालन, डिजिटल फीस प्रणाली और पारदर्शी लेखा-जोखा प्रबंधन की निष्ठावान प्रभारी। अभिभावकों के लिए डिजिटल रसीद, समय पर समाधान एवं पारदर्शी फीस व्यवस्था सुनिश्चित करने में सदैव तत्पर।' : 'Manages school financial accounting, automated fee collection, and digital ledger. Committed to providing instant fee receipts, transparent records, and prompt parent support.',
+                    keyRoles: [
+                      isHi ? 'ऑनलाइन व ऑफलाइन फीस संग्रहण एवं तुरंत डिजिटल रसीद जारी करना' : 'Online & counter fee collection with instant digital receipt generation',
+                      isHi ? 'दैनिक आय-व्यय, ऑडिट और वित्तीय रजिस्टरों का सटीक संधारण' : 'Daily revenue & expense reconciliation, audit ledgers & records',
+                      isHi ? 'अभिभावकों को फीस समाधान एवं रसीद संबंधी त्वरित सहायता' : 'Prompt parent assistance with fee inquiries, statements & receipts'
+                    ],
+                    footerText: isHi ? 'लेखा एवं वित्त कार्यालय' : 'Accounts & Finance Department'
+                  }
+                ]).map((leader, idx) => (
+                  <div key={leader.id || idx} className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1">
+                    <div>
+                      {/* Header Banner */}
+                      <div className="bg-gradient-to-br from-[#0c2340] via-[#102a4d] to-[#173a66] p-6 text-white relative overflow-hidden">
+                        <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/5 blur-xl pointer-events-none" />
+                        <div className="flex items-center gap-3.5 relative z-10">
+                          {leader.avatarUrl ? (
+                            <img
+                              src={leader.avatarUrl}
+                              alt={leader.name}
+                              className="w-14 h-14 rounded-2xl object-cover border border-white/20 shadow-inner flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-black text-xl text-white shadow-inner flex-shrink-0">
+                              {leader.avatarText || leader.name?.substring(0, 2) || 'MN'}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <span className="inline-block text-[10px] font-black uppercase tracking-wider text-[#F4B323] bg-[#F4B323]/15 px-2.5 py-0.5 rounded-full border border-[#F4B323]/30 mb-1">
+                              {leader.role}
+                            </span>
+                            <h3 className="text-lg font-black tracking-tight text-white truncate">
+                              {leader.name}
+                            </h3>
+                            <p className="text-xs text-slate-300 font-semibold truncate">
+                              {leader.subtitle || leader.role}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <span className="inline-block text-[10px] font-black uppercase tracking-wider text-[#F4B323] bg-[#F4B323]/15 px-2.5 py-0.5 rounded-full border border-[#F4B323]/30 mb-1">
-                            {isHi ? 'उप-प्रधानाचार्य' : 'Vice-Principal'}
-                          </span>
-                          <h3 className="text-lg font-black tracking-tight text-white truncate">
-                            {isHi ? 'रवि सर' : 'Ravi Sir'}
-                          </h3>
-                          <p className="text-xs text-slate-300 font-semibold truncate">
-                            {isHi ? 'उप-प्रधानाचार्य (प्रशासन)' : 'Vice-Principal (Admin)'}
-                          </p>
-                        </div>
+                      </div>
+
+                      {/* Content & Description */}
+                      <div className="p-5 sm:p-6 space-y-4">
+                        <p className="text-xs text-[#475569] leading-relaxed">
+                          {leader.bio}
+                        </p>
+
+                        {/* Key Roles */}
+                        {leader.keyRoles && leader.keyRoles.length > 0 && (
+                          <div className="pt-3 border-t border-slate-100 space-y-2">
+                            <div className="text-[11px] font-black uppercase tracking-wider text-[#0c2340] flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#0c2340]" />
+                              <span>{isHi ? 'मुख्य जिम्मेदारियां (Key Roles)' : 'Key Responsibilities'}</span>
+                            </div>
+                            <ul className="text-[11px] text-[#64748B] space-y-1.5">
+                              {leader.keyRoles.map((roleItem, rIdx) => (
+                                <li key={rIdx} className="flex items-start gap-1.5">
+                                  <span className="text-[#0c2340] font-bold mt-0.5">•</span>
+                                  <span>{roleItem}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Content & Description */}
-                    <div className="p-5 sm:p-6 space-y-4">
-                      <p className="text-xs text-[#475569] leading-relaxed">
-                        {isHi
-                          ? 'विद्यालय के दैनिक प्रशासनिक संचालन, शिक्षक समन्वय एवं समग्र छात्र अनुशासन के कुशल मार्गदर्शक। विद्यालय प्रबंधन एवं अभिभावकों के बीच निरंतर संवाद स्थापित कर संस्थान के सर्वांगीण विकास और शैक्षणिक गुणवत्ता को नई ऊंचाइयों पर ले जाने हेतु पूर्णतः समर्पित।'
-                          : 'Oversees daily school administration, faculty coordination, and student discipline. Dedicated to building strong parent-school communication and elevating academic standards.'}
-                      </p>
-
-                      {/* Key Roles */}
-                      <div className="pt-3 border-t border-slate-100 space-y-2">
-                        <div className="text-[11px] font-black uppercase tracking-wider text-[#0c2340] flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#0c2340]" />
-                          <span>{isHi ? 'मुख्य जिम्मेदारियां (Key Roles)' : 'Key Responsibilities'}</span>
-                        </div>
-                        <ul className="text-[11px] text-[#64748B] space-y-1.5">
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'दैनिक विद्यालय संचालन एवं समय-सारणी (Timetable & Routine) प्रबंधन' : 'Daily school operations & academic routine management'}</span>
-                          </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'कक्षा शिक्षण गुणवत्ता निरीक्षण एवं शिक्षक संकाय मार्गदर्शन' : 'Classroom teaching quality monitoring & teacher guidance'}</span>
-                          </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'छात्र कल्याण, अभिभावक परामर्श (PTM) एवं प्रशासनिक समन्वय' : 'Student welfare, PTM counseling & admin coordination'}</span>
-                          </li>
-                        </ul>
-                      </div>
+                    <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2 text-[11px] font-bold text-[#0c2340]">
+                      <Building className="w-3.5 h-3.5 text-[#0c2340]" />
+                      <span>{leader.footerText || (isHi ? 'प्रशासनिक संकाय' : 'Administrative Faculty')}</span>
                     </div>
                   </div>
-
-                  <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2 text-[11px] font-bold text-[#0c2340]">
-                    <Building className="w-3.5 h-3.5 text-[#0c2340]" />
-                    <span>{isHi ? 'प्रशासनिक सचिवालय एवं छात्र कल्याण' : 'Administration & Student Welfare Desk'}</span>
-                  </div>
-                </div>
-
-                {/* 2. Academic Head: Ashish Sir */}
-                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1">
-                  <div>
-                    {/* Header Banner */}
-                    <div className="bg-gradient-to-br from-[#0c2340] via-[#102a4d] to-[#173a66] p-6 text-white relative overflow-hidden">
-                      <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/5 blur-xl pointer-events-none" />
-                      <div className="flex items-center gap-3.5 relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-black text-xl text-white shadow-inner flex-shrink-0">
-                          AS
-                        </div>
-                        <div className="min-w-0">
-                          <span className="inline-block text-[10px] font-black uppercase tracking-wider text-[#F4B323] bg-[#F4B323]/15 px-2.5 py-0.5 rounded-full border border-[#F4B323]/30 mb-1">
-                            {isHi ? 'शैक्षणिक प्रमुख' : 'Academic Head'}
-                          </span>
-                          <h3 className="text-lg font-black tracking-tight text-white truncate">
-                            {isHi ? 'आशीष सर' : 'Ashish Sir'}
-                          </h3>
-                          <p className="text-xs text-slate-300 font-semibold truncate">
-                            {isHi ? 'शैक्षणिक प्रमुख (पाठ्यक्रम व परीक्षा)' : 'Academic Head (Syllabus & Exams)'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Content & Description */}
-                    <div className="p-5 sm:p-6 space-y-4">
-                      <p className="text-xs text-[#475569] leading-relaxed">
-                        {isHi
-                          ? 'आधुनिक पाठ्यक्रम नियोजन, परीक्षा मूल्यांकन, शिक्षक प्रशिक्षण एवं प्रत्येक कक्षा के शिक्षण स्तर को उन्नत बनाने वाले कुशल रणनीतिकार। विद्यार्थियों के बुनियादी ज्ञान से लेकर विशिष्ट प्रतिभा को निखारने हेतु प्रतिबद्ध।'
-                          : 'Leads curriculum planning, exam assessments, teacher training, and academic standards across all grades. Focused on deep foundational learning and student merit.'}
-                      </p>
-
-                      {/* Key Roles */}
-                      <div className="pt-3 border-t border-slate-100 space-y-2">
-                        <div className="text-[11px] font-black uppercase tracking-wider text-[#0c2340] flex items-center gap-1.5">
-                          <BookOpen className="w-3.5 h-3.5 text-[#0c2340]" />
-                          <span>{isHi ? 'मुख्य जिम्मेदारियां (Key Roles)' : 'Key Responsibilities'}</span>
-                        </div>
-                        <ul className="text-[11px] text-[#64748B] space-y-1.5">
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'पाठ्यक्रम (Syllabus) समयबद्ध पूर्णता एवं परीक्षा योजना' : 'Timely curriculum completion & comprehensive exam schedules'}</span>
-                          </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'आधुनिक शिक्षण विधियों (Pedagogy) का क्रियान्वयन व शिक्षक प्रशिक्षण' : 'Modern pedagogy implementation & periodic teacher workshops'}</span>
-                          </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'परीक्षा परिणाम विश्लेषण (Result Analysis) व रेमेडियल कक्षा प्रबंधन' : 'Result performance analysis & remedial learning support'}</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2 text-[11px] font-bold text-[#0c2340]">
-                    <GraduationCap className="w-3.5 h-3.5 text-[#0c2340]" />
-                    <span>{isHi ? 'शैक्षणिक उत्कृष्टता एवं परीक्षा प्रकोष्ठ' : 'Academic Excellence & Examination Wing'}</span>
-                  </div>
-                </div>
-
-                {/* 3. School Discipline Incharge: Rozi Miss */}
-                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1">
-                  <div>
-                    {/* Header Banner */}
-                    <div className="bg-gradient-to-br from-[#0c2340] via-[#102a4d] to-[#173a66] p-6 text-white relative overflow-hidden">
-                      <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/5 blur-xl pointer-events-none" />
-                      <div className="flex items-center gap-3.5 relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-black text-xl text-white shadow-inner flex-shrink-0">
-                          RM
-                        </div>
-                        <div className="min-w-0">
-                          <span className="inline-block text-[10px] font-black uppercase tracking-wider text-[#F4B323] bg-[#F4B323]/15 px-2.5 py-0.5 rounded-full border border-[#F4B323]/30 mb-1">
-                            {isHi ? 'अनुशासन प्रभारी' : 'Discipline Incharge'}
-                          </span>
-                          <h3 className="text-lg font-black tracking-tight text-white truncate">
-                            {isHi ? 'रोजी मिस' : 'Rozi Miss'}
-                          </h3>
-                          <p className="text-xs text-slate-300 font-semibold truncate">
-                            {isHi ? 'विद्यालय अनुशासन प्रभारी' : 'School Discipline Incharge'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Content & Description */}
-                    <div className="p-5 sm:p-6 space-y-4">
-                      <p className="text-xs text-[#475569] leading-relaxed">
-                        {isHi
-                          ? 'विद्यार्थियों में आत्म-अनुशासन, नैतिक संस्कार, स्वच्छता एवं शालीन आचरण के विकास हेतु दृढ़ एवं स्नेहमयी मार्गदर्शिका। परिसर में सुरक्षित, सभ्य और प्रेरणादायक शैक्षिक वातावरण बनाए रखने में अग्रणी भूमिका।'
-                          : 'Nurtures student self-discipline, moral ethics, punctuality, and neatness. Ensures a secure, respectful, and motivating school environment for every child.'}
-                      </p>
-
-                      {/* Key Roles */}
-                      <div className="pt-3 border-t border-slate-100 space-y-2">
-                        <div className="text-[11px] font-black uppercase tracking-wider text-[#0c2340] flex items-center gap-1.5">
-                          <ShieldCheck className="w-3.5 h-3.5 text-[#0c2340]" />
-                          <span>{isHi ? 'मुख्य जिम्मेदारियां (Key Roles)' : 'Key Responsibilities'}</span>
-                        </div>
-                        <ul className="text-[11px] text-[#64748B] space-y-1.5">
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'प्रार्थना सभा (Assembly), यूनिफॉर्म एवं समयबद्धता (Punctuality) नियमन' : 'Morning assembly, proper uniform & punctuality enforcement'}</span>
-                          </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'विद्यार्थियों में संस्कार, शिष्टाचार और सकारात्मक व्यवहार का विकास' : 'Inculcating moral values, polite etiquette & positive student behavior'}</span>
-                          </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'परिसर में सुरक्षा, शांति और अनुशासन नियमों का निष्ठापूर्ण पालन' : 'Campus safety, peaceful environment & strict adherence to rules'}</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2 text-[11px] font-bold text-[#0c2340]">
-                    <Shield className="w-3.5 h-3.5 text-[#0c2340]" />
-                    <span>{isHi ? 'अनुशासन परिषद एवं छात्र आचार संहिता' : 'Discipline Council & Student Conduct'}</span>
-                  </div>
-                </div>
-
-                {/* 4. Accountant: Neha Miss */}
-                <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1">
-                  <div>
-                    {/* Header Banner */}
-                    <div className="bg-gradient-to-br from-[#0c2340] via-[#102a4d] to-[#173a66] p-6 text-white relative overflow-hidden">
-                      <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/5 blur-xl pointer-events-none" />
-                      <div className="flex items-center gap-3.5 relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-black text-xl text-white shadow-inner flex-shrink-0">
-                          NM
-                        </div>
-                        <div className="min-w-0">
-                          <span className="inline-block text-[10px] font-black uppercase tracking-wider text-[#F4B323] bg-[#F4B323]/15 px-2.5 py-0.5 rounded-full border border-[#F4B323]/30 mb-1">
-                            {isHi ? 'लेखापाल' : 'Accountant'}
-                          </span>
-                          <h3 className="text-lg font-black tracking-tight text-white truncate">
-                            {isHi ? 'नेहा मिस' : 'Neha Miss'}
-                          </h3>
-                          <p className="text-xs text-slate-300 font-semibold truncate">
-                            {isHi ? 'लेखापाल / अकाउंटेंट' : 'School Accountant'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Content & Description */}
-                    <div className="p-5 sm:p-6 space-y-4">
-                      <p className="text-xs text-[#475569] leading-relaxed">
-                        {isHi
-                          ? 'विद्यालय के समस्त वित्तीय संचालन, डिजिटल फीस प्रणाली और पारदर्शी लेखा-जोखा प्रबंधन की निष्ठावान प्रभारी। अभिभावकों के लिए डिजिटल रसीद, समय पर समाधान एवं पारदर्शी फीस व्यवस्था सुनिश्चित करने में सदैव तत्पर।'
-                          : 'Manages school financial accounting, automated fee collection, and digital ledger. Committed to providing instant fee receipts, transparent records, and prompt parent support.'}
-                      </p>
-
-                      {/* Key Roles */}
-                      <div className="pt-3 border-t border-slate-100 space-y-2">
-                        <div className="text-[11px] font-black uppercase tracking-wider text-[#0c2340] flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-[#0c2340]" />
-                          <span>{isHi ? 'मुख्य जिम्मेदारियां (Key Roles)' : 'Key Responsibilities'}</span>
-                        </div>
-                        <ul className="text-[11px] text-[#64748B] space-y-1.5">
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'ऑनलाइन व ऑफलाइन फीस संग्रहण एवं तुरंत डिजिटल रसीद जारी करना' : 'Online & counter fee collection with instant digital receipt generation'}</span>
-                          </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'दैनिक आय-व्यय, ऑडिट और वित्तीय रजिस्टरों का सटीक संधारण' : 'Daily revenue & expense reconciliation, audit ledgers & records'}</span>
-                          </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-[#0c2340] font-bold mt-0.5">•</span>
-                            <span>{isHi ? 'अभिभावकों को फीस समाधान एवं रसीद संबंधी त्वरित सहायता' : 'Prompt parent assistance with fee inquiries, statements & receipts'}</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2 text-[11px] font-bold text-[#0c2340]">
-                    <CreditCard className="w-3.5 h-3.5 text-[#0c2340]" />
-                    <span>{isHi ? 'लेखा एवं वित्त कार्यालय' : 'Accounts & Finance Department'}</span>
-                  </div>
-                </div>
+                ))}
               </div>
             </section>
 
@@ -1524,69 +1722,48 @@ export default function SignInView() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {/* 1. Main Gate Banner */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
-                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
-                      src="/school_gate_banner.jpg"
-                      alt="Main Campus Entrance - Mission Navodaya Public School"
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                {((websiteGallery && websiteGallery.length > 0) ? websiteGallery.slice(0, 4) : [
+                  {
+                    id: 'gal_1',
+                    title: isHi ? 'मुख्य कैंपस प्रवेश द्वार' : 'Main Campus Entrance',
+                    description: isHi ? 'स्कूल की आधिकारिक पहचान के साथ सुरक्षित प्रवेश' : 'Secure entrance with official school identification',
+                    imageUrl: '/school_gate_banner.jpg'
+                  },
+                  {
+                    id: 'gal_2',
+                    title: isHi ? 'खेलकूद एवं फुटबॉल मैदान' : 'Sports & Football Arena',
+                    description: isHi ? 'एथलेटिक्स और फुटबॉल के लिए विशाल खुला खेल का मैदान' : 'Expansive open playground for athletics and football',
+                    imageUrl: '/campus_playground.jpg'
+                  },
+                  {
+                    id: 'gal_3',
+                    title: isHi ? 'शैक्षणिक भवन ब्लॉक' : 'Academic Building Block',
+                    description: isHi ? 'हवादार व बड़े क्लासरूम और डिजिटल लर्निंग पॉइंट्स' : 'Spacious, ventilated classrooms and digital study points',
+                    imageUrl: '/campus_building.jpg'
+                  },
+                  {
+                    id: 'gal_4',
+                    title: isHi ? 'विद्यार्थी आगमन एवं कैंपस जीवन' : 'Student Arrival & Life',
+                    description: isHi ? 'अनुशासित कैंपस गेट, साइकिल पार्किंग और आगमन' : 'Disciplined campus gates, bicycle parking and arrival',
+                    imageUrl: '/school_entrance.jpg'
+                  }
+                ]).map((photo, pIdx) => (
+                  <div key={photo.id || pIdx} className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
+                    <div className="aspect-[4/3] overflow-hidden bg-slate-100">
+                      <img
+                        src={photo.imageUrl || photo.src || '/school_campus_banner.jpg'}
+                        alt={photo.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/school_campus_banner.jpg'; }}
+                      />
+                    </div>
+                    <div className="p-4 space-y-1 bg-white">
+                      <h3 className="text-sm font-bold text-[#14243B]">{photo.title}</h3>
+                      <p className="text-[11px] text-[#65748B]">{photo.description}</p>
+                    </div>
                   </div>
-                  <div className="p-4 space-y-1 bg-white">
-                    <h3 className="text-sm font-bold text-[#14243B]">{isHi ? 'मुख्य कैंपस प्रवेश द्वार' : 'Main Campus Entrance'}</h3>
-                    <p className="text-[11px] text-[#65748B]">{isHi ? 'स्कूल की आधिकारिक पहचान के साथ सुरक्षित प्रवेश' : 'Secure entrance with official school identification'}</p>
-                  </div>
-                </div>
-
-                {/* 2. Playground */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
-                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
-                      src="/campus_playground.jpg"
-                      alt="Sports & Football Arena - Mission Navodaya Public School"
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-4 space-y-1 bg-white">
-                    <h3 className="text-sm font-bold text-[#14243B]">{isHi ? 'खेलकूद एवं फुटबॉल मैदान' : 'Sports & Football Arena'}</h3>
-                    <p className="text-[11px] text-[#65748B]">{isHi ? 'एथलेटिक्स और फुटबॉल के लिए विशाल खुला खेल का मैदान' : 'Expansive open playground for athletics and football'}</p>
-                  </div>
-                </div>
-
-                {/* 3. Academic Building Block */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
-                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
-                      src="/campus_building.jpg"
-                      alt="Academic Building Block - Mission Navodaya Public School"
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-4 space-y-1 bg-white">
-                    <h3 className="text-sm font-bold text-[#14243B]">{isHi ? 'शैक्षणिक भवन ब्लॉक' : 'Academic Building Block'}</h3>
-                    <p className="text-[11px] text-[#65748B]">{isHi ? 'हवादार व बड़े क्लासरूम और डिजिटल लर्निंग पॉइंट्स' : 'Spacious, ventilated classrooms and digital study points'}</p>
-                  </div>
-                </div>
-
-                {/* 4. Student Arrival & Campus Life */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
-                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
-                      src="/school_entrance.jpg"
-                      alt="Student Arrival & Campus Life - Mission Navodaya Public School"
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-4 space-y-1 bg-white">
-                    <h3 className="text-sm font-bold text-[#14243B]">{isHi ? 'विद्यार्थी आगमन एवं कैंपस जीवन' : 'Student Arrival & Life'}</h3>
-                    <p className="text-[11px] text-[#65748B]">{isHi ? 'अनुशासित कैंपस गेट, साइकिल पार्किंग और आगमन' : 'Disciplined campus gates, bicycle parking and arrival'}</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </section>
 
@@ -1623,146 +1800,77 @@ export default function SignInView() {
                 </div>
               </div>
 
-              {/* 4 Cards Grid */}
+              {/* Live Reviews Cards Grid (Synced with Admin App) */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                {((websiteReviews && websiteReviews.length > 0) ? websiteReviews.slice(0, 4) : [
+                  {
+                    id: 'rev_1',
+                    authorName: isHi ? 'राजेश कुमार सिंह' : 'Rajesh Kumar Singh',
+                    relation: isHi ? 'आरव के पिता • कक्षा 4' : 'Father of Aarav • Grade 4',
+                    rating: 5,
+                    text: isHi
+                      ? '“स्कूल में पढ़ाई और अनुशासन दोनों बहुत बढ़िया है। आरव की इंग्लिश कम्युनिकेशन और बेसिक मैथ्स में बहुत सुधार हुआ है। शिक्षक हमेशा सहयोगी और स्नेही रहते हैं।”'
+                      : '“School me padhai aur discipline dono bahut badhiya hai. Aarav ki English communication aur basic maths me bohot improvement hua hai. Teachers hamesha accessible aur caring hain.”'
+                  },
+                  {
+                    id: 'rev_2',
+                    authorName: isHi ? 'सुनीता देवी' : 'Sunita Devi',
+                    relation: isHi ? 'प्रिया कुमारी की माता • कक्षा 1' : 'Mother of Priya Kumari • Grade 1',
+                    rating: 5,
+                    text: isHi
+                      ? '“मोरा बाज़ार क्षेत्र में ऐसा अनुशासित, सुरक्षित और प्रेरक स्कूल वातावरण मिलना गर्व की बात है। बच्चों पर व्यक्तिगत रूप से पूरा ध्यान दिया जाता है।”'
+                      : '“Mora Bazar area me aisa disciplined, safe aur supportive school environment milna bohot khushi ki baat hai. Bachho par personalized dhyan diya jata hai.”'
+                  },
+                  {
+                    id: 'rev_3',
+                    authorName: isHi ? 'मो. शमीम अंसारी' : 'Md. Shamim Ansari',
+                    relation: isHi ? 'रेहान के पिता • कक्षा 7' : 'Father of Rehan • Grade 4',
+                    rating: 5,
+                    text: isHi
+                      ? '“स्पोर्ट्स प्लेग्राउंड और कंप्यूटर लैब बहुत बढ़िया है। रेहान फुटबॉल और डिजिटल लर्निंग में सक्रिय रूप से भाग लेता है। प्रबंधन का विजन बहुत स्पष्ट है।”'
+                      : '“Sports playground aur computer lab bohot accha hai. Rehan football aur digital learning me active participate karta hai. Management ka vision ekdum clear aur dedicated hai.”'
+                  },
+                  {
+                    id: 'rev_4',
+                    authorName: isHi ? 'पूजा शर्मा' : 'Pooja Sharma',
+                    relation: isHi ? 'अनन्या की माता • यूकेजी' : 'Mother of Ananya • UKG',
+                    rating: 5,
+                    text: isHi
+                      ? '“एक्टिविटी बेस्ड लर्निंग और फोनिक्स से मेरी बेटी बहुत तेजी से सीख रही है। सोनी मैडम और सभी शिक्षक हर बच्चे का पूरा ख्याल रखते हैं।”'
+                      : '“Activity based learning aur phonics se meri beti bahut tezi se seekh rahi hai. Soni Madam aur sabhi teachers har bachhe ka pura khayal rakhte hain.”'
+                  }
+                ]).map((rev, rIdx) => (
+                  <div key={rev.id || rIdx} className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-amber-500">
+                          {[...Array(Number(rev.rating) || 5)].map((_, i) => (
+                            <Star key={i} className="w-4 h-4 fill-current" />
+                          ))}
+                        </div>
+                        <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
+                      </div>
+                      <p className="text-xs text-[#475569] leading-relaxed italic">
+                        {rev.text}
+                      </p>
+                    </div>
 
-                {/* Review 1 */}
-                <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-amber-500">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-current" />
-                        ))}
+                    <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#102747] text-[#F4B323] font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
+                        {rev.authorName ? rev.authorName.substring(0, 2).toUpperCase() : 'MN'}
                       </div>
-                      <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
-                    </div>
-                    <p className="text-xs text-[#475569] leading-relaxed italic">
-                      {isHi
-                        ? '“स्कूल में पढ़ाई और अनुशासन दोनों बहुत बढ़िया है। आरव की इंग्लिश कम्युनिकेशन और बेसिक मैथ्स में बहुत सुधार हुआ है। शिक्षक हमेशा सहयोगी और स्नेही रहते हैं।”'
-                        : '“School me padhai aur discipline dono bahut badhiya hai. Aarav ki English communication aur basic maths me bohot improvement hua hai. Teachers hamesha accessible aur caring hain.”'}
-                    </p>
-                  </div>
-
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#102747] text-[#F4B323] font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
-                      RK
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
-                        <span>{isHi ? 'राजेश कुमार सिंह' : 'Rajesh Kumar Singh'}</span>
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                      </div>
-                      <div className="text-[10px] text-[#65748B] font-medium truncate">
-                        {isHi ? 'आरव के पिता • कक्षा 4' : 'Father of Aarav • Grade 4'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Review 2 */}
-                <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-amber-500">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-current" />
-                        ))}
-                      </div>
-                      <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
-                    </div>
-                    <p className="text-xs text-[#475569] leading-relaxed italic">
-                      {isHi
-                        ? '“मोरा बाज़ार क्षेत्र में ऐसा अनुशासित, सुरक्षित और प्रेरक स्कूल वातावरण मिलना गर्व की बात है। बच्चों पर व्यक्तिगत रूप से पूरा ध्यान दिया जाता है।”'
-                        : '“Mora Bazar area me aisa disciplined, safe aur supportive school environment milna bohot khushi ki baat hai. Bachho par personalized dhyan diya jata hai.”'}
-                    </p>
-                  </div>
-
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#091A32] text-amber-400 font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
-                      SD
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
-                        <span>{isHi ? 'सुनीता देवी' : 'Sunita Devi'}</span>
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                      </div>
-                      <div className="text-[10px] text-[#65748B] font-medium truncate">
-                        {isHi ? 'प्रिया कुमारी की माता • कक्षा 1' : 'Mother of Priya Kumari • Grade 1'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Review 3 */}
-                <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-amber-500">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-current" />
-                        ))}
-                      </div>
-                      <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
-                    </div>
-                    <p className="text-xs text-[#475569] leading-relaxed italic">
-                      {isHi
-                        ? '“स्पोर्ट्स प्लेग्राउंड और कंप्यूटर लैब बहुत बढ़िया है। रेहान फुटबॉल और डिजिटल लर्निंग में सक्रिय रूप से भाग लेता है। प्रबंधन का विजन बहुत स्पष्ट है।”'
-                        : '“Sports playground aur computer lab bohot accha hai. Rehan football aur digital learning me active participate karta hai. Management ka vision ekdum clear aur dedicated hai.”'}
-                    </p>
-                  </div>
-
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-800 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
-                      MS
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
-                        <span>{isHi ? 'मो. शमीम अंसारी' : 'Md. Shamim Ansari'}</span>
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                      </div>
-                      <div className="text-[10px] text-[#65748B] font-medium truncate">
-                        {isHi ? 'रेहान के पिता • कक्षा 7' : 'Father of Rehan • Grade 4'}
+                      <div className="min-w-0">
+                        <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
+                          <span>{rev.authorName}</span>
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                        </div>
+                        <div className="text-[10px] text-[#65748B] font-medium truncate">
+                          {rev.relation}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Review 4 */}
-                <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-amber-500">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-current" />
-                        ))}
-                      </div>
-                      <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#F4B323] transition-colors" />
-                    </div>
-                    <p className="text-xs text-[#475569] leading-relaxed italic">
-                      {isHi
-                        ? '“एक्टिविटी बेस्ड लर्निंग और फोनिक्स से मेरी बेटी बहुत तेजी से सीख रही है। सोनी मैडम और सभी शिक्षक हर बच्चे का पूरा ख्याल रखते हैं।”'
-                        : '“Activity based learning aur phonics se meri beti bahut tezi se seekh rahi hai. Soni Madam aur sabhi teachers har bachhe ka pura khayal rakhte hain.”'}
-                    </p>
-                  </div>
-
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple-900 text-amber-300 font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
-                      PS
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-black text-[#14243B] truncate flex items-center gap-1">
-                        <span>{isHi ? 'पूजा शर्मा' : 'Pooja Sharma'}</span>
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                      </div>
-                      <div className="text-[10px] text-[#65748B] font-medium truncate">
-                        {isHi ? 'अनन्या की माता • यूकेजी' : 'Mother of Ananya • UKG'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-
+                ))}
               </div>
             </section>
 
