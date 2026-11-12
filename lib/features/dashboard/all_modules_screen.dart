@@ -14,6 +14,7 @@ import '../classes/classes_screen.dart';
 import 'school_status_screen.dart';
 import '../transport/transport_screen.dart';
 import 'principal_complaints_screen.dart';
+import 'website_manager_screen.dart';
 
 class AllModulesScreen extends StatelessWidget {
   final bool isEmbedded;
@@ -130,6 +131,23 @@ class AllModulesScreen extends StatelessWidget {
  isLocked: false,
  onTap: () {
  Navigator.pushNamed(context, AppRoutes.onlineEnquiries);
+ },
+ ),
+
+ // 0B. Live Website CMS Manager
+ if (isPrincipal)
+ _buildModuleCard(
+ context: context,
+ title: 'Website CMS',
+ icon: Icons.language_rounded,
+ iconColor: const Color(0xFF0C2340),
+ iconBg: const Color(0xFFFEF3C7),
+ isLocked: false,
+ onTap: () {
+ Navigator.push(
+ context,
+ MaterialPageRoute(builder: (_) => const WebsiteManagerScreen()),
+ );
  },
  ),
 

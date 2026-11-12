@@ -10,6 +10,7 @@ import '../../data/services/firestore_service.dart';
 import '../../data/services/providers.dart';
 import '../students/add_student_screen.dart';
 import '../whatsapp/whatsapp_service.dart';
+import 'website_manager_screen.dart';
 
 class OnlineEnquiriesScreen extends ConsumerStatefulWidget {
   final int initialTabIndex;
@@ -125,6 +126,14 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.language_rounded, color: Color(0xFFF4B323)),
+            tooltip: 'Live Website CMS Control',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WebsiteManagerScreen()),
+            ),
+          ),
           Consumer(
             builder: (context, ref, _) {
               final settings = ref.watch(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();

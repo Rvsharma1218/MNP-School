@@ -1,6 +1,7 @@
 import '../../data/services/auth_service.dart';
 import '../../data/services/firestore_service.dart';
 import 'online_enquiries_screen.dart';
+import 'website_manager_screen.dart';
 import '../../core/localization/app_translations.dart';
 import '../security/security_verification_dialog.dart';
 import '../security/device_security_service.dart';
@@ -1298,6 +1299,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         // ─── Online Admission & Recruitment Desk Card (Principal Only) ───
                         _buildOnlineEnquiriesCard(context, isPrincipal),
                         const SizedBox(height: 14),
+                        // ─── Live Website CMS & Banner Studio Card (Principal Only) ───
+                        _buildWebsiteCmsCard(context, isPrincipal),
+                        const SizedBox(height: 14),
                         // ─── Live Parent Complaints & Desk Card (Principal Only) ───
                         _buildParentComplaintsCard(context, isPrincipal),
                         const SizedBox(height: 14),
@@ -1818,6 +1822,94 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildWebsiteCmsCard(BuildContext context, bool isPrincipal) {
+    if (!isPrincipal) return const SizedBox.shrink();
+
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const WebsiteManagerScreen()),
+      ),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0C2340), Color(0xFF173A66)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFF4B323).withValues(alpha: 0.35), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4B323).withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.language_rounded,
+                color: Color(0xFFF4B323),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Website CMS & Banner Studio',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'LIVE CONTROL',
+                        style: TextStyle(
+                          color: Color(0xFFF4B323),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '6 Banners · Gallery · Parent Reviews · Flash News · Staff DP',
+                    style: TextStyle(
+                      color: Color(0xFFE2E8F0),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 16),
+          ],
+        ),
+      ),
     );
   }
 

@@ -445,6 +445,90 @@ class FirestoreService {
     return _teachersController!.stream;
   }
 
+  // ─── Website CMS Management (Live Dynamic Web Controls) ───────────────
+
+  Stream<Map<String, dynamic>> watchWebsiteConfig() {
+    if (!_enabled || _db == null) return const Stream.empty();
+    return _db!
+        .collection('schoolDirectory')
+        .doc('website_config')
+        .snapshots()
+        .map((snap) => snap.data() ?? {});
+  }
+
+  Stream<List<Map<String, dynamic>>> watchWebsiteGallery() {
+    if (!_enabled || _db == null) return const Stream.empty();
+    return _db!
+        .collection('schoolDirectory')
+        .doc('website_gallery')
+        .snapshots()
+        .map((snap) {
+      final items = snap.data()?['items'] as List<dynamic>? ?? [];
+      return items.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> watchWebsiteReviews() {
+    if (!_enabled || _db == null) return const Stream.empty();
+    return _db!
+        .collection('schoolDirectory')
+        .doc('website_reviews')
+        .snapshots()
+        .map((snap) {
+      final items = snap.data()?['items'] as List<dynamic>? ?? [];
+      return items.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> watchWebsiteLeadership() {
+    if (!_enabled || _db == null) return const Stream.empty();
+    return _db!
+        .collection('schoolDirectory')
+        .doc('website_leadership')
+        .snapshots()
+        .map((snap) {
+      final items = snap.data()?['items'] as List<dynamic>? ?? [];
+      return items.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    });
+  }
+
+  Future<void> saveWebsiteConfig(Map<String, dynamic> config) async {
+    if (!_enabled || _db == null) return;
+    final payload = Map<String, dynamic>.from(config);
+    payload['updatedAt'] = FieldValue.serverTimestamp();
+    await Future.wait([
+      _db!.collection('schoolDirectory').doc('website_config').set(payload, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] saveWebsiteConfig error: $e'); }),
+      _db!.collection('schools').doc('SCHOOL_007').collection('website_content').doc('config').set(payload, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] saveWebsiteConfig s007 error: $e'); }),
+    ]);
+  }
+
+  Future<void> saveWebsiteGallery(List<Map<String, dynamic>> items) async {
+    if (!_enabled || _db == null) return;
+    final payload = {'items': items, 'updatedAt': FieldValue.serverTimestamp()};
+    await Future.wait([
+      _db!.collection('schoolDirectory').doc('website_gallery').set(payload, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] saveWebsiteGallery error: $e'); }),
+      _db!.collection('schools').doc('SCHOOL_007').collection('website_content').doc('gallery').set(payload, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] saveWebsiteGallery s007 error: $e'); }),
+    ]);
+  }
+
+  Future<void> saveWebsiteReviews(List<Map<String, dynamic>> items) async {
+    if (!_enabled || _db == null) return;
+    final payload = {'items': items, 'updatedAt': FieldValue.serverTimestamp()};
+    await Future.wait([
+      _db!.collection('schoolDirectory').doc('website_reviews').set(payload, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] saveWebsiteReviews error: $e'); }),
+      _db!.collection('schools').doc('SCHOOL_007').collection('website_content').doc('reviews').set(payload, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] saveWebsiteReviews s007 error: $e'); }),
+    ]);
+  }
+
+  Future<void> saveWebsiteLeadership(List<Map<String, dynamic>> items) async {
+    if (!_enabled || _db == null) return;
+    final payload = {'items': items, 'updatedAt': FieldValue.serverTimestamp()};
+    await Future.wait([
+      _db!.collection('schoolDirectory').doc('website_leadership').set(payload, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] saveWebsiteLeadership error: $e'); }),
+      _db!.collection('schools').doc('SCHOOL_007').collection('website_content').doc('leadership').set(payload, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] saveWebsiteLeadership s007 error: $e'); }),
+    ]);
+  }
+
   Future<void> updateAdmissionEnquiryStatus(String refNo, String status) async {
     if (!_enabled || _db == null) return;
     // Optimistic local update
