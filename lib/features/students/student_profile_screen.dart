@@ -151,12 +151,14 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
     );
   }
   late TabController _tabController;
+  late Future<StudentModel?> _studentFuture;
 
   @override
   void initState() {
     super.initState();
     final isPrincipal = SessionService.instance.isPrincipal;
     _tabController = TabController(length: isPrincipal ? 4 : 3, vsync: this);
+    _studentFuture = _getStudent();
   }
 
   @override
@@ -204,7 +206,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
 
     return FutureBuilder<StudentModel?>(
       initialData: _localStudent ?? cachedStudent,
-      future: _getStudent(),
+      future: _studentFuture,
       builder: (ctx, snap) {
         final student = _localStudent ?? snap.data ?? cachedStudent;
         if (student == null) {
@@ -242,6 +244,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
                   if (mounted) {
                     setState(() {
                       _localStudent = fresh;
+                      _studentFuture = Future.value(fresh);
                     });
                   }
                 },
@@ -794,6 +797,8 @@ class _FeesTab extends ConsumerWidget {
     final feeAsync = ref.watch(feeProvider(studentId));
 
     return feeAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (FeeModel? fee) {
         if (fee == null) {
           return const Center(
@@ -1139,7 +1144,17 @@ class _ReceiptHistoryCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Generate Receipt PDF',
+                  tooltip: 'Preview Receipt PDF (PDF देखें)',
+                  onPressed: () async {
+                    await _generateReceiptPdf(context, payment);
+                  },
+                  icon: const Icon(
+                    Icons.visibility_rounded,
+                    color: AppColors.primary,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Print / Save Receipt PDF',
                   onPressed: () async {
                     await _generateReceiptPdf(context, payment);
                   },

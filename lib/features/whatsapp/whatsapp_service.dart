@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/student_model.dart';
@@ -108,23 +111,27 @@ class WhatsAppService {
     final hasWa = apps['whatsapp'] == true;
     final hasW4b = apps['business'] == true;
 
+    final number = targetPhone.startsWith('91') ? targetPhone : '91$targetPhone';
+    final encoded = Uri.encodeComponent(message);
+
     if (!hasWa && !hasW4b) {
-      // Fallback via URL launcher if MethodChannel package check doesn't detect installed app or on desktop/emulator
-      final number = targetPhone.startsWith('91') ? targetPhone : '91$targetPhone';
-      final encoded = Uri.encodeComponent(message);
-      final uri = Uri.parse('https://api.whatsapp.com/send?phone=$number&text=$encoded');
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return;
-      }
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('WhatsApp / WhatsApp Business not installed on this device'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      // Fallback via direct URL launcher
+      final waUri = Uri.parse('https://wa.me/$number?text=$encoded');
+      try {
+        if (await canLaunchUrl(waUri)) {
+          await launchUrl(waUri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } catch (_) {}
+      final apiUri = Uri.parse('https://api.whatsapp.com/send?phone=$number&text=$encoded');
+      try {
+        if (await canLaunchUrl(apiUri)) {
+          await launchUrl(apiUri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } catch (_) {}
+      // Fallback to native system share
+      await Share.share(message);
       return;
     }
 
@@ -146,11 +153,15 @@ class WhatsAppService {
         'package': selectedPackage,
       });
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error launching WhatsApp: $e'), backgroundColor: AppColors.error),
-        );
-      }
+      debugPrint('[WhatsAppService] sendWhatsAppMessage note: $e — using deep-link fallback');
+      final waUri = Uri.parse('https://wa.me/$number?text=$encoded');
+      try {
+        if (await canLaunchUrl(waUri)) {
+          await launchUrl(waUri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } catch (_) {}
+      await Share.share(message);
     }
   }
 
@@ -173,15 +184,18 @@ class WhatsAppService {
     final hasW4b = apps['business'] == true;
 
     if (!hasWa && !hasW4b) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('WhatsApp / WhatsApp Business not installed on this device'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+      // Fallback directly to native system share sheet (always works on all devices/Android versions)
+      try {
+        await Share.shareXFiles([XFile(filePath)], text: message);
+        return;
+      } catch (shareErr) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error sharing PDF: $shareErr'), backgroundColor: AppColors.error),
+          );
+        }
+        return;
       }
-      return;
     }
 
     String? selectedPackage;
@@ -203,10 +217,15 @@ class WhatsAppService {
         'package': selectedPackage,
       });
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error sharing PDF to WhatsApp: $e'), backgroundColor: AppColors.error),
-        );
+      debugPrint('[WhatsAppService] sendWhatsAppPdf note: $e — using native Share sheet fallback');
+      try {
+        await Share.shareXFiles([XFile(filePath)], text: message);
+      } catch (shareErr) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error sharing PDF: $shareErr'), backgroundColor: AppColors.error),
+          );
+        }
       }
     }
   }
@@ -1405,6 +1424,47 @@ class _DocumentShareSheetState extends State<_DocumentShareSheet> {
                 ),
               ),
               const SizedBox(height: 16),
+              // 1. PREVIEW PDF BUTTON
+              if (widget.filePath != null && widget.filePath!.isNotEmpty) ...[
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      final file = File(widget.filePath!);
+                      if (await file.exists()) {
+                        await Printing.layoutPdf(
+                          name: widget.title,
+                          onLayout: (format) async => file.readAsBytes(),
+                        );
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('PDF file is not ready yet.'), backgroundColor: AppColors.error),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Could not open preview: $e'), backgroundColor: AppColors.error),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.visibility_rounded, size: 20, color: Colors.white),
+                  label: const Text(
+                    'Preview PDF Document (PDF पहले देखें)',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 1,
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+              // 2. DIRECT WHATSAPP CHAT BUTTON
               ElevatedButton.icon(
                 onPressed: !hasValidPhone
                     ? null
@@ -1431,20 +1491,19 @@ class _DocumentShareSheetState extends State<_DocumentShareSheet> {
                 ),
               ),
               const SizedBox(height: 8),
+              // 3. SHARE PDF FILE BUTTON
               if (widget.filePath != null && widget.filePath!.isNotEmpty) ...[
                 OutlinedButton.icon(
-                  onPressed: !hasValidPhone
-                      ? null
-                      : () async {
-                          final nav = Navigator.of(context);
-                          nav.pop();
-                          await WhatsAppService.sendPdf(
-                            context: context,
-                            phone: digits,
-                            message: widget.message,
-                            filePath: widget.filePath!,
-                          );
-                        },
+                  onPressed: () async {
+                    final nav = Navigator.of(context);
+                    nav.pop();
+                    await WhatsAppService.sendPdf(
+                      context: context,
+                      phone: digits,
+                      message: widget.message,
+                      filePath: widget.filePath!,
+                    );
+                  },
                   icon: const Icon(Icons.picture_as_pdf_rounded, size: 20, color: Color(0xFF075E54)),
                   label: Text(
                     widget.pdfButtonLabel,
