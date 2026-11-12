@@ -963,6 +963,15 @@ CREATE TABLE monthly_fees (
   Future<void> upsertStudentFromRemote(StudentModel student) async {
     final db = await database;
     await _ensureStudentColumns(db);
+
+    // Safeguard: Never overwrite a valid existing local student with a blank name or dummy payload
+    if (student.name.trim().isEmpty) {
+      final existing = await db.query('students', where: 'id = ?', whereArgs: [student.id]);
+      if (existing.isNotEmpty && (existing.first['name']?.toString() ?? '').trim().isNotEmpty) {
+        return;
+      }
+    }
+
     await db.insert('students', student.toDbMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     
     // Upsert fee metadata if embedded in student document from website
@@ -1010,10 +1019,25 @@ CREATE TABLE monthly_fees (
       }
     } catch (_) {}
 
+    // Cache existing local students to protect valid data against blank/corrupted remote payloads
+    final existingStudentsMap = <String, Map<String, dynamic>>{};
+    try {
+      final existingStudents = await db.query('students', columns: ['id', 'name', 'admissionNumber', 'className', 'fatherName', 'mobile']);
+      for (final r in existingStudents) {
+        final rId = r['id']?.toString() ?? '';
+        if (rId.isNotEmpty) existingStudentsMap[rId] = r;
+      }
+    } catch (_) {}
+
     final seenAdmissionNumbers = <String>{};
     final seenStudentIds = <String>{};
 
     for (final student in students) {
+      // Safeguard: If incoming remote student has empty name, but local DB has valid name, DO NOT overwrite with blank!
+      final existingLocal = existingStudentsMap[student.id];
+      if (student.name.trim().isEmpty && existingLocal != null && (existingLocal['name']?.toString() ?? '').trim().isNotEmpty) {
+        continue;
+      }
       final fs = student.feeStructure;
       double mFee = student.monthlyFee ?? 0.0;
       if (fs != null && fs['tuitionFee'] != null && (fs['tuitionFee'] as num) > 0) {
