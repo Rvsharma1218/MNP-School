@@ -5,7 +5,8 @@ import {
   GraduationCap, Mail, Phone, MapPin, Clock, ExternalLink,
   BookOpen, Award, ShieldCheck, Trophy, Users, Sparkles,
   Download, Smartphone, CheckCircle, Check, ArrowRight,
-  Calendar, Star, FileText, ChevronRight, HelpCircle
+  Calendar, Star, FileText, ChevronRight, HelpCircle,
+  Building, CreditCard, CheckCircle2
 } from 'lucide-react';
 
 /**
@@ -190,6 +191,149 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
                   ? '"हम मोरा-मैरी में आधुनिक शिक्षा, डिजिटल क्लासरूम और खेलकूद के माध्यम से ग्रामीण प्रतिभाओं को राष्ट्रीय मंच पर चमकाने के लिए संकल्पबद्ध हैं।"'
                   : '"We are determined to bridge the rural-urban education divide through modern digital tools, sports development, and personalized attention."'}
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Key Administration & Academic Leadership Team */}
+        <div className="p-6 sm:p-10 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm space-y-8">
+          <div className="text-center space-y-2 max-w-2xl mx-auto">
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#102747] bg-[#102747]/8 px-3.5 py-1 rounded-full border border-[#102747]/15">
+              {isHi ? 'मुख्य प्रशासनिक एवं शैक्षणिक दल' : 'ADMINISTRATIVE & ACADEMIC HEADS'}
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-[#14243B]">
+              {isHi ? 'विद्यालय संचालन, अनुशासन एवं शिक्षण नेतृत्व' : 'School Administration & Academic Team'}
+            </h3>
+            <p className="text-xs sm:text-sm text-[#65748B]">
+              {isHi
+                ? 'दैनिक संचालन, अनुशासन, उच्च शैक्षणिक गुणवत्ता और पारदर्शी वित्तीय व्यवस्था सुनिश्चित करने वाले हमारे मुख्य मार्गदर्शक।'
+                : 'Dedicated professionals ensuring smooth daily operations, high academic standards, strict discipline, and transparent accounts.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* 1. Ravi Sir - Vice-Principal */}
+            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/20 p-5 space-y-3.5 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+                    RS
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                      {isHi ? 'उप-प्रधानाचार्य' : 'Vice-Principal'}
+                    </span>
+                    <h4 className="text-sm font-black text-[#14243B] mt-0.5">{isHi ? 'रवि सर' : 'Ravi Sir'}</h4>
+                  </div>
+                </div>
+                <p className="text-xs text-[#475569] leading-relaxed">
+                  {isHi
+                    ? 'विद्यालय के दैनिक प्रशासनिक संचालन, शिक्षक समन्वय एवं समग्र छात्र अनुशासन के कुशल मार्गदर्शक। विद्यालय प्रबंधन एवं अभिभावकों के बीच निरंतर संवाद स्थापित कर संस्थान के सर्वांगीण विकास हेतु समर्पित।'
+                    : 'Oversees daily school administration, faculty coordination, student discipline, and parent communication.'}
+                </p>
+                <div className="pt-2 border-t border-indigo-100 space-y-1 text-[11px] text-[#64748B]">
+                  <p className="font-bold text-indigo-900 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-indigo-600" />
+                    <span>{isHi ? 'मुख्य जिम्मेदारियां:' : 'Key Roles:'}</span>
+                  </p>
+                  <p>• {isHi ? 'दैनिक विद्यालय संचालन व रूटीन' : 'Daily school routine & admin'}</p>
+                  <p>• {isHi ? 'शिक्षण गुणवत्ता व शिक्षक मार्गदर्शन' : 'Teaching quality & faculty guide'}</p>
+                  <p>• {isHi ? 'अभिभावक परामर्श (PTM) समन्वय' : 'Parent consultation (PTM)'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Ashish Sir - Academic Head */}
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/20 p-5 space-y-3.5 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-sky-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+                    AS
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-sky-700 bg-sky-100 px-2 py-0.5 rounded">
+                      {isHi ? 'शैक्षणिक प्रमुख' : 'Academic Head'}
+                    </span>
+                    <h4 className="text-sm font-black text-[#14243B] mt-0.5">{isHi ? 'आशीष सर' : 'Ashish Sir'}</h4>
+                  </div>
+                </div>
+                <p className="text-xs text-[#475569] leading-relaxed">
+                  {isHi
+                    ? 'आधुनिक पाठ्यक्रम नियोजन, परीक्षा मूल्यांकन, शिक्षक प्रशिक्षण एवं प्रत्येक कक्षा के शिक्षण स्तर को उन्नत बनाने वाले कुशल रणनीतिकार। विद्यार्थियों के बुनियादी ज्ञान को निखारने हेतु प्रतिबद्ध।'
+                    : 'Leads curriculum planning, exam assessments, teacher training, and academic standards across all grades.'}
+                </p>
+                <div className="pt-2 border-t border-sky-100 space-y-1 text-[11px] text-[#64748B]">
+                  <p className="font-bold text-sky-950 flex items-center gap-1">
+                    <BookOpen className="w-3 h-3 text-sky-600" />
+                    <span>{isHi ? 'मुख्य जिम्मेदारियां:' : 'Key Roles:'}</span>
+                  </p>
+                  <p>• {isHi ? 'पाठ्यक्रम समयबद्ध पूर्णता व परीक्षा' : 'Syllabus completion & exams'}</p>
+                  <p>• {isHi ? 'आधुनिक शिक्षण विधियां व ट्रेनिंग' : 'Modern pedagogy & training'}</p>
+                  <p>• {isHi ? 'परिणाम विश्लेषण व रेमेडियल क्लास' : 'Result analysis & remedial support'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Rozi Miss - Discipline Incharge */}
+            <div className="rounded-2xl border border-rose-100 bg-rose-50/20 p-5 space-y-3.5 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-rose-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+                    RM
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
+                      {isHi ? 'अनुशासन प्रभारी' : 'Discipline Head'}
+                    </span>
+                    <h4 className="text-sm font-black text-[#14243B] mt-0.5">{isHi ? 'रोजी मिस' : 'Rozi Miss'}</h4>
+                  </div>
+                </div>
+                <p className="text-xs text-[#475569] leading-relaxed">
+                  {isHi
+                    ? 'विद्यार्थियों में आत्म-अनुशासन, नैतिक संस्कार, स्वच्छता एवं शालीन आचरण के विकास हेतु दृढ़ एवं स्नेहमयी मार्गदर्शिका। परिसर में सुरक्षित एवं प्रेरणादायक माहौल बनाए रखने में अग्रणी।'
+                    : 'Fosters student discipline, moral values, neatness, and safety across the school campus.'}
+                </p>
+                <div className="pt-2 border-t border-rose-100 space-y-1 text-[11px] text-[#64748B]">
+                  <p className="font-bold text-rose-950 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-rose-600" />
+                    <span>{isHi ? 'मुख्य जिम्मेदारियां:' : 'Key Roles:'}</span>
+                  </p>
+                  <p>• {isHi ? 'प्रार्थना सभा, यूनिफॉर्म व समयबद्धता' : 'Assembly, uniform & punctuality'}</p>
+                  <p>• {isHi ? 'संस्कार, शिष्टाचार व अच्छा आचरण' : 'Moral ethics & student conduct'}</p>
+                  <p>• {isHi ? 'परिसर सुरक्षा व शांति नियमन' : 'Campus safety & peaceful order'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Neha Miss - Accountant */}
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/20 p-5 space-y-3.5 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-amber-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+                    NM
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+                      {isHi ? 'लेखापाल' : 'Accountant'}
+                    </span>
+                    <h4 className="text-sm font-black text-[#14243B] mt-0.5">{isHi ? 'नेहा मिस' : 'Neha Miss'}</h4>
+                  </div>
+                </div>
+                <p className="text-xs text-[#475569] leading-relaxed">
+                  {isHi
+                    ? 'विद्यालय के समस्त वित्तीय संचालन, डिजिटल फीस प्रणाली और पारदर्शी लेखा-जोखा प्रबंधन की निष्ठावान प्रभारी। अभिभावकों के लिए डिजिटल रसीद एवं त्वरित समाधान में तत्पर।'
+                    : 'Manages school financial accounting, automated fee collection, and digital ledger with transparency.'}
+                </p>
+                <div className="pt-2 border-t border-amber-100 space-y-1 text-[11px] text-[#64748B]">
+                  <p className="font-bold text-amber-950 flex items-center gap-1">
+                    <CreditCard className="w-3 h-3 text-amber-600" />
+                    <span>{isHi ? 'मुख्य जिम्मेदारियां:' : 'Key Roles:'}</span>
+                  </p>
+                  <p>• {isHi ? 'ऑनलाइन व ऑफलाइन फीस व रसीद' : 'Online & offline fee receipts'}</p>
+                  <p>• {isHi ? 'दैनिक आय-व्यय व वित्तीय ऑडिट' : 'Daily ledger & audit registers'}</p>
+                  <p>• {isHi ? 'अभिभावक फीस समाधान सहायता' : 'Parent fee support & statements'}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
