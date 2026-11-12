@@ -22,7 +22,7 @@ export const metadata = {
     default: "MNP School | Mission Navodaya Public School, Mora-Mairi, Siwan, Bihar",
     template: "%s | MNP School"
   },
-  description: "Official portal of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan, Bihar. Top English Medium school in Mora-Mairi, Mora Bazar, Mairi, Ratauli & Siwan. Founded by Chairman Uday Shankar Patel (Uday Sir) & Director Vishal Patel (Vishal Sir). Online Admissions, Student Results & Quality Education.",
+  description: "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan. Features 24/7 Online Admissions, Live Student Attendance, Exam Results, Fee Portal & Mobile App for Parents.",
   keywords: [
     // Brand & Variations
     "mnp school",
@@ -107,7 +107,7 @@ export const metadata = {
   },
   openGraph: {
     title: "MNP School | Mission Navodaya Public School, Mora-Mairi, Siwan, Bihar",
-    description: "Official portal of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan, Bihar. Serving Mora, Mairi, Ratauli, Mora Bazar, and Siwan. Online Admissions & Results.",
+    description: "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan. Features 24/7 Online Admissions, Live Student Attendance, Exam Results, Fee Portal & Mobile App for Parents.",
     url: "https://mnpschool.in",
     siteName: "MNP School",
     locale: "en_IN",
@@ -116,7 +116,7 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "MNP School | Mission Navodaya Public School, Mora-Mairi, Siwan, Bihar",
-    description: "Official portal of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan, Bihar. Serving Mora, Mairi, Ratauli, Mora Bazar, and Siwan.",
+    description: "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan. Features 24/7 Online Admissions, Live Student Attendance, Exam Results, Fee Portal & Mobile App for Parents.",
   },
   verification: {
     google: "DucDVR_DeLe1mqmmL8JQZ8sl3SiSav2Ux1Tyie_9CqA",
@@ -152,7 +152,7 @@ export default function RootLayout({ children }) {
     "url": "https://mnpschool.in",
     "logo": "https://mnpschool.in/logo.png",
     "image": "https://mnpschool.in/logo.png",
-    "description": "Mission Navodaya Public School (MNP School) located in Mora-Mairi, Siwan, Bihar. Serving students across Mora, Mairi, Ratauli, Mora Bazar, and Siwan district.",
+    "description": "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan. Features 24/7 Online Admissions, Live Student Attendance, Exam Results, Fee Portal & Mobile App for Parents.",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "Mora Bazar, Near Mairi - Ratauli Road",
