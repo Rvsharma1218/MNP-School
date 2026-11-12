@@ -1277,6 +1277,7 @@ class FirestoreService {
         'updatedAt': FieldValue.serverTimestamp(),
       };
       final dirCol = _db!.collection('schoolDirectory');
+      futures.add(dirCol.doc('mnps@mnpschool.in').set(dirData, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] dir mnpschool write note: $e'); }));
       futures.add(dirCol.doc('mnpschooledu@gmail.com').set(dirData, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] dir email write note: $e'); }));
       futures.add(dirCol.doc('SCHOOL_007').set(dirData, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] dir 007 write note: $e'); }));
       futures.add(dirCol.doc('SCHOOL_001').set(dirData, SetOptions(merge: true)).catchError((e) { debugPrint('[Firestore] dir 001 write note: $e'); }));
