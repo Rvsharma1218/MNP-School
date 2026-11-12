@@ -213,17 +213,17 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 1. Ravi Sir - Vice-Principal */}
-            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/20 p-5 space-y-3.5 flex flex-col justify-between">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs hover:shadow-md p-5 space-y-3.5 flex flex-col justify-between transition-all">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-[#0c2340] text-white font-black text-base flex items-center justify-center shadow-xs">
                     RS
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-black uppercase text-[#0c2340] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                       {isHi ? 'उप-प्रधानाचार्य' : 'Vice-Principal'}
                     </span>
-                    <h4 className="text-sm font-black text-[#14243B] mt-0.5">{isHi ? 'रवि सर' : 'Ravi Sir'}</h4>
+                    <h4 className="text-sm font-black text-[#0c2340] mt-0.5">{isHi ? 'रवि सर' : 'Ravi Sir'}</h4>
                   </div>
                 </div>
                 <p className="text-xs text-[#475569] leading-relaxed">
@@ -231,9 +231,9 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
                     ? 'विद्यालय के दैनिक प्रशासनिक संचालन, शिक्षक समन्वय एवं समग्र छात्र अनुशासन के कुशल मार्गदर्शक। विद्यालय प्रबंधन एवं अभिभावकों के बीच निरंतर संवाद स्थापित कर संस्थान के सर्वांगीण विकास हेतु समर्पित।'
                     : 'Oversees daily school administration, faculty coordination, student discipline, and parent communication.'}
                 </p>
-                <div className="pt-2 border-t border-indigo-100 space-y-1 text-[11px] text-[#64748B]">
-                  <p className="font-bold text-indigo-900 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-indigo-600" />
+                <div className="pt-2 border-t border-slate-100 space-y-1 text-[11px] text-[#64748B]">
+                  <p className="font-bold text-[#0c2340] flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-[#0c2340]" />
                     <span>{isHi ? 'मुख्य जिम्मेदारियां:' : 'Key Roles:'}</span>
                   </p>
                   <p>• {isHi ? 'दैनिक विद्यालय संचालन व रूटीन' : 'Daily school routine & admin'}</p>
@@ -244,17 +244,17 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
             </div>
 
             {/* 2. Ashish Sir - Academic Head */}
-            <div className="rounded-2xl border border-sky-100 bg-sky-50/20 p-5 space-y-3.5 flex flex-col justify-between">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs hover:shadow-md p-5 space-y-3.5 flex flex-col justify-between transition-all">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-sky-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-[#0c2340] text-white font-black text-base flex items-center justify-center shadow-xs">
                     AS
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase text-sky-700 bg-sky-100 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-black uppercase text-[#0c2340] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                       {isHi ? 'शैक्षणिक प्रमुख' : 'Academic Head'}
                     </span>
-                    <h4 className="text-sm font-black text-[#14243B] mt-0.5">{isHi ? 'आशीष सर' : 'Ashish Sir'}</h4>
+                    <h4 className="text-sm font-black text-[#0c2340] mt-0.5">{isHi ? 'आशीष सर' : 'Ashish Sir'}</h4>
                   </div>
                 </div>
                 <p className="text-xs text-[#475569] leading-relaxed">
@@ -262,9 +262,9 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
                     ? 'आधुनिक पाठ्यक्रम नियोजन, परीक्षा मूल्यांकन, शिक्षक प्रशिक्षण एवं प्रत्येक कक्षा के शिक्षण स्तर को उन्नत बनाने वाले कुशल रणनीतिकार। विद्यार्थियों के बुनियादी ज्ञान को निखारने हेतु प्रतिबद्ध।'
                     : 'Leads curriculum planning, exam assessments, teacher training, and academic standards across all grades.'}
                 </p>
-                <div className="pt-2 border-t border-sky-100 space-y-1 text-[11px] text-[#64748B]">
-                  <p className="font-bold text-sky-950 flex items-center gap-1">
-                    <BookOpen className="w-3 h-3 text-sky-600" />
+                <div className="pt-2 border-t border-slate-100 space-y-1 text-[11px] text-[#64748B]">
+                  <p className="font-bold text-[#0c2340] flex items-center gap-1">
+                    <BookOpen className="w-3 h-3 text-[#0c2340]" />
                     <span>{isHi ? 'मुख्य जिम्मेदारियां:' : 'Key Roles:'}</span>
                   </p>
                   <p>• {isHi ? 'पाठ्यक्रम समयबद्ध पूर्णता व परीक्षा' : 'Syllabus completion & exams'}</p>
@@ -275,17 +275,17 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
             </div>
 
             {/* 3. Rozi Miss - Discipline Incharge */}
-            <div className="rounded-2xl border border-rose-100 bg-rose-50/20 p-5 space-y-3.5 flex flex-col justify-between">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs hover:shadow-md p-5 space-y-3.5 flex flex-col justify-between transition-all">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-rose-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-[#0c2340] text-white font-black text-base flex items-center justify-center shadow-xs">
                     RM
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-black uppercase text-[#0c2340] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                       {isHi ? 'अनुशासन प्रभारी' : 'Discipline Head'}
                     </span>
-                    <h4 className="text-sm font-black text-[#14243B] mt-0.5">{isHi ? 'रोजी मिस' : 'Rozi Miss'}</h4>
+                    <h4 className="text-sm font-black text-[#0c2340] mt-0.5">{isHi ? 'रोजी मिस' : 'Rozi Miss'}</h4>
                   </div>
                 </div>
                 <p className="text-xs text-[#475569] leading-relaxed">
@@ -293,9 +293,9 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
                     ? 'विद्यार्थियों में आत्म-अनुशासन, नैतिक संस्कार, स्वच्छता एवं शालीन आचरण के विकास हेतु दृढ़ एवं स्नेहमयी मार्गदर्शिका। परिसर में सुरक्षित एवं प्रेरणादायक माहौल बनाए रखने में अग्रणी।'
                     : 'Fosters student discipline, moral values, neatness, and safety across the school campus.'}
                 </p>
-                <div className="pt-2 border-t border-rose-100 space-y-1 text-[11px] text-[#64748B]">
-                  <p className="font-bold text-rose-950 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-rose-600" />
+                <div className="pt-2 border-t border-slate-100 space-y-1 text-[11px] text-[#64748B]">
+                  <p className="font-bold text-[#0c2340] flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-[#0c2340]" />
                     <span>{isHi ? 'मुख्य जिम्मेदारियां:' : 'Key Roles:'}</span>
                   </p>
                   <p>• {isHi ? 'प्रार्थना सभा, यूनिफॉर्म व समयबद्धता' : 'Assembly, uniform & punctuality'}</p>
@@ -306,17 +306,17 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
             </div>
 
             {/* 4. Neha Miss - Accountant */}
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/20 p-5 space-y-3.5 flex flex-col justify-between">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs hover:shadow-md p-5 space-y-3.5 flex flex-col justify-between transition-all">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-amber-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-[#0c2340] text-white font-black text-base flex items-center justify-center shadow-xs">
                     NM
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-black uppercase text-[#0c2340] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                       {isHi ? 'लेखापाल' : 'Accountant'}
                     </span>
-                    <h4 className="text-sm font-black text-[#14243B] mt-0.5">{isHi ? 'नेहा मिस' : 'Neha Miss'}</h4>
+                    <h4 className="text-sm font-black text-[#0c2340] mt-0.5">{isHi ? 'नेहा मिस' : 'Neha Miss'}</h4>
                   </div>
                 </div>
                 <p className="text-xs text-[#475569] leading-relaxed">
@@ -324,9 +324,9 @@ export function AboutPageView({ isHi, schoolName, schoolSubtitle, schoolLocation
                     ? 'विद्यालय के समस्त वित्तीय संचालन, डिजिटल फीस प्रणाली और पारदर्शी लेखा-जोखा प्रबंधन की निष्ठावान प्रभारी। अभिभावकों के लिए डिजिटल रसीद एवं त्वरित समाधान में तत्पर।'
                     : 'Manages school financial accounting, automated fee collection, and digital ledger with transparency.'}
                 </p>
-                <div className="pt-2 border-t border-amber-100 space-y-1 text-[11px] text-[#64748B]">
-                  <p className="font-bold text-amber-950 flex items-center gap-1">
-                    <CreditCard className="w-3 h-3 text-amber-600" />
+                <div className="pt-2 border-t border-slate-100 space-y-1 text-[11px] text-[#64748B]">
+                  <p className="font-bold text-[#0c2340] flex items-center gap-1">
+                    <CreditCard className="w-3 h-3 text-[#0c2340]" />
                     <span>{isHi ? 'मुख्य जिम्मेदारियां:' : 'Key Roles:'}</span>
                   </p>
                   <p>• {isHi ? 'ऑनलाइन व ऑफलाइन फीस व रसीद' : 'Online & offline fee receipts'}</p>
