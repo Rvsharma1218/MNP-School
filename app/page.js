@@ -1,53 +1,57 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { SchoolProvider, useSchoolStore } from '../lib/store';
-import Sidebar from '../components/Sidebar';
-import Header from '../components/Header';
-import DashboardView from '../components/DashboardView';
-import StudentsView from '../components/StudentsView';
-import FeesView from '../components/FeesView';
-import AttendanceView from '../components/AttendanceView';
-import ResultsView from '../components/ResultsView';
-import IdCardView from '../components/IdCardView';
-import AdmitCardView from '../components/AdmitCardView';
-import TimetableView from '../components/TimetableView';
-import ClassesView from '../components/ClassesView';
-import TeachersView from '../components/TeachersView';
-import ReportsView from '../components/ReportsView';
-import QrScannerView from '../components/QrScannerView';
-import SettingsView from '../components/SettingsView';
-import ScreenPinLockModal from '../components/ScreenPinLockModal';
-import TeacherPermissionsModal from '../components/TeacherPermissionsModal';
-import SubscriptionView from '../components/SubscriptionView';
-import PrintReceiptModal from '../components/PrintReceiptModal';
-import PrintResultModal from '../components/PrintResultModal';
-import PrintIdCardsModal from '../components/PrintIdCardsModal';
-import GlobalSearchModal from '../components/GlobalSearchModal';
-import AddEditStudentModal from '../components/AddEditStudentModal';
-import StudentProfileModal from '../components/StudentProfileModal';
-import CollectFeeModal from '../components/CollectFeeModal';
-import StudentFeeDetailModal from '../components/StudentFeeDetailModal';
-import PromoteStudentsModal from '../components/PromoteStudentsModal';
-import WhatsAppReminderModal from '../components/WhatsAppReminderModal';
-import NoticeBoardView from '../components/NoticeBoardView';
-import AddEditNoticeModal from '../components/AddEditNoticeModal';
-import NoticeDetailModal from '../components/NoticeDetailModal';
 import { ToastContainer, ConfirmDialog } from '../components/ToastNotification';
-import AudioVoiceNoteModal from '../components/AudioVoiceNoteModal';
-import HelpAndFeedbackModal from '../components/HelpAndFeedbackModal';
-
-// Auth Components
 import SignInView from '../components/SignInView';
-import SignUpView from '../components/SignUpView';
-import ForgotPasswordView from '../components/ForgotPasswordView';
-import SetupWizardView from '../components/SetupWizardView';
-import AccessDeniedView from '../components/AccessDeniedView';
-import UserManagementView from '../components/UserManagementView';
-import ProfileView from '../components/ProfileView';
-import ParentPortalView from '../components/ParentPortalView';
-import ParentComplaintsView from '../components/ParentComplaintsView';
-import OnlineEnquiriesModal from '../components/OnlineEnquiriesModal';
+
+// Lightweight Shell & Navigation (Lazy-loaded)
+const Sidebar = dynamic(() => import('../components/Sidebar'), { ssr: false });
+const Header = dynamic(() => import('../components/Header'), { ssr: false });
+
+// Authenticated Core Views (Loaded on demand to keep public website blazing fast)
+const DashboardView = dynamic(() => import('../components/DashboardView'), { ssr: false });
+const StudentsView = dynamic(() => import('../components/StudentsView'), { ssr: false });
+const FeesView = dynamic(() => import('../components/FeesView'), { ssr: false });
+const AttendanceView = dynamic(() => import('../components/AttendanceView'), { ssr: false });
+const ResultsView = dynamic(() => import('../components/ResultsView'), { ssr: false });
+const IdCardView = dynamic(() => import('../components/IdCardView'), { ssr: false });
+const AdmitCardView = dynamic(() => import('../components/AdmitCardView'), { ssr: false });
+const TimetableView = dynamic(() => import('../components/TimetableView'), { ssr: false });
+const ClassesView = dynamic(() => import('../components/ClassesView'), { ssr: false });
+const TeachersView = dynamic(() => import('../components/TeachersView'), { ssr: false });
+const ReportsView = dynamic(() => import('../components/ReportsView'), { ssr: false });
+const QrScannerView = dynamic(() => import('../components/QrScannerView'), { ssr: false });
+const SettingsView = dynamic(() => import('../components/SettingsView'), { ssr: false });
+const SubscriptionView = dynamic(() => import('../components/SubscriptionView'), { ssr: false });
+const NoticeBoardView = dynamic(() => import('../components/NoticeBoardView'), { ssr: false });
+const UserManagementView = dynamic(() => import('../components/UserManagementView'), { ssr: false });
+const ProfileView = dynamic(() => import('../components/ProfileView'), { ssr: false });
+const ParentPortalView = dynamic(() => import('../components/ParentPortalView'), { ssr: false });
+const ParentComplaintsView = dynamic(() => import('../components/ParentComplaintsView'), { ssr: false });
+const SetupWizardView = dynamic(() => import('../components/SetupWizardView'), { ssr: false });
+const AccessDeniedView = dynamic(() => import('../components/AccessDeniedView'), { ssr: false });
+const ForgotPasswordView = dynamic(() => import('../components/ForgotPasswordView'), { ssr: false });
+
+// Lazy-Loaded Action Modals
+const ScreenPinLockModal = dynamic(() => import('../components/ScreenPinLockModal'), { ssr: false });
+const TeacherPermissionsModal = dynamic(() => import('../components/TeacherPermissionsModal'), { ssr: false });
+const PrintReceiptModal = dynamic(() => import('../components/PrintReceiptModal'), { ssr: false });
+const PrintResultModal = dynamic(() => import('../components/PrintResultModal'), { ssr: false });
+const PrintIdCardsModal = dynamic(() => import('../components/PrintIdCardsModal'), { ssr: false });
+const GlobalSearchModal = dynamic(() => import('../components/GlobalSearchModal'), { ssr: false });
+const AddEditStudentModal = dynamic(() => import('../components/AddEditStudentModal'), { ssr: false });
+const StudentProfileModal = dynamic(() => import('../components/StudentProfileModal'), { ssr: false });
+const CollectFeeModal = dynamic(() => import('../components/CollectFeeModal'), { ssr: false });
+const StudentFeeDetailModal = dynamic(() => import('../components/StudentFeeDetailModal'), { ssr: false });
+const PromoteStudentsModal = dynamic(() => import('../components/PromoteStudentsModal'), { ssr: false });
+const WhatsAppReminderModal = dynamic(() => import('../components/WhatsAppReminderModal'), { ssr: false });
+const AddEditNoticeModal = dynamic(() => import('../components/AddEditNoticeModal'), { ssr: false });
+const NoticeDetailModal = dynamic(() => import('../components/NoticeDetailModal'), { ssr: false });
+const AudioVoiceNoteModal = dynamic(() => import('../components/AudioVoiceNoteModal'), { ssr: false });
+const HelpAndFeedbackModal = dynamic(() => import('../components/HelpAndFeedbackModal'), { ssr: false });
+const OnlineEnquiriesModal = dynamic(() => import('../components/OnlineEnquiriesModal'), { ssr: false });
 
 const KNOWN_APP_PATHS = [
   '/', '/dashboard', '/notices', '/students', '/fees', '/attendance',
@@ -244,8 +248,12 @@ function AppContent() {
     const cleanPath = (currentPath || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
 
     // 1. Allow public website and auth routes if unauthenticated
-    const publicPages = ['/', '/signin', '/signup', '/forgot-password', '/about', '/admissions', '/academics', '/gallery', '/contact', '/download', '/results'];
+    const publicPages = ['/', '/signin', '/forgot-password', '/about', '/admissions', '/academics', '/gallery', '/contact', '/download', '/results'];
     if (!currentUser) {
+      if (cleanPath === '/signup') {
+        navigate('/signin');
+        return;
+      }
       if (!publicPages.includes(cleanPath)) {
         navigate('/signin');
       }
@@ -321,7 +329,9 @@ function AppContent() {
   // ── Render 1: Public website and auth routes
   const cleanPath = (currentPath || '').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
   if (!currentUser) {
-    if (cleanPath === '/signup') return <SignUpView />;
+    if (cleanPath === '/signup') {
+      return <SignInView />;
+    }
     if (cleanPath === '/forgot-password') return <ForgotPasswordView />;
     if (cleanPath === '/results') return <ResultsView />;
     return <SignInView />;
