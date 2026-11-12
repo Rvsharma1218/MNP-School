@@ -92,7 +92,7 @@ export default function SignUpView() {
   const schoolName = settings?.instituteName || settings?.schoolName || 'Mission Navodaya Public School';
   const logoSrc = settings?.logoUrl || settings?.logoPath || settings?.logo || '/logo.png';
   const phone = settings?.phone || '8603481865';
-  const email = settings?.email || 'mnpschooledu@gmail.com';
+  const email = settings?.email || 'mnps@mnpschool.in';
   const currentSession = settings?.currentSession || settings?.academicYear || '2026-27';
   const isAdmissionOpen = settings?.isAdmissionOpen !== false;
 

@@ -75,7 +75,7 @@ export default function SignInView() {
   const schoolLocation = 'Mora-Mairi, Siwan (Bihar)';
   const logoSrc = settings?.logoUrl || settings?.logoPath || settings?.logo || '/logo.png';
   const primaryPhone = settings?.phone || settings?.mobile || '8603481865';
-  const officialEmail = settings?.email || 'mnpschooledu@gmail.com';
+  const officialEmail = settings?.email || 'mnps@mnpschool.in';
   const currentSession = settings?.currentSession || settings?.academicYear || '2026-27';
   const isAdmissionOpen = settings?.isAdmissionOpen !== false;
   const admissionClasses = settings?.admissionClasses || 'For Classes Nursery to 8th';

@@ -813,8 +813,30 @@ export function ContactPageView({ isHi, schoolLocation, primaryPhone, officialEm
             </a>
           </div>
 
-          {/* Timings */}
+          {/* Official Email */}
           <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-bold">
+              <Mail className="w-6 h-6 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-[#0c2340]">{isHi ? 'ऑफिशियल ईमेल' : 'Official Business Email'}</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                {officialEmail || 'mnps@mnpschool.in'}
+                <br />
+                {isHi ? 'प्रशासनिक व आधिकारिक पत्राचार' : 'Official & administrative inquiries'}
+              </p>
+            </div>
+            <a
+              href={`mailto:${officialEmail || 'mnps@mnpschool.in'}`}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:underline pt-1"
+            >
+              <span>{isHi ? 'ईमेल भेजें' : 'Send Email'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          {/* Timings */}
+          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3 sm:col-span-2 lg:col-span-1">
             <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold">
               <Clock className="w-6 h-6 text-purple-600" />
             </div>

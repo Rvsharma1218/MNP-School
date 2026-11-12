@@ -17,7 +17,7 @@ export default function ForgotPasswordView() {
   const schoolName = settings?.instituteName || settings?.schoolName || 'Mission Navodaya Public School';
   const logoSrc = settings?.logoUrl || settings?.logoPath || settings?.logo || '/logo.png';
   const phone = settings?.phone || '8603481865';
-  const officialEmail = settings?.email || 'mnpschooledu@gmail.com';
+  const officialEmail = settings?.email || 'mnps@mnpschool.in';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -127,7 +127,7 @@ export default function ForgotPasswordView() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. mnpschooledu@gmail.com"
+                    placeholder="e.g. mnps@mnpschool.in"
                     className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2340]/20 focus:border-[#0c2340] transition-all"
                   />
                 </div>
