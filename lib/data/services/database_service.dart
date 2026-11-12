@@ -1814,10 +1814,11 @@ CREATE TABLE monthly_fees (
     if (s != null && s.studentId.isNotEmpty && s.studentId != id) {
       await deleteStudentLocalOnly(s.studentId);
     }
-    FirestoreService.instance.deleteStudent(id, altIds: altIds).catchError((e) {
+    try {
+      await FirestoreService.instance.deleteStudent(id, altIds: altIds);
+    } catch (e) {
       debugPrint('[DatabaseService] Firestore deleteStudent note: $e');
-      return null;
-    });
+    }
   }
 
   /// Deletes a student and all related tables in SQLite ONLY (used during Firestore stream reconciliation)

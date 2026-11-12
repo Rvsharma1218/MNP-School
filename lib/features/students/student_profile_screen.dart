@@ -18,6 +18,7 @@ import '../../data/models/exam_model.dart';
 import '../../data/services/database_service.dart';
 import '../../data/services/providers.dart';
 import '../../data/services/session_service.dart';
+import '../../data/services/teacher_permissions_service.dart';
 import '../attendance/attendance_report_service.dart';
 import '../whatsapp/whatsapp_service.dart';
 import '../../widgets/common_widgets.dart';
@@ -158,7 +159,9 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
   void initState() {
     super.initState();
     final isPrincipal = SessionService.instance.isPrincipal;
-    _tabController = TabController(length: isPrincipal ? 4 : 3, vsync: this);
+    final perms = TeacherPermissionsService.instance.permissions;
+    final canSeeFees = isPrincipal || perms.canViewFeeStatus || perms.canCollectFees;
+    _tabController = TabController(length: canSeeFees ? 4 : 3, vsync: this);
     _studentFuture = _getStudent();
   }
 
@@ -223,6 +226,16 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
 
   Widget _buildProfile(BuildContext context, StudentModel student) {
     final isPrincipal = SessionService.instance.isPrincipal;
+    final perms = ref.watch(teacherPermissionsProvider);
+    final canDelete = isPrincipal || perms.canDeleteStudents;
+    final canEdit = isPrincipal || perms.canEditStudents;
+    final canSeeFees = isPrincipal || perms.canViewFeeStatus || perms.canCollectFees;
+
+    final desiredTabLength = canSeeFees ? 4 : 3;
+    if (_tabController.length != desiredTabLength) {
+      _tabController.dispose();
+      _tabController = TabController(length: desiredTabLength, vsync: this);
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -234,25 +247,28 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
             floating: false,
             backgroundColor: AppColors.primary,
             actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                onPressed: () async {
-                  await Navigator.pushNamed(ctx, AppRoutes.editStudent, arguments: student.id);
-                  PaintingBinding.instance.imageCache.clear();
-                  PaintingBinding.instance.imageCache.clearLiveImages();
-                  await ref.read(studentsProvider.notifier).loadStudents();
-                  final fresh = await DatabaseService.instance.getStudentById(widget.studentId);
-                  if (mounted) {
-                    setState(() {
-                      _localStudent = fresh;
-                      _studentFuture = Future.value(fresh);
-                    });
-                  }
-                },
-              ),
-              if (isPrincipal)
+              if (canEdit)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                  tooltip: 'Edit Student',
+                  onPressed: () async {
+                    await Navigator.pushNamed(ctx, AppRoutes.editStudent, arguments: student.id);
+                    PaintingBinding.instance.imageCache.clear();
+                    PaintingBinding.instance.imageCache.clearLiveImages();
+                    await ref.read(studentsProvider.notifier).loadStudents();
+                    final fresh = await DatabaseService.instance.getStudentById(widget.studentId);
+                    if (mounted) {
+                      setState(() {
+                        _localStudent = fresh;
+                        _studentFuture = Future.value(fresh);
+                      });
+                    }
+                  },
+                ),
+              if (canDelete)
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.white),
+                  tooltip: 'Delete Student',
                   onPressed: () => _deleteStudent(context, student),
                 ),
             ],
@@ -416,7 +432,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
               labelPadding: const EdgeInsets.symmetric(horizontal: 6),
               tabs: [
                 const Tab(height: 44, text: 'Info'),
-                if (isPrincipal) const Tab(height: 44, text: 'Fees'), // Hide Fee Tab for Teachers
+                if (canSeeFees) const Tab(height: 44, text: 'Fees'),
                 const Tab(height: 44, text: 'Attendance'),
                 const Tab(height: 44, text: 'Results'),
               ],
@@ -427,7 +443,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
           controller: _tabController,
           children: [
             _InfoTab(student: student),
-            if (isPrincipal) _FeesTab(student: student), // Hide Fee Tab View for Teachers
+            if (canSeeFees) _FeesTab(student: student),
             _AttendanceTab(student: student),
             _ResultsTab(studentId: student.id),
           ],
@@ -458,6 +474,8 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
   Widget _buildBottomBar(BuildContext context, StudentModel student) {
     final cs = Theme.of(context).colorScheme;
     final isPrincipal = SessionService.instance.isPrincipal;
+    final perms = ref.watch(teacherPermissionsProvider);
+    final canSeeFees = isPrincipal || perms.canViewFeeStatus || perms.canCollectFees;
 
     return Container(
       padding: EdgeInsets.fromLTRB(12, 10, 12,
@@ -494,7 +512,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
               ),
             ),
           ),
-          if (isPrincipal) ...[
+          if (canSeeFees) ...[
             const SizedBox(width: 6),
             Expanded(
               child: _BottomActionButton(

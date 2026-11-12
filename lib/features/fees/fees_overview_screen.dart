@@ -16,12 +16,13 @@ import '../whatsapp/whatsapp_service.dart';
 import '../../data/services/receipt_pdf_service.dart';
 import 'package:printing/printing.dart';
 import '../../widgets/common_widgets.dart';
+import '../../data/services/teacher_permissions_service.dart';
 
-/// Defense-in-depth: the Fees tiles are already hidden from a Teacher's
-/// Dashboard, but a deep link / restored route could still land here
-/// directly, so block both fee screens at this level too.
+/// Defense-in-depth: the Fees tiles are restricted if the user has no fee permissions.
 Widget? _principalOnlyGuard(String title) {
-  if (SessionService.instance.isPrincipal) return null;
+  final hasAccess = SessionService.instance.isPrincipal ||
+      TeacherPermissionsService.instance.isAllowed((p) => p.canCollectFees || p.canViewFeeStatus);
+  if (hasAccess) return null;
   return Scaffold(
     backgroundColor: AppColors.background,
     appBar: AppBar(
@@ -33,7 +34,7 @@ Widget? _principalOnlyGuard(String title) {
       child: Padding(
         padding: EdgeInsets.all(24),
         child: Text(
-          'Fee details are only visible to the Principal.',
+          'Fee details are only visible to authorized accounts.',
           textAlign: TextAlign.center,
           style: TextStyle(color: AppColors.textSecondary),
         ),

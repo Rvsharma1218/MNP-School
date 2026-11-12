@@ -909,6 +909,10 @@ class _StudentCardState extends ConsumerState<_StudentCard> {
   Widget build(BuildContext context) {
     final s = widget.student;
     final cs = Theme.of(context).colorScheme;
+    final isPrincipal = SessionService.instance.isPrincipal;
+    final perms = ref.watch(teacherPermissionsProvider);
+    final canDelete = isPrincipal || perms.canDeleteStudents;
+    final canEdit = isPrincipal || perms.canEditStudents;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -1009,7 +1013,71 @@ class _StudentCardState extends ConsumerState<_StudentCard> {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+              if (canDelete || canEdit)
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, size: 22, color: cs.onSurfaceVariant),
+                  padding: EdgeInsets.zero,
+                  tooltip: 'Options',
+                  onSelected: (val) async {
+                    if (val == 'edit') {
+                      await Navigator.pushNamed(context, AppRoutes.editStudent, arguments: s.id);
+                      PaintingBinding.instance.imageCache.clear();
+                      PaintingBinding.instance.imageCache.clearLiveImages();
+                      ref.read(studentsProvider.notifier).loadStudents();
+                    } else if (val == 'delete') {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete Student'),
+                          content: Text('Are you sure you want to delete ${s.name}? This will remove all their records.'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        await ref.read(studentsProvider.notifier).deleteStudent(s.id);
+                        ref.invalidate(dashboardStatsProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Student deleted'), backgroundColor: AppColors.error),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    if (canEdit)
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18),
+                            SizedBox(width: 8),
+                            Text('Edit Details'),
+                          ],
+                        ),
+                      ),
+                    if (canDelete)
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete Student', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                  ],
+                )
+              else
+                Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
             ],
           ),
         ),

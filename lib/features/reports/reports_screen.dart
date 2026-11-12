@@ -13,6 +13,7 @@ import '../../data/models/fee_model.dart';
 import '../../data/services/database_service.dart';
 import '../../data/services/import_service.dart';
 import '../../data/services/session_service.dart';
+import '../../data/services/teacher_permissions_service.dart';
 import '../../data/services/teacher_service.dart';
 import '../../widgets/responsive_web_layout.dart';
 
@@ -1602,6 +1603,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final cs = Theme.of(context).colorScheme;
     final isDesktop = MediaQuery.of(context).size.width >= 850;
     final isTeacher = SessionService.instance.isTeacher;
+    final perms = TeacherPermissionsService.instance.permissions;
+    final canSeeFees = !isTeacher || perms.canViewFeeStatus || perms.canCollectFees;
+    final canSeeFaculty = !isTeacher || perms.canViewFacultyList;
 
     final allReports = [
       _ReportItem(
@@ -1617,7 +1621,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         onExcel: () => _exportStudentExcel(context),
         onPdf: () => _exportStudentPdf(context),
       ),
-      if (!isTeacher) ...[
+      if (canSeeFees) ...[
         _ReportItem(
           id: 'fees',
           category: 'fees',
@@ -1674,7 +1678,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         onExcel: () => _exportPassFailPromotedExcel(context),
         onPdf: () => _exportPassFailPromotedPdf(context),
       ),
-      if (!isTeacher) ...[
+      if (canSeeFaculty) ...[
         _ReportItem(
           id: 'faculty',
           category: 'students',
