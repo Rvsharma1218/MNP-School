@@ -1,5 +1,5 @@
 export default function sitemap() {
-  const baseUrl = 'https://mnpschool.in';
+  const baseUrl = 'https://www.mnpschool.in';
   const currentDate = new Date().toISOString();
 
   return [

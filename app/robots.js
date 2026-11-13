@@ -4,10 +4,7 @@ export default function robots() {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: [
-      'https://mnpschool.in/sitemap.xml',
-      'https://www.mnpschool.in/sitemap.xml',
-    ],
+    sitemap: 'https://www.mnpschool.in/sitemap.xml',
   };
 }
 
