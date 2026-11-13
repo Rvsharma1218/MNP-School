@@ -328,20 +328,23 @@ export default function SignInView() {
         if (!fText) return null;
         return (
           <div className="bg-gradient-to-r from-red-700 via-amber-600 to-red-700 text-white text-[11px] sm:text-xs font-bold py-1.5 px-4 overflow-hidden relative shadow-md flex items-center justify-between gap-3 border-b border-red-800/40">
-            <div className="flex items-center gap-2.5 overflow-hidden flex-1">
+            <div className="flex items-center gap-2.5 overflow-hidden flex-1 relative">
               {fBadge && (
-                <span className="flex-shrink-0 bg-white text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs tracking-wider animate-pulse flex items-center gap-1">
+                <span className="flex-shrink-0 z-10 bg-white text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs tracking-wider animate-pulse flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping inline-block" />
                   {fBadge}
                 </span>
               )}
-              <div className="truncate text-slate-100 font-semibold tracking-wide">
-                {fText}
+              <div className="overflow-hidden flex-1 relative flex items-center">
+                <div className="animate-marquee inline-flex whitespace-nowrap cursor-pointer">
+                  <span className="text-slate-100 font-semibold tracking-wide mr-16">{fText}</span>
+                  <span className="text-slate-100 font-semibold tracking-wide mr-16">{fText}</span>
+                </div>
               </div>
             </div>
             <a
               href={`tel:${primaryPhone}`}
-              className="flex-shrink-0 hidden md:inline-flex items-center gap-1.5 text-[11px] font-black bg-black/25 hover:bg-black/40 text-amber-300 px-3 py-0.5 rounded-full border border-white/20 transition-colors"
+              className="flex-shrink-0 z-10 hidden md:inline-flex items-center gap-1.5 text-[11px] font-black bg-black/25 hover:bg-black/40 text-amber-300 px-3 py-0.5 rounded-full border border-white/20 transition-colors"
             >
               <Phone className="w-3 h-3 text-amber-300" />
               <span>{isHi ? 'हेल्पलाइन:' : 'Helpline:'} +91 {primaryPhone}</span>

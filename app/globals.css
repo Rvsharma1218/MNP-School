@@ -221,3 +221,24 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0 !important;
   }
 }
+
+/* ─── Infinite Marquee News Ticker ────────────────────────── */
+@keyframes continuousMarquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: continuousMarquee 26s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
