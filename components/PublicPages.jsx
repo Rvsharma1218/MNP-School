@@ -960,17 +960,17 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
               {/* Download Buttons */}
               <div className="pt-3 flex flex-col sm:flex-row gap-4">
                 <a
-                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_arm64-v8a.apk"
-                  download="MNP_School_v1.0.1.apk"
+                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.2-build13/app-arm64-v8a-release.apk"
+                  download="MNP_School_v1.0.2.apk"
                   className="px-6 py-4 rounded-2xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-sm flex items-center justify-center gap-3 shadow-xl cursor-pointer hover:scale-105 active:scale-95 transition-all"
                 >
                   <Download className="w-5 h-5" />
-                  <span>{isHi ? 'Android APK सीधे डाउनलोड करें (v1.0.1)' : 'Direct Download APK (v1.0.1)'}</span>
+                  <span>{isHi ? 'Android APK सीधे डाउनलोड करें (v1.0.2)' : 'Direct Download APK (v1.0.2)'}</span>
                 </a>
 
                 <a
-                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.1-build12/MNP_School_armeabi-v7a.apk"
-                  download="MNP_School_v1.0.1_v7a.apk"
+                  href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.2-build13/app-armeabi-v7a-release.apk"
+                  download="MNP_School_v1.0.2_v7a.apk"
                   className="px-5 py-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition-all cursor-pointer"
                 >
                   <Smartphone className="w-4 h-4 text-slate-300" />
