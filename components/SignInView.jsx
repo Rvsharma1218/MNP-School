@@ -386,51 +386,151 @@ export default function SignInView() {
           isHi
         );
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4 relative animate-scaleUp">
-              <button
-                onClick={() => setIsPopupAlertDismissed(true)}
-                className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              {pBadge && (
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
-                    {pBadge}
-                  </span>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-fadeIn">
+            <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-[0_25px_60px_-15px_rgba(12,35,64,0.45)] border border-amber-400/30 relative animate-scaleUp">
+              {/* Top Accent Gradient Line */}
+              <div className="h-1.5 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500" />
+
+              {/* Modal Premium Header */}
+              <div className="bg-gradient-to-br from-[#07172c] via-[#0c2340] to-[#143763] text-white p-5 sm:p-6 relative overflow-hidden">
+                {/* Decorative Ambient Glow */}
+                <div className="absolute -right-8 -top-8 w-36 h-36 bg-amber-400/15 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-blue-500/10 rounded-full blur-xl pointer-events-none" />
+
+                {/* Top Badge & Close Row */}
+                <div className="flex items-center justify-between gap-3 relative z-10 mb-4">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 text-[11px] font-black uppercase tracking-wider backdrop-blur-xs">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                    <span>{pBadge || (isHi ? 'विशेष नामांकन सूचना' : 'ADMISSION ANNOUNCEMENT')}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsPopupAlertDismissed(true)}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/10"
+                    aria-label="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
-              {pTitle && (
-                <h3 className="text-xl font-black text-[#0c2340] tracking-tight">
-                  {pTitle}
-                </h3>
-              )}
-              {pMsg && (
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-                  {pMsg}
-                </p>
-              )}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
-                <button
-                  onClick={() => setIsPopupAlertDismissed(true)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
-                >
-                  {isHi ? 'बंद करें' : 'Close'}
-                </button>
-                <button
-                  onClick={() => {
-                    setIsPopupAlertDismissed(true);
-                    if (setSignUpFormTab) setSignUpFormTab('student');
-                    navigate('/signup?tab=admission');
-                  }}
-                  className="px-5 py-2.5 rounded-xl bg-[#0c2340] hover:bg-[#143763] text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
-                >
-                  <span>{pAction || (isHi ? 'नामांकन फॉर्म भरें →' : 'Apply Online →')}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+
+                {/* School Info Row */}
+                <div className="flex items-center gap-3.5 relative z-10">
+                  <div className="w-12 h-12 rounded-2xl bg-white p-1 shadow-lg shadow-black/20 flex-shrink-0 flex items-center justify-center border border-amber-400/40">
+                    <img src="/logo.png" alt="MNP School" className="w-full h-full object-contain rounded-xl" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-base sm:text-lg font-black tracking-tight text-white leading-tight">
+                      {isHi ? 'मिशन नवोदय पब्लिक स्कूल' : 'Mission Navodaya Public School'}
+                    </h4>
+                    <p className="text-[11px] text-amber-200/90 font-medium flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                      <span className="truncate">{isHi ? 'मोरा बाज़ार, सीवान • सत्र 2026-27' : 'Mora Bazar, Siwan • Session 2026-27'}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 sm:p-6 space-y-4">
+                {/* Title */}
+                {pTitle && (
+                  <h3 className="text-base sm:text-lg font-black text-[#0c2340] tracking-tight leading-snug">
+                    {pTitle}
+                  </h3>
+                )}
+
+                {/* Description Message */}
+                {pMsg && (
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    {pMsg}
+                  </p>
+                )}
+
+                {/* Key Features Chips (2x2 Grid) */}
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-700 flex items-center justify-center flex-shrink-0 font-bold">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-slate-500 font-bold uppercase">{isHi ? 'कक्षाएं' : 'Classes'}</div>
+                      <div className="text-xs font-black text-[#0c2340] truncate">{isHi ? 'नर्सरी से 8वीं' : 'Nursery to 8th'}</div>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/60 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-700 flex items-center justify-center flex-shrink-0 font-bold">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-slate-500 font-bold uppercase">{isHi ? 'मोबाइल ऐप' : 'Parent App'}</div>
+                      <div className="text-xs font-black text-[#0c2340] truncate">{isHi ? 'लाइव अटेंडेंस' : 'Live Tracking'}</div>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/60 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-700 flex items-center justify-center flex-shrink-0 font-bold">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-slate-500 font-bold uppercase">{isHi ? 'परिसर' : 'Campus'}</div>
+                      <div className="text-xs font-black text-[#0c2340] truncate">{isHi ? 'सुरक्षित व अनुशासित' : 'Safe & Modern'}</div>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-purple-50/70 border border-purple-200/60 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-700 flex items-center justify-center flex-shrink-0 font-bold">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-slate-500 font-bold uppercase">{isHi ? 'दाखिला' : 'Admission'}</div>
+                      <div className="text-xs font-black text-[#0c2340] truncate">{isHi ? 'सीमित सीटें उपलब्ध' : 'Limited Seats'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPopupAlertDismissed(true);
+                      setInquirySuccess(null);
+                      setAdmissionModalTab('online');
+                      setIsAdmissionInquiryOpen(true);
+                    }}
+                    className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-500 text-[#0c2340] font-black text-xs sm:text-sm shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+                  >
+                    <GraduationCap className="w-4 h-4 text-[#0c2340]" />
+                    <span>{pAction || (isHi ? 'ऑनलाइन नामांकन फॉर्म भरें' : 'Apply Online Now')}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#0c2340]" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPopupAlertDismissed(true);
+                      setInquirySuccess(null);
+                      setAdmissionModalTab('inquiry');
+                      setIsAdmissionInquiryOpen(true);
+                    }}
+                    className="w-full sm:w-auto py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>{isHi ? 'पूछताछ करें' : 'Inquiry'}</span>
+                  </button>
+                </div>
+
+                {/* Direct Call Helpline */}
+                <div className="text-center pt-1">
+                  <a
+                    href={`tel:+91${primaryPhone}`}
+                    className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-[#0c2340] font-bold transition-colors"
+                  >
+                    <Phone className="w-3 h-3 text-emerald-600" />
+                    <span>{isHi ? 'हेल्पलाइन पर कॉल करें:' : 'Helpline:'}</span>
+                    <span className="text-[#0c2340] font-black underline decoration-amber-400 underline-offset-2">+91 {primaryPhone}</span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
