@@ -25,12 +25,14 @@ import {
   Send, Bus
 } from 'lucide-react';
 
+const hasDevanagari = (text) => /[\u0900-\u097F]/.test(String(text || ''));
+
 // Smart CMS Bilingual & Deletion Field Resolver
 function resolveCmsField(obj, keyBase, fallbackEn, fallbackHi, isHi) {
   if (!obj) return isHi ? (fallbackHi ?? '') : (fallbackEn ?? '');
   const raw = obj[keyBase];
-  const rawEn = obj[`${keyBase}En`];
-  const rawHi = obj[`${keyBase}Hi`];
+  const rawEn = obj[keyBase + 'En'];
+  const rawHi = obj[keyBase + 'Hi'];
 
   // If the admin deliberately cleared/deleted the field:
   const isExplicitlyCleared =
@@ -41,17 +43,30 @@ function resolveCmsField(obj, keyBase, fallbackEn, fallbackHi, isHi) {
   if (isExplicitlyCleared) return '';
 
   if (isHi) {
+    // 1. Explicit Hindi entry from admin
     if (rawHi !== undefined && String(rawHi).trim() !== '') return String(rawHi).trim();
+    // 2. Generic field if written in Hindi
+    if (raw !== undefined && String(raw).trim() !== '' && hasDevanagari(raw)) return String(raw).trim();
+    // 3. Fallback Hindi text
+    if (fallbackHi !== undefined && fallbackHi !== null && String(fallbackHi).trim() !== '') return fallbackHi;
+    // 4. Fallback to generic / English if no Hindi exists at all
     if (raw !== undefined && String(raw).trim() !== '') return String(raw).trim();
     if (rawEn !== undefined && String(rawEn).trim() !== '') return String(rawEn).trim();
-    return raw === undefined ? (fallbackHi ?? '') : '';
+    return fallbackEn ?? '';
   } else {
+    // 1. Explicit English entry from admin
     if (rawEn !== undefined && String(rawEn).trim() !== '') return String(rawEn).trim();
+    // 2. Generic field ONLY if it is in English (not Devanagari)
+    if (raw !== undefined && String(raw).trim() !== '' && !hasDevanagari(raw)) return String(raw).trim();
+    // 3. Clean English fallback text (prevents Hindi appearing in English mode!)
+    if (fallbackEn !== undefined && fallbackEn !== null && String(fallbackEn).trim() !== '') return fallbackEn;
+    // 4. Last resort if no English exists
     if (raw !== undefined && String(raw).trim() !== '') return String(raw).trim();
     if (rawHi !== undefined && String(rawHi).trim() !== '') return String(rawHi).trim();
-    return raw === undefined ? (fallbackEn ?? '') : '';
+    return fallbackHi ?? '';
   }
 }
+
 
 export default function SignInView() {
   const {
