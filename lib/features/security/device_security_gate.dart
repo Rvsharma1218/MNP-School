@@ -15,8 +15,8 @@ class DeviceSecurityGate extends StatefulWidget {
 
   const DeviceSecurityGate({super.key, required this.child});
 
-  static int currentVersionCode = 12;
-  static String currentVersion = '1.0.1';
+  static int currentVersionCode = 13;
+  static String currentVersion = '1.0.2';
 
   /// Returns dynamically resolved human-readable app version & build number
   static String get dynamicAppVersion {
