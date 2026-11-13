@@ -17,7 +17,7 @@ export const viewport = {
 };
 
 export const metadata = {
-  metadataBase: new URL('https://mnpschool.in'),
+  metadataBase: new URL('https://www.mnpschool.in'),
   title: {
     default: "MNP School | Mission Navodaya Public School, Mora-Mairi, Siwan, Bihar",
     template: "%s | MNP School"
@@ -92,7 +92,7 @@ export const metadata = {
   creator: "Mission Navodaya Public School",
   publisher: "Mission Navodaya Public School",
   alternates: {
-    canonical: "https://mnpschool.in"
+    canonical: "https://www.mnpschool.in"
   },
   icons: {
     icon: [
@@ -108,7 +108,7 @@ export const metadata = {
   openGraph: {
     title: "MNP School | Mission Navodaya Public School, Mora-Mairi, Siwan, Bihar",
     description: "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan. Features 24/7 Online Admissions, Live Student Attendance, Exam Results, Fee Portal & Mobile App for Parents.",
-    url: "https://mnpschool.in",
+    url: "https://www.mnpschool.in",
     siteName: "MNP School",
     locale: "en_IN",
     type: "website",
@@ -149,9 +149,11 @@ export default function RootLayout({ children }) {
       "Mora Ratauli School",
       "Mora Bazaar School"
     ],
-    "url": "https://mnpschool.in",
-    "logo": "https://mnpschool.in/logo.png",
-    "image": "https://mnpschool.in/logo.png",
+    "url": "https://www.mnpschool.in",
+    "logo": "https://www.mnpschool.in/logo.png",
+    "image": "https://www.mnpschool.in/logo.png",
+    "telephone": "+918603481865",
+    "email": "mnps@mnpschool.in",
     "description": "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan. Features 24/7 Online Admissions, Live Student Attendance, Exam Results, Fee Portal & Mobile App for Parents.",
     "address": {
       "@type": "PostalAddress",
@@ -196,9 +198,10 @@ export default function RootLayout({ children }) {
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
-        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="icon" type="image/png" sizes="48x48" href="https://www.mnpschool.in/favicon-48x48.png" />
+        <link rel="icon" type="image/png" sizes="96x96" href="https://www.mnpschool.in/favicon-96x96.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="https://www.mnpschool.in/favicon-192x192.png" />
+        <link rel="apple-touch-icon" href="https://www.mnpschool.in/logo.png" />
         <meta name="google-site-verification" content="DucDVR_DeLe1mqmmL8JQZ8sl3SiSav2Ux1Tyie_9CqA" />
         <script
           type="application/ld+json"
