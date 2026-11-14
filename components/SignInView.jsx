@@ -3030,20 +3030,70 @@ export default function SignInView() {
 
           </div>
 
-          {/* Local Area & SEO Coverage Strip */}
-          <div className="mt-8 pt-4 border-t border-[#1E3A60]/60 text-[11px] text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="font-bold text-[#F4B323]">{isHi ? 'प्रमुख क्षेत्र:' : 'Areas Served:'}</span>
-            <span>{isHi ? 'Mora (मोरा)' : 'Mora'}</span>
-            <span>&bull;</span>
-            <span>{isHi ? 'Mora Bazar (मोरा बाजार)' : 'Mora Bazar'}</span>
-            <span>&bull;</span>
-            <span>{isHi ? 'Mairi (मैरी)' : 'Mairi'}</span>
-            <span>&bull;</span>
-            <span>{isHi ? 'Ratauli (रतौली)' : 'Ratauli'}</span>
-            <span>&bull;</span>
-            <span>{isHi ? 'Siwan (सीवान, बिहार)' : 'Siwan (Bihar)'}</span>
-            <span className="hidden sm:inline">&bull;</span>
-            <span className="hidden sm:inline">{isHi ? 'संस्थापक: उदय शंकर पटेल (उदय सर) एवं विशाल पटेल (विशाल सर)' : 'Leadership: Chairman Uday Shankar Patel (Uday Sir) & Director Vishal Patel (Vishal Sir)'}</span>
+          {/* Comprehensive Google SEO & Local Campus Directory Strip */}
+          <div className="mt-8 pt-6 border-t border-[#1E3A60]/80 space-y-4">
+            {/* SEO Keyword Badges / Quick Search Queries */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="text-[11px] font-black text-[#F4B323] uppercase tracking-wider mr-1">
+                {isHi ? 'लोकप्रिय खोज (Popular Searches):' : 'Popular Searches:'}
+              </span>
+              {[
+                { en: 'Mission Navodaya Public School', hi: 'मिशन नवोदय पब्लिक स्कूल' },
+                { en: 'MNP School Mora', hi: 'एमएनपी स्कूल मोरा' },
+                { en: 'Mora School Siwan', hi: 'मोरा स्कूल सीवान' },
+                { en: 'Mora Mairi School', hi: 'मोरा मैरी स्कूल' },
+                { en: 'Ratauli School', hi: 'रतौली स्कूल' },
+                { en: 'Vishal Sir School', hi: 'विशाल सर का स्कूल' },
+                { en: 'Uday Sir School', hi: 'उदय सर का स्कूल' },
+                { en: 'Admission 2026-27', hi: 'नामांकन सत्र 2026-27' },
+                { en: 'Exam Results 2026', hi: 'परीक्षा परिणाम 2026' },
+                { en: 'Best CBSE Pattern School', hi: 'सर्वश्रेष्ठ सीबीएसई पैटर्न स्कूल' },
+                { en: 'Navodaya Entrance Coaching', hi: 'नवोदय प्रवेश परीक्षा तैयारी' },
+                { en: 'English Medium School Mora', hi: 'इंग्लिश मीडियम स्कूल मोरा' }
+              ].map((badge, bIdx) => (
+                <span
+                  key={bIdx}
+                  className="px-2.5 py-1 rounded-full bg-[#102747]/90 text-[10.5px] font-medium text-slate-300 border border-[#1E3A60] hover:text-[#F4B323] hover:border-[#F4B323]/40 transition-colors"
+                >
+                  {isHi ? badge.hi : badge.en}
+                </span>
+              ))}
+            </div>
+
+            {/* Local Area & Villages Covered */}
+            <div className="text-[11px] text-slate-300/90 leading-relaxed flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="font-bold text-[#F4B323]">{isHi ? 'परिसर सेवा क्षेत्र (Areas & Villages Served):' : 'Areas & Villages Served:'}</span>
+              <span>Mora (मोरा)</span>
+              <span>&bull;</span>
+              <span>Mora Bazar (मोरा बाजार)</span>
+              <span>&bull;</span>
+              <span>Mairi (मैरी)</span>
+              <span>&bull;</span>
+              <span>Ratauli (रतौली)</span>
+              <span>&bull;</span>
+              <span>Patel Tola (पटेल टोला)</span>
+              <span>&bull;</span>
+              <span>Pipra (पिपरा)</span>
+              <span>&bull;</span>
+              <span>Barka Gaon (बड़का गांव)</span>
+              <span>&bull;</span>
+              <span>Mairwa (मैरवा)</span>
+              <span>&bull;</span>
+              <span>Darauli (दरौली)</span>
+              <span>&bull;</span>
+              <span>Guthani (गुठनी)</span>
+              <span>&bull;</span>
+              <span>Siwan (सीवान - 841226, Bihar)</span>
+            </div>
+
+            {/* Official Indexing Statement for Google Bot */}
+            <div className="p-3.5 rounded-xl bg-[#102747]/40 border border-[#1E3A60]/50 text-[11px] text-slate-300/80 leading-relaxed">
+              <p>
+                <strong>Mission Navodaya Public School (MNP School)</strong> — {isHi
+                  ? 'मोरा बाजार, मैरी-रतौली मार्ग, सीवान (बिहार - 841226) स्थित एक उत्कृष्ट अंग्रेजी व हिंदी माध्यम विद्यालय है। चेयरमैन उदय शंकर पटेल (उदय सर) एवं निदेशक विशाल पटेल (विशाल सर) के नेतृत्व में नर्सरी से 8वीं कक्षा तक स्मार्ट क्लास, कम्प्यूटर लैब, सुरक्षित वाहन सुविधा, नवोदय प्रवेश परीक्षा की विशेष तैयारी एवं डिजिटल पेरेंट पोर्टल व मोबाइल ऐप उपलब्ध कराता है।'
+                  : 'Official recognized co-educational institution situated at Mora Bazar, Mairi - Ratauli Road, District Siwan (Bihar 841226). Under the leadership of Chairman Uday Shankar Patel (Uday Sir) and Director Vishal Patel (Vishal Sir), providing quality education from Nursery to 8th standard with smart classes, science & computer lab, safe transport, Navodaya preparation, digital report cards, and 24/7 parent mobile app.'}
+              </p>
+            </div>
           </div>
 
           {/* Bottom Navy Footer Strip (Matching Image) */}
