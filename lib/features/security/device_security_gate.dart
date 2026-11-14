@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,7 +16,7 @@ class DeviceSecurityGate extends StatefulWidget {
 
   const DeviceSecurityGate({super.key, required this.child});
 
-  static int currentVersionCode = 13;
+  static int currentVersionCode = 14;
   static String currentVersion = '1.0.2';
 
   /// Returns dynamically resolved human-readable app version & build number
@@ -199,13 +200,28 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
         .snapshots()
         .listen((snap) async {
       if (!snap.exists || snap.data() == null) {
-        if (mounted && _pendingUpdate != null) {
-          setState(() => _pendingUpdate = null);
-        }
+        _checkHttpUpdateFallback();
         return;
       }
       await _evaluateAppUpdate(snap.data()!);
-    }, onError: (_) {});
+    }, onError: (_) {
+      _checkHttpUpdateFallback();
+    });
+    // Proactively check website HTTP JSON in case Firestore is unreachable
+    _checkHttpUpdateFallback();
+  }
+
+  Future<void> _checkHttpUpdateFallback() async {
+    try {
+      final client = HttpClient()..connectionTimeout = const Duration(seconds: 4);
+      final request = await client.getUrl(Uri.parse('https://www.mnpschool.in/app-update.json'));
+      final response = await request.close().timeout(const Duration(seconds: 4));
+      if (response.statusCode == 200) {
+        final body = await response.transform(utf8.decoder).join();
+        final data = jsonDecode(body) as Map<String, dynamic>;
+        await _evaluateAppUpdate(data);
+      }
+    } catch (_) {}
   }
 
   Future<void> _evaluateAppUpdate(Map<String, dynamic> data) async {

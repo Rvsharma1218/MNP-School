@@ -141,31 +141,26 @@ class ResultModel {
   }
 
   /// Strict Pass/Fail/Promoted calculation:
-  /// Pre-primary students are always promoted without negative ranking.
-  /// If status is explicitly set to 'PROMOTED', returns true (Passed with promotion).
-  /// If all subjects are passed and percentage >= 33, student is PASS (auto-heals stale FAIL doc status).
-  /// If status is 'FAIL', returns false.
-  /// Otherwise, if any subject is failed, student is FAIL.
+  /// Prioritizes manual teacher status override first ('PROMOTED', 'FAIL', 'PASS').
+  /// Otherwise, auto-calculates based on passing criteria.
   bool get isPass {
-    if (isPrePrimary) return true;
     final s = status?.toUpperCase().trim();
     if (s == 'PROMOTED') return true;
-    if (failedSubjectsCount == 0 && overallPercentage >= 33.0) return true;
     if (s == 'FAIL') return false;
     if (s == 'PASS') return true;
+    if (isPrePrimary) return true;
     return failedSubjectsCount == 0 && overallPercentage >= 33.0;
   }
 
   /// Evaluated display status: 'PASS', 'FAIL', or 'PROMOTED'
+  /// Respects teacher override first, never forces PROMOTED automatically.
   String get finalResultStatus {
-    if (isPrePrimary) return 'PROMOTED';
     final s = status?.toUpperCase().trim();
     if (s == 'PROMOTED') return 'PROMOTED';
-    if (failedSubjectsCount == 0 && overallPercentage >= 33.0) return 'PASS';
-    if (failedSubjectsCount > 0 || overallPercentage < 33.0) return 'FAIL';
     if (s == 'FAIL') return 'FAIL';
     if (s == 'PASS') return 'PASS';
-    return overallPercentage >= 33.0 ? 'PASS' : 'FAIL';
+    if (failedSubjectsCount > 0 || overallPercentage < 33.0) return 'FAIL';
+    return 'PASS';
   }
 
   String get overallGrade {
@@ -183,10 +178,10 @@ class ResultModel {
   String get division {
     if (isPrePrimary) {
       final p = overallPercentage;
-      if (p >= 85.0) return 'Promoted (Outstanding - A+)';
-      if (p >= 70.0) return 'Promoted (Excellent - A)';
-      if (p >= 50.0) return 'Promoted (Very Good - B)';
-      return 'Promoted (Good - C)';
+      if (p >= 85.0) return 'Outstanding (Grade A+)';
+      if (p >= 70.0) return 'Excellent (Grade A)';
+      if (p >= 50.0) return 'Very Good (Grade B)';
+      return 'Good (Grade C)';
     }
     if (failedSubjectsCount > 0 || overallPercentage < 33.0) return 'FAIL';
     final p = overallPercentage;
@@ -226,6 +221,7 @@ class ResultModel {
     DateTime? createdAt,
     bool? isDetailedMode,
     String? remarks,
+    bool clearRemarks = false,
   }) {
     return ResultModel(
       id: id ?? this.id,
@@ -238,7 +234,7 @@ class ResultModel {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       isDetailedMode: isDetailedMode ?? this.isDetailedMode,
-      remarks: remarks ?? this.remarks,
+      remarks: clearRemarks ? null : (remarks ?? this.remarks),
     );
   }
 

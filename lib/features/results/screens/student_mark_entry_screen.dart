@@ -37,7 +37,13 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
         c.contains('infant');
   }
 
-  static const List<String> _prePrimaryGrades = ['A+', 'A', 'B+', 'B', 'C', 'D', 'F'];
+  static const List<Map<String, String>> _prePrimaryGradeMeta = [
+    {'grade': 'A+', 'label': 'A+ ⭐ Outstanding'},
+    {'grade': 'A', 'label': 'A 🌟 Very Good'},
+    {'grade': 'B+', 'label': 'B+ 👍 Good'},
+    {'grade': 'B', 'label': 'B 😊 Satisfactory'},
+    {'grade': 'C', 'label': 'C 📝 Practice'},
+  ];
 
   String _marksToGradePill(double marks, double maxMarks) {
     if (maxMarks <= 0) return '';
@@ -59,7 +65,6 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
       'B': 0.65,
       'C': 0.50,
       'D': 0.40,
-      'F': 0.25,
     };
     final ratio = ratios[g] ?? 0.80;
     final estimated = (maxM * ratio).round();
@@ -480,22 +485,28 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
     }
     final pct = totalMax > 0 ? (totalObt / totalMax) * 100 : 0.0;
     if (totalObt == 0 && subs.every((s) => s.marks == 0 && s.theoryMarks == 0)) {
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Marks Not Entered'),
-          content: Text('No marks entered for ${widget.student.name} (Obtained: 0). Do you still want to save this with 0 marks?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-              child: const Text('Yes, Save 0 Marks'),
-            ),
-          ],
-        ),
-      );
-      if (proceed != true) return;
+      final hasPreGrades = _isPrePrimary && subs.any((s) => s.gradeOverride != null && s.gradeOverride!.isNotEmpty);
+      if (!hasPreGrades) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Marks Not Entered'),
+            content: Text('No marks entered for ${widget.student.name} (Obtained: 0). Do you still want to save this with 0 marks?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                child: const Text('Yes, Save 0 Marks'),
+              ),
+            ],
+          ),
+        );
+        if (proceed != true) {
+          if (mounted) setState(() => _saving = false);
+          return;
+        }
+      }
     }
     String autoStatus = (failCount > 0 || pct < passCriteria || totalObt == 0) ? 'FAIL' : 'PASS';
     String finalStatus = _selectedStatus == 'AUTO' ? autoStatus : _selectedStatus;
@@ -523,7 +534,25 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
       await DatabaseService.instance.saveResult(resultModel);
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Result saved successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
         Navigator.pop(context, resultModel);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving result: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -597,14 +626,20 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: ElevatedButton(
-              onPressed: _saveResult,
+              onPressed: _saving ? null : _saveResult,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: const Color(0xFF1E3A8A),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: _saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1E3A8A)),
+                    )
+                  : const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -1074,7 +1109,9 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
                                   SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: Row(
-                                      children: _prePrimaryGrades.map((g) {
+                                      children: _prePrimaryGradeMeta.map((meta) {
+                                        final g = meta['grade']!;
+                                        final lbl = meta['label']!;
                                         final isSel = curGrade == g;
                                         return Padding(
                                           padding: const EdgeInsets.only(right: 6),
@@ -1101,14 +1138,7 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
                                                       ]
                                                     : null,
                                               ),
-                                              child: Text(
-                                                g,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w900,
-                                                  color: isSel ? Colors.white : const Color(0xFF1E293B),
-                                                ),
-                                              ),
+                                              child: Text(lbl, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: isSel ? Colors.white : const Color(0xFF1E293B))),
                                             ),
                                           ),
                                         );
@@ -1184,9 +1214,9 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
                                     controller: (row['oral'] as TextEditingController?) ?? TextEditingController(),
                                     keyboardType: TextInputType.number,
                                     textAlign: TextAlign.center,
-                                    decoration: InputDecoration(
+                                    decoration: const InputDecoration(
                                       labelText: 'Oral',
-                                      labelStyle: const TextStyle(color: Color(0xFF7E22CE), fontWeight: FontWeight.bold),
+                                      labelStyle: TextStyle(color: Color(0xFF7E22CE), fontWeight: FontWeight.bold),
                                       filled: true,
                                       fillColor: const Color(0xFFFAF5FF),
                                       isDense: true,
@@ -1327,9 +1357,15 @@ class _StudentMarkEntryScreenState extends State<StudentMarkEntryScreen> {
                   ],
                 ),
                 ElevatedButton.icon(
-                  onPressed: _saveResult,
-                  icon: const Icon(Icons.check, size: 18),
-                  label: const Text('Save Result', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  onPressed: _saving ? null : _saveResult,
+                  icon: _saving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.check, size: 18),
+                  label: Text(_saving ? 'Saving...' : 'Save Result', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E3A8A),
                     foregroundColor: Colors.white,

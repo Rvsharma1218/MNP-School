@@ -56,27 +56,47 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
 
   Future<void> _updateStatusAndRemarks() async {
     setState(() => _isSaving = true);
+    final text = _remarksCtrl.text.trim();
     final updated = _currentResult.copyWith(
       status: _status,
-      remarks: _remarksCtrl.text.trim().isNotEmpty ? _remarksCtrl.text.trim() : null,
+      remarks: text.isNotEmpty ? text : null,
+      clearRemarks: text.isEmpty,
     );
-    await DatabaseService.instance.saveResult(updated);
-    setState(() {
-      _currentResult = updated;
-      _isSaving = false;
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          content: const Text('✓ Result details updated successfully!'),
-          backgroundColor: Colors.green.shade700,
-        ),
-      );
+    try {
+      await DatabaseService.instance.saveResult(updated);
+      setState(() {
+        _currentResult = updated;
+        _status = updated.finalResultStatus;
+        _isSaving = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            content: const Text('✓ Status & Remarks updated successfully!'),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            content: Text('Error updating: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -241,7 +261,16 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
         backgroundColor: const Color(0xFF1E3A8A),
         foregroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context, _currentResult),
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.visibility_rounded),
+            tooltip: 'Preview Full Marksheet',
+            onPressed: _showMarksheetInAppPreview,
+          ),
           IconButton(
             icon: const Icon(Icons.download_rounded),
             tooltip: 'Save PDF to Storage',
@@ -249,7 +278,7 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
           ),
           IconButton(
             icon: const Icon(Icons.print_rounded),
-            tooltip: 'Print / Preview PDF',
+            tooltip: 'Print to Printer',
             onPressed: _generatePdf,
           ),
           if (!SessionService.instance.isParent)
@@ -533,6 +562,20 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E3A8A),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: _showMarksheetInAppPreview,
+                    icon: const Icon(Icons.visibility_rounded, size: 18),
+                    label: const Text('Preview Marksheet', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0D9488),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -541,20 +584,6 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                     onPressed: _savePdfToDevice,
                     icon: const Icon(Icons.download_rounded, size: 18),
                     label: const Text('Save PDF', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E3A8A),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: _generatePdf,
-                    icon: const Icon(Icons.print_rounded, size: 18),
-                    label: const Text('Print / Preview', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -580,14 +609,14 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red.shade700,
-                        side: BorderSide(color: Colors.red.shade400, width: 1.5),
+                        foregroundColor: const Color(0xFF475569),
+                        side: const BorderSide(color: Color(0xFF94A3B8), width: 1.5),
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      onPressed: _deleteResult,
-                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                      label: const Text('Delete Result', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: _generatePdf,
+                      icon: const Icon(Icons.print_rounded, size: 18),
+                      label: const Text('Print on Paper', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -686,6 +715,390 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
         Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
         const SizedBox(height: 2),
         Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+      ],
+    );
+  }
+
+  void _showMarksheetInAppPreview() {
+    final settings = ref.read(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final res = _currentResult;
+    final stu = widget.student;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.92,
+          minChildSize: 0.60,
+          maxChildSize: 0.96,
+          builder: (_, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  // Modal Handle & Actions
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                      border: Border(bottom: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0))),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.description_rounded, color: Color(0xFF1E3A8A), size: 22),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Full Marksheet Preview',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.share_rounded, color: Color(0xFF25D366)),
+                          tooltip: 'Share on WhatsApp',
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _shareOnWhatsApp();
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.download_rounded, color: Color(0xFF0D9488)),
+                          tooltip: 'Save PDF',
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _savePdfToDevice();
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Scrollable Printable Marksheet Card
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(16),
+                      child: Center(
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFF1E3A8A), width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // School Header with Logo
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(Icons.school_rounded, color: Color(0xFF1E3A8A), size: 28),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          settings.instituteName.isNotEmpty ? settings.instituteName : 'MISSION NAVODAYA PUBLIC SCHOOL',
+                                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, color: Color(0xFF1E3A8A)),
+                                        ),
+                                        Text(
+                                          settings.address.isNotEmpty ? settings.address : 'Mora Bazar, Mora-Mairi Road, Siwan, Bihar',
+                                          style: const TextStyle(fontSize: 10, color: Color(0xFF475569)),
+                                        ),
+                                        Text(
+                                          'Phone: ${settings.mobile.isNotEmpty ? settings.mobile : "8603481865"} • Pattern: CBSE',
+                                          style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1E3A8A),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'PROGRESS REPORT CARD • ${res.examName.toUpperCase()}',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5, letterSpacing: 0.5),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Student Info Grid
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    _buildPreviewInfoRow('Student Name:', stu.name, 'Roll Number:', stu.rollNumber ?? '—'),
+                                    const SizedBox(height: 6),
+                                    _buildPreviewInfoRow('Class & Sec:', stu.displayClass, 'Student ID:', stu.studentId.isNotEmpty ? stu.studentId : (stu.admissionNumber.isNotEmpty ? stu.admissionNumber : '—')),
+                                    if (stu.fatherName.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      _buildPreviewInfoRow("Father's Name:", stu.fatherName, "Session:", "2026-27"),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Marksheet Table
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Table(
+                                  border: TableBorder.all(color: const Color(0xFFCBD5E1), width: 1),
+                                  columnWidths: const {
+                                    0: FlexColumnWidth(1),
+                                    1: FlexColumnWidth(4),
+                                    2: FlexColumnWidth(2),
+                                    3: FlexColumnWidth(2.2),
+                                    4: FlexColumnWidth(2.6),
+                                  },
+                                  children: [
+                                    TableRow(
+                                      decoration: const BoxDecoration(color: Color(0xFF1E3A8A)),
+                                      children: [
+                                        _buildPreviewHeaderCell('#'),
+                                        _buildPreviewHeaderCell('Subject'),
+                                        _buildPreviewHeaderCell('Max'),
+                                        _buildPreviewHeaderCell('Obt.'),
+                                        _buildPreviewHeaderCell('Grade / Star'),
+                                      ],
+                                    ),
+                                    ...res.subjects.asMap().entries.map((e) {
+                                      final i = e.key;
+                                      final s = e.value;
+                                      final isOdd = i % 2 == 1;
+                                      final gradeText = s.gradeOverride != null && s.gradeOverride!.isNotEmpty
+                                          ? s.gradeOverride!
+                                          : s.grade;
+                                      return TableRow(
+                                        decoration: BoxDecoration(color: isOdd ? const Color(0xFFF8FAFC) : Colors.white),
+                                        children: [
+                                          _buildPreviewDataCell('${i + 1}', align: TextAlign.center),
+                                          _buildPreviewDataCell(s.subjectName, isBold: true),
+                                          _buildPreviewDataCell('${s.totalMarks.toInt()}', align: TextAlign.center),
+                                          _buildPreviewDataCell('${s.marks.toInt()}', align: TextAlign.center, isBold: true, color: const Color(0xFF1E3A8A)),
+                                          _buildPreviewDataCell(gradeText, align: TextAlign.center, isBold: true),
+                                        ],
+                                      );
+                                    }),
+                                    TableRow(
+                                      decoration: const BoxDecoration(color: Color(0xFFEEF2FF)),
+                                      children: [
+                                        _buildPreviewDataCell(''),
+                                        _buildPreviewDataCell('TOTAL', isBold: true, color: const Color(0xFF1E3A8A)),
+                                        _buildPreviewDataCell('${res.totalMarks.toInt()}', align: TextAlign.center, isBold: true),
+                                        _buildPreviewDataCell('${res.obtainedMarks.toInt()}', align: TextAlign.center, isBold: true, color: const Color(0xFF1E3A8A)),
+                                        _buildPreviewDataCell(res.overallGrade, align: TextAlign.center, isBold: true, color: const Color(0xFF1E3A8A)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Performance Summary Strip
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildPreviewSummaryItem('Percentage', '${res.overallPercentage.toStringAsFixed(1)}%', const Color(0xFF1E3A8A)),
+                                    _buildPreviewSummaryItem('Overall Grade', res.overallGrade, Colors.indigo),
+                                    _buildPreviewSummaryItem('Result Status', res.finalResultStatus == 'FAIL' ? 'NEEDS IMPROVEMENT' : res.finalResultStatus, res.isPass ? Colors.green.shade800 : Colors.red.shade800),
+                                    _buildPreviewSummaryItem('Division', res.shortDivision, Colors.purple.shade800),
+                                  ],
+                                ),
+                              ),
+
+                              if ((res.remarks ?? '').trim().isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.amber.shade300),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(Icons.rate_review_rounded, size: 16, color: Colors.amber),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Teacher Remarks: ${res.remarks!}',
+                                          style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Color(0xFF1E3A8A)),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
+                              const SizedBox(height: 30),
+
+                              // Signatures Block
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    children: [
+                                      Container(width: 85, height: 1, color: Colors.black45),
+                                      const SizedBox(height: 4),
+                                      const Text('Class Teacher', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                                    ],
+                                  ),
+                                  Column(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: Colors.blue.shade300),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Text('MNPS SEAL', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue)),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      const Text('Official Stamp', style: TextStyle(fontSize: 8.5, color: Color(0xFF64748B))),
+                                    ],
+                                  ),
+                                  Column(
+                                    children: [
+                                      Container(width: 85, height: 1, color: Colors.black45),
+                                      const SizedBox(height: 4),
+                                      const Text('Principal / Director', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPreviewInfoRow(String label1, String val1, String label2, String val2) {
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label1, style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(val1, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label2, style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(val2, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreviewHeaderCell(String title, {TextAlign align = TextAlign.left}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+      child: Text(
+        title,
+        textAlign: align,
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10.5),
+      ),
+    );
+  }
+
+  Widget _buildPreviewDataCell(String text, {TextAlign align = TextAlign.left, bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      child: Text(
+        text,
+        textAlign: align,
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          color: color ?? const Color(0xFF0F172A),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewSummaryItem(String label, String value, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
       ],
     );
   }
