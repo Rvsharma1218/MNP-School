@@ -1,0 +1,18 @@
+{
+  "active": true,
+  "latestVersion": "1.0.2",
+  "version": "1.0.2",
+  "versionCode": 14,
+  "minSupportedVersion": "1.0.0",
+  "apkUrl": "https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.2-build14/app-arm64-v8a-release.apk",
+  "apk_v8_url": "https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.2-build14/app-arm64-v8a-release.apk",
+  "apk_v7_url": "https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.2-build14/app-armeabi-v7a-release.apk",
+  "directDownloadUrlArm64": "https://www.mnpschool.in/app-arm64-v8a-release.apk",
+  "directDownloadUrlArmeabi": "https://www.mnpschool.in/app-armeabi-v7a-release.apk",
+  "title": "New Update Available (v1.0.2+14)",
+  "message": "Nursery/LKG/UKG Star Evaluation, In-app Marksheet Preview, Result Edit Top Save Fix, and Status/Remarks update.",
+  "releaseNotes": "• Nursery, LKG, UKG Star Ratings (⭐⭐⭐⭐⭐) & Qualitative Evaluation (Outstanding, Very Good, Good, Satisfactory)\n• Fixed Result Edit Screen top Save button & added live loading indicator\n• Full in-app digital marksheet preview modal (no print spooler prompt)\n• Accurate Teacher Status (Pass / Needs Improvement / Promoted) & Remarks overrides\n• Performance optimizations and latest security sync",
+  "forceUpdate": false,
+  "mandatory": false,
+  "updatedAt": "2026-11-14T06:30:00.000Z"
+}
