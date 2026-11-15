@@ -1272,8 +1272,8 @@ export default function SignInView() {
                   const bSub = resolveCmsField(
                     bConf,
                     'subheadline',
-                    `${bClasses} • Leading CBSE Pattern English Medium School in Siwan & Mora Bazar`,
-                    `${bClasses} • सीवान एवं मोरा बाज़ार का अग्रणी सीबीएसई पैटर्न अंग्रेजी माध्यम विद्यालय`,
+                    `${bClasses} • Leading English Medium School in Siwan & Mora Bazar`,
+                    `${bClasses} • सीवान एवं मोरा बाज़ार का अग्रणी अंग्रेजी माध्यम विद्यालय`,
                     isHi
                   );
                   const bPhone = bConf.phone || primaryPhone || '8603481865';
@@ -3039,7 +3039,9 @@ export default function SignInView() {
               </span>
               {[
                 { en: 'Mission Navodaya Public School', hi: 'मिशन नवोदय पब्लिक स्कूल' },
-                { en: 'MNP School Mora', hi: 'एमएनपी स्कूल मोरा' },
+                { en: 'MNP School', hi: 'एमएनपी स्कूल' },
+                { en: 'MNPS Mora', hi: 'एमएनपीएस मोरा' },
+                { en: 'MNPSchool.in', hi: 'एमएनपी स्कूल डॉट इन' },
                 { en: 'Mora School Siwan', hi: 'मोरा स्कूल सीवान' },
                 { en: 'Mora Mairi School', hi: 'मोरा मैरी स्कूल' },
                 { en: 'Ratauli School', hi: 'रतौली स्कूल' },
@@ -3047,7 +3049,7 @@ export default function SignInView() {
                 { en: 'Uday Sir School', hi: 'उदय सर का स्कूल' },
                 { en: 'Admission 2026-27', hi: 'नामांकन सत्र 2026-27' },
                 { en: 'Exam Results 2026', hi: 'परीक्षा परिणाम 2026' },
-                { en: 'Best CBSE Pattern School', hi: 'सर्वश्रेष्ठ सीबीएसई पैटर्न स्कूल' },
+                { en: 'Leading English Medium School', hi: 'अग्रणी अंग्रेजी माध्यम विद्यालय' },
                 { en: 'Navodaya Entrance Coaching', hi: 'नवोदय प्रवेश परीक्षा तैयारी' },
                 { en: 'English Medium School Mora', hi: 'इंग्लिश मीडियम स्कूल मोरा' }
               ].map((badge, bIdx) => (

@@ -4,7 +4,6 @@ import "./globals.css";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -24,14 +23,30 @@ export const metadata = {
   },
   description: "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan, Bihar. Founded by Chairman Uday Shankar Patel (Uday Sir) & Director Vishal Patel (Vishal Sir). Features 24/7 Online Admissions, Live Student Attendance, Exam Results, Fee Portal & Mobile App for Parents.",
   keywords: [
-    // Brand & Variations (English)
+    // Brand & Variations (English - MNPS, MNP School, MNPSchool)
+    "mnps",
+    "mnps school",
+    "mnps mora",
+    "mnps siwan",
+    "mnps bihar",
+    "mnps mora bazar",
+    "mnps mairi",
+    "mnps ratauli",
+    "mnps admission",
+    "mnps result",
     "mnp school",
     "mnpschool",
+    "mnpschool mora",
+    "mnpschool siwan",
+    "mnpschool bihar",
     "mnpschool.in",
     "www.mnpschool.in",
+    "mission navodaya",
     "mission navodaya public school",
     "mission navodaya school mora",
     "mission navodaya school",
+    "mission navodaya mora",
+    "mission navodaya siwan",
     "mnp public school",
     "mnp",
     "mnp school mora",
@@ -39,15 +54,21 @@ export const metadata = {
     "mnp school bihar",
 
     // Brand & Variations (Hindi - Devanagari)
+    "एमएनपीएस",
+    "एमएनपीएस स्कूल",
+    "एमएनपीएस मोरा",
+    "एमएनपीएस सीवान",
+    "एमएनपी स्कूल",
+    "एमएनपी स्कूल मोरा",
+    "एमएनपी स्कूल सीवान",
+    "एमएनपी पब्लिक स्कूल",
+    "एम एन पी स्कूल",
     "मिशन नवोदय पब्लिक स्कूल",
     "मिशन नवोदय पब्लिक स्कूल मोरा",
     "मिशन नवोदय स्कूल",
     "मिशन नवोदय स्कूल मोरा",
-    "एमएनपी स्कूल",
-    "एमएनपी स्कूल मोरा",
-    "एमएनपी पब्लिक स्कूल",
-    "एमएनपी स्कूल सीवान",
-    "एम एन पी स्कूल",
+    "मिशन नवोदय",
+    "मिशन नवोदय मोरा",
 
     // Mora & Village Keywords (English)
     "mora school",
@@ -116,7 +137,7 @@ export const metadata = {
     "siwan school",
     "siwan sschool",
     "best school in siwan",
-    "best cbse school in siwan",
+    "best english medium school in siwan",
     "top 10 schools in siwan",
     "school in siwan bihar",
     "top school in siwan",
@@ -159,7 +180,7 @@ export const metadata = {
     "mnp school app download",
     "navodaya vidyalaya coaching mora",
     "navodaya entrance exam preparation siwan",
-    "cbse pattern school in mora",
+    "english medium school in mora",
     "nursery to 8th school in mora siwan",
     "मिशन नवोदय स्कूल एडमिशन",
     "मिशन नवोदय स्कूल रिजल्ट",
@@ -217,9 +238,18 @@ export default function RootLayout({ children }) {
     "@type": "School",
     "name": "Mission Navodaya Public School",
     "alternateName": [
+      "MNPS",
+      "MNPS School",
+      "MNPS Mora",
       "MNP School",
+      "mnpschool",
+      "mnpschool.in",
       "MNP Public School",
       "Mission Navodaya School Mora",
+      "Mission Navodaya",
+      "एमएनपीएस",
+      "एमएनपीएस मोरा",
+      "एमएनपीएस स्कूल",
       "मिशन नवोदय पब्लिक स्कूल",
       "मिशन नवोदय स्कूल मोरा",
       "एमएनपी स्कूल",
@@ -240,7 +270,7 @@ export default function RootLayout({ children }) {
     "image": "https://www.mnpschool.in/logo.png",
     "telephone": "+918603481865",
     "email": "mnps@mnpschool.in",
-    "description": "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan, Bihar. Premier CBSE pattern English Medium school from Nursery to 8th grade founded by Chairman Uday Shankar Patel (Uday Sir) and Director Vishal Patel (Vishal Sir). Features online admissions, live student attendance, exam results, fee portal, digital report cards, and parent mobile app.",
+    "description": "Official website of Mission Navodaya Public School (MNP School), Mora-Mairi, Siwan, Bihar. Premier English Medium school from Nursery to 8th grade founded by Chairman Uday Shankar Patel (Uday Sir) and Director Vishal Patel (Vishal Sir). Features online admissions, live student attendance, exam results, fee portal, digital report cards, and parent mobile app.",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "Mora Bazar, Near Mairi - Ratauli Road, Post - Mora",
@@ -297,7 +327,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" type="image/png" sizes="192x192" href="https://www.mnpschool.in/favicon-192x192.png" />
         <link rel="apple-touch-icon" href="https://www.mnpschool.in/logo.png" />
         <meta name="google-site-verification" content="DucDVR_DeLe1mqmmL8JQZ8sl3SiSav2Ux1Tyie_9CqA" />
-        <meta name="keywords" content="Mission Navodaya Public School, MNP School, mnpschool.in, Mora School, Mora Mairi School, Siwan School, Vishal Sir School, Uday Sir School, मिशन नवोदय पब्लिक स्कूल, मोरा स्कूल, सीवान स्कूल, Best School in Mora Siwan, MNP School Admission, MNP School Result" />
+        <meta name="keywords" content="MNPS, mnps, MNPS School, MNPS Mora, MNP School, mnpschool, mnpschool.in, Mora School, Mission Navodaya Public School, Mora Mairi School, Ratauli School, Siwan School, Vishal Sir School, Uday Sir School, मिशन नवोदय पब्लिक स्कूल, मोरा स्कूल, एमएनपीएस, एमएनपी स्कूल, सीवान स्कूल, Best School in Mora Siwan, MNP School Admission, MNP School Result" />
         <meta name="geo.region" content="IN-BR" />
         <meta name="geo.placename" content="Mora, Siwan, Bihar" />
         <meta name="geo.position" content="26.115207;84.622157" />
