@@ -3,7 +3,7 @@ import '../results/result_screen.dart';
 import '../results/screens/student_mark_entry_screen.dart';
 import '../results/screens/student_result_detail_screen.dart';
 import '../../data/services/result_pdf_service.dart';
-import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -24,7 +24,6 @@ import '../whatsapp/whatsapp_service.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/pdf_view_screen.dart';
 import '../../data/services/receipt_pdf_service.dart';
-import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import '../../data/services/student_full_report_service.dart';
 import '../admit_card/admit_card_screen.dart';
@@ -204,9 +203,13 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    final cachedStudent = ref.watch(studentsProvider).valueOrNull?.where(
+    final cachedStudent = ref.watch(
+      studentsProvider.select(
+        (asyncVal) => asyncVal.valueOrNull?.where(
           (s) => s.id == widget.studentId || s.studentId == widget.studentId,
-        ).firstOrNull;
+        ).firstOrNull,
+      ),
+    );
 
     return FutureBuilder<StudentModel?>(
       initialData: _localStudent ?? cachedStudent,
@@ -1299,7 +1302,10 @@ class _AttendanceTab extends ConsumerStatefulWidget {
 
 enum _ReportRange { today, allDays, custom }
 
-class _AttendanceTabState extends ConsumerState<_AttendanceTab> {
+class _AttendanceTabState extends ConsumerState<_AttendanceTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   bool _sending = false;
 
   Future<void> _sendAttendanceReport() async {
@@ -1561,6 +1567,7 @@ class _AttendanceTabState extends ConsumerState<_AttendanceTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final studentId = widget.student.id;
     final attAsync = ref.watch(studentAttendanceProvider(studentId));
     final cs = Theme.of(context).colorScheme;
@@ -1709,11 +1716,42 @@ class _ResultsTab extends ConsumerStatefulWidget {
   ConsumerState<_ResultsTab> createState() => _ResultsTabState();
 }
 
-class _ResultsTabState extends ConsumerState<_ResultsTab> {
-  int _refreshKey = 0;
+class _ResultsTabState extends ConsumerState<_ResultsTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  late Future<List<dynamic>> _dataFuture;
+  List<dynamic>? _cachedData;
+  StreamSubscription? _resultsSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _dataFuture = _fetchData();
+    _resultsSub = DatabaseService.instance.onResultsChanged.listen((_) {
+      _refresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _resultsSub?.cancel();
+    super.dispose();
+  }
+
+  Future<List<dynamic>> _fetchData() {
+    return Future.wait([
+      DatabaseService.instance.getResultsByStudentId(widget.studentId),
+      DatabaseService.instance.getStudentById(widget.studentId),
+      DatabaseService.instance.getAllExams(),
+    ]);
+  }
 
   void _refresh() {
-    setState(() => _refreshKey++);
+    if (!mounted) return;
+    setState(() {
+      _dataFuture = _fetchData();
+    });
   }
 
   Future<void> _handleEnterEditMarksheet({
@@ -1919,20 +1957,22 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final settings = ref.watch(settingsProvider).valueOrNull ?? SettingsModel.defaultSettings();
 
     return FutureBuilder<List<dynamic>>(
-      key: ValueKey(_refreshKey),
-      future: Future.wait([
-        DatabaseService.instance.getResultsByStudentId(widget.studentId),
-        DatabaseService.instance.getStudentById(widget.studentId),
-        DatabaseService.instance.getAllExams(),
-      ]),
+      future: _dataFuture,
       builder: (ctx, snap) {
-        if (snap.connectionState == ConnectionState.waiting) return const LoadingWidget();
-        final rawResults = (snap.data?[0] as List<ResultModel>?) ?? [];
-        final student = snap.data?[1] as StudentModel?;
-        final exams = (snap.data?[2] as List<ExamModel>?) ?? [];
+        if (snap.hasData) {
+          _cachedData = snap.data;
+        }
+        final data = snap.data ?? _cachedData;
+        if (data == null && snap.connectionState == ConnectionState.waiting) {
+          return const LoadingWidget();
+        }
+        final rawResults = (data?[0] as List<ResultModel>?) ?? [];
+        final student = data?[1] as StudentModel?;
+        final exams = (data?[2] as List<ExamModel>?) ?? [];
 
         // Deduplicate results by examName
         final seenExams = <String>{};
@@ -2596,7 +2636,7 @@ class _FullReportModalState extends State<_FullReportModal> {
         : (widget.student.totalFees > 0 ? widget.student.totalFees : 0.0);
     double paidFee = 0.0;
     for (final p in filtered.payments) {
-      paidFee += (p as PaymentModel).amount;
+      paidFee += p.amount;
     }
     final remainingDue = (totalFee - paidFee).clamp(0.0, double.infinity);
 
