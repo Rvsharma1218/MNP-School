@@ -1728,7 +1728,7 @@ class _ResultsTabState extends ConsumerState<_ResultsTab> with AutomaticKeepAliv
   void initState() {
     super.initState();
     _dataFuture = _fetchData();
-    _resultsSub = DatabaseService.instance.onResultsChanged.listen((_) {
+    _resultsSub = DatabaseService.onResultsChanged.stream.listen((_) {
       _refresh();
     });
   }
