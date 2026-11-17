@@ -6,7 +6,7 @@ import {
   BookOpen, Award, ShieldCheck, Trophy, Users, Sparkles,
   Download, Smartphone, CheckCircle, Check, ArrowRight,
   Calendar, Star, FileText, ChevronRight, HelpCircle,
-  Building, CreditCard, CheckCircle2
+  Building, CreditCard, CheckCircle2, X
 } from 'lucide-react';
 
 export function resolveDriveImageUrl(url) {
@@ -669,14 +669,13 @@ export function AcademicsPageView({ isHi }) {
  */
 export function GalleryPageView({ isHi, galleryItems }) {
   const [filter, setFilter] = useState('all');
+  const [previewModal, setPreviewModal] = useState(null);
 
   const defaultPhotos = [
-    { title: 'School Building & Panoramic View', category: 'campus', src: '/school_campus_banner.jpg' },
-    { title: 'Dedicated Teachers & Academic Session', category: 'class', src: '/school_campus_banner.jpg' },
-    { title: 'Morning Assembly & Discipline', category: 'events', src: '/school_campus_banner.jpg' },
-    { title: 'Sports Field & Athletic Activities', category: 'sports', src: '/school_campus_banner.jpg' },
-    { title: 'Smart Classroom & Interactive Learning', category: 'class', src: '/school_campus_banner.jpg' },
-    { title: 'Annual Day Celebrations & Awards', category: 'events', src: '/school_campus_banner.jpg' },
+    { title: 'School Building & Panoramic View', category: 'campus', src: 'https://www.mnpschool.in/campus_building.jpg' },
+    { title: 'Dedicated Teachers & Academic Session', category: 'class', src: 'https://www.mnpschool.in/school_entrance.jpg' },
+    { title: 'Main Campus Entrance & Official Gate', category: 'campus', src: 'https://www.mnpschool.in/school_gate_banner.jpg' },
+    { title: 'Sports Field & Football Playground', category: 'sports', src: 'https://www.mnpschool.in/campus_playground.jpg' },
   ];
 
   const photos = (galleryItems && galleryItems.length > 0)
@@ -711,26 +710,33 @@ export function GalleryPageView({ isHi, galleryItems }) {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+        {/* Filter Pills with Counts */}
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
           {dynamicCategories.map(cat => {
             const isSelected = filter === cat;
             const label = cat === 'all'
               ? (isHi ? 'सभी तस्वीरें (All)' : 'All Photos')
               : cat.charAt(0).toUpperCase() + cat.slice(1);
 
+            const count = cat === 'all'
+              ? photos.length
+              : photos.filter(p => (p.category || 'campus') === cat).length;
+
             return (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setFilter(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   isSelected
-                    ? 'bg-[#0c2340] text-[#F4B323] shadow-md border border-[#F4B323]/40 scale-105'
+                    ? 'bg-[#0c2340] text-[#F4B323] shadow-md border border-[#F4B323]/50 scale-105'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                {label}
+                <span>{label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-[#F4B323]/20 text-[#F4B323]' : 'bg-slate-100 text-slate-500'}`}>
+                  {count}
+                </span>
               </button>
             );
           })}
@@ -741,23 +747,87 @@ export function GalleryPageView({ isHi, galleryItems }) {
           {filtered.map((item, idx) => (
             <div
               key={idx}
-              className="group relative rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-md hover:shadow-2xl transition-all duration-300"
+              onClick={() => setPreviewModal(item)}
+              className="group relative rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer hover:-translate-y-1 flex flex-col justify-between"
             >
-              <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100">
-                <img
-                  src={item.src}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+              <div>
+                <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100 relative">
+                  <img
+                    src={item.src}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/school_campus_banner.jpg'; }}
+                  />
+                  <span className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                    {item.category}
+                  </span>
+                  <span className="absolute bottom-2.5 right-2.5 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  </span>
+                </div>
+                <div className="p-4 bg-white space-y-1">
+                  <h4 className="text-xs font-bold text-[#0c2340] line-clamp-1">{item.title}</h4>
+                  {item.description ? (
+                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{item.description}</p>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">Mora-Mairi Campus · Siwan</p>
+                  )}
+                </div>
               </div>
-              <div className="p-4 bg-white">
-                <h4 className="text-xs font-bold text-[#0c2340] line-clamp-1">{item.title}</h4>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">Mora-Mairi Campus · Siwan</p>
+              <div className="px-4 pb-3 pt-1 text-[10px] font-bold text-blue-600 flex items-center gap-1">
+                <span>{isHi ? 'बड़ी फ़ोटो देखें' : 'View Full Photo'}</span>
+                <span>→</span>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Lightbox Modal */}
+      {previewModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setPreviewModal(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative max-h-[75vh] flex items-center justify-center bg-black">
+              <img
+                src={previewModal.src}
+                alt={previewModal.title}
+                className="max-h-[75vh] w-auto max-w-full object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => setPreviewModal(null)}
+                className="absolute top-4 right-4 bg-black/70 hover:bg-black text-white p-2 rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 sm:p-6 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#F4B323] bg-[#F4B323]/15 px-2.5 py-0.5 rounded-full border border-[#F4B323]/30">
+                  {previewModal.category}
+                </span>
+                <h3 className="text-base sm:text-lg font-bold">{previewModal.title}</h3>
+                {previewModal.description && (
+                  <p className="text-xs text-slate-300 max-w-xl">{previewModal.description}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewModal(null)}
+                className="self-start sm:self-auto px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                {isHi ? 'बंद करें (Close)' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
