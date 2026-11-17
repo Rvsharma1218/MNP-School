@@ -8,6 +8,7 @@ import {
   Calendar, Star, FileText, ChevronRight, HelpCircle,
   Building, CreditCard, CheckCircle2, X
 } from 'lucide-react';
+import { resolveCmsWithAutoTranslate, getQuickTranslation } from '../lib/autoTranslate';
 
 export function resolveDriveImageUrl(url) {
   if (!url || typeof url !== 'string') return '';
@@ -680,12 +681,17 @@ export function GalleryPageView({ isHi, galleryItems }) {
 
   const photos = (galleryItems && galleryItems.length > 0)
     ? galleryItems.map(g => ({
-        title: isHi ? (g.titleHi || g.title) : (g.titleEn || g.title),
-        description: isHi ? (g.descriptionHi || g.description) : (g.descriptionEn || g.description),
+        title: resolveCmsWithAutoTranslate(g, 'title', g.titleEn || g.title, g.titleHi || g.title, isHi),
+        description: resolveCmsWithAutoTranslate(g, 'description', g.descriptionEn || g.description, g.descriptionHi || g.description, isHi),
         category: (g.category || 'campus').trim().toLowerCase(),
+        categoryLabel: getQuickTranslation(g.category || 'campus', isHi),
         src: resolveDriveImageUrl(g.imageUrl || g.src || '/school_campus_banner.jpg')
       }))
-    : defaultPhotos;
+    : defaultPhotos.map(d => ({
+        ...d,
+        title: resolveCmsWithAutoTranslate(d, 'title', d.title, d.title, isHi),
+        categoryLabel: getQuickTranslation(d.category, isHi)
+      }));
 
   // Extract all categories dynamically from photos
   const dynamicCategories = ['all'];
@@ -715,8 +721,8 @@ export function GalleryPageView({ isHi, galleryItems }) {
           {dynamicCategories.map(cat => {
             const isSelected = filter === cat;
             const label = cat === 'all'
-              ? (isHi ? 'सभी तस्वीरें (All)' : 'All Photos')
-              : cat.charAt(0).toUpperCase() + cat.slice(1);
+              ? (isHi ? 'सभी तस्वीरें' : 'All Photos')
+              : getQuickTranslation(cat, isHi);
 
             const count = cat === 'all'
               ? photos.length
@@ -767,7 +773,7 @@ export function GalleryPageView({ isHi, galleryItems }) {
                     onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/school_campus_banner.jpg'; }}
                   />
                   <span className="absolute top-2.5 left-2.5 z-20 bg-black/75 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                    {item.category}
+                    {item.categoryLabel || item.category.toUpperCase()}
                   </span>
                   <span className="absolute bottom-2.5 right-2.5 z-20 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -818,7 +824,7 @@ export function GalleryPageView({ isHi, galleryItems }) {
             <div className="p-5 sm:p-6 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="space-y-1">
                 <span className="text-[10px] font-black uppercase tracking-wider text-[#F4B323] bg-[#F4B323]/15 px-2.5 py-0.5 rounded-full border border-[#F4B323]/30">
-                  {previewModal.category}
+                  {previewModal.categoryLabel || previewModal.category}
                 </span>
                 <h3 className="text-base sm:text-lg font-bold">{previewModal.title}</h3>
                 {previewModal.description && (

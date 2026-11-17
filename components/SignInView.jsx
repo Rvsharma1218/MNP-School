@@ -13,6 +13,7 @@ import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc, serverTimestamp, collection } from 'firebase/firestore';
 import { useSchoolStore, getActiveSchoolId } from '../lib/store';
 import { translations } from '../lib/translations';
+import { resolveCmsWithAutoTranslate, getQuickTranslation } from '../lib/autoTranslate';
 import {
   GraduationCap, Mail, Lock, Eye, EyeOff, ShieldCheck,
   School, ArrowRight, AlertCircle, CheckCircle2,
@@ -27,44 +28,9 @@ import {
 
 const hasDevanagari = (text) => /[\u0900-\u097F]/.test(String(text || ''));
 
-// Smart CMS Bilingual & Deletion Field Resolver
+// Smart CMS Bilingual Auto-Translating Field Resolver
 function resolveCmsField(obj, keyBase, fallbackEn, fallbackHi, isHi) {
-  if (!obj) return isHi ? (fallbackHi ?? '') : (fallbackEn ?? '');
-  const raw = obj[keyBase];
-  const rawEn = obj[keyBase + 'En'];
-  const rawHi = obj[keyBase + 'Hi'];
-
-  // If the admin deliberately cleared/deleted the field:
-  const isExplicitlyCleared =
-    (raw !== undefined && String(raw).trim() === '') &&
-    (rawEn === undefined || String(rawEn).trim() === '') &&
-    (rawHi === undefined || String(rawHi).trim() === '');
-
-  if (isExplicitlyCleared) return '';
-
-  if (isHi) {
-    // 1. Explicit Hindi entry from admin
-    if (rawHi !== undefined && String(rawHi).trim() !== '') return String(rawHi).trim();
-    // 2. Generic field if written in Hindi
-    if (raw !== undefined && String(raw).trim() !== '' && hasDevanagari(raw)) return String(raw).trim();
-    // 3. Fallback Hindi text
-    if (fallbackHi !== undefined && fallbackHi !== null && String(fallbackHi).trim() !== '') return fallbackHi;
-    // 4. Fallback to generic / English if no Hindi exists at all
-    if (raw !== undefined && String(raw).trim() !== '') return String(raw).trim();
-    if (rawEn !== undefined && String(rawEn).trim() !== '') return String(rawEn).trim();
-    return fallbackEn ?? '';
-  } else {
-    // 1. Explicit English entry from admin
-    if (rawEn !== undefined && String(rawEn).trim() !== '') return String(rawEn).trim();
-    // 2. Generic field ONLY if it is in English (not Devanagari)
-    if (raw !== undefined && String(raw).trim() !== '' && !hasDevanagari(raw)) return String(raw).trim();
-    // 3. Clean English fallback text (prevents Hindi appearing in English mode!)
-    if (fallbackEn !== undefined && fallbackEn !== null && String(fallbackEn).trim() !== '') return fallbackEn;
-    // 4. Last resort if no English exists
-    if (raw !== undefined && String(raw).trim() !== '') return String(raw).trim();
-    if (rawHi !== undefined && String(rawHi).trim() !== '') return String(rawHi).trim();
-    return fallbackHi ?? '';
-  }
+  return resolveCmsWithAutoTranslate(obj, keyBase, fallbackEn, fallbackHi, isHi);
 }
 
 export function resolveDriveImageUrl(url) {
@@ -2114,7 +2080,7 @@ export default function SignInView() {
                           ...rawPhoto,
                           title: resolveCmsField(rawPhoto, 'title', rawPhoto.titleEn || rawPhoto.title, rawPhoto.titleHi || rawPhoto.title, isHi),
                           description: resolveCmsField(rawPhoto, 'description', rawPhoto.descriptionEn || rawPhoto.description, rawPhoto.descriptionHi || rawPhoto.description, isHi),
-                          category: (rawPhoto.category || 'campus').toUpperCase()
+                          category: getQuickTranslation(rawPhoto.category || 'campus', isHi).toUpperCase()
                         };
 
                         const resolvedSrc = resolveDriveImageUrl(photo.imageUrl || photo.src || 'https://www.mnpschool.in/campus_building.jpg');
