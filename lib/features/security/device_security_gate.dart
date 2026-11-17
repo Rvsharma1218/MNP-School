@@ -79,39 +79,49 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
   Map<String, dynamic>? _pendingUpdate;
   Map<String, dynamic>? _lastUpdateData;
   bool _dismissedOptionalUpdate = false;
+  bool _is64BitHardware = true;
+  List<String> _nativeSupportedAbis = [];
 
   String _resolveDeviceApkUrl(Map<String, dynamic> data) {
     final v8 = (data['apk_v8_url']?.toString() ?? data['apkArm64Url']?.toString() ?? '').trim();
     final v7 = (data['apk_v7_url']?.toString() ?? data['apkArmeabiUrl']?.toString() ?? '').trim();
     final universal = (data['apkUrl']?.toString() ?? data['apkDownloadUrl']?.toString() ?? data['downloadUrl']?.toString() ?? '').trim();
 
+    // 1. Check if device is strictly 32-bit (cannot run 64-bit binaries)
+    bool is32BitOnly = !_is64BitHardware;
+    if (_nativeSupportedAbis.isNotEmpty && !_nativeSupportedAbis.any((a) => a.contains('arm64') || a.contains('x86_64'))) {
+      is32BitOnly = true;
+    }
     try {
-      final abi = Abi.current();
-      if (abi == Abi.androidArm) {
-        // 32-bit ARM (armeabi-v7a) — never fallback to 64-bit on 32-bit phones
-        if (v7.isNotEmpty) return v7;
-        return universal;
-      } else if (abi == Abi.androidArm64) {
-        // 64-bit ARM (arm64-v8a) — can run 64-bit or 32-bit fallback
-        if (v8.isNotEmpty) return v8;
-        if (v7.isNotEmpty) return v7;
-        return universal;
+      if (Abi.current() == Abi.androidArm && !_is64BitHardware) {
+        is32BitOnly = true;
       }
     } catch (_) {}
 
+    if (is32BitOnly) {
+      // 32-bit phone MUST receive v7: NEVER give it 64-bit APK
+      if (v7.isNotEmpty) return v7;
+      return v7.isNotEmpty ? v7 : universal;
+    }
+
+    // 2. 64-bit phone: prefer v8, fallback to v7 if v8 is missing
     if (v8.isNotEmpty) return v8;
     if (v7.isNotEmpty) return v7;
     return universal;
   }
 
   String _getDeviceArchitectureLabel() {
+    if (_nativeSupportedAbis.isNotEmpty) {
+      if (_nativeSupportedAbis.any((a) => a.contains('arm64'))) return 'CPU: arm64-v8a (64-bit)';
+      if (_nativeSupportedAbis.any((a) => a.contains('v7a') || a.contains('armeabi'))) return 'CPU: armeabi-v7a (32-bit)';
+    }
     try {
       final abi = Abi.current();
       if (abi == Abi.androidArm) return 'CPU: armeabi-v7a (32-bit)';
       if (abi == Abi.androidArm64) return 'CPU: arm64-v8a (64-bit)';
       if (abi == Abi.androidX64) return 'CPU: x86_64 (64-bit)';
     } catch (_) {}
-    return 'CPU: arm64-v8a (64-bit)';
+    return _is64BitHardware ? 'CPU: arm64-v8a (64-bit)' : 'CPU: armeabi-v7a (32-bit)';
   }
 
   @override
@@ -169,6 +179,12 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
         final name = (res['versionName']?.toString() ?? '').trim();
         if (code > 0) currentVersionCode = code;
         if (name.isNotEmpty) currentVersion = name;
+        if (res['is64Bit'] is bool) {
+          _is64BitHardware = res['is64Bit'] as bool;
+        }
+        if (res['supportedAbis'] is List) {
+          _nativeSupportedAbis = (res['supportedAbis'] as List).map((e) => e.toString()).toList();
+        }
       }
       _versionInitialized = true;
 

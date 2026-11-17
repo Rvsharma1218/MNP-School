@@ -862,13 +862,17 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
           if (isInitialSnapshot) {
             isInitialSnapshot = false;
             // On initial connect, reconcile remote list with local SQLite cache:
-            final remoteStudents = snap.docs.map((d) {
-              final raw = d.data();
-              final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-              data['id'] = (data['id'] != null && data['id'].toString().isNotEmpty) ? data['id'] : d.id;
-              data['studentId'] = (data['studentId'] != null && data['studentId'].toString().isNotEmpty) ? data['studentId'] : d.id;
-              return StudentModel.fromMap(data);
-            }).toList();
+            // Filter out any corrupted/zombie docs without a name
+            final remoteStudents = snap.docs
+                .map((d) {
+                  final raw = d.data();
+                  final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+                  data['id'] = (data['id'] != null && data['id'].toString().isNotEmpty) ? data['id'] : d.id;
+                  data['studentId'] = (data['studentId'] != null && data['studentId'].toString().isNotEmpty) ? data['studentId'] : d.id;
+                  return StudentModel.fromMap(data);
+                })
+                .where((s) => s.name.trim().isNotEmpty)
+                .toList();
 
             final remoteIds = remoteStudents.map((s) => s.id).toSet();
             final localStudents = await DatabaseService.instance.getAllStudents();
@@ -891,6 +895,12 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
               } else {
                 final raw = d.data();
                 final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+                final name = (data['name'] ?? '').toString().trim();
+                if (name.isEmpty) {
+                  // Ignore and clean up zombie documents with no name
+                  await DatabaseService.instance.deleteStudentLocalOnly(d.id);
+                  continue;
+                }
                 data['id'] = (data['id'] != null && data['id'].toString().isNotEmpty) ? data['id'] : d.id;
                 data['studentId'] = (data['studentId'] != null && data['studentId'].toString().isNotEmpty) ? data['studentId'] : d.id;
                 final s = StudentModel.fromMap(data);

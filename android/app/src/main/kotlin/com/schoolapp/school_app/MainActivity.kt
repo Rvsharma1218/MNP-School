@@ -90,7 +90,18 @@ class MainActivity: FlutterActivity() {
                             pInfo.versionCode
                         }
                         val vName = pInfo.versionName ?: ""
-                        result.success(mapOf("versionCode" to vCode, "versionName" to vName))
+                        val supportedAbis = Build.SUPPORTED_ABIS.toList()
+                        val is64Bit = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            android.os.Process.is64Bit()
+                        } else {
+                            supportedAbis.any { it.contains("64") }
+                        }
+                        result.success(mapOf(
+                            "versionCode" to vCode,
+                            "versionName" to vName,
+                            "supportedAbis" to supportedAbis,
+                            "is64Bit" to is64Bit
+                        ))
                     } catch (e: Exception) {
                         result.error("VERSION_ERROR", e.localizedMessage, null)
                     }

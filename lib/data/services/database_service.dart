@@ -1597,6 +1597,8 @@ CREATE TABLE monthly_fees (
     }
     final db = await database;
     final maps = await db.query('students', orderBy: 'createdAt DESC');
+    // Self-healing: permanently purge corrupted rows without a name from local SQLite
+    db.delete('students', where: "TRIM(COALESCE(name, '')) = ''").catchError((_) => 0);
     final fsMaps = await db.query('fee_structures');
     final fsByStudent = <String, Map<String, dynamic>>{};
     for (final row in fsMaps) {
@@ -1604,7 +1606,9 @@ CREATE TABLE monthly_fees (
       if (sId.isNotEmpty) fsByStudent[sId] = row;
     }
 
-    final list = maps.map((m) {
+    final list = maps
+        .where((m) => (m['name']?.toString().trim() ?? '').isNotEmpty)
+        .map((m) {
       final sId = m['id']?.toString() ?? '';
       final altId = m['studentId']?.toString() ?? '';
       final structRow = fsByStudent[sId] ?? (altId.isNotEmpty ? fsByStudent[altId] : null);

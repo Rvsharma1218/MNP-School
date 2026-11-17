@@ -922,7 +922,7 @@ class FirestoreService {
           'dueDate': fee.dueDate?.toIso8601String() ?? '2026-10-10T00:00:00.000',
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true)) ?? Future.value(),
-        _students?.doc(fee.studentId).set(studentDocUpdates, SetOptions(merge: true)) ?? Future.value(),
+        _students?.doc(fee.studentId).update(studentDocUpdates).catchError((_) => null) ?? Future.value(),
       ]);
       debugPrint('[Firestore] ✅ Fee synced for student in $_schoolId: ${fee.studentId}');
     } catch (e, st) {
@@ -976,7 +976,7 @@ class FirestoreService {
 
       await Future.wait([
         _monthlyFees!.doc(docId).set(data, SetOptions(merge: true)),
-        _students?.doc(fee.studentId).set(studentDocUpdates, SetOptions(merge: true)) ?? Future.value(),
+        _students?.doc(fee.studentId).update(studentDocUpdates).catchError((_) => null) ?? Future.value(),
       ]);
       debugPrint('[Firestore] Monthly fee synced: $docId');
     } catch (e, st) {
@@ -990,7 +990,7 @@ class FirestoreService {
     try {
       final docId = structure.studentId;
       final monthlyFee = structure.tuitionFee + structure.transportFee + structure.gameFee;
-      await _students!.doc(docId).set({
+      await _students!.doc(docId).update({
         'feeStructure': {
           'dueDay': structure.dueDay,
           'finePerDay': structure.finePerDay,
@@ -1001,7 +1001,7 @@ class FirestoreService {
         },
         'monthlyFee': monthlyFee,
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      }).catchError((_) => null);
       debugPrint('[Firestore] ✅ Fee structure synced for student $docId');
     } catch (e) {
       debugPrint('[Firestore] ❌ Fee structure sync failed: $e');
@@ -1038,10 +1038,10 @@ class FirestoreService {
       data['receiptNo'] = docId;
       await _payments!.doc(docId).set(data, SetOptions(merge: true));
       if (_students != null && payment.studentId.isNotEmpty) {
-        _students!.doc(payment.studentId).set({
+        _students!.doc(payment.studentId).update({
           'lastPaidDate': payment.paymentDate.toIso8601String(),
           'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true)).catchError((_) => null);
+        }).catchError((_) => null);
       }
       debugPrint('[Firestore] ✅ Payment synced under $_schoolId: $docId');
     } catch (e, st) {
@@ -1159,7 +1159,7 @@ class FirestoreService {
       await Future.wait([
         receiptsCol.doc(docId).set(data, SetOptions(merge: true)),
         paymentsCol.doc(docId).set(data, SetOptions(merge: true)),
-        _students?.doc(payment.studentId).set(studentDocUpdates, SetOptions(merge: true)) ?? Future.value(),
+        _students?.doc(payment.studentId).update(studentDocUpdates).catchError((_) => null) ?? Future.value(),
       ]);
       debugPrint('[Firestore] ✅ Receipt & Payment synced: $docId');
     } catch (e) {
