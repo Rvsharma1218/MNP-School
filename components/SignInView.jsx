@@ -158,6 +158,8 @@ export default function SignInView() {
     } catch (_) { return []; }
   });
   const [isPopupAlertDismissed, setIsPopupAlertDismissed] = useState(false);
+  const [homeGalleryFilter, setHomeGalleryFilter] = useState('all');
+  const [previewPhotoModal, setPreviewPhotoModal] = useState(null);
 
   useEffect(() => {
     // 1. Live Website Config (Banner Style, Marquee, Emergency Popup)
@@ -2063,78 +2065,139 @@ export default function SignInView() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {((websiteGallery && websiteGallery.length > 0) ? websiteGallery.slice(0, 4) : [
+              {/* ── Category Filter Pills & Dynamic Albums on Homepage ── */}
+              {(() => {
+                const defaultPhotos = [
                   {
                     id: 'gal_1',
+                    category: 'campus',
                     title: isHi ? 'मुख्य कैंपस प्रवेश द्वार' : 'Main Campus Entrance',
                     description: isHi ? 'स्कूल की आधिकारिक पहचान के साथ सुरक्षित प्रवेश' : 'Secure entrance with official school identification',
                     imageUrl: '/school_gate_banner.jpg'
                   },
                   {
                     id: 'gal_2',
+                    category: 'sports',
                     title: isHi ? 'खेलकूद एवं फुटबॉल मैदान' : 'Sports & Football Arena',
                     description: isHi ? 'एथलेटिक्स और फुटबॉल के लिए विशाल खुला खेल का मैदान' : 'Expansive open playground for athletics and football',
                     imageUrl: '/campus_playground.jpg'
                   },
                   {
                     id: 'gal_3',
+                    category: 'campus',
                     title: isHi ? 'शैक्षणिक भवन ब्लॉक' : 'Academic Building Block',
                     description: isHi ? 'हवादार व बड़े क्लासरूम और डिजिटल लर्निंग पॉइंट्स' : 'Spacious, ventilated classrooms and digital study points',
                     imageUrl: '/campus_building.jpg'
                   },
                   {
                     id: 'gal_4',
+                    category: 'campus',
                     title: isHi ? 'विद्यार्थी आगमन एवं कैंपस जीवन' : 'Student Arrival & Campus Life',
                     description: isHi ? 'अनुशासित कैंपस गेट, साइकिल पार्किंग और आगमन' : 'Disciplined campus gates, bicycle parking and arrival',
                     imageUrl: '/school_entrance.jpg'
                   }
-                ]).map((rawPhoto, pIdx) => {
-                  const isDeval = (s) => typeof s === 'string' && /[\u0900-\u097F]/.test(s);
-                  const galEnMap = {
-                    gal_1: {
-                      title: 'Main Campus Entrance',
-                      description: 'Secure entrance with official school identification'
-                    },
-                    gal_2: {
-                      title: 'Sports & Football Arena',
-                      description: 'Expansive open playground for athletics and football'
-                    },
-                    gal_3: {
-                      title: 'Academic Building Block',
-                      description: 'Spacious, ventilated classrooms and digital study points'
-                    },
-                    gal_4: {
-                      title: 'Student Arrival & Campus Life',
-                      description: 'Disciplined campus gates, bicycle parking and daily arrival'
-                    }
-                  };
-                  const gFb = galEnMap[rawPhoto.id] || {};
-                  const photo = {
-                    ...rawPhoto,
-                    title: resolveCmsField(rawPhoto, 'title', rawPhoto.titleEn || gFb.title || rawPhoto.title, rawPhoto.titleHi || rawPhoto.title, isHi),
-                    description: resolveCmsField(rawPhoto, 'description', rawPhoto.descriptionEn || gFb.description || rawPhoto.description, rawPhoto.descriptionHi || rawPhoto.description, isHi)
-                  };
+                ];
 
-                  return (
-                    <div key={photo.id || pIdx} className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
-                      <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                        <img
-                          src={resolveDriveImageUrl(photo.imageUrl || photo.src || '/school_campus_banner.jpg')}
-                          alt={photo.title}
-                          loading="lazy"
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/school_campus_banner.jpg'; }}
-                        />
-                      </div>
-                      <div className="p-4 space-y-1 bg-white">
-                        <h3 className="text-sm font-bold text-[#14243B]">{photo.title}</h3>
-                        <p className="text-[11px] text-[#65748B]">{photo.description}</p>
-                      </div>
+                const masterGallery = (websiteGallery && websiteGallery.length > 0) ? websiteGallery : defaultPhotos;
+
+                // Extract all unique categories
+                const catSet = new Set(['all']);
+                masterGallery.forEach(p => {
+                  const c = (p.category || 'campus').trim().toLowerCase();
+                  if (c) catSet.add(c);
+                });
+                const categories = Array.from(catSet);
+
+                const filteredPhotos = homeGalleryFilter === 'all'
+                  ? masterGallery
+                  : masterGallery.filter(p => (p.category || 'campus').trim().toLowerCase() === homeGalleryFilter);
+
+                return (
+                  <div>
+                    {/* Horizontal Category Filter Pills */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 mb-8">
+                      {categories.map(cat => {
+                        const isSelected = homeGalleryFilter === cat;
+                        const label = cat === 'all'
+                          ? (isHi ? 'सभी तस्वीरें (All)' : 'All Photos')
+                          : cat.charAt(0).toUpperCase() + cat.slice(1);
+
+                        const count = cat === 'all'
+                          ? masterGallery.length
+                          : masterGallery.filter(p => (p.category || 'campus').trim().toLowerCase() === cat).length;
+
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setHomeGalleryFilter(cat)}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-[#0c2340] text-[#F4B323] shadow-md border border-[#F4B323]/50 scale-105'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            <span>{label}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-[#F4B323]/20 text-[#F4B323]' : 'bg-slate-100 text-slate-500'}`}>
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+
+                    {/* Photos Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                      {filteredPhotos.map((rawPhoto, pIdx) => {
+                        const photo = {
+                          ...rawPhoto,
+                          title: resolveCmsField(rawPhoto, 'title', rawPhoto.titleEn || rawPhoto.title, rawPhoto.titleHi || rawPhoto.title, isHi),
+                          description: resolveCmsField(rawPhoto, 'description', rawPhoto.descriptionEn || rawPhoto.description, rawPhoto.descriptionHi || rawPhoto.description, isHi),
+                          category: (rawPhoto.category || 'campus').toUpperCase()
+                        };
+
+                        const resolvedSrc = resolveDriveImageUrl(photo.imageUrl || photo.src || '/school_campus_banner.jpg');
+
+                        return (
+                          <div
+                            key={photo.id || pIdx}
+                            onClick={() => setPreviewPhotoModal({ ...photo, fullSrc: resolvedSrc })}
+                            className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 group cursor-pointer hover:-translate-y-1 flex flex-col justify-between"
+                          >
+                            <div>
+                              <div className="aspect-[4/3] overflow-hidden bg-slate-100 relative">
+                                <img
+                                  src={resolvedSrc}
+                                  alt={photo.title}
+                                  loading="lazy"
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/school_campus_banner.jpg'; }}
+                                />
+                                <span className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                  {photo.category}
+                                </span>
+                                <span className="absolute bottom-2.5 right-2.5 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                </span>
+                              </div>
+                              <div className="p-4 space-y-1 bg-white">
+                                <h3 className="text-sm font-bold text-[#14243B] group-hover:text-blue-700 transition-colors truncate">{photo.title}</h3>
+                                {photo.description && (
+                                  <p className="text-[11px] text-[#65748B] line-clamp-2 leading-relaxed">{photo.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="px-4 pb-3 pt-1 text-[10px] font-bold text-blue-600 flex items-center gap-1">
+                              <span>{isHi ? 'बड़ी फ़ोटो देखें' : 'View Full Photo'}</span>
+                              <span>→</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </section>
 
             {/* ── SECTION 6: PARENTS & GUARDIANS REVIEWS & TESTIMONIALS ── */}
@@ -3758,6 +3821,46 @@ export default function SignInView() {
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* ── High-Resolution Photo Lightbox Preview Modal ── */}
+      {previewPhotoModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn"
+          onClick={() => setPreviewPhotoModal(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-white/20 relative animate-scaleUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative bg-black flex items-center justify-center max-h-[70vh] overflow-hidden">
+              <img
+                src={previewPhotoModal.fullSrc || previewPhotoModal.imageUrl || previewPhotoModal.src || '/school_campus_banner.jpg'}
+                alt={previewPhotoModal.title}
+                className="w-full h-auto max-h-[70vh] object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => setPreviewPhotoModal(null)}
+                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center cursor-pointer transition-colors"
+              >
+                ✕
+              </button>
+              <span className="absolute bottom-3 left-3 bg-black/70 text-white text-[11px] font-black uppercase px-2.5 py-1 rounded-md">
+                {previewPhotoModal.category || 'CAMPUS'}
+              </span>
+            </div>
+            <div className="p-5 sm:p-6 space-y-2 bg-white">
+              <h3 className="text-lg font-black text-[#0c2340]">{previewPhotoModal.title}</h3>
+              {previewPhotoModal.description && (
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{previewPhotoModal.description}</p>
+              )}
+              {previewPhotoModal.date && (
+                <p className="text-[11px] text-slate-400 font-semibold">{previewPhotoModal.date}</p>
+              )}
+            </div>
           </div>
         </div>
       )}

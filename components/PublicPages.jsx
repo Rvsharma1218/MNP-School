@@ -683,10 +683,17 @@ export function GalleryPageView({ isHi, galleryItems }) {
     ? galleryItems.map(g => ({
         title: isHi ? (g.titleHi || g.title) : (g.titleEn || g.title),
         description: isHi ? (g.descriptionHi || g.description) : (g.descriptionEn || g.description),
-        category: g.category || 'campus',
+        category: (g.category || 'campus').trim().toLowerCase(),
         src: resolveDriveImageUrl(g.imageUrl || g.src || '/school_campus_banner.jpg')
       }))
     : defaultPhotos;
+
+  // Extract all categories dynamically from photos
+  const dynamicCategories = ['all'];
+  photos.forEach(p => {
+    const c = p.category || 'campus';
+    if (!dynamicCategories.includes(c)) dynamicCategories.push(c);
+  });
 
   const filtered = filter === 'all' ? photos : photos.filter(p => p.category === filter);
 
@@ -706,26 +713,27 @@ export function GalleryPageView({ isHi, galleryItems }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Filter Pills */}
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-          {[
-            { id: 'all', labelHi: 'सभी तस्वीरें (All)', labelEn: 'All Photos' },
-            { id: 'campus', labelHi: 'स्कूल परिसर (Campus)', labelEn: 'Campus' },
-            { id: 'class', labelHi: 'कक्षाएं (Classrooms)', labelEn: 'Classrooms' },
-            { id: 'sports', labelHi: 'खेलकूद (Sports)', labelEn: 'Sports' },
-            { id: 'events', labelHi: 'सांस्कृतिक कार्यक्रम (Events)', labelEn: 'Events' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setFilter(tab.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                filter === tab.id
-                  ? 'bg-[#0c2340] text-[#F4B323] shadow-md border border-[#F4B323]/40'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {isHi ? tab.labelHi : tab.labelEn}
-            </button>
-          ))}
+          {dynamicCategories.map(cat => {
+            const isSelected = filter === cat;
+            const label = cat === 'all'
+              ? (isHi ? 'सभी तस्वीरें (All)' : 'All Photos')
+              : cat.charAt(0).toUpperCase() + cat.slice(1);
+
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setFilter(cat)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#0c2340] text-[#F4B323] shadow-md border border-[#F4B323]/40 scale-105'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Gallery Grid */}
