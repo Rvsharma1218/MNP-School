@@ -276,7 +276,7 @@ export default function RootLayout({ children }) {
       "streetAddress": "Mora Bazar, Near Mairi - Ratauli Road, Post - Mora",
       "addressLocality": "Mora-Mairi, Siwan",
       "addressRegion": "Bihar",
-      "postalCode": "841226",
+      "postalCode": "841507",
       "addressCountry": "IN"
     },
     "areaServed": [

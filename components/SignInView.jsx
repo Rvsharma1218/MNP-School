@@ -3105,15 +3105,15 @@ export default function SignInView() {
               <span>&bull;</span>
               <span>{isHi ? 'एवं निकटवर्ती गाँव (And Nearby Villages)' : 'And Nearby Villages (एवं निकटवर्ती गाँव)'}</span>
               <span>&bull;</span>
-              <span>Siwan (सीवान - 841226, Bihar)</span>
+              <span>Siwan (सीवान - 841507, Bihar)</span>
             </div>
 
             {/* Official Indexing Statement for Google Bot */}
             <div className="p-3.5 rounded-xl bg-[#102747]/40 border border-[#1E3A60]/50 text-[11px] text-slate-300/80 leading-relaxed">
               <p>
                 <strong>Mission Navodaya Public School (MNP School)</strong> — {isHi
-                  ? 'मोरा बाजार, मोरा मैरी, रतौली, बड़का गाँव, बिथुना, सलेमपुर, सहसा एवं निकटवर्ती गाँव (सीवान, बिहार - 841226) स्थित एक उत्कृष्ट अंग्रेजी व हिंदी माध्यम विद्यालय है। चेयरमैन उदय शंकर पटेल (उदय सर) एवं निदेशक विशाल पटेल (विशाल सर) के नेतृत्व में नर्सरी से 8वीं कक्षा तक स्मार्ट क्लास, कम्प्यूटर लैब, सुरक्षित वाहन सुविधा, नवोदय प्रवेश परीक्षा की विशेष तैयारी एवं डिजिटल पेरेंट पोर्टल व मोबाइल ऐप उपलब्ध कराता है।'
-                  : 'Official recognized co-educational institution situated at Mora Bazar, Mora Mairi, Ratauli, Barka Gaon, Bithuna, Salempur, Sahsa and nearby villages, District Siwan (Bihar 841226). Under the leadership of Chairman Uday Shankar Patel (Uday Sir) and Director Vishal Patel (Vishal Sir), providing quality education from Nursery to 8th standard with smart classes, science & computer lab, safe transport, Navodaya preparation, digital report cards, and 24/7 parent mobile app.'}
+                  ? 'मोरा बाजार, मोरा मैरी, रतौली, बड़का गाँव, बिथुना, सलेमपुर, सहसा एवं निकटवर्ती गाँव (सीवान, बिहार - 841507) स्थित एक उत्कृष्ट अंग्रेजी व हिंदी माध्यम विद्यालय है। चेयरमैन उदय शंकर पटेल (उदय सर) एवं निदेशक विशाल पटेल (विशाल सर) के नेतृत्व में नर्सरी से 8वीं कक्षा तक स्मार्ट क्लास, कम्प्यूटर लैब, सुरक्षित वाहन सुविधा, नवोदय प्रवेश परीक्षा की विशेष तैयारी एवं डिजिटल पेरेंट पोर्टल व मोबाइल ऐप उपलब्ध कराता है।'
+                  : 'Official recognized co-educational institution situated at Mora Bazar, Mora Mairi, Ratauli, Barka Gaon, Bithuna, Salempur, Sahsa and nearby villages, District Siwan (Bihar 841507). Under the leadership of Chairman Uday Shankar Patel (Uday Sir) and Director Vishal Patel (Vishal Sir), providing quality education from Nursery to 8th standard with smart classes, science & computer lab, safe transport, Navodaya preparation, digital report cards, and 24/7 parent mobile app.'}
               </p>
             </div>
           </div>
