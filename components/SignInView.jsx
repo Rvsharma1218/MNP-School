@@ -2065,90 +2065,51 @@ export default function SignInView() {
                 </p>
               </div>
 
-              {/* ── Category Filter Pills & Dynamic Albums on Homepage ── */}
+              {/* ── Official School Campus Showcase (Homepage) ── */}
               {(() => {
-                const defaultPhotos = [
+                const defaultCampusPhotos = [
                   {
                     id: 'gal_1',
                     category: 'campus',
                     title: isHi ? 'मुख्य कैंपस प्रवेश द्वार' : 'Main Campus Entrance',
-                    description: isHi ? 'स्कूल की आधिकारिक पहचान के साथ सुरक्षित प्रवेश' : 'Secure entrance with official school identification',
-                    imageUrl: '/school_gate_banner.jpg'
+                    description: isHi ? 'स्कूल की आधिकारिक पहचान के साथ सुरक्षित व भव्य प्रवेश द्वार' : 'Secure and grand entrance with official school identity',
+                    imageUrl: 'https://www.mnpschool.in/school_gate_banner.jpg'
                   },
                   {
                     id: 'gal_2',
-                    category: 'sports',
-                    title: isHi ? 'खेलकूद एवं फुटबॉल मैदान' : 'Sports & Football Arena',
-                    description: isHi ? 'एथलेटिक्स और फुटबॉल के लिए विशाल खुला खेल का मैदान' : 'Expansive open playground for athletics and football',
-                    imageUrl: '/campus_playground.jpg'
+                    category: 'campus',
+                    title: isHi ? 'शैक्षणिक भवन ब्लॉक' : 'Academic Building Block',
+                    description: isHi ? 'हवादार व बड़े क्लासरूम, आधुनिक सुविधाएं और डिजिटल लर्निंग' : 'Spacious, well-ventilated classrooms and digital learning wings',
+                    imageUrl: 'https://www.mnpschool.in/campus_building.jpg'
                   },
                   {
                     id: 'gal_3',
                     category: 'campus',
-                    title: isHi ? 'शैक्षणिक भवन ब्लॉक' : 'Academic Building Block',
-                    description: isHi ? 'हवादार व बड़े क्लासरूम और डिजिटल लर्निंग पॉइंट्स' : 'Spacious, ventilated classrooms and digital study points',
-                    imageUrl: '/campus_building.jpg'
+                    title: isHi ? 'खेलकूद एवं फुटबॉल मैदान' : 'Sports & Football Arena',
+                    description: isHi ? 'एथलेटिक्स और फुटबॉल के लिए विशाल खुला खेल का मैदान' : 'Expansive open playground for athletics, football, and fitness',
+                    imageUrl: 'https://www.mnpschool.in/campus_playground.jpg'
                   },
                   {
                     id: 'gal_4',
                     category: 'campus',
-                    title: isHi ? 'विद्यार्थी आगमन एवं कैंपस जीवन' : 'Student Arrival & Campus Life',
-                    description: isHi ? 'अनुशासित कैंपस गेट, साइकिल पार्किंग और आगमन' : 'Disciplined campus gates, bicycle parking and arrival',
-                    imageUrl: '/school_entrance.jpg'
+                    title: isHi ? 'विद्यार्थी आगमन एवं कैंपस अनुशासन' : 'Student Arrival & Campus Discipline',
+                    description: isHi ? 'अनुशासित कैंपस गेट, साइकिल पार्किंग और सुरक्षित परिवेश' : 'Disciplined arrival, bicycle parking, and safe campus environment',
+                    imageUrl: 'https://www.mnpschool.in/school_entrance.jpg'
                   }
                 ];
 
-                const masterGallery = (websiteGallery && websiteGallery.length > 0) ? websiteGallery : defaultPhotos;
+                // Homepage only shows core campus photos
+                const campusPhotos = (websiteGallery && websiteGallery.length > 0)
+                  ? websiteGallery.filter(p => (p.category || 'campus').trim().toLowerCase() === 'campus').slice(0, 4)
+                  : [];
 
-                // Extract all unique categories
-                const catSet = new Set(['all']);
-                masterGallery.forEach(p => {
-                  const c = (p.category || 'campus').trim().toLowerCase();
-                  if (c) catSet.add(c);
-                });
-                const categories = Array.from(catSet);
-
-                const filteredPhotos = homeGalleryFilter === 'all'
-                  ? masterGallery
-                  : masterGallery.filter(p => (p.category || 'campus').trim().toLowerCase() === homeGalleryFilter);
+                const displayPhotos = campusPhotos.length > 0 ? campusPhotos : defaultCampusPhotos;
 
                 return (
                   <div>
-                    {/* Horizontal Category Filter Pills */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 mb-8">
-                      {categories.map(cat => {
-                        const isSelected = homeGalleryFilter === cat;
-                        const label = cat === 'all'
-                          ? (isHi ? 'सभी तस्वीरें (All)' : 'All Photos')
-                          : cat.charAt(0).toUpperCase() + cat.slice(1);
-
-                        const count = cat === 'all'
-                          ? masterGallery.length
-                          : masterGallery.filter(p => (p.category || 'campus').trim().toLowerCase() === cat).length;
-
-                        return (
-                          <button
-                            key={cat}
-                            type="button"
-                            onClick={() => setHomeGalleryFilter(cat)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                              isSelected
-                                ? 'bg-[#0c2340] text-[#F4B323] shadow-md border border-[#F4B323]/50 scale-105'
-                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                            }`}
-                          >
-                            <span>{label}</span>
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-[#F4B323]/20 text-[#F4B323]' : 'bg-slate-100 text-slate-500'}`}>
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Photos Grid */}
+                    {/* Photos Grid - Uncropped & Ambient Render */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                      {filteredPhotos.map((rawPhoto, pIdx) => {
+                      {displayPhotos.map((rawPhoto, pIdx) => {
                         const photo = {
                           ...rawPhoto,
                           title: resolveCmsField(rawPhoto, 'title', rawPhoto.titleEn || rawPhoto.title, rawPhoto.titleHi || rawPhoto.title, isHi),
@@ -2156,7 +2117,7 @@ export default function SignInView() {
                           category: (rawPhoto.category || 'campus').toUpperCase()
                         };
 
-                        const resolvedSrc = resolveDriveImageUrl(photo.imageUrl || photo.src || '/school_campus_banner.jpg');
+                        const resolvedSrc = resolveDriveImageUrl(photo.imageUrl || photo.src || 'https://www.mnpschool.in/campus_building.jpg');
 
                         return (
                           <div
@@ -2165,18 +2126,26 @@ export default function SignInView() {
                             className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-xl transition-all duration-300 group cursor-pointer hover:-translate-y-1 flex flex-col justify-between"
                           >
                             <div>
-                              <div className="aspect-[4/3] overflow-hidden bg-slate-100 relative">
+                              <div className="aspect-[4/3] w-full overflow-hidden bg-slate-950 relative flex items-center justify-center">
+                                {/* Ambient backdrop blur to eliminate blank borders */}
+                                <img
+                                  src={resolvedSrc}
+                                  alt=""
+                                  aria-hidden="true"
+                                  className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110 pointer-events-none"
+                                />
+                                {/* Full photo contained - never cropped */}
                                 <img
                                   src={resolvedSrc}
                                   alt={photo.title}
                                   loading="lazy"
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                  className="relative z-10 max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
                                   onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/school_campus_banner.jpg'; }}
                                 />
-                                <span className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                <span className="absolute top-2.5 left-2.5 z-20 bg-black/75 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
                                   {photo.category}
                                 </span>
-                                <span className="absolute bottom-2.5 right-2.5 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="absolute bottom-2.5 right-2.5 z-20 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                                 </span>
                               </div>
@@ -2194,6 +2163,22 @@ export default function SignInView() {
                           </div>
                         );
                       })}
+                    </div>
+
+                    {/* Button to navigate to Full Photo Gallery Page */}
+                    <div className="mt-10 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          navigate('/gallery');
+                        }}
+                        className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-[#0c2340] hover:bg-[#14325a] text-white font-bold text-sm shadow-md hover:shadow-xl transition-all duration-300 border border-[#F4B323]/50 hover:scale-105 cursor-pointer group"
+                      >
+                        <Sparkles className="w-4 h-4 text-[#F4B323] group-hover:rotate-12 transition-transform" />
+                        <span>{isHi ? 'सभी प्रोजेक्ट्स व पूरी फोटो गैलरी देखें' : 'View Full Gallery & Student Projects'}</span>
+                        <span className="text-[#F4B323] font-bold text-base transition-transform group-hover:translate-x-1">→</span>
+                      </button>
                     </div>
                   </div>
                 );

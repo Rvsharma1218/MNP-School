@@ -751,17 +751,25 @@ export function GalleryPageView({ isHi, galleryItems }) {
               className="group relative rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer hover:-translate-y-1 flex flex-col justify-between"
             >
               <div>
-                <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100 relative">
+                <div className="aspect-[4/3] w-full overflow-hidden bg-slate-950 relative flex items-center justify-center">
+                  {/* Ambient background blur */}
+                  <img
+                    src={item.src}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110 pointer-events-none"
+                  />
+                  {/* Full image contained - never crops head or project */}
                   <img
                     src={item.src}
                     alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="relative z-10 max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/school_campus_banner.jpg'; }}
                   />
-                  <span className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                  <span className="absolute top-2.5 left-2.5 z-20 bg-black/75 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
                     {item.category}
                   </span>
-                  <span className="absolute bottom-2.5 right-2.5 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="absolute bottom-2.5 right-2.5 z-20 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   </span>
                 </div>
