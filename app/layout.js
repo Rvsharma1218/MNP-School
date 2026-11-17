@@ -280,17 +280,14 @@ export default function RootLayout({ children }) {
       "addressCountry": "IN"
     },
     "areaServed": [
-      "Mora",
       "Mora Bazar",
-      "Mairi",
+      "Mora Mairi",
       "Ratauli",
-      "Patel Tola",
-      "Pipra",
       "Barka Gaon",
-      "Nautan",
-      "Mairwa",
-      "Darauli",
-      "Guthani",
+      "Bithuna",
+      "Salempur",
+      "Sahsa",
+      "Nearby Villages",
       "Siwan",
       "Bihar"
     ],

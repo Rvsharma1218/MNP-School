@@ -3089,25 +3089,21 @@ export default function SignInView() {
             {/* Local Area & Villages Covered */}
             <div className="text-[11px] text-slate-300/90 leading-relaxed flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className="font-bold text-[#F4B323]">{isHi ? 'परिसर सेवा क्षेत्र (Areas & Villages Served):' : 'Areas & Villages Served:'}</span>
-              <span>Mora (मोरा)</span>
-              <span>&bull;</span>
               <span>Mora Bazar (मोरा बाजार)</span>
               <span>&bull;</span>
-              <span>Mairi (मैरी)</span>
+              <span>Mora Mairi (मोरा मैरी)</span>
               <span>&bull;</span>
               <span>Ratauli (रतौली)</span>
               <span>&bull;</span>
-              <span>Patel Tola (पटेल टोला)</span>
+              <span>Barka Gaon (बड़का गाँव)</span>
               <span>&bull;</span>
-              <span>Pipra (पिपरा)</span>
+              <span>Bithuna (बिथुना)</span>
               <span>&bull;</span>
-              <span>Barka Gaon (बड़का गांव)</span>
+              <span>Salempur (सलेमपुर)</span>
               <span>&bull;</span>
-              <span>Mairwa (मैरवा)</span>
+              <span>Sahsa (सहसा)</span>
               <span>&bull;</span>
-              <span>Darauli (दरौली)</span>
-              <span>&bull;</span>
-              <span>Guthani (गुठनी)</span>
+              <span>{isHi ? 'एवं निकटवर्ती गाँव (And Nearby Villages)' : 'And Nearby Villages (एवं निकटवर्ती गाँव)'}</span>
               <span>&bull;</span>
               <span>Siwan (सीवान - 841226, Bihar)</span>
             </div>
@@ -3116,8 +3112,8 @@ export default function SignInView() {
             <div className="p-3.5 rounded-xl bg-[#102747]/40 border border-[#1E3A60]/50 text-[11px] text-slate-300/80 leading-relaxed">
               <p>
                 <strong>Mission Navodaya Public School (MNP School)</strong> — {isHi
-                  ? 'मोरा बाजार, मैरी-रतौली मार्ग, सीवान (बिहार - 841226) स्थित एक उत्कृष्ट अंग्रेजी व हिंदी माध्यम विद्यालय है। चेयरमैन उदय शंकर पटेल (उदय सर) एवं निदेशक विशाल पटेल (विशाल सर) के नेतृत्व में नर्सरी से 8वीं कक्षा तक स्मार्ट क्लास, कम्प्यूटर लैब, सुरक्षित वाहन सुविधा, नवोदय प्रवेश परीक्षा की विशेष तैयारी एवं डिजिटल पेरेंट पोर्टल व मोबाइल ऐप उपलब्ध कराता है।'
-                  : 'Official recognized co-educational institution situated at Mora Bazar, Mairi - Ratauli Road, District Siwan (Bihar 841226). Under the leadership of Chairman Uday Shankar Patel (Uday Sir) and Director Vishal Patel (Vishal Sir), providing quality education from Nursery to 8th standard with smart classes, science & computer lab, safe transport, Navodaya preparation, digital report cards, and 24/7 parent mobile app.'}
+                  ? 'मोरा बाजार, मोरा मैरी, रतौली, बड़का गाँव, बिथुना, सलेमपुर, सहसा एवं निकटवर्ती गाँव (सीवान, बिहार - 841226) स्थित एक उत्कृष्ट अंग्रेजी व हिंदी माध्यम विद्यालय है। चेयरमैन उदय शंकर पटेल (उदय सर) एवं निदेशक विशाल पटेल (विशाल सर) के नेतृत्व में नर्सरी से 8वीं कक्षा तक स्मार्ट क्लास, कम्प्यूटर लैब, सुरक्षित वाहन सुविधा, नवोदय प्रवेश परीक्षा की विशेष तैयारी एवं डिजिटल पेरेंट पोर्टल व मोबाइल ऐप उपलब्ध कराता है।'
+                  : 'Official recognized co-educational institution situated at Mora Bazar, Mora Mairi, Ratauli, Barka Gaon, Bithuna, Salempur, Sahsa and nearby villages, District Siwan (Bihar 841226). Under the leadership of Chairman Uday Shankar Patel (Uday Sir) and Director Vishal Patel (Vishal Sir), providing quality education from Nursery to 8th standard with smart classes, science & computer lab, safe transport, Navodaya preparation, digital report cards, and 24/7 parent mobile app.'}
               </p>
             </div>
           </div>
