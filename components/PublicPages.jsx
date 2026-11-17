@@ -9,6 +9,17 @@ import {
   Building, CreditCard, CheckCircle2
 } from 'lucide-react';
 
+export function resolveDriveImageUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (trimmed.includes('lh3.googleusercontent.com/d/')) return trimmed;
+  const match1 = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match1 && match1[1]) return `https://lh3.googleusercontent.com/d/${match1[1]}`;
+  const match2 = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match2 && match2[1] && trimmed.includes('drive.google.com')) return `https://lh3.googleusercontent.com/d/${match2[1]}`;
+  return trimmed;
+}
+
 /**
  * Common Page Header Banner with Breadcrumbs
  */
@@ -673,7 +684,7 @@ export function GalleryPageView({ isHi, galleryItems }) {
         title: isHi ? (g.titleHi || g.title) : (g.titleEn || g.title),
         description: isHi ? (g.descriptionHi || g.description) : (g.descriptionEn || g.description),
         category: g.category || 'campus',
-        src: g.imageUrl || g.src || '/school_campus_banner.jpg'
+        src: resolveDriveImageUrl(g.imageUrl || g.src || '/school_campus_banner.jpg')
       }))
     : defaultPhotos;
 

@@ -67,6 +67,16 @@ function resolveCmsField(obj, keyBase, fallbackEn, fallbackHi, isHi) {
   }
 }
 
+export function resolveDriveImageUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (trimmed.includes('lh3.googleusercontent.com/d/')) return trimmed;
+  const match1 = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match1 && match1[1]) return `https://lh3.googleusercontent.com/d/${match1[1]}`;
+  const match2 = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match2 && match2[1] && trimmed.includes('drive.google.com')) return `https://lh3.googleusercontent.com/d/${match2[1]}`;
+  return trimmed;
+}
 
 export default function SignInView() {
   const {
@@ -1976,9 +1986,9 @@ export default function SignInView() {
                       <div className="bg-gradient-to-br from-[#0c2340] via-[#102a4d] to-[#173a66] p-6 text-white relative overflow-hidden">
                         <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/5 blur-xl pointer-events-none" />
                         <div className="flex items-center gap-3.5 relative z-10">
-                          {leader.avatarUrl ? (
+                          {(leader.avatarUrl || leader.photoUrl) ? (
                             <img
-                              src={leader.avatarUrl}
+                              src={resolveDriveImageUrl(leader.avatarUrl || leader.photoUrl)}
                               alt={leader.name}
                               className="w-14 h-14 rounded-2xl object-cover border border-white/20 shadow-inner flex-shrink-0"
                             />
@@ -2110,7 +2120,7 @@ export default function SignInView() {
                     <div key={photo.id || pIdx} className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all group">
                       <div className="aspect-[4/3] overflow-hidden bg-slate-100">
                         <img
-                          src={photo.imageUrl || photo.src || '/school_campus_banner.jpg'}
+                          src={resolveDriveImageUrl(photo.imageUrl || photo.src || '/school_campus_banner.jpg')}
                           alt={photo.title}
                           loading="lazy"
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
