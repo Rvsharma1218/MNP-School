@@ -1,6 +1,169 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../data/services/firestore_service.dart';
+
+/// Helper to convert standard Google Drive sharing links & relative paths to direct CDN image URLs
+String resolveDriveImageUrl(String url) {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) return '';
+  if (trimmed.startsWith('data:image')) return trimmed;
+
+  // Rewrite apex domain to www canonical to avoid Vercel 308 redirects that break in Flutter
+  if (trimmed.startsWith('https://mnpschool.in/')) {
+    return trimmed.replaceFirst('https://mnpschool.in/', 'https://www.mnpschool.in/');
+  }
+  if (trimmed.startsWith('http://mnpschool.in/')) {
+    return trimmed.replaceFirst('http://mnpschool.in/', 'https://www.mnpschool.in/');
+  }
+
+  // If it's a relative path like '/campus_building.jpg' or 'campus_building.jpg'
+  if (trimmed.startsWith('/') || (!trimmed.startsWith('http://') && !trimmed.startsWith('https://'))) {
+    final cleanPath = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+    return 'https://www.mnpschool.in$cleanPath';
+  }
+
+  if (trimmed.contains('lh3.googleusercontent.com/d/')) return trimmed;
+
+  // Pattern 1: drive.google.com/file/d/FILE_ID
+  final match1 = RegExp(r'drive\.google\.com/file/d/([a-zA-Z0-9_-]+)').firstMatch(trimmed);
+  if (match1 != null && match1.group(1) != null) {
+    return 'https://lh3.googleusercontent.com/d/${match1.group(1)}';
+  }
+
+  // Pattern 2: drive.google.com/open?id=FILE_ID or ?id=FILE_ID
+  final match2 = RegExp(r'[?&]id=([a-zA-Z0-9_-]+)').firstMatch(trimmed);
+  if (match2 != null && match2.group(1) != null && trimmed.contains('drive.google.com')) {
+    return 'https://lh3.googleusercontent.com/d/${match2.group(1)}';
+  }
+
+  return trimmed;
+}
+
+/// Instant Auto-Translator between English and Hindi
+Future<String> autoTranslateOnline(String text, String targetLang) async {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return '';
+
+  final lower = trimmed.toLowerCase();
+  final Map<String, String> dictEnToHi = {
+    'computer project': 'कंप्यूटर प्रोजेक्ट',
+    'science project': 'विज्ञान प्रोजेक्ट',
+    'science exhibition': 'विज्ञान प्रदर्शनी',
+    'drawing competition': 'चित्रकला प्रतियोगिता',
+    'annual sports meet': 'वार्षिक खेलकूद महोत्सव',
+    'campus': 'कैंपस',
+    'sports': 'खेलकूद',
+    'events': 'कार्यक्रम',
+    'class': 'कक्षाएं',
+    'projects': 'प्रोजेक्ट्स',
+    'project': 'प्रोजेक्ट',
+    'academics': 'शैक्षणिक',
+  };
+
+  if (targetLang == 'hi' && dictEnToHi.containsKey(lower)) {
+    return dictEnToHi[lower]!;
+  }
+
+  try {
+    final client = HttpClient();
+    final uri = Uri.parse(
+        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$targetLang&dt=t&q=${Uri.encodeComponent(trimmed)}');
+    final req = await client.getUrl(uri).timeout(const Duration(seconds: 4));
+    final res = await req.close();
+    if (res.statusCode == 200) {
+      final body = await res.transform(utf8.decoder).join();
+      final data = jsonDecode(body);
+      if (data is List && data.isNotEmpty && data[0] is List) {
+        final buf = StringBuffer();
+        for (final p in (data[0] as List)) {
+          if (p is List && p.isNotEmpty) buf.write(p[0].toString());
+        }
+        final result = buf.toString().trim();
+        if (result.isNotEmpty) return result;
+      }
+    }
+  } catch (_) {}
+  return trimmed;
+}
+
+/// Universal Image renderer supporting Base64 uploads, Google Drive streams & Web URLs
+Widget buildCmsImage(
+  String rawUrl, {
+  double? height,
+  double? width,
+  BoxFit fit = BoxFit.cover,
+  BorderRadius? borderRadius,
+  Widget? errorWidget,
+}) {
+  final trimmed = rawUrl.trim();
+  if (trimmed.isEmpty) {
+    return errorWidget ??
+        Container(
+          height: height,
+          width: width,
+          color: const Color(0xFFF1F5F9),
+          child: const Center(
+            child: Icon(Icons.image_outlined, color: Colors.grey, size: 28),
+          ),
+        );
+  }
+
+  Widget imgWidget;
+  if (trimmed.startsWith('data:image')) {
+    try {
+      final commaIndex = trimmed.indexOf(',');
+      final b64 = commaIndex != -1 ? trimmed.substring(commaIndex + 1) : trimmed;
+      final bytes = base64Decode(b64);
+      imgWidget = Image.memory(
+        bytes,
+        height: height,
+        width: width,
+        fit: fit,
+        errorBuilder: (_, __, ___) =>
+            errorWidget ??
+            Container(
+              height: height,
+              width: width,
+              color: const Color(0xFFF1F5F9),
+              child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
+            ),
+      );
+    } catch (_) {
+      imgWidget = errorWidget ??
+          Container(
+            height: height,
+            width: width,
+            color: const Color(0xFFF1F5F9),
+            child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
+          );
+    }
+  } else {
+    final directUrl = resolveDriveImageUrl(trimmed);
+    imgWidget = Image.network(
+      directUrl,
+      height: height,
+      width: width,
+      fit: fit,
+      errorBuilder: (_, __, ___) =>
+          errorWidget ??
+          Container(
+            height: height,
+            width: width,
+            color: const Color(0xFFF1F5F9),
+            child: const Center(
+              child: Icon(Icons.broken_image_rounded, color: Colors.grey, size: 24),
+            ),
+          ),
+    );
+  }
+
+  if (borderRadius != null) {
+    return ClipRRect(borderRadius: borderRadius, child: imgWidget);
+  }
+  return imgWidget;
+}
 
 class WebsiteManagerScreen extends StatefulWidget {
   const WebsiteManagerScreen({super.key});
@@ -13,6 +176,56 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _saving = false;
+
+  // Selected Category filter for Photo Gallery
+  String _selectedGalleryCategory = 'all';
+
+  // Toggle between Crop (Square Cover) vs Full Photo (Fit uncropped)
+  bool _isGalleryFullPhotoFit = true;
+
+  // Default initial school photos in case Firestore has none
+  static const List<Map<String, String>> defaultSchoolPhotos = [
+    {
+      'id': 'gal_default_1',
+      'title': 'Main Campus Entrance',
+      'titleHi': 'मुख्य कैंपस प्रवेश द्वार',
+      'description': 'Secure entrance with official school identification',
+      'descriptionHi': 'स्कूल की आधिकारिक पहचान के साथ सुरक्षित प्रवेश',
+      'category': 'campus',
+      'imageUrl': 'https://www.mnpschool.in/school_gate_banner.jpg',
+      'date': 'Campus Photo',
+    },
+    {
+      'id': 'gal_default_2',
+      'title': 'Sports & Football Arena',
+      'titleHi': 'खेलकूद एवं फुटबॉल मैदान',
+      'description': 'Expansive open playground for athletics and football',
+      'descriptionHi': 'एथलेटिक्स और फुटबॉल के लिए विशाल खुला खेल का मैदान',
+      'category': 'sports',
+      'imageUrl': 'https://www.mnpschool.in/campus_playground.jpg',
+      'date': 'Sports Field',
+    },
+    {
+      'id': 'gal_default_3',
+      'title': 'Academic Building Block',
+      'titleHi': 'शैक्षणिक भवन ब्लॉक',
+      'description': 'Spacious, ventilated classrooms and digital study points',
+      'descriptionHi': 'हवादार व बड़े क्लासरूम और डिजिटल लर्निंग पॉइंट्स',
+      'category': 'campus',
+      'imageUrl': 'https://www.mnpschool.in/campus_building.jpg',
+      'date': 'Academic Wing',
+    },
+    {
+      'id': 'gal_default_4',
+      'title': 'Student Arrival & Campus Life',
+      'titleHi': 'विद्यार्थी आगमन एवं कैंपस जीवन',
+      'description': 'Disciplined campus gates, bicycle parking and arrival',
+      'descriptionHi': 'अनुशासित कैंपस गेट, साइकिल पार्किंग और आगमन',
+      'category': 'campus',
+      'imageUrl': 'https://www.mnpschool.in/school_entrance.jpg',
+      'date': 'Campus Life',
+    },
+  ];
 
   // ─── Admission Banner Form State ───────────────────────────────────────
   String _selectedBannerStyle = 'royal_navy';
@@ -705,7 +918,26 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: FirestoreService.instance.watchWebsiteGallery(),
       builder: (context, snapshot) {
-        final items = snapshot.data ?? [];
+        final rawItems = snapshot.data ?? [];
+        List<Map<String, dynamic>> items;
+        if (rawItems.isNotEmpty) {
+          items = List<Map<String, dynamic>>.from(rawItems);
+        } else {
+          items = List<Map<String, dynamic>>.from(defaultSchoolPhotos);
+        }
+
+        // Dynamically collect all unique categories
+        final Set<String> categoriesSet = {'all', 'campus', 'sports', 'events', 'class', 'projects'};
+        for (final item in items) {
+          final cat = (item['category'] ?? '').toString().trim().toLowerCase();
+          if (cat.isNotEmpty) categoriesSet.add(cat);
+        }
+        final categoriesList = categoriesSet.toList();
+
+        // Filter items according to _selectedGalleryCategory
+        final filteredItems = _selectedGalleryCategory == 'all'
+            ? items
+            : items.where((p) => (p['category'] ?? '').toString().toLowerCase() == _selectedGalleryCategory).toList();
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFC),
@@ -716,241 +948,716 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                 color: Color(0xFFF4B323)),
             label: const Text('Add Photo',
                 style: TextStyle(fontWeight: FontWeight.bold)),
-            onPressed: () => _showAddPhotoDialog(items),
+            onPressed: () => _showAddPhotoDialog(items, categoriesList),
           ),
-          body: items.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.photo_library_outlined,
-                            size: 64, color: Colors.grey),
-                        const SizedBox(height: 16),
-                        const Text('Koi Photo Uploaded Nahi Hai',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Neeche "Add Photo" button dabakar website gallery me photo add karein.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Category Filter Bar (Like Phone Gallery / Albums)
+              Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 0.8)),
+                ),
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: categoriesList.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (ctx, cIdx) {
+                    final cat = categoriesList[cIdx];
+                    final isSelected = _selectedGalleryCategory == cat;
+                    final count = cat == 'all'
+                        ? items.length
+                        : items.where((p) => (p['category'] ?? '').toString().toLowerCase() == cat).length;
+
+                    return FilterChip(
+                      selected: isSelected,
+                      showCheckmark: false,
+                      label: Text(
+                        '${cat.toUpperCase()} ($count)',
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFF0C2340),
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                         ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0C2340),
-                            foregroundColor: Colors.white,
-                          ),
-                          icon: const Icon(Icons.add, color: Color(0xFFF4B323)),
-                          label: const Text('Pehli Photo Add Karein'),
-                          onPressed: () => _showAddPhotoDialog(items),
+                      ),
+                      backgroundColor: const Color(0xFFF1F5F9),
+                      selectedColor: const Color(0xFF0C2340),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: isSelected ? const Color(0xFF0C2340) : const Color(0xFFCBD5E1),
                         ),
-                      ],
+                      ),
+                      onSelected: (_) {
+                        setState(() => _selectedGalleryCategory = cat);
+                      },
+                    );
+                  },
+                ),
+              ),
+
+              // View & Fit Options Toolbar (Crop vs Full Photo)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _isGalleryFullPhotoFit ? Icons.aspect_ratio_rounded : Icons.crop_square_rounded,
+                      size: 16,
+                      color: const Color(0xFFF4B323),
                     ),
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                  itemCount: items.length,
-                  itemBuilder: (context, idx) {
-                    final photo = items[idx];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _isGalleryFullPhotoFit
+                            ? 'Full Photo (Pura Dekhein - No Crop)'
+                            : 'Crop View (Card Fill / Square)',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                      ),
+                    ),
+                    Container(
+                      height: 32,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
                       ),
                       child: Row(
                         children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.horizontal(
-                                left: Radius.circular(16)),
-                            child: Image.network(
-                              photo['imageUrl']?.toString() ?? '',
-                              width: 100,
-                              height: 90,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                width: 100,
-                                height: 90,
-                                color: const Color(0xFFE2E8F0),
-                                child: const Icon(Icons.broken_image,
-                                    color: Colors.grey),
+                          InkWell(
+                            onTap: () => setState(() => _isGalleryFullPhotoFit = false),
+                            borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: !_isGalleryFullPhotoFit ? const Color(0xFF0C2340) : Colors.transparent,
+                                borderRadius: const BorderRadius.horizontal(left: Radius.circular(7)),
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF0C2340).withOpacity(0.08),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      (photo['category'] ?? 'campus').toString().toUpperCase(),
-                                      style: const TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w900,
-                                        color: Color(0xFF0C2340),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
+                                  Icon(Icons.crop_rounded, size: 14, color: !_isGalleryFullPhotoFit ? Colors.white : const Color(0xFF64748B)),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    photo['title']?.toString() ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 14,
-                                      color: Color(0xFF0C2340),
+                                    'Crop',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: !_isGalleryFullPhotoFit ? FontWeight.bold : FontWeight.normal,
+                                      color: !_isGalleryFullPhotoFit ? Colors.white : const Color(0xFF64748B),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    photo['description']?.toString() ?? '',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        fontSize: 11, color: Color(0xFF64748B)),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded,
-                                color: Colors.red),
-                            tooltip: 'Delete Photo',
-                            onPressed: () =>
-                                _deletePhoto(items, photo['id']?.toString() ?? ''),
+                          InkWell(
+                            onTap: () => setState(() => _isGalleryFullPhotoFit = true),
+                            borderRadius: const BorderRadius.horizontal(right: Radius.circular(8)),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _isGalleryFullPhotoFit ? const Color(0xFF0C2340) : Colors.transparent,
+                                borderRadius: const BorderRadius.horizontal(right: Radius.circular(7)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.fit_screen_rounded, size: 14, color: _isGalleryFullPhotoFit ? Colors.white : const Color(0xFF64748B)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Full Photo',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: _isGalleryFullPhotoFit ? FontWeight.bold : FontWeight.normal,
+                                      color: _isGalleryFullPhotoFit ? Colors.white : const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
+              ),
+
+              // Photos List / Grid
+              Expanded(
+                child: filteredItems.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.photo_library_outlined, size: 64, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              Text('No Photos in "${_selectedGalleryCategory.toUpperCase()}"',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const SizedBox(height: 6),
+                              const Text('Neeche button dabakar is category me photo add karein.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF0C2340),
+                                  foregroundColor: Colors.white,
+                                ),
+                                icon: const Icon(Icons.add, color: Color(0xFFF4B323)),
+                                label: const Text('Add Photo'),
+                                onPressed: () => _showAddPhotoDialog(items, categoriesList),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, idx) {
+                          final photo = filteredItems[idx];
+                          final rawUrl = photo['imageUrl']?.toString() ?? photo['src']?.toString() ?? '';
+                          final title = photo['title']?.toString() ?? photo['titleEn']?.toString() ?? 'Photo';
+                          final category = (photo['category'] ?? 'campus').toString();
+                          final desc = photo['description']?.toString() ?? photo['descriptionEn']?.toString() ?? '';
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Row(
+                              children: [
+                                InkWell(
+                                  onTap: () => _openFullImageViewer(
+                                    imageUrl: rawUrl,
+                                    title: title,
+                                    category: category,
+                                    description: desc,
+                                  ),
+                                  child: Container(
+                                    width: 105,
+                                    height: 100,
+                                    color: Colors.black,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        buildCmsImage(
+                                          rawUrl,
+                                          fit: _isGalleryFullPhotoFit ? BoxFit.contain : BoxFit.cover,
+                                        ),
+                                        Positioned(
+                                          bottom: 4,
+                                          right: 4,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(3),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withOpacity(0.6),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 14),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF0C2340).withOpacity(0.08),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                category.toUpperCase(),
+                                                style: const TextStyle(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Color(0xFF0C2340),
+                                                ),
+                                              ),
+                                            ),
+                                            InkWell(
+                                              onTap: () => _openFullImageViewer(
+                                                imageUrl: rawUrl,
+                                                title: title,
+                                                category: category,
+                                                description: desc,
+                                              ),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF0C2340).withOpacity(0.06),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: const Color(0xFF0C2340).withOpacity(0.15)),
+                                                ),
+                                                child: const Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.visibility_rounded, size: 12, color: Color(0xFF0C2340)),
+                                                    SizedBox(width: 4),
+                                                    Text('View', style: TextStyle(color: Color(0xFF0C2340), fontSize: 10, fontWeight: FontWeight.bold)),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 13,
+                                            color: Color(0xFF0C2340),
+                                          ),
+                                        ),
+                                        if (desc.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            desc,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                                  tooltip: 'Delete Photo',
+                                  onPressed: () => _deletePhoto(items, photo),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  void _showAddPhotoDialog(List<Map<String, dynamic>> currentItems) {
+  // Fullscreen Photo Viewer Dialog with Zoom & Fit Options
+  void _openFullImageViewer({
+    required String imageUrl,
+    required String title,
+    required String category,
+    required String description,
+  }) {
+    bool isFitCover = false;
+    final TransformationController transformController = TransformationController();
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setViewerState) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(12),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 620),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0C2340),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF1E3A60)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4B323).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFF4B323).withOpacity(0.4)),
+                        ),
+                        child: Text(
+                          category.toUpperCase(),
+                          style: const TextStyle(color: Color(0xFFF4B323), fontWeight: FontWeight.bold, fontSize: 11),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                      ),
+                      Container(
+                        height: 30,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white10,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: InkWell(
+                          onTap: () => setViewerState(() => isFitCover = !isFitCover),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isFitCover ? Icons.fit_screen_rounded : Icons.crop_free_rounded,
+                                color: const Color(0xFFF4B323),
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isFitCover ? 'Puri Photo' : 'Crop/Fill',
+                                style: const TextStyle(color: Color(0xFFF4B323), fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                        onPressed: () => Navigator.pop(dialogCtx),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(color: Color(0xFF1E3A60), height: 1),
+
+                // Main Image Container with Zoom
+                Stack(
+                  children: [
+                    Container(
+                      height: 360,
+                      width: double.infinity,
+                      color: Colors.black,
+                      child: InteractiveViewer(
+                        transformationController: transformController,
+                        panEnabled: true,
+                        minScale: 0.8,
+                        maxScale: 4.0,
+                        child: Center(
+                          child: buildCmsImage(
+                            imageUrl,
+                            fit: isFitCover ? BoxFit.cover : BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(Icons.zoom_in_rounded, size: 18, color: Colors.white),
+                              onPressed: () {
+                                final currentMatrix = transformController.value;
+                                transformController.value = Matrix4.copy(currentMatrix)..scaleByDouble(1.25, 1.25, 1.0, 1.0);
+                              },
+                            ),
+                            IconButton(
+                              constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(Icons.zoom_out_rounded, size: 18, color: Colors.white),
+                              onPressed: () {
+                                final currentMatrix = transformController.value;
+                                transformController.value = Matrix4.copy(currentMatrix)..scaleByDouble(0.8, 0.8, 1.0, 1.0);
+                              },
+                            ),
+                            IconButton(
+                              constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(Icons.restart_alt_rounded, size: 18, color: Color(0xFFF4B323)),
+                              onPressed: () {
+                                transformController.value = Matrix4.identity();
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                if (description.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      description,
+                      style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 13, height: 1.4),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddPhotoDialog(List<Map<String, dynamic>> currentItems, List<String> existingCategories) {
     final titleEnCtrl = TextEditingController();
     final titleHiCtrl = TextEditingController();
     final descEnCtrl = TextEditingController();
     final descHiCtrl = TextEditingController();
     final urlCtrl = TextEditingController();
-    String category = 'campus';
+    final customCatCtrl = TextEditingController();
+
+    final Set<String> presetCats = {
+      'campus',
+      'sports',
+      'events',
+      'class',
+      'projects',
+      'academics',
+      'annual day',
+      'competitions',
+      ...existingCategories.where((c) => c != 'all')
+    };
+
+    String selectedCat = 'campus';
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDlgState) => AlertDialog(
+        builder: (dialogCtx, setDlgState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Add Photo to Website Gallery',
               style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: titleEnCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Photo Title - English *',
-                    hintText: 'e.g. Annual Sports Meet 2026',
-                    border: OutlineInputBorder(),
+          content: SizedBox(
+            width: 480,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Pick From Phone Button
+                  const Text('Select Photo Source:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0C2340),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.photo_library_rounded, size: 18, color: Color(0xFFF4B323)),
+                          label: const Text('Phone Gallery Se Photo Chunein',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () async {
+                            final picker = ImagePicker();
+                            final xfile = await picker.pickImage(
+                              source: ImageSource.gallery,
+                              imageQuality: 70,
+                              maxWidth: 960,
+                              maxHeight: 960,
+                            );
+                            if (xfile != null) {
+                              final bytes = await xfile.readAsBytes();
+                              urlCtrl.text = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+                              setDlgState(() {});
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        icon: const Icon(Icons.camera_alt_rounded, color: Color(0xFF0C2340), size: 20),
+                        tooltip: 'Camera',
+                        onPressed: () async {
+                          final picker = ImagePicker();
+                          final xfile = await picker.pickImage(
+                            source: ImageSource.camera,
+                            imageQuality: 70,
+                            maxWidth: 960,
+                            maxHeight: 960,
+                          );
+                          if (xfile != null) {
+                            final bytes = await xfile.readAsBytes();
+                            urlCtrl.text = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+                            setDlgState(() {});
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: titleHiCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Photo Title - Hindi (Optional)',
-                    hintText: 'e.g. वार्षिक खेलकूद प्रतियोगिता 2026',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 8),
+
+                  TextField(
+                    controller: urlCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Ya Drive / Web Link Paste Karein *',
+                      hintText: 'Paste direct link or Drive link',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: urlCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 16),
+                              onPressed: () {
+                                urlCtrl.clear();
+                                setDlgState(() {});
+                              },
+                            )
+                          : null,
+                    ),
+                    onChanged: (val) {
+                      final converted = resolveDriveImageUrl(val);
+                      if (converted != val) {
+                        urlCtrl.text = converted;
+                        urlCtrl.selection = TextSelection.fromPosition(TextPosition(offset: converted.length));
+                      }
+                      setDlgState(() {});
+                    },
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: descEnCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Description - English',
-                    hintText: 'e.g. 100m sprint race and award ceremony',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: descHiCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Description - Hindi (Optional)',
-                    hintText: 'e.g. 100m दौड़ व पुरस्कार वितरण समारोह',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: category,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'campus', child: Text('Campus (परिसर)')),
-                    DropdownMenuItem(value: 'sports', child: Text('Sports (खेलकूद)')),
-                    DropdownMenuItem(value: 'events', child: Text('Events (कार्यक्रम)')),
-                    DropdownMenuItem(value: 'class', child: Text('Classroom (कक्षाएं)')),
+
+                  if (urlCtrl.text.trim().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: buildCmsImage(urlCtrl.text.trim(), height: 110, width: double.infinity),
+                    ),
                   ],
-                  onChanged: (val) {
-                    if (val != null) setDlgState(() => category = val);
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: urlCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Image URL or Path *',
-                    hintText: 'e.g. /school_gate_banner.jpg ya https://...',
-                    border: OutlineInputBorder(),
+
+                  const SizedBox(height: 12),
+
+                  // Category Selector + Custom Category Creator
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedCat,
+                    decoration: const InputDecoration(
+                      labelText: 'Photo Category',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      ...presetCats.map((c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(c.toUpperCase(), style: const TextStyle(fontSize: 13)),
+                          )),
+                      const DropdownMenuItem(
+                        value: '__custom__',
+                        child: Row(
+                          children: [
+                            Icon(Icons.add_circle_outline_rounded, color: Colors.blueAccent, size: 16),
+                            SizedBox(width: 8),
+                            Text('+ Nayi Custom Category Banayein',
+                                style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDlgState(() => selectedCat = val);
+                    },
                   ),
-                ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  icon: const Icon(Icons.photo_camera_rounded, size: 18),
-                  label: const Text('Phone se Photo Chunein'),
-                  onPressed: () async {
-                    final picker = ImagePicker();
-                    final xfile = await picker.pickImage(source: ImageSource.gallery);
-                    if (xfile != null) {
-                      urlCtrl.text = xfile.path;
-                    }
-                  },
-                ),
-              ],
+
+                  if (selectedCat == '__custom__') ...[
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: customCatCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Nayi Category Ka Naam Likhein *',
+                        hintText: 'e.g. Science Project, Art Exhibition',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.category_rounded, color: Colors.blueAccent, size: 18),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: titleEnCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Photo Title - English *',
+                      hintText: 'e.g. Annual Sports Meet 2026',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: titleHiCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Photo Title - Hindi (Optional)',
+                      hintText: 'e.g. वार्षिक खेलकूद प्रतियोगिता 2026',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: descEnCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Description - English',
+                      hintText: 'e.g. 100m sprint race and award ceremony',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: descHiCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Description - Hindi (Optional)',
+                      hintText: 'e.g. 100m दौड़ व पुरस्कार वितरण समारोह',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () => Navigator.pop(dialogCtx),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
@@ -960,40 +1667,69 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
               ),
               child: const Text('Add to Live Gallery'),
               onPressed: () async {
+                final finalImg = resolveDriveImageUrl(urlCtrl.text);
                 final titleEn = titleEnCtrl.text.trim();
                 final titleHi = titleHiCtrl.text.trim();
                 final descEn = descEnCtrl.text.trim();
-                final descHi = descHiCtrl.text.trim();
-                final url = urlCtrl.text.trim();
 
-                if ((titleEn.isEmpty && titleHi.isEmpty) || url.isEmpty) {
+                if (finalImg.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Kripya Title aur Image URL darj karein')),
+                    const SnackBar(content: Text('Kripya Photo chunein ya link paste karein')),
                   );
                   return;
                 }
-                Navigator.pop(ctx);
+
+                String categoryToSave;
+                if (selectedCat == '__custom__') {
+                  final typed = customCatCtrl.text.trim().toLowerCase();
+                  if (typed.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Kripya custom category ka naam likhein')),
+                    );
+                    return;
+                  }
+                  categoryToSave = typed;
+                } else {
+                  categoryToSave = selectedCat;
+                }
+
+                String finalTitle = titleEn.isNotEmpty ? titleEn : titleHi;
+                String finalTitleHi = titleHi;
+                if (finalTitle.isNotEmpty && finalTitleHi.isEmpty) {
+                  finalTitleHi = await autoTranslateOnline(finalTitle, 'hi');
+                } else if (finalTitle.isEmpty && finalTitleHi.isNotEmpty) {
+                  finalTitle = await autoTranslateOnline(finalTitleHi, 'en');
+                }
+
+                String finalDesc = descEn;
+                String finalDescHi = descHiCtrl.text.trim();
+                if (finalDesc.isNotEmpty && finalDescHi.isEmpty) {
+                  finalDescHi = await autoTranslateOnline(finalDesc, 'hi');
+                } else if (finalDesc.isEmpty && finalDescHi.isNotEmpty) {
+                  finalDesc = await autoTranslateOnline(finalDescHi, 'en');
+                }
+
+                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
                 final newItem = {
                   'id': 'gal_${DateTime.now().millisecondsSinceEpoch}',
-                  'title': titleEn.isNotEmpty ? titleEn : titleHi,
-                  'titleEn': titleEn,
-                  'titleHi': titleHi,
-                  'description': descEn.isNotEmpty ? descEn : descHi,
-                  'descriptionEn': descEn,
-                  'descriptionHi': descHi,
-                  'category': category,
-                  'imageUrl': url,
+                  'title': finalTitle.isNotEmpty ? finalTitle : (finalTitleHi.isNotEmpty ? finalTitleHi : 'MNP School Photo'),
+                  'titleEn': finalTitle,
+                  'titleHi': finalTitleHi,
+                  'description': finalDesc,
+                  'descriptionEn': finalDesc,
+                  'descriptionHi': finalDescHi,
+                  'category': categoryToSave,
+                  'imageUrl': finalImg,
                   'createdAt': DateTime.now().toIso8601String(),
                 };
-                final updated = List<Map<String, dynamic>>.from(currentItems)
-                  ..insert(0, newItem);
+                final updated = List<Map<String, dynamic>>.from(currentItems)..insert(0, newItem);
                 await FirestoreService.instance.saveWebsiteGallery(updated);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        backgroundColor: Color(0xFF059669),
-                        content: Text('✅ Nayi Photo Gallery me add ho gayi!')),
+                      backgroundColor: Color(0xFF059669),
+                      content: Text('✅ Nayi Photo Gallery me add ho gayi!'),
+                    ),
                   );
                 }
               },
@@ -1005,13 +1741,17 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
   }
 
   Future<void> _deletePhoto(
-      List<Map<String, dynamic>> currentItems, String id) async {
+      List<Map<String, dynamic>> currentItems, Map<String, dynamic> photo) async {
+    final photoId = (photo['id'] ?? '').toString();
+    final photoTitle = (photo['title'] ?? photo['titleHi'] ?? 'Photo').toString();
+    final photoUrl = (photo['imageUrl'] ?? photo['src'] ?? '').toString();
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Photo?'),
-        content: const Text(
-            'Kya aap is photo ko website gallery se hatana chahte hain?'),
+        content: Text(
+            'Kya aap "$photoTitle" ko website gallery se hatana chahte hain?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -1025,7 +1765,18 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
       ),
     );
     if (confirm == true) {
-      final updated = currentItems.where((p) => p['id'] != id).toList();
+      final updated = currentItems.where((p) {
+        if (photoId.isNotEmpty && (p['id'] ?? '').toString() == photoId) {
+          return false;
+        }
+        if (photoUrl.isNotEmpty && (p['imageUrl'] ?? p['src'] ?? '').toString() == photoUrl) {
+          return false;
+        }
+        if (photoId.isEmpty && photoUrl.isEmpty && (p['title'] ?? '').toString() == photoTitle) {
+          return false;
+        }
+        return true;
+      }).toList();
       await FirestoreService.instance.saveWebsiteGallery(updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1099,8 +1850,7 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
                               IconButton(
                                 icon: const Icon(Icons.delete_outline_rounded,
                                     color: Colors.red, size: 20),
-                                onPressed: () => _deleteReview(
-                                    items, rev['id']?.toString() ?? ''),
+                                onPressed: () => _deleteReview(items, rev),
                               ),
                             ],
                           ),
@@ -1319,12 +2069,14 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
   }
 
   Future<void> _deleteReview(
-      List<Map<String, dynamic>> currentItems, String id) async {
+      List<Map<String, dynamic>> currentItems, Map<String, dynamic> review) async {
+    final revId = (review['id'] ?? '').toString();
+    final author = (review['authorName'] ?? review['authorNameHi'] ?? 'Parent').toString();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Review?'),
-        content: const Text('Kya aap is review ko website se hatana chahte hain?'),
+        content: Text('Kya aap "$author" ka review website se hatana chahte hain?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -1338,7 +2090,16 @@ class _WebsiteManagerScreenState extends State<WebsiteManagerScreen>
       ),
     );
     if (confirm == true) {
-      final updated = currentItems.where((r) => r['id'] != id).toList();
+      final updated = currentItems.where((r) {
+        if (revId.isNotEmpty && (r['id'] ?? '').toString() == revId) {
+          return false;
+        }
+        if ((r['text'] ?? '').toString() == (review['text'] ?? '').toString() &&
+            (r['authorName'] ?? '').toString() == author) {
+          return false;
+        }
+        return true;
+      }).toList();
       await FirestoreService.instance.saveWebsiteReviews(updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
