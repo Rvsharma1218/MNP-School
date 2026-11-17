@@ -402,7 +402,7 @@ export default function SignInView() {
                     </h4>
                     <p className="text-[11px] text-amber-200/90 font-medium flex items-center gap-1 mt-0.5">
                       <MapPin className="w-3 h-3 text-amber-400 flex-shrink-0" />
-                      <span className="truncate">{isHi ? 'मोरा बाज़ार, सीवान • सत्र 2026-27' : 'Mora Bazar, Siwan • Session 2026-27'}</span>
+                      <span className="truncate">{isHi ? 'मोरा, सीवान • सत्र 2026-27' : 'Mora, Siwan • Session 2026-27'}</span>
                     </p>
                   </div>
                 </div>
@@ -1250,8 +1250,8 @@ export default function SignInView() {
                   const bSub = resolveCmsField(
                     bConf,
                     'subheadline',
-                    `${bClasses} • Leading English Medium School in Siwan & Mora Bazar`,
-                    `${bClasses} • सीवान एवं मोरा बाज़ार का अग्रणी अंग्रेजी माध्यम विद्यालय`,
+                    `${bClasses} • Leading English Medium School in Siwan & Mora`,
+                    `${bClasses} • सीवान एवं मोरा का अग्रणी अंग्रेजी माध्यम विद्यालय`,
                     isHi
                   );
                   const bPhone = bConf.phone || primaryPhone || '8603481865';
