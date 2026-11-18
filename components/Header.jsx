@@ -113,7 +113,6 @@ export default function Header({ onMenuClick }) {
     '/settings': t('settings', lang),
     '/users': lang === 'hi' ? 'यूज़र अकाउंट्स' : 'User Account Management',
     '/profile': t('profile', lang),
-    '/subscription': t('subscription', lang),
     '/setup': lang === 'hi' ? 'सेटअप विज़ार्ड' : 'Initial Setup Wizard',
     '/access-denied': lang === 'hi' ? 'अनुमति अस्वीकृत' : 'Access Restrained'
   };

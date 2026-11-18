@@ -287,6 +287,8 @@ export default function RootLayout({ children }) {
       "Bithuna",
       "Salempur",
       "Sahsa",
+      "Balaha",
+      "Sadiha",
       "Nearby Villages",
       "Siwan",
       "Bihar"

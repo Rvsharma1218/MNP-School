@@ -189,7 +189,6 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapseChange }
                     <NavBtn icon={MessageSquare} label={lang === 'hi' ? 'अभिभावक शिकायतें' : 'Parent Complaints'} badge="Desk" active={currentPath === '/complaints'} onClick={() => nav('complaints')} collapsed={collapsed} />
                     <NavBtn icon={Settings} label={t('settings', lang)} active={currentPath.startsWith('/settings')} onClick={() => nav('settings')} collapsed={collapsed} />
                     <NavBtn icon={HelpCircle} label={t('helpSupport', lang)} active={isHelpFeedbackOpen} onClick={() => { setIsHelpFeedbackOpen(true); if (onClose) onClose(); }} collapsed={collapsed} />
-                    <NavBtn icon={Sparkles} label={t('subscription', lang)} badge="All Access" active={currentPath === '/subscription'} onClick={() => nav('subscription')} collapsed={collapsed} />
                   </>
                 )}
 

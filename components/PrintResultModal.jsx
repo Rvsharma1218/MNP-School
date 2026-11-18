@@ -366,7 +366,7 @@ export default function PrintResultModal({ result: propResult, student: propStud
                 {settings.instituteName || settings.schoolName || 'Mission Navodaya Public School'}
               </h1>
               <p className="text-[10px] sm:text-xs text-slate-600 font-medium">
-                {settings.address || 'Main Campus'} • Affiliation: {settings.affiliationNumber || 'CBSE/Govt. Recognized'}
+                {settings.address || 'Main Campus'}{settings.affiliationNumber ? ` • Affiliation: ${settings.affiliationNumber}` : ' • Govt. Recognized (Navodaya Pattern)'}
                 {settings.mobile ? ` • Helpline: ${settings.mobile}` : ''}
               </p>
               

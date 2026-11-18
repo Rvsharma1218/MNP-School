@@ -414,7 +414,7 @@ export default function ParentPortalView() {
               <div className="col-span-2 sm:col-span-1 p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-center flex flex-col justify-center">
                 <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider">Academic Year</p>
                 <p className="text-sm font-black text-white mt-0.5">{student?.session || '2026-2027'}</p>
-                <p className="text-[10px] text-white/60 font-medium">CBSE / State Board</p>
+                <p className="text-[10px] text-white/60 font-medium">Govt. Recognized • Navodaya Pattern</p>
               </div>
 
             </div>

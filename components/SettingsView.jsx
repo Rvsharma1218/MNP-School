@@ -1036,7 +1036,7 @@ export default function SettingsView() {
                       type="text"
                       value={formData.affiliationNumber || ''}
                       onChange={(e) => setFormData({ ...formData, affiliationNumber: e.target.value })}
-                      placeholder="e.g. CBSE / BSEB-841507"
+                      placeholder="e.g. Govt. Reg. / 841507"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-white dark:bg-surface text-text text-xs font-medium focus:outline-hidden focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                   </div>

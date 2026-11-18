@@ -24,7 +24,6 @@ const TeachersView = dynamic(() => import('../components/TeachersView'), { ssr: 
 const ReportsView = dynamic(() => import('../components/ReportsView'), { ssr: false });
 const QrScannerView = dynamic(() => import('../components/QrScannerView'), { ssr: false });
 const SettingsView = dynamic(() => import('../components/SettingsView'), { ssr: false });
-const SubscriptionView = dynamic(() => import('../components/SubscriptionView'), { ssr: false });
 const NoticeBoardView = dynamic(() => import('../components/NoticeBoardView'), { ssr: false });
 const UserManagementView = dynamic(() => import('../components/UserManagementView'), { ssr: false });
 const ProfileView = dynamic(() => import('../components/ProfileView'), { ssr: false });
@@ -58,7 +57,7 @@ const KNOWN_APP_PATHS = [
   '/', '/dashboard', '/notices', '/students', '/fees', '/attendance',
   '/results', '/idcards', '/admitcards', '/timetable', '/classes',
   '/teachers', '/reports', '/documents', '/import-export', '/qrscanner',
-  '/scanner', '/subscription', '/users', '/profile', '/complaints', '/access-denied'
+  '/scanner', '/users', '/profile', '/complaints', '/access-denied'
 ];
 
 function AppContent() {
@@ -265,7 +264,7 @@ function AppContent() {
 
     // 3. Dynamic teacher permission access routing
     if (currentUser.role === 'teacher') {
-      const strictlyAdmin = ['/users', '/teachers', '/subscription'];
+      const strictlyAdmin = ['/users', '/teachers'];
       if (strictlyAdmin.includes(cleanPath) || cleanPath.startsWith('/settings')) {
         navigate('/access-denied');
         return;
@@ -408,7 +407,6 @@ function AppContent() {
             {cleanPath === '/import-export' && ((isPrincipal || teacherPermissions?.canExportReports) ? <ReportsView /> : <AccessDeniedView />)}
             {(cleanPath === '/qrscanner' || cleanPath === '/scanner') && <QrScannerView />}
             {cleanPath.startsWith('/settings') && <SettingsView />}
-            {cleanPath === '/subscription' && (isPrincipal ? <SubscriptionView /> : <AccessDeniedView />)}
             {cleanPath === '/users' && (isPrincipal ? <UserManagementView /> : <AccessDeniedView />)}
             {cleanPath === '/profile' && <ProfileView />}
             {cleanPath === '/complaints' && <ParentComplaintsView />}
