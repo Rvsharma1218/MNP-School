@@ -836,7 +836,7 @@ class _StudentResultDetailScreenState extends ConsumerState<StudentResultDetailS
                                           style: const TextStyle(fontSize: 10, color: Color(0xFF475569)),
                                         ),
                                         Text(
-                                          'Phone: ${settings.mobile.isNotEmpty ? settings.mobile : "8603481865"} • Pattern: CBSE',
+                                          'Phone: ${settings.mobile.isNotEmpty ? settings.mobile : "8603481865"} • Navodaya Pattern & Govt. Reg.',
                                           style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                                         ),
                                       ],
