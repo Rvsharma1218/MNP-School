@@ -179,6 +179,37 @@ export default function StudentsView() {
     return unique;
   }, [accessibleStudents, selectedClass]);
 
+  // Student counts map per class & course
+  const studentClassCounts = React.useMemo(() => {
+    const counts = {};
+    (accessibleStudents || []).forEach(s => {
+      if (!s) return;
+      if (s.className) {
+        const raw = String(s.className).trim();
+        const norm = normalizeClassStr(raw);
+        const lower = raw.toLowerCase();
+        counts[raw] = (counts[raw] || 0) + 1;
+        if (norm) counts[norm] = (counts[norm] || 0) + 1;
+        if (lower) counts[lower] = (counts[lower] || 0) + 1;
+      }
+      if (s.course) {
+        const rawC = String(s.course).trim();
+        const cLower = rawC.toLowerCase();
+        counts[rawC] = (counts[rawC] || 0) + 1;
+        counts[cLower] = (counts[cLower] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [accessibleStudents]);
+
+  const getClassCount = (cls) => {
+    if (!cls) return 0;
+    const str = String(cls).trim();
+    const norm = normalizeClassStr(str);
+    const lower = str.toLowerCase();
+    return studentClassCounts[str] ?? studentClassCounts[norm] ?? studentClassCounts[lower] ?? 0;
+  };
+
   // Filter and sort students list (memoized to avoid re-renders)
   const filteredStudents = React.useMemo(() => {
     return (accessibleStudents || [])
@@ -309,7 +340,12 @@ export default function StudentsView() {
       {/* Top action header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl lg:text-2xl font-bold text-text tracking-tight">Student Directory</h2>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-xl lg:text-2xl font-bold text-text tracking-tight">Student Directory</h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-black border border-primary/20">
+              {filteredStudents.length} {selectedClass !== 'all' ? (selectedClass.includes('(') ? `in ${selectedClass}` : `in Class ${selectedClass}`) : 'Total Students'}
+            </span>
+          </div>
           <p className="text-xs text-text-secondary mt-0.5 font-medium">Manage enrollments, track performance, and monitor administrative status.</p>
         </div>
 
@@ -408,18 +444,52 @@ export default function StudentsView() {
                   setSelectedClass(e.target.value);
                   setSelectedRoll('all');
                 }}
-                className="px-3 py-2 rounded-xl bg-white border border-border text-xs text-text font-bold focus:outline-none cursor-pointer"
+                className="px-3 py-2 rounded-xl bg-white border border-border text-xs text-text font-bold focus:outline-none cursor-pointer shadow-2xs hover:border-primary/50 transition-colors"
               >
                 <option value="all">
-                  {isPrincipal || hasAllClassesAccess ? 'All Classes & Courses' : 'All Classes'}
+                  {isPrincipal || hasAllClassesAccess
+                    ? `All Classes & Courses (${(accessibleStudents || []).length})`
+                    : `All Classes (${(accessibleStudents || []).length})`}
                 </option>
-                {((isPrincipal || hasAllClassesAccess) ? (settings?.schoolClasses || []) : (allowedClasses || [])).map(c => (
-                  <option key={c} value={c}>Class {c}</option>
-                ))}
-                {(isPrincipal || hasAllClassesAccess) && (settings?.computerCourses || []).map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
+                {((isPrincipal || hasAllClassesAccess) ? (settings?.schoolClasses || []) : (allowedClasses || [])).map(c => {
+                  const count = getClassCount(c);
+                  return (
+                    <option key={c} value={c}>
+                      Class {c} ({count})
+                    </option>
+                  );
+                })}
+                {(isPrincipal || hasAllClassesAccess) && (settings?.computerCourses || []).map(c => {
+                  const count = getClassCount(c);
+                  return (
+                    <option key={c} value={c}>
+                      {c} ({count})
+                    </option>
+                  );
+                })}
               </select>
+
+              {/* Active Class Student Count Pill */}
+              <div
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 text-primary border border-primary/20 text-xs font-bold whitespace-nowrap shadow-2xs"
+                title={`${filteredStudents.length} student${filteredStudents.length === 1 ? '' : 's'} in selected filter`}
+              >
+                <Users className="w-3.5 h-3.5 text-primary" />
+                <span>
+                  {selectedClass === 'all'
+                    ? 'Total'
+                    : selectedClass.includes('(')
+                    ? selectedClass
+                    : `Class ${selectedClass}`}
+                  :
+                </span>
+                <span className="px-1.5 py-0.5 rounded-md bg-primary text-white text-[11px] font-black">
+                  {filteredStudents.length}
+                </span>
+                <span className="text-[10px] text-primary/80 font-medium hidden sm:inline">
+                  {filteredStudents.length === 1 ? 'Student' : 'Students'}
+                </span>
+              </div>
 
               {/* Roll Number Filter (active after selecting class) */}
               {selectedClass !== 'all' && (
@@ -607,7 +677,10 @@ export default function StudentsView() {
           </div>
           {/* Footer entries count */}
           <div className="px-5 py-4 border-t border-border bg-surface2/25 flex items-center justify-between text-xs text-text-secondary">
-            <span>Showing {filteredStudents.length > 0 ? `1-${filteredStudents.length}` : 0} of {(students || []).length} entries</span>
+            <span>
+              Showing {filteredStudents.length > 0 ? `1-${filteredStudents.length}` : 0} of {filteredStudents.length} {selectedClass !== 'all' ? (selectedClass.includes('(') ? `students in ${selectedClass}` : `students in Class ${selectedClass}`) : 'students'}
+              {selectedClass !== 'all' && ` (out of ${(accessibleStudents || []).length} total)`}
+            </span>
             <div className="flex items-center gap-2">
               <button className="px-2.5 py-1 bg-white border border-border rounded cursor-pointer">&lt;</button>
               <span className="font-bold text-primary px-2">1</span>
