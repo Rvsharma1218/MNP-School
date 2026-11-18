@@ -190,57 +190,117 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
             ),
           ),
         ),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            _clearSearch();
-            await ref.read(studentsProvider.notifier).loadStudents();
-            ref.invalidate(dashboardStatsProvider);
-          },
-          child: filteredAsync.when(
-            data: (students) {
-              if (students.isEmpty) {
-                final isSearching = _searchCtrl.text.isNotEmpty || activeFilters > 0;
-                return isSearching
-                    ? _emptySearch()
-                    : EmptyState(
-                        icon: Icons.people_outline,
-                        title: 'No Students Yet',
-                        subtitle: 'Add your first student to get started',
-                        buttonLabel: _canAddStudent ? 'Add Student' : null,
-                        onButtonTap: _canAddStudent
-                            ? () async {
-                                await Navigator.pushNamed(context, AppRoutes.addStudent);
-                                // Auto-refresh after add
-                                ref.read(studentsProvider.notifier).loadStudents();
-                                ref.invalidate(dashboardStatsProvider);
-                              }
-                            : null,
-                      );
-              }
-              return ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: students.length,
-                itemBuilder: (ctx, i) => _StudentCard(key: ValueKey('${students[i].id}_${students[i].photoPath}'), student: students[i]),
-              );
-            },
-            loading: () => const LoadingWidget(message: 'Loading students...'),
-            error: (e, _) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                  const SizedBox(height: 12),
-                  Text('Error: $e', textAlign: TextAlign.center),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () =>
-                        ref.read(studentsProvider.notifier).loadStudents(),
-                    child: const Text('Retry'),
+        body: Column(
+          children: [
+            if (activeFilters > 0)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                color: cs.surfaceVariant.withOpacity(0.5),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.filter_alt, size: 14, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      if (ref.watch(classFilterProvider).isNotEmpty) ...[
+                        _buildActiveFilterChip(
+                          'Class: ${ref.watch(classFilterProvider)}',
+                          () => ref.read(classFilterProvider.notifier).state = '',
+                          cs,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      if (typeFilter != 'all') ...[
+                        _buildActiveFilterChip(
+                          'Type: $typeFilter',
+                          () => ref.read(studentFilterProvider.notifier).state = 'all',
+                          cs,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      if (statusFilter != 'all') ...[
+                        _buildActiveFilterChip(
+                          'Status: $statusFilter',
+                          () => ref.read(studentStatusFilterProvider.notifier).state = 'all',
+                          cs,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      if (ref.watch(rollNumberFilterProvider).isNotEmpty) ...[
+                        _buildActiveFilterChip(
+                          'Roll: ${ref.watch(rollNumberFilterProvider)}',
+                          () => ref.read(rollNumberFilterProvider.notifier).state = '',
+                          cs,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      InkWell(
+                        onTap: _resetAllFilters,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          child: Text('Clear All', style: TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  _clearSearch();
+                  await ref.read(studentsProvider.notifier).loadStudents();
+                  ref.invalidate(dashboardStatsProvider);
+                },
+                child: filteredAsync.when(
+                  data: (students) {
+                    if (students.isEmpty) {
+                      final isSearching = _searchCtrl.text.isNotEmpty || activeFilters > 0;
+                      return isSearching
+                          ? _emptySearch()
+                          : EmptyState(
+                              icon: Icons.people_outline,
+                              title: 'No Students Yet',
+                              subtitle: 'Add your first student to get started',
+                              buttonLabel: _canAddStudent ? 'Add Student' : null,
+                              onButtonTap: _canAddStudent
+                                  ? () async {
+                                      await Navigator.pushNamed(context, AppRoutes.addStudent);
+                                      // Auto-refresh after add
+                                      ref.read(studentsProvider.notifier).loadStudents();
+                                      ref.invalidate(dashboardStatsProvider);
+                                    }
+                                  : null,
+                            );
+                    }
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: students.length,
+                      itemBuilder: (ctx, i) => _StudentCard(key: ValueKey('${students[i].id}_${students[i].photoPath}'), student: students[i]),
+                    );
+                  },
+                  loading: () => const LoadingWidget(message: 'Loading students...'),
+                  error: (e, _) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                        const SizedBox(height: 12),
+                        Text('Error: $e', textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () =>
+                              ref.read(studentsProvider.notifier).loadStudents(),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
         floatingActionButton: _canAddStudent
             ? FloatingActionButton(
@@ -305,6 +365,28 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
             icon: const Icon(Icons.filter_list_off),
             label: const Text('Clear All Filters'),
             onPressed: _resetAllFilters,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveFilterChip(String label, VoidCallback onRemove, ColorScheme cs) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: onRemove,
+            child: const Icon(Icons.close, size: 13, color: AppColors.primary),
           ),
         ],
       ),
@@ -403,17 +485,64 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Title
+              // Title with Instant Top Apply & Reset
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Filter Students',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                        color: cs.onSurface,
-                      )),
-                  Icon(Icons.filter_list, color: AppColors.primary),
+                  Row(
+                    children: [
+                      const Icon(Icons.filter_list_rounded, color: AppColors.primary, size: 20),
+                      const SizedBox(width: 6),
+                      Text('Filter Students',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            color: cs.onSurface,
+                          )),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _type = 'all';
+                            _status = 'all';
+                            _class = '';
+                            _course = '';
+                            _section = '';
+                            _roll = '';
+                            _sort = 'none';
+                            _admissionType = 'all';
+                          });
+                          widget.onClear();
+                        },
+                        child: const Text('Reset', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 13)),
+                      ),
+                      const SizedBox(width: 4),
+                      ElevatedButton(
+                        onPressed: () {
+                          ref.read(studentFilterProvider.notifier).state = _type;
+                          ref.read(studentStatusFilterProvider.notifier).state = _status;
+                          ref.read(classFilterProvider.notifier).state = _class.trim();
+                          ref.read(courseFilterProvider.notifier).state = _course.trim();
+                          ref.read(sectionFilterProvider.notifier).state = _section.trim();
+                          ref.read(rollNumberFilterProvider.notifier).state = _roll.trim();
+                          ref.read(studentSortProvider.notifier).state = _sort;
+                          ref.read(admissionTypeFilterProvider.notifier).state = _admissionType;
+                          widget.onApply();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
+                        ),
+                        child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 18),

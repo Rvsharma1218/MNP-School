@@ -166,11 +166,20 @@ final filteredStudentsProvider = Provider<AsyncValue<List<StudentModel>>>((ref) 
       if (classFilter.isNotEmpty && classFilter.toLowerCase() != 'all' && classFilter.toLowerCase() != 'none') {
         final fList = classFilter
             .split(RegExp(r'[,|]'))
-            .map((c) => c.trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), ''))
+            .map((c) => c.trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '').replaceAll(RegExp(r'\s*-\s*[a-z]$', caseSensitive: false), '').trim())
             .where((c) => c.isNotEmpty)
             .toList();
-        final sCls = (s.className ?? s.course ?? '').trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '');
-        if (fList.isNotEmpty && !fList.contains(sCls)) return false;
+        final sCls = (s.className ?? '').trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '').replaceAll(RegExp(r'\s*-\s*[a-z]$', caseSensitive: false), '').trim();
+        final sCourse = (s.course ?? '').trim().toLowerCase();
+        final sDisplay = s.displayClass.trim().toLowerCase().replaceAll(RegExp(r'^class\s*', caseSensitive: false), '').replaceAll(RegExp(r'\s*-\s*[a-z]$', caseSensitive: false), '').trim();
+        final rawCls = (s.className ?? '').trim().toLowerCase();
+        final matchesClass = fList.any((target) =>
+            target == sCls ||
+            target == sCourse ||
+            target == sDisplay ||
+            target == rawCls ||
+            (sCls.isNotEmpty && (sCls.contains(target) || target.contains(sCls))));
+        if (!matchesClass) return false;
       }
       if (sectionFilter.isNotEmpty &&
           sectionFilter.toLowerCase() != 'all' &&
