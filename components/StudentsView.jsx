@@ -37,7 +37,7 @@ export default function StudentsView() {
     setWhatsAppReminderData,
     teacherPermissions,
     admissionEnquiries,
-    canAccessClass, allowedClasses, hasAllClassesAccess, isTeacher, isPrincipal,
+    canAccessClass = () => true, allowedClasses = [], hasAllClassesAccess = false, isTeacher = false, isPrincipal = false,
     openEnquiriesModal,
     showToast
   } = useSchoolStore();
@@ -56,9 +56,10 @@ export default function StudentsView() {
   
   // Ensure teacher stays strictly within authorized assigned classes
   useEffect(() => {
-    if (!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0) {
-      if (selectedClass !== 'all' && !allowedClasses.includes(selectedClass)) {
-        setSelectedClass('all');
+    const list = Array.isArray(allowedClasses) ? allowedClasses : [];
+    if (!isPrincipal && !hasAllClassesAccess && list.length > 0) {
+      if (selectedClass !== 'all' && !list.includes(selectedClass)) {
+        setSelectedClass(list[0] || 'all');
       }
     }
   }, [allowedClasses, isPrincipal, hasAllClassesAccess, selectedClass]);
@@ -91,8 +92,15 @@ export default function StudentsView() {
     status: 'active'
   });
 
-  // Pick active student
-  const activeStudent = students.find(s => s.id === selectedStudentId);
+  // Pick active student (safely derived, fallback to first in list)
+  const activeStudent = React.useMemo(() => {
+    if (!students || !Array.isArray(students) || students.length === 0) return null;
+    if (selectedStudentId) {
+      const match = students.find(s => s && (s.id === selectedStudentId || s.studentId === selectedStudentId));
+      if (match) return match;
+    }
+    return students[0] || null;
+  }, [students, selectedStudentId]);
 
   // Sync profile form state with selected student
   useEffect(() => {
@@ -122,11 +130,8 @@ export default function StudentsView() {
         paidFees: activeStudent.paidFees || 0,
         status: activeStudent.status || 'active'
       });
-    } else if (!activeStudent && students.length > 0 && panelMode !== 'add') {
-      setSelectedStudentId(students[0].id);
-      setPanelMode('quickview');
     }
-  }, [selectedStudentId, activeStudent, panelMode, students]);
+  }, [activeStudent?.id, panelMode]);
 
   const currentSession = (settings?.currentSession || '2026-27').toLowerCase().trim();
 
@@ -134,7 +139,7 @@ export default function StudentsView() {
   const accessibleStudents = React.useMemo(() => {
     if (!students || !Array.isArray(students)) return [];
     if (isPrincipal || hasAllClassesAccess) return students;
-    return students.filter(s => canAccessClass(s.className || s.course));
+    return students.filter(s => s && (typeof canAccessClass === 'function' ? canAccessClass(s.className || s.course) : true));
   }, [students, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
   const normalizeClassStr = (val) => {
@@ -153,13 +158,14 @@ export default function StudentsView() {
     const targetNorm = normalizeClassStr(selectedClass);
     const rolls = (accessibleStudents || [])
       .filter(s => {
+        if (!s) return false;
         const sClassNorm = normalizeClassStr(s.className);
         const sCourseNorm = String(s.course || '').trim().toLowerCase();
         const matchesThis = sClassNorm === targetNorm ||
           sCourseNorm === targetNorm ||
           sCourseNorm === String(selectedClass || '').trim().toLowerCase() ||
           String(s.className || '').trim().toLowerCase() === String(selectedClass || '').trim().toLowerCase();
-        return matchesThis && s.rollNumber;
+        return matchesThis && s.rollNumber !== undefined && s.rollNumber !== null && String(s.rollNumber).trim() !== '';
       })
       .map(s => String(s.rollNumber).trim())
       .filter(Boolean);
@@ -173,70 +179,69 @@ export default function StudentsView() {
     return unique;
   }, [accessibleStudents, selectedClass]);
 
-  // Filter and sort students list
-  const filteredStudents = accessibleStudents
-    .filter(s => {
-      const matchesSearch = !searchQuery.trim() ||
-        s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.studentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.fatherName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.rollNumber && String(s.rollNumber).toLowerCase().includes(searchQuery.toLowerCase()));
+  // Filter and sort students list (memoized to avoid re-renders)
+  const filteredStudents = React.useMemo(() => {
+    return (accessibleStudents || [])
+      .filter(s => {
+        if (!s) return false;
+        const q = String(searchQuery || '').trim().toLowerCase();
+        const sName = String(s.name || '').toLowerCase();
+        const sId = String(s.studentId || '').toLowerCase();
+        const sFather = String(s.fatherName || '').toLowerCase();
+        const sRoll = String(s.rollNumber || '').toLowerCase();
 
-      const targetNorm = normalizeClassStr(selectedClass);
-      const sClassNorm = normalizeClassStr(s.className);
-      const sCourseNorm = String(s.course || '').trim().toLowerCase();
-      const matchesClass = selectedClass === 'all' ||
-        sClassNorm === targetNorm ||
-        sCourseNorm === targetNorm ||
-        sCourseNorm === String(selectedClass || '').trim().toLowerCase() ||
-        String(s.className || '').trim().toLowerCase() === String(selectedClass || '').trim().toLowerCase();
+        const matchesSearch = !q ||
+          sName.includes(q) ||
+          sId.includes(q) ||
+          sFather.includes(q) ||
+          sRoll.includes(q);
 
-      const matchesStatus = selectedStatus === 'all' || s.status === selectedStatus;
+        const targetNorm = normalizeClassStr(selectedClass);
+        const sClassNorm = normalizeClassStr(s.className);
+        const sCourseNorm = String(s.course || '').trim().toLowerCase();
+        const matchesClass = selectedClass === 'all' ||
+          sClassNorm === targetNorm ||
+          sCourseNorm === targetNorm ||
+          sCourseNorm === String(selectedClass || '').trim().toLowerCase() ||
+          String(s.className || '').trim().toLowerCase() === String(selectedClass || '').trim().toLowerCase();
 
-      // Roll Number filter (active when class is selected)
-      const matchesRoll = selectedRoll === 'all' || String(s.rollNumber || '').trim() === selectedRoll;
+        const matchesStatus = selectedStatus === 'all' || s.status === selectedStatus;
 
-      // New vs Old Admission filter
-      let matchesAdmission = true;
-      if (admissionType !== 'all') {
-        const sSession = String(s.session || '').toLowerCase().trim();
-        const admDate = s.admissionDate ? new Date(s.admissionDate) : null;
-        const oneYearAgo = new Date();
-        oneYearAgo.setDate(oneYearAgo.getDate() - 365);
-        const isNew = (currentSession && sSession === currentSession) || (admDate && admDate >= oneYearAgo);
-        matchesAdmission = admissionType === 'new' ? isNew : !isNew;
-      }
+        // Roll Number filter (active when class is selected)
+        const matchesRoll = selectedRoll === 'all' || String(s.rollNumber || '').trim() === selectedRoll;
 
-      return matchesSearch && matchesClass && matchesStatus && matchesRoll && matchesAdmission;
-    })
-    .sort((a, b) => {
-      if (sortOrder === 'name_asc') {
-        return (a.name || '').localeCompare(b.name || '');
-      } else if (sortOrder === 'name_desc') {
-        return (b.name || '').localeCompare(a.name || '');
-      } else if (sortOrder === 'roll_asc') {
-        const rA = String(a.rollNumber || '').trim();
-        const rB = String(b.rollNumber || '').trim();
-        const nA = parseInt(rA, 10);
-        const nB = parseInt(rB, 10);
-        if (!isNaN(nA) && !isNaN(nB)) return nA - nB;
-        if (rA && rB) return rA.localeCompare(rB);
-        if (rA) return -1;
-        if (rB) return 1;
-        return (a.name || '').localeCompare(b.name || '');
-      }
-      return 0;
-    });
+        // New vs Old Admission filter
+        let matchesAdmission = true;
+        if (admissionType !== 'all') {
+          const sSession = String(s.session || '').toLowerCase().trim();
+          const admDate = s.admissionDate ? new Date(s.admissionDate) : null;
+          const oneYearAgo = new Date();
+          oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+          const isNew = (currentSession && sSession === currentSession) || (admDate && !isNaN(admDate.getTime()) && admDate >= oneYearAgo);
+          matchesAdmission = admissionType === 'new' ? isNew : !isNew;
+        }
 
-  // Auto-sync selected student in Quick View when filters change
-  useEffect(() => {
-    if (filteredStudents.length > 0) {
-      const stillInList = filteredStudents.some(s => s.id === selectedStudentId);
-      if (!stillInList) {
-        setSelectedStudentId(filteredStudents[0].id);
-      }
-    }
-  }, [filteredStudents, selectedStudentId]);
+        return matchesSearch && matchesClass && matchesStatus && matchesRoll && matchesAdmission;
+      })
+      .sort((a, b) => {
+        if (sortOrder === 'name_asc') {
+          return String(a?.name || '').localeCompare(String(b?.name || ''));
+        } else if (sortOrder === 'name_desc') {
+          return String(b?.name || '').localeCompare(String(a?.name || ''));
+        } else if (sortOrder === 'roll_asc') {
+          const rA = String(a?.rollNumber || '').trim();
+          const rB = String(b?.rollNumber || '').trim();
+          const nA = parseInt(rA, 10);
+          const nB = parseInt(rB, 10);
+          if (!isNaN(nA) && !isNaN(nB)) return nA - nB;
+          if (rA && rB) return rA.localeCompare(rB);
+          if (rA) return -1;
+          if (rB) return 1;
+          return String(a?.name || '').localeCompare(String(b?.name || ''));
+        }
+        return 0;
+      });
+  }, [accessibleStudents, searchQuery, selectedClass, selectedStatus, selectedRoll, admissionType, currentSession, sortOrder]);
 
   const handleInputChange = (field, val) => {
     setProfileForm(prev => ({ ...prev, [field]: val }));
@@ -408,10 +413,10 @@ export default function StudentsView() {
                 <option value="all">
                   {isPrincipal || hasAllClassesAccess ? 'All Classes & Courses' : 'All Classes'}
                 </option>
-                {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : allowedClasses).map(c => (
+                {((isPrincipal || hasAllClassesAccess) ? (settings?.schoolClasses || []) : (allowedClasses || [])).map(c => (
                   <option key={c} value={c}>Class {c}</option>
                 ))}
-                {(isPrincipal || hasAllClassesAccess) && settings.computerCourses?.map(c => (
+                {(isPrincipal || hasAllClassesAccess) && (settings?.computerCourses || []).map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
@@ -425,7 +430,7 @@ export default function StudentsView() {
                   title="Filter by Roll Number"
                 >
                   <option value="all">All Roll Numbers</option>
-                  {classRollNumbers.map(r => (
+                  {(classRollNumbers || []).map(r => (
                     <option key={r} value={r}>Roll No. {r}</option>
                   ))}
                 </select>
@@ -466,13 +471,14 @@ export default function StudentsView() {
                 <option value="left">Left</option>
               </select>
 
-              {!isPrincipal && !hasAllClassesAccess && allowedClasses.length > 0 && selectedClass !== allowedClasses[0] && (
+              {!isPrincipal && !hasAllClassesAccess && (allowedClasses || []).length > 0 && selectedClass !== (allowedClasses || [])[0] && (
                 <button
-                  onClick={() => setSelectedClass(allowedClasses[0])}
+                  type="button"
+                  onClick={() => setSelectedClass((allowedClasses || [])[0] || 'all')}
                   className="px-3 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
                   title="Return to your assigned class"
                 >
-                  <span>↩ Back to Class {allowedClasses[0]}</span>
+                  <span>↩ Back to Class {(allowedClasses || [])[0]}</span>
                 </button>
               )}
             </div>
@@ -601,7 +607,7 @@ export default function StudentsView() {
           </div>
           {/* Footer entries count */}
           <div className="px-5 py-4 border-t border-border bg-surface2/25 flex items-center justify-between text-xs text-text-secondary">
-            <span>Showing 1-{filteredStudents.length} of {students.length} entries</span>
+            <span>Showing {filteredStudents.length > 0 ? `1-${filteredStudents.length}` : 0} of {(students || []).length} entries</span>
             <div className="flex items-center gap-2">
               <button className="px-2.5 py-1 bg-white border border-border rounded cursor-pointer">&lt;</button>
               <span className="font-bold text-primary px-2">1</span>

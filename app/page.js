@@ -393,7 +393,7 @@ function AppContent() {
                 onOpenEdit={(n) => { setEditingNotice(n); setIsAddNoticeOpen(true); }}
               />
             )}
-            {cleanPath === '/students' && <StudentsView />}
+            {cleanPath === '/students' && <SafeView><StudentsView /></SafeView>}
             {cleanPath === '/fees' && ((isPrincipal || teacherPermissions?.canCollectFees) ? <FeesView /> : <AccessDeniedView />)}
             {cleanPath === '/attendance' && <AttendanceView />}
             {cleanPath === '/results' && <ResultsView />}
@@ -571,9 +571,14 @@ class RootErrorBoundary extends React.Component {
               !
             </div>
             <h2 className="text-lg font-black text-white mb-2">School Portal Recovered</h2>
-            <p className="text-xs text-white/70 mb-5 leading-relaxed">
+            <p className="text-xs text-white/70 mb-4 leading-relaxed">
               We encountered a temporary display issue. Tap reload to return to the active campus dashboard.
             </p>
+            {this.state.error && (
+              <div className="mb-4 p-3 bg-red-950/60 border border-red-500/30 rounded-xl text-left text-[11px] font-mono text-red-200 overflow-x-auto max-h-32">
+                <div className="font-bold text-red-300">{String(this.state.error?.message || this.state.error)}</div>
+              </div>
+            )}
             <div className="flex gap-2 justify-center">
               <button
                 type="button"
