@@ -116,14 +116,30 @@ function AppContent() {
 
   const prevModalOpenRef = React.useRef(false);
 
-  // Register Background Notification Service Worker
+  // Register Background Notification Service Worker & purge stale bundle caches
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .catch((err) => {
-          console.warn('SW registration note:', err.message);
+    if (typeof window !== 'undefined') {
+      if ('caches' in window) {
+        caches.keys().then((keys) => {
+          keys.forEach((k) => {
+            if (k.startsWith('mnp-school-cache')) {
+              caches.delete(k);
+            }
+          });
         });
+      }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (let reg of registrations) {
+            reg.update();
+          }
+        });
+        navigator.serviceWorker
+          .register('/sw.js')
+          .catch((err) => {
+            console.warn('SW registration note:', err.message);
+          });
+      }
     }
   }, []);
 

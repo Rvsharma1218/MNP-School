@@ -1,5 +1,5 @@
 // Service Worker for Offline Cache Memory & Push Notifications
-const CACHE_NAME = 'mnp-school-cache-v2';
+const CACHE_NAME = 'mnp-school-cache-v4';
 const STATIC_ASSETS = [
   '/',
   '/favicon.ico',
@@ -12,11 +12,6 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {});
-    })
-  );
   self.skipWaiting();
 });
 
@@ -24,31 +19,29 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
+        keys.map((key) => caches.delete(key))
       );
     }).then(() => self.clients.claim())
   );
 });
 
-// Cache-First / Stale-While-Revalidate for Static Assets & Images
+// Cache only static images and media (NEVER cache Next.js code chunks or dynamic scripts)
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Skip non-GET and chrome-extension / firestore / firebase requests
+  // Skip non-GET and cross-origin / firestore / firebase requests
   if (request.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.endsWith('.apk')) return; // Do not cache large APK files
+  if (url.pathname.endsWith('.apk')) return;
+  
+  // NEVER intercept Next.js chunks, HTML routes or JavaScript files (instant updates)
+  if (url.pathname.startsWith('/_next/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.json')) {
+    return;
+  }
 
-  // Cache static images, fonts, and scripts
-  if (
-    url.pathname.startsWith('/_next/static/') ||
-    url.pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|woff|woff2|ttf|css|js)$/)
-  ) {
+  // Only cache images and fonts
+  if (url.pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|woff|woff2|ttf)$/)) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
         const cachedResponse = await cache.match(request);
