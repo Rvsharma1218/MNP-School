@@ -461,7 +461,7 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
     String dateDisplay = 'Recently';
     if (submittedAtStr.isNotEmpty) {
       try {
-        final dt = DateTime.parse(submittedAtStr);
+        final dt = DateTime.parse(submittedAtStr).toLocal();
         dateDisplay = DateFormat('dd MMM yyyy, hh:mm a').format(dt);
       } catch (_) {}
     }
@@ -798,7 +798,7 @@ class _OnlineEnquiriesScreenState extends ConsumerState<OnlineEnquiriesScreen>
     String dateDisplay = 'Recently';
     if (submittedAtStr.isNotEmpty) {
       try {
-        final dt = DateTime.parse(submittedAtStr);
+        final dt = DateTime.parse(submittedAtStr).toLocal();
         dateDisplay = DateFormat('dd MMM yyyy, hh:mm a').format(dt);
       } catch (_) {}
     }
