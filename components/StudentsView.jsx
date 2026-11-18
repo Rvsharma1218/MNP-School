@@ -128,10 +128,19 @@ export default function StudentsView() {
     }
   }, [selectedStudentId, activeStudent, panelMode, students]);
 
+  const currentSession = (settings?.currentSession || '2026-27').toLowerCase().trim();
+
+  // Scoped accessible students for this user role
+  const accessibleStudents = React.useMemo(() => {
+    if (!students || !Array.isArray(students)) return [];
+    if (isPrincipal || hasAllClassesAccess) return students;
+    return students.filter(s => canAccessClass(s.className || s.course));
+  }, [students, isPrincipal, hasAllClassesAccess, canAccessClass]);
+
   // Roll numbers available in currently selected class
   const classRollNumbers = React.useMemo(() => {
     if (selectedClass === 'all') return [];
-    const rolls = accessibleStudents
+    const rolls = (accessibleStudents || [])
       .filter(s => (s.className === selectedClass || s.course === selectedClass) && s.rollNumber)
       .map(s => String(s.rollNumber).trim())
       .filter(Boolean);
@@ -143,15 +152,7 @@ export default function StudentsView() {
       return a.localeCompare(b);
     });
     return unique;
-  }, [students, selectedClass]);
-
-  const currentSession = (settings?.currentSession || '2026-27').toLowerCase().trim();
-
-  // Scoped accessible students for this user role
-  const accessibleStudents = React.useMemo(() => {
-    if (isPrincipal || hasAllClassesAccess) return students;
-    return students.filter(s => canAccessClass(s.className || s.course));
-  }, [students, isPrincipal, hasAllClassesAccess, canAccessClass]);
+  }, [accessibleStudents, selectedClass]);
 
   // Filter and sort students list
   const filteredStudents = accessibleStudents
