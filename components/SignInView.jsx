@@ -2358,7 +2358,7 @@ export default function SignInView() {
 
                       {/* Fallback 32-bit APK for older phones */}
                       <a
-                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.3-build17/app-armeabi-v7a-release.apk"
+                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.3-build18/app-armeabi-v7a-release.apk"
                         download="MNP_School_v1.0.3_v7a.apk"
                         className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
