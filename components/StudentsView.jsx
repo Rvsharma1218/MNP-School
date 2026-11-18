@@ -261,11 +261,11 @@ export default function StudentsView() {
       admissionNumber: '',
       studentId: '',
       admissionDate: new Date().toISOString().split('T')[0],
-      className: isPrincipal ? (settings.schoolClasses?.[0] || '1st') : assignedClass,
+      className: isPrincipal ? (settings?.schoolClasses?.[0] || '1st') : assignedClass,
       section: 'A',
       rollNumber: '',
-      course: settings.computerCourses?.[0] || '',
-      session: settings.currentSession || '2026-27',
+      course: settings?.computerCourses?.[0] || '',
+      session: settings?.currentSession || '2026-27',
       fatherName: '',
       motherName: '',
       address: '',
@@ -1017,7 +1017,7 @@ export default function StudentsView() {
                           onChange={e => handleInputChange('className', e.target.value)}
                           className="w-full px-2.5 py-1.5 rounded bg-surface2 border border-border text-xs text-text font-semibold focus:outline-none cursor-pointer"
                         >
-                          {(isPrincipal || hasAllClassesAccess ? (settings.schoolClasses || []) : (allowedClasses.length > 0 ? allowedClasses : settings.schoolClasses || [])).map(c => <option key={c} value={c}>Class {c}</option>)}
+                          {((isPrincipal || hasAllClassesAccess) ? (settings?.schoolClasses || []) : ((allowedClasses || []).length > 0 ? allowedClasses : settings?.schoolClasses || [])).map(c => <option key={c} value={c}>Class {c}</option>)}
                         </select>
                       </div>
                       <div>
@@ -1041,7 +1041,7 @@ export default function StudentsView() {
                         onChange={e => handleInputChange('course', e.target.value)}
                         className="w-full px-2.5 py-1.5 rounded bg-surface2 border border-border text-xs text-text font-semibold focus:outline-none cursor-pointer"
                       >
-                        {settings.computerCourses?.map(c => <option key={c} value={c}>{c}</option>)}
+                        {(settings?.computerCourses || []).map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                   )}
