@@ -137,11 +137,30 @@ export default function StudentsView() {
     return students.filter(s => canAccessClass(s.className || s.course));
   }, [students, isPrincipal, hasAllClassesAccess, canAccessClass]);
 
+  const normalizeClassStr = (val) => {
+    if (!val) return '';
+    return String(val)
+      .trim()
+      .toLowerCase()
+      .replace(/^class\s*/i, '')
+      .replace(/\s*-\s*[a-z]$/i, '')
+      .trim();
+  };
+
   // Roll numbers available in currently selected class
   const classRollNumbers = React.useMemo(() => {
     if (selectedClass === 'all') return [];
+    const targetNorm = normalizeClassStr(selectedClass);
     const rolls = (accessibleStudents || [])
-      .filter(s => (s.className === selectedClass || s.course === selectedClass) && s.rollNumber)
+      .filter(s => {
+        const sClassNorm = normalizeClassStr(s.className);
+        const sCourseNorm = String(s.course || '').trim().toLowerCase();
+        const matchesThis = sClassNorm === targetNorm ||
+          sCourseNorm === targetNorm ||
+          sCourseNorm === String(selectedClass || '').trim().toLowerCase() ||
+          String(s.className || '').trim().toLowerCase() === String(selectedClass || '').trim().toLowerCase();
+        return matchesThis && s.rollNumber;
+      })
       .map(s => String(s.rollNumber).trim())
       .filter(Boolean);
     const unique = Array.from(new Set(rolls));
@@ -163,7 +182,15 @@ export default function StudentsView() {
         s.fatherName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (s.rollNumber && String(s.rollNumber).toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesClass = selectedClass === 'all' || s.className === selectedClass || s.course === selectedClass;
+      const targetNorm = normalizeClassStr(selectedClass);
+      const sClassNorm = normalizeClassStr(s.className);
+      const sCourseNorm = String(s.course || '').trim().toLowerCase();
+      const matchesClass = selectedClass === 'all' ||
+        sClassNorm === targetNorm ||
+        sCourseNorm === targetNorm ||
+        sCourseNorm === String(selectedClass || '').trim().toLowerCase() ||
+        String(s.className || '').trim().toLowerCase() === String(selectedClass || '').trim().toLowerCase();
+
       const matchesStatus = selectedStatus === 'all' || s.status === selectedStatus;
 
       // Roll Number filter (active when class is selected)
@@ -200,6 +227,16 @@ export default function StudentsView() {
       }
       return 0;
     });
+
+  // Auto-sync selected student in Quick View when filters change
+  useEffect(() => {
+    if (filteredStudents.length > 0) {
+      const stillInList = filteredStudents.some(s => s.id === selectedStudentId);
+      if (!stillInList) {
+        setSelectedStudentId(filteredStudents[0].id);
+      }
+    }
+  }, [filteredStudents, selectedStudentId]);
 
   const handleInputChange = (field, val) => {
     setProfileForm(prev => ({ ...prev, [field]: val }));
