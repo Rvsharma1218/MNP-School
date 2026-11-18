@@ -194,6 +194,12 @@ class FirestoreService {
     if (!_enabled || _students == null) return null;
     return _students!.snapshots().map(
           (snap) => snap.docs
+          .where((d) {
+            final raw = d.data();
+            if (raw is! Map) return false;
+            final name = (raw['name'] ?? '').toString().trim();
+            return name.isNotEmpty;
+          })
           .map((d) {
             final data = Map<String, dynamic>.from(d.data() as Map);
             if (data['id'] == null || data['id'].toString().isEmpty) {
@@ -1499,6 +1505,12 @@ class FirestoreService {
     try {
       final snap = await _students!.get();
       final list = snap.docs
+          .where((d) {
+            final raw = d.data();
+            if (raw is! Map) return false;
+            final name = (raw['name'] ?? '').toString().trim();
+            return name.isNotEmpty;
+          })
           .map((d) {
             final data = Map<String, dynamic>.from(d.data() as Map);
             if (data['id'] == null || data['id'].toString().isEmpty) {
