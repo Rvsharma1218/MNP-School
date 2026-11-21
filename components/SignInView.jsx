@@ -2482,7 +2482,7 @@ export default function SignInView() {
                       )}
                     </p>
                     <a
-                      href="https://www.google.com/maps/dir/?api=1&destination=26.115206775039834,84.62215723091671"
+                      href="https://maps.app.goo.gl/tuVDnBJXXKyrD9XJ9"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[11px] font-bold text-[#102747] hover:underline inline-flex items-center gap-1 pt-1"

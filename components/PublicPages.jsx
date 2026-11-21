@@ -880,7 +880,7 @@ export function ContactPageView({ isHi, schoolLocation, primaryPhone, officialEm
               </p>
             </div>
             <a
-              href="https://www.google.com/maps/dir/?api=1&destination=26.115206775039834,84.62215723091671"
+              href="https://maps.app.goo.gl/tuVDnBJXXKyrD9XJ9"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline pt-1"
@@ -989,12 +989,12 @@ export function ContactPageView({ isHi, schoolLocation, primaryPhone, officialEm
                   {isHi ? 'सटीक स्कूल स्थान (Google Maps)' : 'Precise Campus Location'}
                 </div>
                 <div className="text-[10px] sm:text-xs text-amber-300 font-mono">
-                  GPS: 26.115207° N, 84.622157° E · Mora-Mairi, Siwan (Bihar)
+                  Mission Navodaya Public School · Mora-Mairi, Siwan (Bihar)
                 </div>
               </div>
             </div>
             <a
-              href="https://www.google.com/maps/dir/?api=1&destination=26.115206775039834,84.62215723091671"
+              href="https://maps.app.goo.gl/tuVDnBJXXKyrD9XJ9"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-xs transition-all shadow-md"
@@ -1004,13 +1004,25 @@ export function ContactPageView({ isHi, schoolLocation, primaryPhone, officialEm
             </a>
           </div>
           <div className="p-6 sm:p-8 bg-gradient-to-br from-slate-50 to-amber-50/30 text-center space-y-4">
+            <div className="w-full h-64 sm:h-80 rounded-2xl overflow-hidden border border-slate-200 shadow-inner mb-4">
+              <iframe
+                title="Mission Navodaya Public School Mora Google Maps Location"
+                src="https://maps.google.com/maps?q=Mission+Navodaya+Public+School+Mora&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
             <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
               {isHi
                 ? 'स्कूल परिसर: मोरा-मैरी, मोरा बाजार, सीवान (बिहार)। नीचे दिए गए बटन पर क्लिक करके अपने फोन में गूगल मैप्स नेविगेशन चालू करें।'
                 : 'Campus: Mora-Mairi, Mora Bazar, Siwan (Bihar). Click the button below to launch turn-by-turn navigation on your mobile.'}
             </p>
             <a
-              href="https://www.google.com/maps/dir/?api=1&destination=26.115206775039834,84.62215723091671"
+              href="https://maps.app.goo.gl/tuVDnBJXXKyrD9XJ9"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-lg transition-all"

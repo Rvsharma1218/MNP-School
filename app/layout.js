@@ -310,7 +310,7 @@ export default function RootLayout({ children }) {
       "latitude": 26.115206775039834,
       "longitude": 84.62215723091671
     },
-    "hasMap": "https://www.google.com/maps?q=26.115206775039834,84.62215723091671",
+    "hasMap": "https://maps.app.goo.gl/tuVDnBJXXKyrD9XJ9",
     "sameAs": [
       "https://mnpschool.in",
       "https://www.mnpschool.in"
