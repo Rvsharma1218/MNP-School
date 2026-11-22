@@ -67,18 +67,21 @@ export async function POST(request) {
       data: {
         title: title,
         body: content,
-        channelId: channelId,
-        channelName: channelName,
+        channelId: channelId || 'school_notices_channel',
+        channelName: channelName || 'School Notices & Circulars',
         payload: payload || '',
       },
       android: {
         priority: 'high',
         notification: {
-          channelId: channelId,
+          channelId: channelId || 'school_notices_channel',
+          icon: 'ic_notification',
+          color: '#091A32',
           sound: 'default',
           priority: 'high',
           defaultSound: true,
           defaultVibrateTimings: true,
+          visibility: 'public',
         }
       }
     };
