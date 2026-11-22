@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSchoolStore, getActiveSchoolId } from '../lib/store';
 import { translations } from '../lib/translations';
+import { triggerPushNotification } from '../lib/notifyService';
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import {
@@ -146,6 +147,19 @@ export default function SignUpView() {
         await setDoc(doc(db, 'admissionEnquiries', generatedRef), enquiryPayload);
       } catch (_) {}
       console.log('Admission enquiry successfully synced to cloud:', generatedRef);
+      // 🔔 Trigger high-priority push to Android App devices (wakes up phone when closed)
+      try {
+        triggerPushNotification({
+          title: '🎓 New Online Admission: ' + (enquiryPayload.studentName || 'Student'),
+          body: `${enquiryPayload.studentName} applied for Class ${enquiryPayload.admissionClass || ''} (Parent: ${enquiryPayload.fatherName || 'N/A'}, Phone: ${enquiryPayload.fatherMobile || enquiryPayload.phone || 'N/A'})`,
+          channelId: 'admissions_enquiry_channel',
+          channelName: 'Online Admissions & Enquiries',
+          payload: 'enquiry_' + generatedRef,
+          schoolId: targetSchoolId
+        });
+      } catch (notifyErr) {
+        console.warn('Push trigger notification error:', notifyErr);
+      }
     } catch (err) {
       console.error('Admission enquiry cloud sync error:', err.message);
     } finally {
@@ -204,6 +218,19 @@ export default function SignUpView() {
         await setDoc(doc(db, 'teacherApplications', generatedRef), applicationPayload);
       } catch (_) {}
       console.log('Teacher application successfully synced to cloud:', generatedRef);
+      // 🔔 Trigger high-priority push to Admin / Principal devices
+      try {
+        triggerPushNotification({
+          title: '📝 New Teacher Job Application: ' + (applicationPayload.fullName || 'Candidate'),
+          body: `${applicationPayload.fullName} applied for ${applicationPayload.subjectSpecialization || 'Faculty'} (Exp: ${applicationPayload.experience || 'N/A'}, Phone: ${applicationPayload.mobileNumber || 'N/A'})`,
+          channelId: 'admissions_enquiry_channel',
+          channelName: 'Online Admissions & Enquiries',
+          payload: 'teacher_' + generatedRef,
+          schoolId: targetSchoolId
+        });
+      } catch (notifyErr) {
+        console.warn('Push trigger notification error:', notifyErr);
+      }
     } catch (err) {
       console.error('Teacher application cloud sync error:', err.message);
     } finally {

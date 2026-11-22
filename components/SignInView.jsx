@@ -12,6 +12,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc, serverTimestamp, collection } from 'firebase/firestore';
 import { useSchoolStore, getActiveSchoolId } from '../lib/store';
+import { triggerPushNotification } from '../lib/notifyService';
 import { translations } from '../lib/translations';
 import { resolveCmsWithAutoTranslate, getQuickTranslation } from '../lib/autoTranslate';
 import {
@@ -3338,6 +3339,19 @@ export default function SignInView() {
                           try { await setDoc(doc(db, 'schoolDirectory', 'SCHOOL_007', 'admissionEnquiries', refId), payload); } catch (_) {}
                         }
                         try { await setDoc(doc(db, 'admissionEnquiries', refId), payload); } catch (_) {}
+                        // 🔔 Real-time high-priority push notification to Admin/Staff mobile devices
+                        try {
+                          triggerPushNotification({
+                            title: '🎓 New Admission Enquiry: ' + (payload.studentName || 'Student'),
+                            body: `${payload.studentName || 'Student'} applied for Class ${payload.admissionClass || ''} (Father: ${payload.fatherName || 'N/A'}, Phone: ${payload.fatherMobile || payload.phone || 'N/A'})`,
+                            channelId: 'admissions_enquiry_channel',
+                            channelName: 'Online Admissions & Enquiries',
+                            payload: 'enquiry_' + refId,
+                            schoolId: targetSchoolId
+                          });
+                        } catch (notifyErr) {
+                          console.warn('Push trigger notification error:', notifyErr);
+                        }
                       } catch (err) {
                         console.warn('Saved admission enquiry locally:', err);
                       }
@@ -3528,6 +3542,19 @@ export default function SignInView() {
                           try { await setDoc(doc(db, 'schoolDirectory', 'SCHOOL_007', 'admissionEnquiries', refId), payload); } catch (_) {}
                         }
                         try { await setDoc(doc(db, 'admissionEnquiries', refId), payload); } catch (_) {}
+                        // 🔔 Real-time high-priority push notification to Admin/Staff mobile devices
+                        try {
+                          triggerPushNotification({
+                            title: '📩 New Online Inquiry: ' + (payload.studentName || 'New Inquiry'),
+                            body: `${payload.studentName || 'Student'} (Class: ${payload.admissionClass || 'General'}, Phone: ${payload.phone || 'N/A'}) submitted an inquiry.`,
+                            channelId: 'admissions_enquiry_channel',
+                            channelName: 'Online Admissions & Enquiries',
+                            payload: 'inquiry_' + refId,
+                            schoolId: targetSchoolId
+                          });
+                        } catch (notifyErr) {
+                          console.warn('Push trigger notification error:', notifyErr);
+                        }
                       } catch (err) {
                         console.warn('Saved inquiry locally:', err);
                       }
