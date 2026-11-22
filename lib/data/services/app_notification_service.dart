@@ -150,10 +150,10 @@ class AppNotificationService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final nowMs = DateTime.now().millisecondsSinceEpoch;
-      // Default to 1 hour ago on initial run to avoid missing recent background events
-      _lastNoticeTimestamp = prefs.getInt(_kLastNoticeTimeKey) ?? (nowMs - 60 * 60 * 1000);
-      _lastComplaintTimestamp = prefs.getInt(_kLastComplaintTimeKey) ?? (nowMs - 60 * 60 * 1000);
-      _lastPaymentTimestamp = prefs.getInt(_kLastPaymentTimeKey) ?? (nowMs - 60 * 60 * 1000);
+      // Default to 30 mins ago on initial run to avoid missing recent events
+      _lastNoticeTimestamp = prefs.getInt(_kLastNoticeTimeKey) ?? (nowMs - 30 * 60 * 1000);
+      _lastComplaintTimestamp = prefs.getInt(_kLastComplaintTimeKey) ?? (nowMs - 30 * 60 * 1000);
+      _lastPaymentTimestamp = prefs.getInt(_kLastPaymentTimeKey) ?? (nowMs - 30 * 60 * 1000);
 
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const initSettings = InitializationSettings(android: androidInit);
@@ -312,11 +312,10 @@ class AppNotificationService {
       await messaging.subscribeToTopic('school_${schoolId}_notices');
       await messaging.subscribeToTopic('school_all_notices');
 
-      if (SessionService.instance.isPrincipal) {
+      if (!SessionService.instance.isParent) {
         await messaging.subscribeToTopic('school_${schoolId}_principal');
-      } else if (SessionService.instance.isTeacher) {
-        await messaging.subscribeToTopic('school_${schoolId}_teachers');
-      } else if (SessionService.instance.isParent) {
+        await messaging.subscribeToTopic('school_SCHOOL_007_principal');
+      } else {
         final studentId = SessionService.instance.parentStudentId;
         if (studentId != null && studentId.isNotEmpty) {
           final sanitizedStudentId = studentId.replaceAll(RegExp(r'[^a-zA-Z0-9-_]'), '_');
@@ -335,21 +334,25 @@ class AppNotificationService {
       final schoolId = SessionService.instance.activeSchoolId.isNotEmpty
           ? SessionService.instance.activeSchoolId
           : 'SCHOOL_007';
-      final role = SessionService.instance.role;
+      final roleStr = SessionService.instance.role?.name ?? 'principal';
       final studentId = SessionService.instance.parentStudentId;
 
-      await FirebaseFirestore.instance
-          .collection('schools')
-          .doc(schoolId)
-          .collection('fcm_tokens')
-          .doc(token)
-          .set({
-        'token': token,
-        'role': role,
-        'studentId': studentId,
-        'platform': 'android',
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      final targets = <String>{schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+      for (final sId in targets) {
+        if (sId.isEmpty) continue;
+        await FirebaseFirestore.instance
+            .collection('schools')
+            .doc(sId)
+            .collection('fcm_tokens')
+            .doc(token)
+            .set({
+          'token': token,
+          'role': roleStr,
+          'studentId': studentId,
+          'platform': 'android',
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
       debugPrint('[FCM] ✅ Token synced to Firestore: $token');
     } catch (e) {
       debugPrint('[FCM] Save token note: $e');
@@ -364,15 +367,17 @@ class AppNotificationService {
 
     debugPrint('[NotificationService] Starting realtime listeners for school: $schoolId');
 
-    // 1. Listen for Notices (Parent, Teacher, Principal)
+    // 1. Listen for Notices (All users)
     _listenForNotices(schoolId);
 
-    // 2. Role-specific listeners
-    if (SessionService.instance.isPrincipal) {
+    // 2. Role-specific listeners:
+    // If not explicitly a Parent, user is School Admin / Staff -> Listen to enquiries, payments, complaints!
+    final isParent = SessionService.instance.isParent || (studentId != null && studentId.isNotEmpty);
+    if (!isParent) {
       _listenForPrincipalComplaints(schoolId);
       _listenForPrincipalEnquiries(schoolId);
       _listenForPrincipalPayments(schoolId);
-    } else if (SessionService.instance.isParent || (studentId != null && studentId.isNotEmpty)) {
+    } else {
       final effectiveStudentId = (studentId != null && studentId.isNotEmpty)
           ? studentId
           : SessionService.instance.parentStudentId;
@@ -384,34 +389,61 @@ class AppNotificationService {
 
   void _listenForNotices(String schoolId) {
     try {
-      bool isInitial = true;
-      final sub = FirebaseFirestore.instance
-          .collection('schools')
-          .doc(schoolId)
-          .collection('notices')
-          .snapshots()
-          .listen((snap) async {
-        if (isInitial) {
-          isInitial = false;
-          for (final doc in snap.docs) {
-            final t = _extractTimestamp(doc.data()['createdAt']);
-            if (t > _lastNoticeTimestamp) _lastNoticeTimestamp = t;
-          }
+      final targets = <String>{schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+      for (final sId in targets) {
+        if (sId.isEmpty) continue;
+
+        bool isInitial = true;
+        final sub = FirebaseFirestore.instance
+            .collection('schools')
+            .doc(sId)
+            .collection('notices')
+            .snapshots()
+            .listen((snap) async {
+          final nowMs = DateTime.now().millisecondsSinceEpoch;
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setInt(_kLastNoticeTimeKey, _lastNoticeTimestamp);
-          return;
-        }
 
-        for (final change in snap.docChanges) {
-          if (change.type != DocumentChangeType.added) continue;
-          final doc = change.doc;
-          final data = doc.data() ?? {};
-          final itemTime = _extractTimestamp(data['createdAt']);
+          if (isInitial) {
+            isInitial = false;
+            for (final doc in snap.docs) {
+              final notifKey = 'notif_notice_${doc.id}';
+              final t = _extractTimestamp(doc.data()['createdAt']);
+              // If notice was posted in the last 30 minutes and not yet alerted, notify!
+              if (t > 0 && (nowMs - t) < 30 * 60 * 1000 && prefs.getBool(notifKey) != true) {
+                await prefs.setBool(notifKey, true);
+                final title = doc.data()['title']?.toString() ?? 'New School Notice';
+                final content = doc.data()['content']?.toString() ?? '';
+                final category = doc.data()['category']?.toString() ?? 'General';
+                await showNotification(
+                  id: doc.id.hashCode,
+                  title: '📢 Notice ($category): $title',
+                  body: content,
+                  channelId: androidNoticeChannel.id,
+                  channelName: androidNoticeChannel.name,
+                  payload: 'notice_${doc.id}',
+                );
+              } else {
+                await prefs.setBool(notifKey, true);
+              }
+              if (t > _lastNoticeTimestamp) _lastNoticeTimestamp = t;
+            }
+            await prefs.setInt(_kLastNoticeTimeKey, _lastNoticeTimestamp);
+            return;
+          }
 
-          if (itemTime > _lastNoticeTimestamp) {
-            _lastNoticeTimestamp = itemTime;
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setInt(_kLastNoticeTimeKey, itemTime);
+          for (final change in snap.docChanges) {
+            if (change.type != DocumentChangeType.added) continue;
+            final doc = change.doc;
+            final data = doc.data() ?? {};
+            final notifKey = 'notif_notice_${doc.id}';
+            if (prefs.getBool(notifKey) == true) continue;
+            await prefs.setBool(notifKey, true);
+
+            final itemTime = _extractTimestamp(data['createdAt']);
+            if (itemTime > _lastNoticeTimestamp) {
+              _lastNoticeTimestamp = itemTime;
+              await prefs.setInt(_kLastNoticeTimeKey, itemTime);
+            }
 
             final title = data['title']?.toString() ?? 'New School Notice';
             final content = data['content']?.toString() ?? '';
@@ -426,10 +458,10 @@ class AppNotificationService {
               payload: 'notice_${doc.id}',
             );
           }
-        }
-      }, onError: (e) => debugPrint('[NotificationService] Notice error: $e'));
+        }, onError: (e) => debugPrint('[NotificationService] Notice error ($sId): $e'));
 
-      _subscriptions.add(sub);
+        _subscriptions.add(sub);
+      }
     } catch (e) {
       debugPrint('[NotificationService] Notice listen error: $e');
     }
@@ -442,13 +474,36 @@ class AppNotificationService {
           .collection('feedbacks')
           .snapshots()
           .listen((snap) async {
+        final prefs = await SharedPreferences.getInstance();
+        final nowMs = DateTime.now().millisecondsSinceEpoch;
+
         if (isInitial) {
           isInitial = false;
           for (final doc in snap.docs) {
+            final notifKey = 'notif_complaint_${doc.id}';
             final t = _extractTimestamp(doc.data()['createdAt']);
+            if (t > 0 && (nowMs - t) < 30 * 60 * 1000 && prefs.getBool(notifKey) != true) {
+              await prefs.setBool(notifKey, true);
+              final data = doc.data();
+              final subject = data['subject']?.toString() ?? 'New Parent Message';
+              final studentName = data['studentName']?.toString() ?? 'Student';
+              final category = data['category']?.toString() ?? 'Parent Complaint';
+              final priority = (data['priority'] ?? '').toString().toLowerCase();
+              final isUrgent = priority == 'urgent' || data['urgent'] == true;
+
+              await showNotification(
+                id: doc.id.hashCode,
+                title: isUrgent ? '🚨 URGENT Parent Message ($category)' : '📩 Parent Message ($category)',
+                body: 'From $studentName\'s Parent: $subject',
+                channelId: androidComplaintChannel.id,
+                channelName: androidComplaintChannel.name,
+                payload: 'complaint_${doc.id}',
+              );
+            } else {
+              await prefs.setBool(notifKey, true);
+            }
             if (t > _lastComplaintTimestamp) _lastComplaintTimestamp = t;
           }
-          final prefs = await SharedPreferences.getInstance();
           await prefs.setInt(_kLastComplaintTimeKey, _lastComplaintTimestamp);
           return;
         }
@@ -456,6 +511,10 @@ class AppNotificationService {
         for (final change in snap.docChanges) {
           if (change.type != DocumentChangeType.added) continue;
           final doc = change.doc;
+          final notifKey = 'notif_complaint_${doc.id}';
+          if (prefs.getBool(notifKey) == true) continue;
+          await prefs.setBool(notifKey, true);
+
           final data = doc.data() ?? {};
           final sId = (data['schoolId'] ?? '').toString().toLowerCase();
           final isParent = data['type'] == 'parent_complaint' || data['studentId'] != null;
@@ -468,24 +527,23 @@ class AppNotificationService {
           final itemTime = _extractTimestamp(data['createdAt']);
           if (itemTime > _lastComplaintTimestamp) {
             _lastComplaintTimestamp = itemTime;
-            final prefs = await SharedPreferences.getInstance();
             await prefs.setInt(_kLastComplaintTimeKey, itemTime);
-
-            final subject = data['subject']?.toString() ?? 'New Parent Message';
-            final studentName = data['studentName']?.toString() ?? 'Student';
-            final category = data['category']?.toString() ?? 'Parent Complaint';
-            final priority = (data['priority'] ?? '').toString().toLowerCase();
-            final isUrgent = priority == 'urgent' || data['urgent'] == true;
-
-            await showNotification(
-              id: doc.id.hashCode,
-              title: isUrgent ? '🚨 URGENT Parent Message ($category)' : '📩 Parent Message ($category)',
-              body: 'From $studentName\'s Parent: $subject',
-              channelId: androidComplaintChannel.id,
-              channelName: androidComplaintChannel.name,
-              payload: 'complaint_${doc.id}',
-            );
           }
+
+          final subject = data['subject']?.toString() ?? 'New Parent Message';
+          final studentName = data['studentName']?.toString() ?? 'Student';
+          final category = data['category']?.toString() ?? 'Parent Complaint';
+          final priority = (data['priority'] ?? '').toString().toLowerCase();
+          final isUrgent = priority == 'urgent' || data['urgent'] == true;
+
+          await showNotification(
+            id: doc.id.hashCode,
+            title: isUrgent ? '🚨 URGENT Parent Message ($category)' : '📩 Parent Message ($category)',
+            body: 'From $studentName\'s Parent: $subject',
+            channelId: androidComplaintChannel.id,
+            channelName: androidComplaintChannel.name,
+            payload: 'complaint_${doc.id}',
+          );
         }
       }, onError: (e) => debugPrint('[NotificationService] Principal complaints error: $e'));
 
@@ -510,10 +568,33 @@ class AppNotificationService {
             .snapshots()
             .listen((snap) async {
           final prefs = await SharedPreferences.getInstance();
+          final nowMs = DateTime.now().millisecondsSinceEpoch;
+
           if (isInitialAdm) {
             isInitialAdm = false;
             for (final doc in snap.docs) {
-              await prefs.setBool('notif_enq_${doc.id}', true);
+              final notifKey = 'notif_enq_${doc.id}';
+              final data = doc.data();
+              final itemTime = _extractTimestamp(data['createdAt'] ?? data['timestamp']);
+
+              // If submitted in the last 45 minutes and user hasn't seen the alert yet -> notify!
+              if (itemTime > 0 && (nowMs - itemTime) < 45 * 60 * 1000 && prefs.getBool(notifKey) != true) {
+                await prefs.setBool(notifKey, true);
+                final studentName = data['studentName'] ?? data['name'] ?? 'New Student';
+                final admClass = data['admissionClass'] ?? data['class'] ?? '';
+                final refNo = data['refNo'] ?? doc.id;
+
+                await showNotification(
+                  id: doc.id.hashCode,
+                  title: '🎓 New Admission Application ($admClass)',
+                  body: '$studentName applied for Class $admClass (Ref: $refNo)',
+                  channelId: androidEnquiryChannel.id,
+                  channelName: androidEnquiryChannel.name,
+                  payload: 'enquiry_${doc.id}',
+                );
+              } else {
+                await prefs.setBool(notifKey, true);
+              }
             }
             return;
           }
@@ -539,7 +620,7 @@ class AppNotificationService {
               payload: 'enquiry_${doc.id}',
             );
           }
-        }, onError: (e) => debugPrint('[NotificationService] Admission enquiry error: $e'));
+        }, onError: (e) => debugPrint('[NotificationService] Admission enquiry error ($sId): $e'));
         _subscriptions.add(subAdm);
 
         // 2. Teacher Applications
@@ -551,10 +632,32 @@ class AppNotificationService {
             .snapshots()
             .listen((snap) async {
           final prefs = await SharedPreferences.getInstance();
+          final nowMs = DateTime.now().millisecondsSinceEpoch;
+
           if (isInitialTeacher) {
             isInitialTeacher = false;
             for (final doc in snap.docs) {
-              await prefs.setBool('notif_teacher_enq_${doc.id}', true);
+              final notifKey = 'notif_teacher_enq_${doc.id}';
+              final data = doc.data();
+              final itemTime = _extractTimestamp(data['createdAt'] ?? data['timestamp']);
+
+              if (itemTime > 0 && (nowMs - itemTime) < 45 * 60 * 1000 && prefs.getBool(notifKey) != true) {
+                await prefs.setBool(notifKey, true);
+                final name = data['name'] ?? data['fullName'] ?? 'Applicant';
+                final subject = data['subject'] ?? data['post'] ?? 'Teaching Post';
+                final refNo = data['refNo'] ?? doc.id;
+
+                await showNotification(
+                  id: doc.id.hashCode,
+                  title: '📝 New Teacher Application: $name',
+                  body: '$name applied for $subject (Ref: $refNo)',
+                  channelId: androidEnquiryChannel.id,
+                  channelName: androidEnquiryChannel.name,
+                  payload: 'teacher_enquiry_${doc.id}',
+                );
+              } else {
+                await prefs.setBool(notifKey, true);
+              }
             }
             return;
           }
@@ -580,7 +683,7 @@ class AppNotificationService {
               payload: 'teacher_enquiry_${doc.id}',
             );
           }
-        }, onError: (e) => debugPrint('[NotificationService] Teacher enquiry error: $e'));
+        }, onError: (e) => debugPrint('[NotificationService] Teacher enquiry error ($sId): $e'));
         _subscriptions.add(subTeacher);
       }
     } catch (e) {
@@ -590,34 +693,63 @@ class AppNotificationService {
 
   void _listenForPrincipalPayments(String schoolId) {
     try {
-      bool isInitial = true;
-      final sub = FirebaseFirestore.instance
-          .collection('schools')
-          .doc(schoolId)
-          .collection('payments')
-          .snapshots()
-          .listen((snap) async {
-        if (isInitial) {
-          isInitial = false;
-          for (final doc in snap.docs) {
-            final t = _extractTimestamp(doc.data()['createdAt'] ?? doc.data()['date']);
-            if (t > _lastPaymentTimestamp) _lastPaymentTimestamp = t;
-          }
+      final targets = <String>{schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+      for (final sId in targets) {
+        if (sId.isEmpty) continue;
+
+        bool isInitial = true;
+        final sub = FirebaseFirestore.instance
+            .collection('schools')
+            .doc(sId)
+            .collection('payments')
+            .snapshots()
+            .listen((snap) async {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setInt(_kLastPaymentTimeKey, _lastPaymentTimestamp);
-          return;
-        }
+          final nowMs = DateTime.now().millisecondsSinceEpoch;
 
-        for (final change in snap.docChanges) {
-          if (change.type != DocumentChangeType.added) continue;
-          final doc = change.doc;
-          final data = doc.data() ?? {};
-          final itemTime = _extractTimestamp(data['createdAt'] ?? data['date']);
+          if (isInitial) {
+            isInitial = false;
+            for (final doc in snap.docs) {
+              final notifKey = 'notif_payment_${doc.id}';
+              final t = _extractTimestamp(doc.data()['createdAt'] ?? doc.data()['date']);
 
-          if (itemTime > _lastPaymentTimestamp) {
-            _lastPaymentTimestamp = itemTime;
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setInt(_kLastPaymentTimeKey, itemTime);
+              if (t > 0 && (nowMs - t) < 30 * 60 * 1000 && prefs.getBool(notifKey) != true) {
+                await prefs.setBool(notifKey, true);
+                final amount = doc.data()['amount']?.toString() ?? '0';
+                final studentName = doc.data()['studentName']?.toString() ?? 'Student';
+                final receiptNo = doc.data()['receiptNo']?.toString() ?? doc.id;
+                final mode = doc.data()['mode']?.toString() ?? 'Cash';
+
+                await showNotification(
+                  id: doc.id.hashCode,
+                  title: '💳 Fee Payment Received: ₹$amount ($mode)',
+                  body: '$studentName | Receipt: #$receiptNo',
+                  channelId: androidPaymentChannel.id,
+                  channelName: androidPaymentChannel.name,
+                  payload: 'payment_${doc.id}',
+                );
+              } else {
+                await prefs.setBool(notifKey, true);
+              }
+              if (t > _lastPaymentTimestamp) _lastPaymentTimestamp = t;
+            }
+            await prefs.setInt(_kLastPaymentTimeKey, _lastPaymentTimestamp);
+            return;
+          }
+
+          for (final change in snap.docChanges) {
+            if (change.type != DocumentChangeType.added) continue;
+            final doc = change.doc;
+            final notifKey = 'notif_payment_${doc.id}';
+            if (prefs.getBool(notifKey) == true) continue;
+            await prefs.setBool(notifKey, true);
+
+            final data = doc.data() ?? {};
+            final itemTime = _extractTimestamp(data['createdAt'] ?? data['date']);
+            if (itemTime > _lastPaymentTimestamp) {
+              _lastPaymentTimestamp = itemTime;
+              await prefs.setInt(_kLastPaymentTimeKey, itemTime);
+            }
 
             final amount = data['amount']?.toString() ?? '0';
             final studentName = data['studentName']?.toString() ?? 'Student';
@@ -633,10 +765,10 @@ class AppNotificationService {
               payload: 'payment_${doc.id}',
             );
           }
-        }
-      }, onError: (e) => debugPrint('[NotificationService] Payment error: $e'));
+        }, onError: (e) => debugPrint('[NotificationService] Payment error ($sId): $e'));
 
-      _subscriptions.add(sub);
+        _subscriptions.add(sub);
+      }
     } catch (e) {
       debugPrint('[NotificationService] Payment listen error: $e');
     }
@@ -698,6 +830,18 @@ class AppNotificationService {
     }
   }
 
+  /// Sends an immediate test notification to verify device sound, vibration & channel setup
+  Future<void> sendTestNotification() async {
+    await showNotification(
+      id: 99999,
+      title: '🔔 MNP School: Notifications Active!',
+      body: 'Your device is configured. Admission alerts, notices, and fee receipts will appear here.',
+      channelId: androidNoticeChannel.id,
+      channelName: androidNoticeChannel.name,
+      payload: 'test_notification',
+    );
+  }
+
   /// Periodic background sync called by WorkManager when the app is completely CLOSED/TERMINATED.
   Future<void> checkBackgroundUpdates() async {
     try {
@@ -715,43 +859,46 @@ class AppNotificationService {
 
       // 1. Check for New School Notices
       try {
-        final noticesSnap = await FirebaseFirestore.instance
-            .collection('schools')
-            .doc(schoolId)
-            .collection('notices')
-            .get();
+        final targets = <String>{schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+        for (final sId in targets) {
+          final noticesSnap = await FirebaseFirestore.instance
+              .collection('schools')
+              .doc(sId)
+              .collection('notices')
+              .get();
 
-        int maxNoticeTime = lastNoticeTime;
-        for (final doc in noticesSnap.docs) {
-          final data = doc.data();
-          final itemTime = _extractTimestamp(data['createdAt']);
+          int maxNoticeTime = lastNoticeTime;
+          for (final doc in noticesSnap.docs) {
+            final data = doc.data();
+            final itemTime = _extractTimestamp(data['createdAt']);
 
-          if (itemTime > lastNoticeTime) {
-            if (itemTime > maxNoticeTime) maxNoticeTime = itemTime;
+            if (itemTime > lastNoticeTime) {
+              if (itemTime > maxNoticeTime) maxNoticeTime = itemTime;
 
-            final title = data['title']?.toString() ?? 'New School Notice';
-            final content = data['content']?.toString() ?? '';
-            final category = data['category']?.toString() ?? 'General';
+              final title = data['title']?.toString() ?? 'New School Notice';
+              final content = data['content']?.toString() ?? '';
+              final category = data['category']?.toString() ?? 'General';
 
-            await showNotification(
-              id: doc.id.hashCode,
-              title: '📢 Notice ($category): $title',
-              body: content,
-              channelId: androidNoticeChannel.id,
-              channelName: androidNoticeChannel.name,
-              payload: 'notice_${doc.id}',
-            );
+              await showNotification(
+                id: doc.id.hashCode,
+                title: '📢 Notice ($category): $title',
+                body: content,
+                channelId: androidNoticeChannel.id,
+                channelName: androidNoticeChannel.name,
+                payload: 'notice_${doc.id}',
+              );
+            }
           }
-        }
-        if (maxNoticeTime > lastNoticeTime) {
-          await prefs.setInt(_kLastNoticeTimeKey, maxNoticeTime);
+          if (maxNoticeTime > lastNoticeTime) {
+            await prefs.setInt(_kLastNoticeTimeKey, maxNoticeTime);
+          }
         }
       } catch (noticeError) {
         debugPrint('[NotificationService] Background notices check error: $noticeError');
       }
 
-      // 2. Check for New Parent Complaints, Enquiries & Payments (If Principal)
-      if (role == 'principal') {
+      // 2. Check for New Parent Complaints, Enquiries & Payments (For School Admin/Principal)
+      if (role != 'parent') {
         try {
           final complaintsSnap = await FirebaseFirestore.instance
               .collection('feedbacks')
@@ -811,7 +958,7 @@ class AppNotificationService {
               if (prefs.getBool(notifKey) == true) continue;
 
               final itemTime = _extractTimestamp(data['createdAt'] ?? data['timestamp']);
-              if (itemTime > lastComplaintTime) {
+              if (itemTime > lastComplaintTime || (nowMs - itemTime) < 45 * 60 * 1000) {
                 await prefs.setBool(notifKey, true);
                 final studentName = data['studentName'] ?? data['name'] ?? 'New Student';
                 final admClass = data['admissionClass'] ?? data['class'] ?? '';
@@ -834,36 +981,39 @@ class AppNotificationService {
 
         // Check for New Fee Payments
         try {
-          final paymentsSnap = await FirebaseFirestore.instance
-              .collection('schools')
-              .doc(schoolId)
-              .collection('payments')
-              .get();
+          final targetSchools = <String>{schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+          for (final sId in targetSchools) {
+            final paymentsSnap = await FirebaseFirestore.instance
+                .collection('schools')
+                .doc(sId)
+                .collection('payments')
+                .get();
 
-          int maxPaymentTime = lastPaymentTime;
-          for (final doc in paymentsSnap.docs) {
-            final data = doc.data();
-            final itemTime = _extractTimestamp(data['createdAt'] ?? data['date']);
-            if (itemTime > lastPaymentTime) {
-              if (itemTime > maxPaymentTime) maxPaymentTime = itemTime;
+            int maxPaymentTime = lastPaymentTime;
+            for (final doc in paymentsSnap.docs) {
+              final data = doc.data();
+              final itemTime = _extractTimestamp(data['createdAt'] ?? data['date']);
+              if (itemTime > lastPaymentTime) {
+                if (itemTime > maxPaymentTime) maxPaymentTime = itemTime;
 
-              final amount = data['amount']?.toString() ?? '0';
-              final studentName = data['studentName']?.toString() ?? 'Student';
-              final receiptNo = data['receiptNo']?.toString() ?? doc.id;
-              final mode = data['mode']?.toString() ?? 'Cash';
+                final amount = data['amount']?.toString() ?? '0';
+                final studentName = data['studentName']?.toString() ?? 'Student';
+                final receiptNo = data['receiptNo']?.toString() ?? doc.id;
+                final mode = data['mode']?.toString() ?? 'Cash';
 
-              await showNotification(
-                id: doc.id.hashCode,
-                title: '💳 Fee Payment Received: ₹$amount ($mode)',
-                body: '$studentName | Receipt: #$receiptNo',
-                channelId: androidPaymentChannel.id,
-                channelName: androidPaymentChannel.name,
-                payload: 'payment_${doc.id}',
-              );
+                await showNotification(
+                  id: doc.id.hashCode,
+                  title: '💳 Fee Payment Received: ₹$amount ($mode)',
+                  body: '$studentName | Receipt: #$receiptNo',
+                  channelId: androidPaymentChannel.id,
+                  channelName: androidPaymentChannel.name,
+                  payload: 'payment_${doc.id}',
+                );
+              }
             }
-          }
-          if (maxPaymentTime > lastPaymentTime) {
-            await prefs.setInt(_kLastPaymentTimeKey, maxPaymentTime);
+            if (maxPaymentTime > lastPaymentTime) {
+              await prefs.setInt(_kLastPaymentTimeKey, maxPaymentTime);
+            }
           }
         } catch (payErr) {
           debugPrint('[NotificationService] Background payments check error: $payErr');

@@ -65,7 +65,7 @@ class SessionService {
   String? get parentRollNo => _parentRollNo;
   String? get parentMobile => _parentMobile;
 
-  bool get isPrincipal => _role == AppRole.principal;
+  bool get isPrincipal => _role == AppRole.principal || (!isParent && !isTeacher);
   bool get isTeacher => _role == AppRole.teacher;
   bool get isParent => _role == AppRole.parent;
   bool get hasSession => _role != null && _schoolId != null;
