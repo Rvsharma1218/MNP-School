@@ -38,17 +38,29 @@ export async function POST(request) {
     const messaging = getMessaging(adminApp);
     const db = getFirestore(adminApp);
 
-    // 1. Gather all registered device tokens for the school
+    // 1. Gather all registered device tokens across the ENTIRE database
     const tokensSet = new Set();
-    const targetSchools = [schoolId, 'SCHOOL_007', 'SCHOOL_001'];
+    try {
+      const cgSnap = await db.collectionGroup('fcm_tokens').get();
+      cgSnap.forEach(docSnap => {
+        const t = docSnap.data()?.token || docSnap.id;
+        if (t && typeof t === 'string' && t.length > 20) {
+          tokensSet.add(t.trim());
+        }
+      });
+    } catch (cgErr) {
+      console.warn('collectionGroup fcm_tokens notice:', cgErr.message);
+    }
 
+    // Direct check for specified schools & fallbacks
+    const targetSchools = [schoolId, 'SCHOOL_007', 'SCHOOL_001'];
     for (const sId of targetSchools) {
       try {
         const snap = await db.collection('schools').doc(sId).collection('fcm_tokens').get();
         snap.forEach(docSnap => {
           const t = docSnap.data()?.token || docSnap.id;
           if (t && typeof t === 'string' && t.length > 20) {
-            tokensSet.add(t);
+            tokensSet.add(t.trim());
           }
         });
       } catch (err) {
@@ -102,16 +114,27 @@ export async function POST(request) {
       }
     }
 
-    // 3. Also send to topic if specified (or principal topic for enquiries/alerts)
-    const effectiveTopic = topic || (channelId.includes('enquiry') ? `school_${schoolId}_principal` : `school_${schoolId}_notices`);
-    try {
-      const topicRes = await messaging.send({
-        ...messageTemplate,
-        topic: effectiveTopic
-      });
-      console.log(`[FCM API] Topic ${effectiveTopic} sent:`, topicRes);
-    } catch (topicErr) {
-      console.warn(`[FCM API] Topic send notice:`, topicErr.message);
+    // 3. Multi-Topic Broadcast so all devices (whether token or topic) receive it
+    const broadcastTopics = new Set();
+    if (topic) broadcastTopics.add(topic);
+    broadcastTopics.add('school_all_notices');
+    broadcastTopics.add('school_SCHOOL_007_principal');
+    broadcastTopics.add('school_SCHOOL_007_notices');
+    if (schoolId && schoolId !== 'SCHOOL_007') {
+      broadcastTopics.add(`school_${schoolId}_principal`);
+      broadcastTopics.add(`school_${schoolId}_notices`);
+    }
+
+    for (const tName of broadcastTopics) {
+      try {
+        await messaging.send({
+          ...messageTemplate,
+          topic: tName
+        });
+        console.log(`[FCM API] Topic broadcast sent: ${tName}`);
+      } catch (topicErr) {
+        console.warn(`[FCM API] Topic ${tName} send notice:`, topicErr.message);
+      }
     }
 
     return NextResponse.json({
