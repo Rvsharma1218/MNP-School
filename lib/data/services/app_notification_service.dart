@@ -171,6 +171,18 @@ class AppNotificationService {
 
       // Start listening based on active session
       startListening();
+
+      // Automatically re-bind listeners whenever session or schoolId changes
+      SessionService.instance.onSchoolUidChanged.listen((newUid) {
+        if (newUid != null && newUid.isNotEmpty) {
+          debugPrint('[NotificationService] ⚡ School ID updated to $newUid -> Re-attaching notification listeners');
+          startListening();
+        }
+      });
+      SessionService.instance.onSessionChanged.listen((_) {
+        debugPrint('[NotificationService] ⚡ Session updated -> Re-attaching notification listeners');
+        startListening();
+      });
     } catch (e) {
       debugPrint('[NotificationService] ⚠️ Init error: $e');
     }

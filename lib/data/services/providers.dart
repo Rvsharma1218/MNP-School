@@ -849,11 +849,11 @@ final firestoreRealtimeSyncProvider = Provider<void>((ref) {
           if (studentsDirty) {
             studentsDirty = false;
             ref.read(studentsProvider.notifier).loadStudents();
-          }
-          if (statsDirty) {
+          } else if (statsDirty) {
             statsDirty = false;
             ref.invalidate(dashboardStatsProvider);
           }
+          statsDirty = false;
         });
       }
 

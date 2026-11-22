@@ -47,6 +47,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _currentTabIndex = 0;
   final List<int> _tabHistory = [0];
   final Set<int> _builtTabs = {0}; // Only build tabs when first visited
+  DashboardStats? _cachedStats;
 
   void _switchTab(int newIndex) {
     if (_currentTabIndex == newIndex) return;
@@ -679,6 +680,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
+    if (statsAsync.hasValue && statsAsync.value != null) {
+      _cachedStats = statsAsync.value;
+    }
+    final stats = statsAsync.valueOrNull ?? _cachedStats;
     final cs = Theme.of(context).colorScheme;
     final isPrincipal = SessionService.instance.isPrincipal;
     final perms = ref.watch(teacherPermissionsProvider);
@@ -938,32 +943,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           const SizedBox(height: 12),
                           Builder(
                             builder: (context) {
-                              final stats = statsAsync.valueOrNull;
-                              if (stats == null) return const SizedBox();
+                              final headerStats = statsAsync.valueOrNull ?? _cachedStats;
+                              if (headerStats == null) return const SizedBox();
                               return Row(
                                 children: [
                                   _headerStat(
-                                      '${stats.isFiltered ? stats.totalStudents : stats.totalStudents}',
-                                      stats.isFiltered ? (stats.filterLabel.isNotEmpty ? 'Students' : 'Students') : 'Students',
+                                      '${headerStats.isFiltered ? headerStats.totalStudents : headerStats.totalStudents}',
+                                      headerStats.isFiltered ? (headerStats.filterLabel.isNotEmpty ? 'Students' : 'Students') : 'Students',
                                       Icons.people),
 
                                   // FIX: Hide Collected from Teachers
                                   if (isPrincipal) ...[
                                     const SizedBox(width: 20),
                                     _headerStat(
-                                        AppUtils.formatCurrency(stats.totalCollected),
+                                        AppUtils.formatCurrency(headerStats.totalCollected),
                                         'Collected',
                                         Icons.currency_rupee),
                                   ],
 
                                   const SizedBox(width: 20),
-                                  _headerStat('${stats.presentToday}',
+                                  _headerStat('${headerStats.presentToday}',
                                       'Present Today', Icons.check_circle_outline),
 
                                   // Show absent count in header for Teacher when filtered
-                                  if (!isPrincipal && stats.isFiltered) ...[
+                                  if (!isPrincipal && headerStats.isFiltered) ...[
                                     const SizedBox(width: 20),
-                                    _headerStat('${stats.absentToday}',
+                                    _headerStat('${headerStats.absentToday}',
                                         'Absent', Icons.cancel_outlined),
                                   ],
                                 ],
@@ -982,8 +987,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             SliverToBoxAdapter(
               child: Builder(
                 builder: (context) {
-                  final stats = statsAsync.valueOrNull;
-                  if (stats != null) {
+                  final bodyStats = statsAsync.valueOrNull ?? _cachedStats;
+                  if (bodyStats != null) {
+                    final stats = bodyStats;
                     return Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -1459,7 +1465,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 );
               }
-              if (statsAsync.isLoading) {
+              if (bodyStats == null && statsAsync.isLoading) {
                 return const Padding(
                   padding: EdgeInsets.only(top: 60),
                   child: LoadingWidget(message: 'Loading dashboard...'),
@@ -1621,6 +1627,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Image.network(
               logoPath,
               fit: BoxFit.cover,
+              gaplessPlayback: true,
               errorBuilder: (_, __, ___) => Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -1646,7 +1653,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.memory(bytes, fit: BoxFit.cover),
+              child: Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true),
             ),
           );
         } catch (_) {}
@@ -1662,7 +1669,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.file(file, fit: BoxFit.cover),
+            child: Image.file(file, fit: BoxFit.cover, gaplessPlayback: true),
           ),
         );
       }
