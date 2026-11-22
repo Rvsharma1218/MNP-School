@@ -174,11 +174,16 @@ class AppNotificationService {
         await androidPlugin.requestNotificationsPermission();
       }
 
-      // Explicitly request notification permission for Android 13+ (API 33+)
+      // Explicitly request notification and background battery optimization permissions
       try {
         final permStatus = await Permission.notification.status;
         if (!permStatus.isGranted) {
           await Permission.notification.request();
+        }
+        // Request exemption from aggressive OEM battery killer so background pushes are never blocked
+        final batteryStatus = await Permission.ignoreBatteryOptimizations.status;
+        if (!batteryStatus.isGranted) {
+          await Permission.ignoreBatteryOptimizations.request();
         }
       } catch (permErr) {
         debugPrint('[NotificationService] Permission request note: $permErr');

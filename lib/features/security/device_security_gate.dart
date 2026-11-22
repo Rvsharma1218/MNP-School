@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'device_security_service.dart';
 
 class DeviceSecurityGate extends StatefulWidget {
@@ -16,7 +17,7 @@ class DeviceSecurityGate extends StatefulWidget {
 
   const DeviceSecurityGate({super.key, required this.child});
 
-  static int currentVersionCode = 21;
+  static int currentVersionCode = 22;
   static String currentVersion = '1.0.4';
 
   /// Returns dynamically resolved human-readable app version & build number
@@ -157,6 +158,70 @@ class _DeviceSecurityGateState extends State<DeviceSecurityGate> with TickerProv
 
     // 4. Listen for Remote App Update broadcasts from School Admin
     _listenAppUpdate();
+
+    // 5. Ensure Notification and Background battery optimization permissions are prompt-ready
+    _checkAndPromptNotificationAndBatteryPermissions();
+  }
+
+  Future<void> _checkAndPromptNotificationAndBatteryPermissions() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 2000));
+      if (!mounted) return;
+
+      final notifStatus = await Permission.notification.status;
+      if (!notifStatus.isGranted) {
+        final reqResult = await Permission.notification.request();
+        if (reqResult.isPermanentlyDenied && mounted) {
+          _showNotificationPromptDialog();
+        }
+      }
+
+      final batteryStatus = await Permission.ignoreBatteryOptimizations.status;
+      if (!batteryStatus.isGranted) {
+        await Permission.ignoreBatteryOptimizations.request();
+      }
+    } catch (e) {
+      debugPrint('[Gate] Permission setup note: $e');
+    }
+  }
+
+  void _showNotificationPromptDialog() {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.notifications_active, color: Color(0xFFD97706), size: 26),
+            SizedBox(width: 10),
+            Text('Turn On Alerts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: const Text(
+          'App band hone par bhi naye Admission, Enquiries aur Notices ke instant notifications aane ke liye, Settings me Notifications ko Allow kijiye.',
+          style: TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Baad me (Later)', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF091A32),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              openAppSettings();
+            },
+            child: const Text('Settings Kholein', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
