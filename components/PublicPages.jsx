@@ -1061,7 +1061,7 @@ export function DownloadPageView({ isHi, schoolName, primaryPhone }) {
             
             <div className="lg:col-span-7 space-y-5">
               <span className="px-3.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold text-xs uppercase border border-amber-500/30">
-                Android APK v1.0.3 (Build 16)
+                Android APK v1.0.4 (Build 19)
               </span>
               <h2 className="text-2xl sm:text-4xl font-black text-white">
                 {isHi ? 'स्मार्ट स्कूल अब आपके हाथ में' : 'Next-Gen School Portal in Your Pocket'}
