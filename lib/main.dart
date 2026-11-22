@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/constants/app_routes.dart';
 import 'core/theme/app_theme.dart';
 import 'data/models/student_model.dart';
@@ -60,6 +61,7 @@ void main() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     FirestoreService.instance.init();
     debugPrint('[Firebase] ✅ Cloud Services Initialized');
   } catch (e) {

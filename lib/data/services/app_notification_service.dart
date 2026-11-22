@@ -3,14 +3,49 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import '../../firebase_options.dart';
 import 'session_service.dart';
 
+/// Top-level background message handler for Firebase Cloud Messaging (FCM).
+/// This runs in a background isolate even when the app is completely CLOSED/TERMINATED.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+    await AppNotificationService.instance.initBackgroundIsolate();
+
+    final notification = message.notification;
+    final data = message.data;
+
+    final title = notification?.title ?? data['title'] ?? 'School Notification';
+    final body = notification?.body ?? data['body'] ?? '';
+    final channelId = data['channelId'] ?? AppNotificationService.androidNoticeChannel.id;
+    final channelName = data['channelName'] ?? AppNotificationService.androidNoticeChannel.name;
+
+    await AppNotificationService.instance.showNotification(
+      id: message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch.hashCode,
+      title: title,
+      body: body,
+      channelId: channelId,
+      channelName: channelName,
+      payload: data['payload'] ?? message.data.toString(),
+    );
+  } catch (e) {
+    debugPrint('[FCM] Background handler error: $e');
+  }
+}
+
 /// Top-level background callback dispatcher for Android WorkManager.
-/// Runs in an isolated background Dart thread even when the app is completely CLOSED/KILLED.
+/// Runs in an isolated background Dart thread periodically (every 15 min) as safety net.
 @pragma('vm:entry-point')
 void backgroundNotificationDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
@@ -21,7 +56,6 @@ void backgroundNotificationDispatcher() {
           options: DefaultFirebaseOptions.currentPlatform,
         );
       }
-      // CRITICAL: Initialize local notifications plugin inside this background isolate
       await AppNotificationService.instance.initBackgroundIsolate();
       await AppNotificationService.instance.checkBackgroundUpdates();
       return true;
@@ -64,8 +98,18 @@ class AppNotificationService {
   static const androidEnquiryChannel = AndroidNotificationChannel(
     'admissions_enquiry_channel',
     'Online Admissions & Enquiries',
-    description: 'Real-time alerts for new student admission applications',
+    description: 'Real-time alerts for new student admission applications and teacher enquiries',
     importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
+    showBadge: true,
+  );
+
+  static const androidPaymentChannel = AndroidNotificationChannel(
+    'fee_payments_channel',
+    'Fee Collections & Receipts',
+    description: 'Alerts when fee payments are collected or recorded',
+    importance: Importance.high,
     playSound: true,
     enableVibration: true,
     showBadge: true,
@@ -74,9 +118,11 @@ class AppNotificationService {
   // Keys for tracking latest processed timestamps to prevent duplicate alerts
   static const _kLastNoticeTimeKey = 'notif_last_notice_time';
   static const _kLastComplaintTimeKey = 'notif_last_complaint_time';
+  static const _kLastPaymentTimeKey = 'notif_last_payment_time';
 
   int _lastNoticeTimestamp = 0;
   int _lastComplaintTimestamp = 0;
+  int _lastPaymentTimestamp = 0;
 
   /// Background Isolate initialization helper (used when app is closed / killed)
   Future<void> initBackgroundIsolate() async {
@@ -90,6 +136,7 @@ class AppNotificationService {
         await androidPlugin.createNotificationChannel(androidNoticeChannel);
         await androidPlugin.createNotificationChannel(androidComplaintChannel);
         await androidPlugin.createNotificationChannel(androidEnquiryChannel);
+        await androidPlugin.createNotificationChannel(androidPaymentChannel);
       }
       _initialized = true;
     } catch (e) {
@@ -106,6 +153,7 @@ class AppNotificationService {
       // Default to 1 hour ago on initial run to avoid missing recent background events
       _lastNoticeTimestamp = prefs.getInt(_kLastNoticeTimeKey) ?? (nowMs - 60 * 60 * 1000);
       _lastComplaintTimestamp = prefs.getInt(_kLastComplaintTimeKey) ?? (nowMs - 60 * 60 * 1000);
+      _lastPaymentTimestamp = prefs.getInt(_kLastPaymentTimeKey) ?? (nowMs - 60 * 60 * 1000);
 
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const initSettings = InitializationSettings(android: androidInit);
@@ -122,10 +170,11 @@ class AppNotificationService {
         await androidPlugin.createNotificationChannel(androidNoticeChannel);
         await androidPlugin.createNotificationChannel(androidComplaintChannel);
         await androidPlugin.createNotificationChannel(androidEnquiryChannel);
+        await androidPlugin.createNotificationChannel(androidPaymentChannel);
         await androidPlugin.requestNotificationsPermission();
       }
 
-      // Explicitly request notification permission for Android 13+ (Tiramisu, API 33+)
+      // Explicitly request notification permission for Android 13+ (API 33+)
       try {
         final permStatus = await Permission.notification.status;
         if (!permStatus.isGranted) {
@@ -135,11 +184,67 @@ class AppNotificationService {
         debugPrint('[NotificationService] Permission request note: $permErr');
       }
 
-      // Initialize WorkManager for background execution when the app is completely CLOSED
+      // ─── Firebase Cloud Messaging (FCM) Integration ───────────────────
+      try {
+        final messaging = FirebaseMessaging.instance;
+        final settings = await messaging.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
+        debugPrint('[FCM] Permission status: ${settings.authorizationStatus}');
+
+        await messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+        // Foreground push listener
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          debugPrint('[FCM] Foreground push received: ${message.messageId}');
+          final notification = message.notification;
+          final data = message.data;
+
+          final title = notification?.title ?? data['title'] ?? 'School Alert';
+          final body = notification?.body ?? data['body'] ?? '';
+          final channelId = data['channelId'] ?? androidNoticeChannel.id;
+          final channelName = data['channelName'] ?? androidNoticeChannel.name;
+
+          showNotification(
+            id: message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch.hashCode,
+            title: title,
+            body: body,
+            channelId: channelId,
+            channelName: channelName,
+            payload: data['payload'] ?? message.data.toString(),
+          );
+        });
+
+        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+          debugPrint('[FCM] App opened from push: ${message.data}');
+        });
+
+        // Background token sync & topic subscription
+        unawaited(_syncFcmTokenAndTopics());
+
+        // Token refresh listener
+        messaging.onTokenRefresh.listen((newToken) {
+          debugPrint('[FCM] Token refreshed: $newToken');
+          unawaited(_saveFcmTokenToFirestore(newToken));
+        });
+      } catch (fcmError) {
+        debugPrint('[NotificationService] FCM init note: $fcmError');
+      }
+
+      // ─── WorkManager Background Polling Safety Net ─────────────────────
       try {
         await Workmanager().initialize(
           backgroundNotificationDispatcher,
-          isInDebugMode: false,
         );
         // Periodic background task (15 min interval)
         await Workmanager().registerPeriodicTask(
@@ -151,7 +256,7 @@ class AppNotificationService {
             networkType: NetworkType.connected,
           ),
         );
-        // One-off sync task to run immediately in background
+        // One-off sync task to run shortly in background
         await Workmanager().registerOneOffTask(
           'mnp_oneoff_sync_job',
           'mnp_bg_sync_task',
@@ -177,14 +282,77 @@ class AppNotificationService {
         if (newUid != null && newUid.isNotEmpty) {
           debugPrint('[NotificationService] ⚡ School ID updated to $newUid -> Re-attaching notification listeners');
           startListening();
+          unawaited(_syncFcmTokenAndTopics());
         }
       });
       SessionService.instance.onSessionChanged.listen((_) {
         debugPrint('[NotificationService] ⚡ Session updated -> Re-attaching notification listeners');
         startListening();
+        unawaited(_syncFcmTokenAndTopics());
       });
     } catch (e) {
       debugPrint('[NotificationService] ⚠️ Init error: $e');
+    }
+  }
+
+  /// Syncs FCM token to Firestore and subscribes device to appropriate topics
+  Future<void> _syncFcmTokenAndTopics() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final token = await messaging.getToken();
+      if (token != null && token.isNotEmpty) {
+        await _saveFcmTokenToFirestore(token);
+      }
+
+      final schoolId = SessionService.instance.activeSchoolId.isNotEmpty
+          ? SessionService.instance.activeSchoolId
+          : 'SCHOOL_007';
+
+      // Subscribe to general school notices topics
+      await messaging.subscribeToTopic('school_${schoolId}_notices');
+      await messaging.subscribeToTopic('school_all_notices');
+
+      if (SessionService.instance.isPrincipal) {
+        await messaging.subscribeToTopic('school_${schoolId}_principal');
+      } else if (SessionService.instance.isTeacher) {
+        await messaging.subscribeToTopic('school_${schoolId}_teachers');
+      } else if (SessionService.instance.isParent) {
+        final studentId = SessionService.instance.parentStudentId;
+        if (studentId != null && studentId.isNotEmpty) {
+          final sanitizedStudentId = studentId.replaceAll(RegExp(r'[^a-zA-Z0-9-_]'), '_');
+          await messaging.subscribeToTopic('parent_$sanitizedStudentId');
+        }
+      }
+      debugPrint('[FCM] ✅ Topics subscribed successfully for school: $schoolId');
+    } catch (e) {
+      debugPrint('[FCM] Topic subscription note: $e');
+    }
+  }
+
+  /// Saves FCM token to Firestore under schools/{schoolId}/fcm_tokens/{token}
+  Future<void> _saveFcmTokenToFirestore(String token) async {
+    try {
+      final schoolId = SessionService.instance.activeSchoolId.isNotEmpty
+          ? SessionService.instance.activeSchoolId
+          : 'SCHOOL_007';
+      final role = SessionService.instance.role;
+      final studentId = SessionService.instance.parentStudentId;
+
+      await FirebaseFirestore.instance
+          .collection('schools')
+          .doc(schoolId)
+          .collection('fcm_tokens')
+          .doc(token)
+          .set({
+        'token': token,
+        'role': role,
+        'studentId': studentId,
+        'platform': 'android',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      debugPrint('[FCM] ✅ Token synced to Firestore: $token');
+    } catch (e) {
+      debugPrint('[FCM] Save token note: $e');
     }
   }
 
@@ -203,6 +371,7 @@ class AppNotificationService {
     if (SessionService.instance.isPrincipal) {
       _listenForPrincipalComplaints(schoolId);
       _listenForPrincipalEnquiries(schoolId);
+      _listenForPrincipalPayments(schoolId);
     } else if (SessionService.instance.isParent || (studentId != null && studentId.isNotEmpty)) {
       final effectiveStudentId = (studentId != null && studentId.isNotEmpty)
           ? studentId
@@ -328,48 +497,148 @@ class AppNotificationService {
 
   void _listenForPrincipalEnquiries(String schoolId) {
     try {
+      final targetSchools = <String>{schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+      for (final sId in targetSchools) {
+        if (sId.isEmpty) continue;
+
+        // 1. Admission Enquiries
+        bool isInitialAdm = true;
+        final subAdm = FirebaseFirestore.instance
+            .collection('schoolDirectory')
+            .doc(sId)
+            .collection('admissionEnquiries')
+            .snapshots()
+            .listen((snap) async {
+          final prefs = await SharedPreferences.getInstance();
+          if (isInitialAdm) {
+            isInitialAdm = false;
+            for (final doc in snap.docs) {
+              await prefs.setBool('notif_enq_${doc.id}', true);
+            }
+            return;
+          }
+
+          for (final change in snap.docChanges) {
+            if (change.type != DocumentChangeType.added) continue;
+            final doc = change.doc;
+            final notifKey = 'notif_enq_${doc.id}';
+            if (prefs.getBool(notifKey) == true) continue;
+            await prefs.setBool(notifKey, true);
+
+            final data = doc.data() ?? {};
+            final studentName = data['studentName'] ?? data['name'] ?? 'New Student';
+            final admClass = data['admissionClass'] ?? data['class'] ?? '';
+            final refNo = data['refNo'] ?? doc.id;
+
+            await showNotification(
+              id: doc.id.hashCode,
+              title: '🎓 New Admission Application ($admClass)',
+              body: '$studentName applied for Class $admClass (Ref: $refNo)',
+              channelId: androidEnquiryChannel.id,
+              channelName: androidEnquiryChannel.name,
+              payload: 'enquiry_${doc.id}',
+            );
+          }
+        }, onError: (e) => debugPrint('[NotificationService] Admission enquiry error: $e'));
+        _subscriptions.add(subAdm);
+
+        // 2. Teacher Applications
+        bool isInitialTeacher = true;
+        final subTeacher = FirebaseFirestore.instance
+            .collection('schoolDirectory')
+            .doc(sId)
+            .collection('teacherApplications')
+            .snapshots()
+            .listen((snap) async {
+          final prefs = await SharedPreferences.getInstance();
+          if (isInitialTeacher) {
+            isInitialTeacher = false;
+            for (final doc in snap.docs) {
+              await prefs.setBool('notif_teacher_enq_${doc.id}', true);
+            }
+            return;
+          }
+
+          for (final change in snap.docChanges) {
+            if (change.type != DocumentChangeType.added) continue;
+            final doc = change.doc;
+            final notifKey = 'notif_teacher_enq_${doc.id}';
+            if (prefs.getBool(notifKey) == true) continue;
+            await prefs.setBool(notifKey, true);
+
+            final data = doc.data() ?? {};
+            final name = data['name'] ?? data['fullName'] ?? 'Applicant';
+            final subject = data['subject'] ?? data['post'] ?? 'Teaching Post';
+            final refNo = data['refNo'] ?? doc.id;
+
+            await showNotification(
+              id: doc.id.hashCode,
+              title: '📝 New Teacher Application: $name',
+              body: '$name applied for $subject (Ref: $refNo)',
+              channelId: androidEnquiryChannel.id,
+              channelName: androidEnquiryChannel.name,
+              payload: 'teacher_enquiry_${doc.id}',
+            );
+          }
+        }, onError: (e) => debugPrint('[NotificationService] Teacher enquiry error: $e'));
+        _subscriptions.add(subTeacher);
+      }
+    } catch (e) {
+      debugPrint('[NotificationService] Principal enquiry listen error: $e');
+    }
+  }
+
+  void _listenForPrincipalPayments(String schoolId) {
+    try {
       bool isInitial = true;
       final sub = FirebaseFirestore.instance
           .collection('schools')
           .doc(schoolId)
-          .collection('enquiries')
+          .collection('payments')
           .snapshots()
           .listen((snap) async {
-        final prefs = await SharedPreferences.getInstance();
         if (isInitial) {
           isInitial = false;
           for (final doc in snap.docs) {
-            await prefs.setBool('notif_enq_${doc.id}', true);
+            final t = _extractTimestamp(doc.data()['createdAt'] ?? doc.data()['date']);
+            if (t > _lastPaymentTimestamp) _lastPaymentTimestamp = t;
           }
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt(_kLastPaymentTimeKey, _lastPaymentTimestamp);
           return;
         }
 
         for (final change in snap.docChanges) {
           if (change.type != DocumentChangeType.added) continue;
           final doc = change.doc;
-          final notifKey = 'notif_enq_${doc.id}';
-          if (prefs.getBool(notifKey) == true) continue;
-          await prefs.setBool(notifKey, true);
-
           final data = doc.data() ?? {};
-          final studentName = data['studentName'] ?? data['name'] ?? 'New Student';
-          final admClass = data['admissionClass'] ?? data['class'] ?? '';
-          final refNo = data['refNo'] ?? '';
+          final itemTime = _extractTimestamp(data['createdAt'] ?? data['date']);
 
-          await showNotification(
-            id: doc.id.hashCode,
-            title: '🎓 New Admission Application ($admClass)',
-            body: '$studentName applied for Class $admClass (Ref: $refNo)',
-            channelId: androidEnquiryChannel.id,
-            channelName: androidEnquiryChannel.name,
-            payload: 'enquiry_${doc.id}',
-          );
+          if (itemTime > _lastPaymentTimestamp) {
+            _lastPaymentTimestamp = itemTime;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setInt(_kLastPaymentTimeKey, itemTime);
+
+            final amount = data['amount']?.toString() ?? '0';
+            final studentName = data['studentName']?.toString() ?? 'Student';
+            final receiptNo = data['receiptNo']?.toString() ?? doc.id;
+            final mode = data['mode']?.toString() ?? 'Cash';
+
+            await showNotification(
+              id: doc.id.hashCode,
+              title: '💳 Fee Payment Received: ₹$amount ($mode)',
+              body: '$studentName | Receipt: #$receiptNo',
+              channelId: androidPaymentChannel.id,
+              channelName: androidPaymentChannel.name,
+              payload: 'payment_${doc.id}',
+            );
+          }
         }
-      }, onError: (e) => debugPrint('[NotificationService] Principal enquiry error: $e'));
+      }, onError: (e) => debugPrint('[NotificationService] Payment error: $e'));
 
       _subscriptions.add(sub);
     } catch (e) {
-      debugPrint('[NotificationService] Principal enquiry listen error: $e');
+      debugPrint('[NotificationService] Payment listen error: $e');
     }
   }
 
@@ -440,6 +709,7 @@ class AppNotificationService {
 
       int lastNoticeTime = prefs.getInt(_kLastNoticeTimeKey) ?? (nowMs - 2 * 60 * 60 * 1000);
       int lastComplaintTime = prefs.getInt(_kLastComplaintTimeKey) ?? (nowMs - 2 * 60 * 60 * 1000);
+      int lastPaymentTime = prefs.getInt(_kLastPaymentTimeKey) ?? (nowMs - 2 * 60 * 60 * 1000);
 
       debugPrint('[NotificationService] 🔄 WorkManager background check executing for $schoolId');
 
@@ -480,7 +750,7 @@ class AppNotificationService {
         debugPrint('[NotificationService] Background notices check error: $noticeError');
       }
 
-      // 2. Check for New Parent Complaints (If Principal)
+      // 2. Check for New Parent Complaints, Enquiries & Payments (If Principal)
       if (role == 'principal') {
         try {
           final complaintsSnap = await FirebaseFirestore.instance
@@ -525,38 +795,78 @@ class AppNotificationService {
           debugPrint('[NotificationService] Background complaints check error: $complaintError');
         }
 
-        // Check for New Admission Enquiries (If Principal)
+        // Check for New Admission Enquiries (online admissions from website)
         try {
-          final enquiriesSnap = await FirebaseFirestore.instance
-              .collection('schools')
-              .doc(schoolId)
-              .collection('enquiries')
-              .get();
+          final targetSchools = <String>{schoolId, 'SCHOOL_007', 'SCHOOL_001'};
+          for (final sId in targetSchools) {
+            final enquiriesSnap = await FirebaseFirestore.instance
+                .collection('schoolDirectory')
+                .doc(sId)
+                .collection('admissionEnquiries')
+                .get();
 
-          for (final doc in enquiriesSnap.docs) {
-            final data = doc.data();
-            final notifKey = 'notif_enq_${doc.id}';
-            if (prefs.getBool(notifKey) == true) continue;
+            for (final doc in enquiriesSnap.docs) {
+              final data = doc.data();
+              final notifKey = 'notif_enq_${doc.id}';
+              if (prefs.getBool(notifKey) == true) continue;
 
-            final itemTime = _extractTimestamp(data['createdAt'] ?? data['timestamp']);
-            if (itemTime > lastComplaintTime) {
-              await prefs.setBool(notifKey, true);
-              final studentName = data['studentName'] ?? data['name'] ?? 'New Student';
-              final admClass = data['admissionClass'] ?? data['class'] ?? '';
-              final refNo = data['refNo'] ?? '';
+              final itemTime = _extractTimestamp(data['createdAt'] ?? data['timestamp']);
+              if (itemTime > lastComplaintTime) {
+                await prefs.setBool(notifKey, true);
+                final studentName = data['studentName'] ?? data['name'] ?? 'New Student';
+                final admClass = data['admissionClass'] ?? data['class'] ?? '';
+                final refNo = data['refNo'] ?? doc.id;
 
-              await showNotification(
-                id: doc.id.hashCode,
-                title: '🎓 New Admission Application ($admClass)',
-                body: '$studentName applied for Class $admClass (Ref: $refNo)',
-                channelId: androidEnquiryChannel.id,
-                channelName: androidEnquiryChannel.name,
-                payload: 'enquiry_${doc.id}',
-              );
+                await showNotification(
+                  id: doc.id.hashCode,
+                  title: '🎓 New Admission Application ($admClass)',
+                  body: '$studentName applied for Class $admClass (Ref: $refNo)',
+                  channelId: androidEnquiryChannel.id,
+                  channelName: androidEnquiryChannel.name,
+                  payload: 'enquiry_${doc.id}',
+                );
+              }
             }
           }
         } catch (enqError) {
           debugPrint('[NotificationService] Background enquiry check error: $enqError');
+        }
+
+        // Check for New Fee Payments
+        try {
+          final paymentsSnap = await FirebaseFirestore.instance
+              .collection('schools')
+              .doc(schoolId)
+              .collection('payments')
+              .get();
+
+          int maxPaymentTime = lastPaymentTime;
+          for (final doc in paymentsSnap.docs) {
+            final data = doc.data();
+            final itemTime = _extractTimestamp(data['createdAt'] ?? data['date']);
+            if (itemTime > lastPaymentTime) {
+              if (itemTime > maxPaymentTime) maxPaymentTime = itemTime;
+
+              final amount = data['amount']?.toString() ?? '0';
+              final studentName = data['studentName']?.toString() ?? 'Student';
+              final receiptNo = data['receiptNo']?.toString() ?? doc.id;
+              final mode = data['mode']?.toString() ?? 'Cash';
+
+              await showNotification(
+                id: doc.id.hashCode,
+                title: '💳 Fee Payment Received: ₹$amount ($mode)',
+                body: '$studentName | Receipt: #$receiptNo',
+                channelId: androidPaymentChannel.id,
+                channelName: androidPaymentChannel.name,
+                payload: 'payment_${doc.id}',
+              );
+            }
+          }
+          if (maxPaymentTime > lastPaymentTime) {
+            await prefs.setInt(_kLastPaymentTimeKey, maxPaymentTime);
+          }
+        } catch (payErr) {
+          debugPrint('[NotificationService] Background payments check error: $payErr');
         }
       }
 

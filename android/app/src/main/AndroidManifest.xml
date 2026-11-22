@@ -44,6 +44,14 @@
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
 
+        <!-- Firebase Cloud Messaging Metadata -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="school_notices_channel" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+
         <!-- Main Flutter Activity -->
         <activity
             android:name=".MainActivity"
