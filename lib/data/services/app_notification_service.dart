@@ -127,7 +127,7 @@ class AppNotificationService {
   /// Background Isolate initialization helper (used when app is closed / killed)
   Future<void> initBackgroundIsolate() async {
     try {
-      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const androidInit = AndroidInitializationSettings('@drawable/ic_notification');
       const initSettings = InitializationSettings(android: androidInit);
       await _notificationsPlugin.initialize(initSettings);
 
@@ -155,7 +155,7 @@ class AppNotificationService {
       _lastComplaintTimestamp = prefs.getInt(_kLastComplaintTimeKey) ?? (nowMs - 30 * 60 * 1000);
       _lastPaymentTimestamp = prefs.getInt(_kLastPaymentTimeKey) ?? (nowMs - 30 * 60 * 1000);
 
-      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const androidInit = AndroidInitializationSettings('@drawable/ic_notification');
       const initSettings = InitializationSettings(android: androidInit);
 
       await _notificationsPlugin.initialize(
@@ -1093,7 +1093,7 @@ class AppNotificationService {
         fullScreenIntent: true,
         visibility: NotificationVisibility.public,
         category: AndroidNotificationCategory.message,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
         styleInformation: BigTextStyleInformation(
           body,
           contentTitle: title,
