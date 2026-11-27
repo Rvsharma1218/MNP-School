@@ -5,6 +5,32 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class AppUtils {
+  // Bounded cache of decoded Base64 bytes so MemoryImage keeps the same Uint8List
+  // reference across widget rebuilds instead of flashing blank to re-decode.
+  static final Map<String, Uint8List> _decodedBase64Cache = <String, Uint8List>{};
+  static const int _maxBase64CacheEntries = 250;
+
+  /// Decodes a Base64 (or data:image/...;base64,...) string with in-memory caching.
+  static Uint8List? decodeBase64Cached(String raw) {
+    final clean = (raw.contains(',') ? raw.split(',').last : raw)
+        .replaceAll('\n', '')
+        .replaceAll('\r', '')
+        .trim();
+    if (clean.isEmpty) return null;
+    final cached = _decodedBase64Cache[clean];
+    if (cached != null) return cached;
+    try {
+      final bytes = base64Decode(clean);
+      if (_decodedBase64Cache.length >= _maxBase64CacheEntries) {
+        _decodedBase64Cache.remove(_decodedBase64Cache.keys.first);
+      }
+      _decodedBase64Cache[clean] = bytes;
+      return bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static String formatDate(DateTime date) {
     return DateFormat('dd-MM-yyyy').format(date);
   }
@@ -111,21 +137,23 @@ class AppUtils {
         width: width,
         height: height,
         fit: fit,
+        gaplessPlayback: true,
         errorBuilder: (_, __, ___) => placeholder ?? const SizedBox.shrink(),
       );
     }
     if (trimmed.startsWith('data:image')) {
-      try {
-        final bytes = base64Decode(trimmed.split(',').last.trim());
+      final bytes = decodeBase64Cached(trimmed);
+      if (bytes != null) {
         return Image.memory(
           bytes,
           key: ValueKey(trimmed.hashCode),
           width: width,
           height: height,
           fit: fit,
+          gaplessPlayback: true,
           errorBuilder: (_, __, ___) => placeholder ?? const SizedBox.shrink(),
         );
-      } catch (_) {}
+      }
     }
     try {
       final file = File(trimmed);
@@ -137,23 +165,24 @@ class AppUtils {
           width: width,
           height: height,
           fit: fit,
+          gaplessPlayback: true,
           errorBuilder: (_, __, ___) => placeholder ?? const SizedBox.shrink(),
         );
       }
     } catch (_) {}
     // Fallback for raw Base64 strings
-    try {
-      final clean = trimmed.replaceAll('\n', '').replaceAll('\r', '').trim();
-      final bytes = base64Decode(clean);
+    final rawBytes = decodeBase64Cached(trimmed);
+    if (rawBytes != null) {
       return Image.memory(
-        bytes,
-        key: ValueKey(clean.hashCode),
+        rawBytes,
+        key: ValueKey(trimmed.hashCode),
         width: width,
         height: height,
         fit: fit,
+        gaplessPlayback: true,
         errorBuilder: (_, __, ___) => placeholder ?? const SizedBox.shrink(),
       );
-    } catch (_) {}
+    }
     return placeholder ?? const SizedBox.shrink();
   }
 }

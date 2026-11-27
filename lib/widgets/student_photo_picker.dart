@@ -210,12 +210,8 @@ class StudentPhotoPicker extends StatelessWidget {
       return NetworkImage(trimmed);
     }
     if (trimmed.startsWith('data:image')) {
-      try {
-        final base64Str = trimmed.split(',').last;
-        return MemoryImage(base64Decode(base64Str));
-      } catch (_) {
-        return null;
-      }
+      final bytes = AppUtils.decodeBase64Cached(trimmed);
+      return bytes != null ? MemoryImage(bytes) : null;
     }
     try {
       final file = File(trimmed);

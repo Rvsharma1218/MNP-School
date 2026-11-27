@@ -47,12 +47,14 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen>
       });
     }
 
-    // AUTO-REFRESH: Firestore data may arrive slightly after screen renders.
-    // These delayed reloads ensure data is visible without a restart.
+    // AUTO-REFRESH: Only reload if initial provider state is still empty.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 800), () {
         if (!mounted) return;
-        ref.read(studentsProvider.notifier).loadStudents();
+        final current = ref.read(studentsProvider).valueOrNull;
+        if (current == null || current.isEmpty) {
+          ref.read(studentsProvider.notifier).loadStudents();
+        }
       });
     });
   }
@@ -1050,11 +1052,8 @@ class _StudentCardState extends ConsumerState<_StudentCard> {
         onTap: () async {
           await Navigator.pushNamed(context, AppRoutes.studentProfile,
               arguments: s.id);
-          // Refresh fee status when returning from profile
+          // Refresh fee status when returning from profile without wiping image cache
           _loadFeeStatus();
-          PaintingBinding.instance.imageCache.clear();
-          PaintingBinding.instance.imageCache.clearLiveImages();
-          ref.read(studentsProvider.notifier).loadStudents();
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -1150,8 +1149,6 @@ class _StudentCardState extends ConsumerState<_StudentCard> {
                   onSelected: (val) async {
                     if (val == 'edit') {
                       await Navigator.pushNamed(context, AppRoutes.editStudent, arguments: s.id);
-                      PaintingBinding.instance.imageCache.clear();
-                      PaintingBinding.instance.imageCache.clearLiveImages();
                       ref.read(studentsProvider.notifier).loadStudents();
                     } else if (val == 'delete') {
                       final confirm = await showDialog<bool>(
