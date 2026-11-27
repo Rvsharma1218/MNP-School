@@ -160,7 +160,7 @@ export default function ResultsView() {
   const [savedViewMode, setSavedViewMode] = useState('cards'); // 'cards' | 'table'
   const [editingResultData, setEditingResultData] = useState(null);
   const [pdfClassPickerMode, setPdfClassPickerMode] = useState(null); // null | 'list' | 'bulk'
-  const [pdfSelectedClass, setPdfSelectedClass] = useState('all');
+  const [pdfSelectedClasses, setPdfSelectedClasses] = useState(['all']);
   const [pdfGenerating, setPdfGenerating] = useState(false);
 
   const handleOpenEditResult = (res) => {
@@ -465,21 +465,24 @@ export default function ResultsView() {
     return 100;
   };
 
-  const getExportResultsForClass = (targetClass) => {
-    const normTarget = normalizeClassStr(targetClass);
+  const getExportResultsForClasses = (selectedClasses) => {
+    const selected = Array.isArray(selectedClasses) ? selectedClasses : [selectedClasses];
+    if (selected.length === 0) return [];
+    const includeAll = selected.includes('all');
+    const selectedLower = new Set(selected.map(c => String(c).trim().toLowerCase()));
+    const selectedNorm = new Set(selected.map(c => normalizeClassStr(c)).filter(Boolean));
+
     return scopedResults
       .filter(r => {
         if (resultsExamFilter !== 'all' && String(r.examName || '').trim().toLowerCase() !== resultsExamFilter.toLowerCase()) {
           return false;
         }
-        if (targetClass === 'all') return true;
+        if (includeAll) return true;
         const student = findStudent(r);
         const studentClass = student?.className || student?.course || r.className || r.class || '';
+        const clsLower = String(studentClass).trim().toLowerCase();
         const normStudentCls = normalizeClassStr(studentClass);
-        return (
-          String(studentClass).trim().toLowerCase() === targetClass.toLowerCase() ||
-          (normStudentCls && normTarget && normStudentCls === normTarget)
-        );
+        return selectedLower.has(clsLower) || (normStudentCls && selectedNorm.has(normStudentCls));
       })
       .sort((a, b) => {
         const sa = findStudent(a);
@@ -501,14 +504,34 @@ export default function ResultsView() {
       });
   };
 
+  const togglePdfClassSelection = (clsValue) => {
+    setPdfSelectedClasses(prev => {
+      if (clsValue === 'all') {
+        return prev.includes('all') ? [] : ['all'];
+      }
+      const base = prev.filter(c => c !== 'all');
+      if (base.includes(clsValue)) {
+        return base.filter(c => c !== clsValue);
+      }
+      return [...base, clsValue];
+    });
+  };
+
+  const formatSelectedClassesLabel = (selected) => {
+    if (!selected || selected.length === 0) return 'No Classes';
+    if (selected.includes('all')) return 'All_Classes';
+    if (selected.length === 1) return `Class_${selected[0]}`;
+    return `${selected.length}_Classes`;
+  };
+
   const handleConfirmPdfClassExport = async () => {
-    const exportList = getExportResultsForClass(pdfSelectedClass);
+    const exportList = getExportResultsForClasses(pdfSelectedClasses);
     if (exportList.length === 0) {
-      showToast('No results available for the selected class', 'info');
+      showToast('Select at least one class with results', 'info');
       return;
     }
     const mode = pdfClassPickerMode;
-    const classLabel = pdfSelectedClass === 'all' ? 'All_Classes' : `Class_${pdfSelectedClass}`;
+    const classLabel = formatSelectedClassesLabel(pdfSelectedClasses);
     const examLabel = resultsExamFilter !== 'all'
       ? `${resultsExamFilter}_${classLabel}`
       : classLabel;
@@ -1225,11 +1248,11 @@ export default function ResultsView() {
               {/* PDF 1: Results List (Tabulation Register PDF) */}
               <button
                 onClick={() => {
-                  setPdfSelectedClass(resultsClassFilter);
+                  setPdfSelectedClasses(resultsClassFilter === 'all' ? ['all'] : [resultsClassFilter]);
                   setPdfClassPickerMode('list');
                 }}
                 className="p-2 sm:px-3 sm:py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold text-xs border border-blue-200 shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-                title="Select Class & Download Results List (PDF)"
+                title="Select Class(es) & Download Results List (PDF)"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Results List</span>
@@ -1238,11 +1261,11 @@ export default function ResultsView() {
               {/* PDF 2: Bulk All Student Marksheets PDF */}
               <button
                 onClick={() => {
-                  setPdfSelectedClass(resultsClassFilter);
+                  setPdfSelectedClasses(resultsClassFilter === 'all' ? ['all'] : [resultsClassFilter]);
                   setPdfClassPickerMode('bulk');
                 }}
                 className="p-2 sm:px-3 sm:py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#162a65] text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-                title="Select Class & Download Bulk Marksheets (PDF)"
+                title="Select Class(es) & Download Bulk Marksheets (PDF)"
               >
                 <Printer className="w-3.5 h-3.5 text-amber-300" />
                 <span className="hidden sm:inline">Bulk Marksheets</span>
@@ -2393,7 +2416,7 @@ export default function ResultsView() {
                     {pdfClassPickerMode === 'list' ? 'Results List (PDF)' : 'Bulk Marksheets (PDF)'}
                   </h3>
                   <p className="text-[11px] text-slate-200">
-                    Select All Classes or a specific class to download PDF
+                    Select All Classes or 1 or more specific classes ({pdfClassPickerMode === 'list' ? 'new page per class' : 'bulk marksheets'})
                   </p>
                 </div>
               </div>
@@ -2410,14 +2433,15 @@ export default function ResultsView() {
                 { value: 'all', label: 'All Classes (Complete School)' },
                 ...availableClasses.map(c => ({ value: c, label: `Class ${c}` }))
               ].map(opt => {
-                const count = getExportResultsForClass(opt.value).length;
-                const isSelected = pdfSelectedClass === opt.value;
+                const count = getExportResultsForClasses([opt.value]).length;
+                const isAllSelected = pdfSelectedClasses.includes('all');
+                const isSelected = opt.value === 'all' ? isAllSelected : (!isAllSelected && pdfSelectedClasses.includes(opt.value));
                 return (
                   <button
                     key={opt.value}
                     type="button"
                     disabled={count === 0}
-                    onClick={() => setPdfSelectedClass(opt.value)}
+                    onClick={() => togglePdfClassSelection(opt.value)}
                     className={`w-full px-3.5 py-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
                       count === 0
                         ? 'opacity-50 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400'
@@ -2427,10 +2451,10 @@ export default function ResultsView() {
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        isSelected ? 'border-indigo-700 bg-indigo-700' : 'border-slate-300'
+                      <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center ${
+                        isSelected ? 'border-indigo-700 bg-indigo-700 text-white' : 'border-slate-300 bg-white'
                       }`}>
-                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                       </div>
                       <span className="text-xs font-bold">{opt.label}</span>
                     </div>
@@ -2448,28 +2472,37 @@ export default function ResultsView() {
               })}
             </div>
 
-            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                disabled={pdfGenerating}
-                onClick={() => setPdfClassPickerMode(null)}
-                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={pdfGenerating || getExportResultsForClass(pdfSelectedClass).length === 0}
-                onClick={handleConfirmPdfClassExport}
-                className="px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#162a65] disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Download className="w-3.5 h-3.5 text-amber-300" />
-                <span>
-                  {pdfGenerating
-                    ? 'Generating...'
-                    : `Download PDF (${getExportResultsForClass(pdfSelectedClass).length})`}
-                </span>
-              </button>
+            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold text-slate-600 truncate">
+                {pdfSelectedClasses.includes('all')
+                  ? 'All Classes'
+                  : pdfSelectedClasses.length === 0
+                  ? 'No class selected'
+                  : `${pdfSelectedClasses.length} ${pdfSelectedClasses.length === 1 ? 'class' : 'classes'} selected`}
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  disabled={pdfGenerating}
+                  onClick={() => setPdfClassPickerMode(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={pdfGenerating || getExportResultsForClasses(pdfSelectedClasses).length === 0}
+                  onClick={handleConfirmPdfClassExport}
+                  className="px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#162a65] disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-300" />
+                  <span>
+                    {pdfGenerating
+                      ? 'Generating...'
+                      : `Download PDF (${getExportResultsForClasses(pdfSelectedClasses).length})`}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

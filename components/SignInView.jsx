@@ -2308,7 +2308,7 @@ export default function SignInView() {
                   <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F4B323]/15 border border-[#F4B323]/30 text-amber-300 text-xs font-black uppercase tracking-wider">
                       <Smartphone className="w-4 h-4 text-[#F4B323]" />
-                      <span>{isHi ? 'आधिकारिक मोबाइल ऐप (Android)' : 'Official Android App v1.0.1 (Build 12)'}</span>
+                      <span>{isHi ? 'आधिकारिक मोबाइल ऐप (Android v1.0.4+25)' : 'Official Android App v1.0.4 (Build 25)'}</span>
                     </div>
 
                     <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
@@ -2349,18 +2349,18 @@ export default function SignInView() {
                     <div className="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
                       {/* Primary 64-bit APK Download */}
                       <a
-                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build24/app-arm64-v8a-release.apk"
-                        download="MNP_School_v1.0.4_Build24.apk"
+                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build25/app-arm64-v8a-release.apk"
+                        download="MNP_School_v1.0.4_Build25.apk"
                         className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-sm transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-3 cursor-pointer hover:scale-105 active:scale-95"
                       >
                         <Download className="w-5 h-5 text-[#0c2340]" />
-                        <span>{isHi ? 'Android ऐप सीधे डाउनलोड करें (v1.0.4+24)' : 'Direct Download Android App (v1.0.4+24)'}</span>
+                        <span>{isHi ? 'Android ऐप सीधे डाउनलोड करें (v1.0.4+25)' : 'Direct Download Android App (v1.0.4+25)'}</span>
                       </a>
 
                       {/* Fallback 32-bit APK for older phones */}
                       <a
-                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build24/app-armeabi-v7a-release.apk"
-                        download="MNP_School_v1.0.4_v7a_Build24.apk"
+                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build25/app-armeabi-v7a-release.apk"
+                        download="MNP_School_v1.0.4_v7a_Build25.apk"
                         className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Smartphone className="w-4 h-4 text-slate-300" />
@@ -2411,8 +2411,8 @@ export default function SignInView() {
 
                         {/* Mock Button */}
                         <a
-                          href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build24/app-arm64-v8a-release.apk"
-                          download="MNP_School_v1.0.4_Build24.apk"
+                          href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build25/app-arm64-v8a-release.apk"
+                          download="MNP_School_v1.0.4_Build25.apk"
                           className="block w-full py-2.5 rounded-xl bg-[#F4B323] text-[#0c2340] font-black text-xs hover:brightness-110 transition-all shadow-md"
                         >
                           {isHi ? 'इंस्टॉल करें' : 'Install APK'}
@@ -2780,7 +2780,9 @@ export default function SignInView() {
                             <option value="">{isHi ? '-- अपनी शिक्षक प्रोफ़ाइल चुनें --' : '-- Choose Your Teacher Profile --'}</option>
                             {teachers.map(t => (
                               <option key={t.authUid || t.id} value={t.authUid || t.id}>
-                                {t.name} (Class {t.assignedClass} - Sec {t.assignedSection || 'A'})
+                                {t.name} ({t.assignedClass
+                                  ? `Class ${t.assignedClass}${t.assignedSection ? ` - Sec ${t.assignedSection}` : ''}`
+                                  : (t.designation || 'Teacher')})
                               </option>
                             ))}
                           </select>
