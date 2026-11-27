@@ -582,48 +582,283 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
     }
   }
 
-  Future<void> _downloadBulkMarksheetsPdf() async {
-    var filtered = _results.where((r) {
-      return r.obtainedMarks > 0 || r.subjects.any((s) => s.marks > 0 || s.theoryMarks > 0 || s.practicalMarks > 0 || s.internalMarks > 0);
+  int _countResultsForClass(String className) {
+    final base = _scopedResults;
+    if (className == 'All Classes') return base.length;
+    return base.where((r) {
+      final student = _findStudent(r);
+      final cls = student?.className ?? student?.course ?? r.className ?? '';
+      return _matchesClassName(cls, className);
+    }).length;
+  }
+
+  List<MapEntry<StudentModel, ResultModel>> _getExportItemsForClass(
+    String targetClass, {
+    bool requireNonZeroMarks = false,
+  }) {
+    var filtered = _scopedResults.where((r) {
+      if (requireNonZeroMarks) {
+        final hasMarks = r.obtainedMarks > 0 ||
+            r.subjects.any((s) =>
+                s.marks > 0 ||
+                s.theoryMarks > 0 ||
+                s.practicalMarks > 0 ||
+                s.internalMarks > 0);
+        if (!hasMarks) return false;
+      }
+      if (targetClass == 'All Classes') return true;
+      final s = _findStudent(r);
+      final sClass = s?.className ?? s?.course ?? r.className ?? '';
+      return _matchesClassName(sClass, targetClass);
     }).toList();
 
-    if (_selectedClassFilter != 'All Classes') {
-      filtered = filtered.where((r) {
-        final student = _students.where((s) => s.id == r.studentId).firstOrNull;
-        return student != null && _matchesClass(student, _selectedClassFilter);
-      }).toList();
-    }
+    final items = filtered
+        .map((r) => MapEntry(_findStudent(r) ?? _fallbackStudent(r), r))
+        .toList();
 
-    if (filtered.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('No results available for $_selectedClassFilter to download!'),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
+    // Sort by Class Order -> Roll Number -> Student Name
+    items.sort((a, b) {
+      final clsA = (a.key.className ?? a.key.course ?? a.value.className ?? '').trim();
+      final clsB = (b.key.className ?? b.key.course ?? b.value.className ?? '').trim();
+      final clsCmp = _compareClassNames(clsA, clsB);
+      if (clsCmp != 0) return clsCmp;
+
+      final rollA = (a.key.rollNumber ?? a.value.rollNumber ?? '').trim();
+      final rollB = (b.key.rollNumber ?? b.value.rollNumber ?? '').trim();
+      final rA = int.tryParse(rollA);
+      final rB = int.tryParse(rollB);
+      if (rA != null && rB != null) {
+        if (rA != rB) return rA.compareTo(rB);
+      } else if (rollA.isNotEmpty && rollB.isNotEmpty) {
+        final cmp = rollA.compareTo(rollB);
+        if (cmp != 0) return cmp;
+      } else if (rollA.isNotEmpty) {
+        return -1;
+      } else if (rollB.isNotEmpty) {
+        return 1;
+      }
+      return a.key.name.toLowerCase().compareTo(b.key.name.toLowerCase());
+    });
+
+    return items;
+  }
+
+  Future<String?> _showPdfClassSelectorDialog({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color accentColor,
+  }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final classes = _availableClasses.isNotEmpty ? _availableClasses : ['All Classes'];
+    String pickedClass = classes.contains(_selectedClassFilter)
+        ? _selectedClassFilter
+        : classes.first;
+
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final selectedCount = _countResultsForClass(pickedClass);
+            return SafeArea(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 10, bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade400,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(icon, color: accentColor, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            icon: const Icon(Icons.close_rounded),
+                            tooltip: 'Close',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 16),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        itemCount: classes.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 6),
+                        itemBuilder: (_, i) {
+                          final cls = classes[i];
+                          final count = _countResultsForClass(cls);
+                          final isSelected = cls == pickedClass;
+                          final label = cls == 'All Classes' ? 'All Classes' : 'Class $cls';
+
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: count == 0
+                                ? null
+                                : () => setSheetState(() => pickedClass = cls),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? accentColor.withValues(alpha: 0.1)
+                                    : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? accentColor
+                                      : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                                  width: isSelected ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isSelected
+                                        ? Icons.radio_button_checked_rounded
+                                        : Icons.radio_button_unchecked_rounded,
+                                    size: 20,
+                                    color: count == 0
+                                        ? Colors.grey.shade400
+                                        : (isSelected ? accentColor : Colors.grey.shade500),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      label,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                        color: count == 0 ? Colors.grey.shade500 : null,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: count == 0
+                                          ? Colors.grey.withValues(alpha: 0.12)
+                                          : accentColor.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      '$count ${count == 1 ? 'Result' : 'Results'}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: count == 0 ? Colors.grey : accentColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accentColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: selectedCount == 0
+                              ? null
+                              : () => Navigator.pop(ctx, pickedClass),
+                          icon: Icon(icon, size: 18),
+                          label: Text(
+                            selectedCount == 0
+                                ? 'No Results in Selected Class'
+                                : 'Generate PDF (${pickedClass == 'All Classes' ? 'All Classes' : 'Class $pickedClass'} • $selectedCount)',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
-      }
-      return;
-    }
+      },
+    );
+  }
 
-    final items = <MapEntry<StudentModel, ResultModel>>[];
-    for (final r in filtered) {
-      final s = _students.where((stu) => stu.id == r.studentId).firstOrNull;
-      if (s != null) {
-        items.add(MapEntry(s, r));
-      }
-    }
+  Future<void> _downloadBulkMarksheetsPdf() async {
+    final chosenClass = await _showPdfClassSelectorDialog(
+      title: 'Bulk PDF Marksheets',
+      subtitle: 'Select All Classes or a specific class to export marksheets',
+      icon: Icons.style_rounded,
+      accentColor: const Color(0xFF1E3A8A),
+    );
+    if (chosenClass == null || !mounted) return;
+
+    final items = _getExportItemsForClass(chosenClass);
 
     if (items.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No matching students found for selected results.'),
+          SnackBar(
+            content: Text('No results available for $chosenClass to download!'),
             backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -635,7 +870,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       items: items,
       settings: settings,
       context: context,
-      className: _selectedClassFilter,
+      className: chosenClass,
       examName: items.first.value.examName,
     );
   }
@@ -754,39 +989,24 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
   }
 
   Future<void> _exportResultsListPdf() async {
-    var filtered = _results.where((r) {
-      if (_selectedClassFilter == 'All Classes') return true;
-      final s = _students.where((stu) => stu.id == r.studentId).firstOrNull;
-      final sClass = s?.className ?? s?.course ?? '';
-      return sClass.trim().toLowerCase() == _selectedClassFilter.trim().toLowerCase();
-    }).toList();
+    final chosenClass = await _showPdfClassSelectorDialog(
+      title: 'Export Results List (PDF)',
+      subtitle: 'Select All Classes or a specific class for tabular result PDF',
+      icon: Icons.picture_as_pdf_rounded,
+      accentColor: Colors.blueAccent,
+    );
+    if (chosenClass == null || !mounted) return;
 
-    // Sort by roll number then name
-    filtered.sort((a, b) {
-      final sa = _students.where((s) => s.id == a.studentId).firstOrNull;
-      final sb = _students.where((s) => s.id == b.studentId).firstOrNull;
-      final rA = int.tryParse(sa?.rollNumber ?? '') ?? 999999;
-      final rB = int.tryParse(sb?.rollNumber ?? '') ?? 999999;
-      if (rA != rB) return rA.compareTo(rB);
-      return (sa?.name ?? '').compareTo(sb?.name ?? '');
-    });
-
-    final items = <MapEntry<StudentModel, ResultModel>>[];
-    for (final r in filtered) {
-      final s = _students.where((stu) => stu.id == r.studentId).firstOrNull;
-      if (s != null) {
-        items.add(MapEntry(s, r));
-      }
-    }
+    final items = _getExportItemsForClass(chosenClass);
 
     if (items.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No results available to generate PDF list.'),
+          SnackBar(
+            content: Text('No results available for $chosenClass to generate PDF list.'),
             backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -798,7 +1018,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
       items: items,
       settings: settings,
       context: context,
-      className: _selectedClassFilter,
+      className: chosenClass,
       examName: items.first.value.examName,
       academicYear: _academicYear,
     );
@@ -1288,27 +1508,65 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen>
         ),
         const Divider(height: 1),
 
-        // Quick Stats Strip
+        // Quick Stats Strip & PDF Export Actions
         if (_results.isNotEmpty)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: _buildMiniStatCard('Results', '$totalCount', const Color(0xFF1E3A8A), isDark),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildMiniStatCard('Results', '$totalCount', const Color(0xFF1E3A8A), isDark),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMiniStatCard('Passed', '$passCount', Colors.green, isDark),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMiniStatCard('Failed', '$failCount', Colors.red, isDark),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMiniStatCard('Pass Rate', '$passRate%', Colors.teal, isDark),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildMiniStatCard('Passed', '$passCount', Colors.green, isDark),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildMiniStatCard('Failed', '$failCount', Colors.red, isDark),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildMiniStatCard('Pass Rate', '$passRate%', Colors.teal, isDark),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF1E3A8A),
+                          side: const BorderSide(color: Color(0xFF93C5FD)),
+                          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: _exportResultsListPdf,
+                        icon: const Icon(Icons.picture_as_pdf_rounded, size: 16, color: Colors.blueAccent),
+                        label: const Text('Results List PDF', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E3A8A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                        onPressed: _downloadBulkMarksheetsPdf,
+                        icon: const Icon(Icons.style_rounded, size: 16, color: Colors.amber),
+                        label: const Text('Bulk Marksheets PDF', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
