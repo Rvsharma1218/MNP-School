@@ -939,20 +939,6 @@ class ResultPdfService {
 
     final doc = pw.Document();
 
-    final totalStudents = items.length;
-    int passedCount = 0;
-    int failedCount = 0;
-
-    for (final it in items) {
-      final st = it.value.finalResultStatus;
-      if (st == 'PROMOTED' || st == 'PASS') {
-        passedCount++;
-      } else {
-        failedCount++;
-      }
-    }
-    final passRate = totalStudents > 0 ? ((passedCount / totalStudents) * 100).toStringAsFixed(1) : '0.0';
-
     final schoolName = settings.instituteName.isNotEmpty
         ? settings.instituteName
         : (settings.schoolName.isNotEmpty ? settings.schoolName : 'MISSION NAVODAYA PUBLIC SCHOOL');
@@ -975,227 +961,267 @@ class ResultPdfService {
       return rollA.compareTo(rollB);
     });
 
-    doc.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        header: (context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-            children: [
-              pw.Container(
-                padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                decoration: const pw.BoxDecoration(
-                  color: primaryNavy,
-                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(6)),
-                ),
-                child: pw.Row(
-                  children: [
-                    if (logoImage != null)
-                      pw.Container(
-                        width: 36,
-                        height: 36,
-                        margin: const pw.EdgeInsets.only(right: 10),
-                        child: pw.ClipOval(
-                          child: pw.Image(logoImage, width: 36, height: 36, fit: pw.BoxFit.cover),
+    // Group sorted items by normalized class so every class starts on a fresh page
+    final Map<String, List<MapEntry<StudentModel, ResultModel>>> classGroups = {};
+    final Map<String, String> classGroupDisplayNames = {};
+    for (final item in sortedItems) {
+      final rawCls = (item.key.className != null && item.key.className!.isNotEmpty)
+          ? item.key.className
+          : (item.value.className?.isNotEmpty == true ? item.value.className : className);
+      final parsed = _parseCleanClassAndSection(rawCls, item.key.section);
+      final pureClass = (item.key.studentType == 'school')
+          ? (parsed['pureClass']?.isNotEmpty == true ? parsed['pureClass']! : className)
+          : (item.key.course?.isNotEmpty == true
+              ? item.key.course!
+              : (parsed['pureClass']?.isNotEmpty == true ? parsed['pureClass']! : className));
+      final groupKey = pureClass.trim().toLowerCase();
+      classGroups.putIfAbsent(groupKey, () => []).add(item);
+      classGroupDisplayNames.putIfAbsent(groupKey, () => pureClass);
+    }
+    if (classGroups.isEmpty) {
+      classGroups[className.toLowerCase()] = [];
+      classGroupDisplayNames[className.toLowerCase()] = className;
+    }
+
+    for (final entry in classGroups.entries) {
+      final groupItems = entry.value;
+      final groupClassName = classGroupDisplayNames[entry.key] ?? className;
+      final groupTotal = groupItems.length;
+      int groupPassed = 0;
+      int groupFailed = 0;
+
+      for (final it in groupItems) {
+        final st = it.value.finalResultStatus;
+        if (st == 'PROMOTED' || st == 'PASS') {
+          groupPassed++;
+        } else {
+          groupFailed++;
+        }
+      }
+      final groupPassRate = groupTotal > 0 ? ((groupPassed / groupTotal) * 100).toStringAsFixed(1) : '0.0';
+
+      doc.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4.landscape,
+          margin: const pw.EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          header: (context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              children: [
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: const pw.BoxDecoration(
+                    color: primaryNavy,
+                    borderRadius: pw.BorderRadius.all(pw.Radius.circular(6)),
+                  ),
+                  child: pw.Row(
+                    children: [
+                      if (logoImage != null)
+                        pw.Container(
+                          width: 36,
+                          height: 36,
+                          margin: const pw.EdgeInsets.only(right: 10),
+                          child: pw.ClipOval(
+                            child: pw.Image(logoImage, width: 36, height: 36, fit: pw.BoxFit.cover),
+                          ),
                         ),
-                      ),
-                    pw.Expanded(
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.center,
-                        children: [
-                          pw.Text(
-                            schoolName.toUpperCase(),
-                            style: pw.TextStyle(
-                              font: ttfBold,
-                              fontSize: 14,
-                              color: PdfColors.white,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          if (settings.tagline != null && settings.tagline!.isNotEmpty)
-                            pw.Text(
-                              settings.tagline!,
-                              style: pw.TextStyle(font: ttf, fontSize: 8, color: goldText),
-                            ),
-                          pw.Text(
-                            'EXAMINATION RESULTS & ACADEMIC TABULATION SHEET — SESSION: $session',
-                            style: pw.TextStyle(font: ttfBold, fontSize: 9, color: PdfColors.white),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 6),
-              // Meta strip
-              pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: pw.BoxDecoration(
-                  color: cardBg,
-                  border: pw.Border.all(color: borderLight, width: 0.5),
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-                ),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('Class: $className', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: primaryNavy)),
-                    if (examName != null && examName.isNotEmpty)
-                      pw.Text('Exam: $examName', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: textDark)),
-                    pw.Text('Total: $totalStudents', style: pw.TextStyle(font: ttf, fontSize: 8.5, color: textDark)),
-                    pw.Text('Passed: $passedCount', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: passText)),
-                    pw.Text('Failed: $failedCount', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: failText)),
-                    pw.Text('Pass Rate: $passRate%', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: primaryNavy)),
-                    pw.Text('Date: ${_formatDate(DateTime.now())}', style: pw.TextStyle(font: ttf, fontSize: 8, color: textMuted)),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 6),
-            ],
-          );
-        },
-        footer: (context) {
-          return pw.Column(
-            children: [
-              pw.SizedBox(height: 10),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  pw.Column(
-                    children: [
-                      pw.Container(width: 130, height: 1, color: borderLight),
-                      pw.SizedBox(height: 4),
-                      pw.Text('Class Teacher Sign', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: textDark)),
-                    ],
-                  ),
-                  pw.Column(
-                    children: [
-                      pw.Container(width: 130, height: 1, color: borderLight),
-                      pw.SizedBox(height: 4),
-                      pw.Text('Exam Incharge Sign', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: textDark)),
-                    ],
-                  ),
-                  pw.Column(
-                    children: [
-                      pw.Container(
-                        height: 38,
-                        child: pw.Stack(
-                          alignment: pw.Alignment.center,
+                      pw.Expanded(
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.center,
                           children: [
-                            if (stampImage != null)
-                              pw.Opacity(
-                                opacity: 0.88,
-                                child: pw.Image(stampImage, width: 38, height: 38, fit: pw.BoxFit.contain),
+                            pw.Text(
+                              schoolName.toUpperCase(),
+                              style: pw.TextStyle(
+                                font: ttfBold,
+                                fontSize: 14,
+                                color: PdfColors.white,
+                                letterSpacing: 0.8,
                               ),
-                            if (sigImage != null)
-                              pw.Image(sigImage, width: 100, height: 34, fit: pw.BoxFit.contain),
+                            ),
+                            if (settings.tagline != null && settings.tagline!.isNotEmpty)
+                              pw.Text(
+                                settings.tagline!,
+                                style: pw.TextStyle(font: ttf, fontSize: 8, color: goldText),
+                              ),
+                            pw.Text(
+                              'EXAMINATION RESULTS & ACADEMIC TABULATION SHEET — SESSION: $session',
+                              style: pw.TextStyle(font: ttfBold, fontSize: 9, color: PdfColors.white),
+                            ),
                           ],
                         ),
                       ),
-                      pw.Container(width: 140, height: 1, color: borderLight),
-                      pw.SizedBox(height: 4),
-                      pw.Text('Principal Sign & Stamp', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: primaryNavy)),
                     ],
                   ),
-                ],
-              ),
-              pw.SizedBox(height: 4),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('System Generated Official Record • $schoolName', style: pw.TextStyle(font: ttf, fontSize: 7, color: textMuted)),
-                  pw.Text('Page ${context.pageNumber} of ${context.pagesCount}', style: pw.TextStyle(font: ttf, fontSize: 7, color: textMuted)),
-                ],
-              ),
-            ],
-          );
-        },
-        build: (context) => [
-          pw.Table(
-            border: pw.TableBorder.all(color: borderLight, width: 0.5),
-            columnWidths: const {
-              0: pw.FixedColumnWidth(26),  // S.N
-              1: pw.FixedColumnWidth(44),  // Roll No
-              2: pw.FixedColumnWidth(64),  // Student ID
-              3: pw.FlexColumnWidth(2.6),  // Student Name
-              4: pw.FlexColumnWidth(2.2),  // Father Name
-              5: pw.FlexColumnWidth(2.2),  // Mother Name
-              6: pw.FixedColumnWidth(55),  // Class
-              7: pw.FixedColumnWidth(36),  // Sec
-              8: pw.FixedColumnWidth(46),  // Max
-              9: pw.FixedColumnWidth(46),  // Obt
-              10: pw.FixedColumnWidth(44), // %
-              11: pw.FixedColumnWidth(42), // Grade
-              12: pw.FixedColumnWidth(52), // Status
-            },
-            children: [
-              // Table Header
-              pw.TableRow(
-                decoration: const pw.BoxDecoration(color: primaryNavy),
-                children: [
-                  _buildTableHeaderCell('#', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                  _buildTableHeaderCell('Roll No', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                  _buildTableHeaderCell('Student ID', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                  _buildTableHeaderCell('Student Name', ttfBold, fontSize: 8, hPadding: 4),
-                  _buildTableHeaderCell('Father Name', ttfBold, fontSize: 8, hPadding: 4),
-                  _buildTableHeaderCell('Mother Name', ttfBold, fontSize: 8, hPadding: 4),
-                  _buildTableHeaderCell('Class', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                  _buildTableHeaderCell('Sec', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                  _buildTableHeaderCell('Max', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                  _buildTableHeaderCell('Obt', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                  _buildTableHeaderCell('%', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                  _buildTableHeaderCell('Grade', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                  _buildTableHeaderCell('Status', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                ],
-              ),
-              // Table Data Rows
-              ...List.generate(sortedItems.length, (i) {
-                final student = sortedItems[i].key;
-                final result = sortedItems[i].value;
-                final isEven = i % 2 == 0;
-                final status = result.finalResultStatus;
-                PdfColor statusColor = passText;
-                if (status == 'FAIL') {
-                  statusColor = failText;
-                } else if (status == 'PROMOTED') {
-                  statusColor = promotedBorder;
-                }
-
-                final stuId = student.studentId.isNotEmpty ? student.studentId : result.studentId;
-                final roll = student.rollNumber ?? '-';
-                final father = student.fatherName.isNotEmpty ? student.fatherName : '-';
-                final mother = student.motherName ?? '-';
-                final sClass = (student.className != null && student.className!.isNotEmpty) ? student.className : className;
-                final parsedCls = _parseCleanClassAndSection(sClass, student.section);
-                final cls = student.studentType == 'school' ? parsedCls['displayClass']! : (student.course ?? parsedCls['pureClass']!);
-                final sec = student.studentType == 'school' ? parsedCls['section']! : '-';
-
-                return pw.TableRow(
-                  decoration: pw.BoxDecoration(color: isEven ? PdfColors.white : cardBg),
+                ),
+                pw.SizedBox(height: 6),
+                // Meta strip for this class
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: pw.BoxDecoration(
+                    color: cardBg,
+                    border: pw.Border.all(color: borderLight, width: 0.5),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                  ),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Class: $groupClassName', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: primaryNavy)),
+                      if (examName != null && examName.isNotEmpty)
+                        pw.Text('Exam: $examName', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: textDark)),
+                      pw.Text('Total: $groupTotal', style: pw.TextStyle(font: ttf, fontSize: 8.5, color: textDark)),
+                      pw.Text('Passed: $groupPassed', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: passText)),
+                      pw.Text('Failed: $groupFailed', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: failText)),
+                      pw.Text('Pass Rate: $groupPassRate%', style: pw.TextStyle(font: ttfBold, fontSize: 8.5, color: primaryNavy)),
+                      pw.Text('Date: ${_formatDate(DateTime.now())}', style: pw.TextStyle(font: ttf, fontSize: 8, color: textMuted)),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 6),
+              ],
+            );
+          },
+          footer: (context) {
+            return pw.Column(
+              children: [
+                pw.SizedBox(height: 10),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    _buildTableCell('${i + 1}', ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                    _buildTableCell(roll, ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                    _buildTableCell(stuId, ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                    _buildTableCell(student.name, ttfBold, fontSize: 8.5, hPadding: 4),
-                    _buildTableCell(father, ttf, fontSize: 8, hPadding: 4),
-                    _buildTableCell(mother, ttf, fontSize: 8, hPadding: 4),
-                    _buildTableCell(cls, ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                    _buildTableCell(sec, ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                    _buildTableCell(result.totalMarks.toInt().toString(), ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                    _buildTableCell(result.obtainedMarks.toInt().toString(), ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                    _buildTableCell('${result.overallPercentage.toStringAsFixed(1)}%', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                    _buildTableCell(result.overallGrade, ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
-                    _buildTableCell(status, ttfBold, align: pw.TextAlign.center, color: statusColor, fontSize: 8, hPadding: 3),
+                    pw.Column(
+                      children: [
+                        pw.Container(width: 130, height: 1, color: borderLight),
+                        pw.SizedBox(height: 4),
+                        pw.Text('Class Teacher Sign', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: textDark)),
+                      ],
+                    ),
+                    pw.Column(
+                      children: [
+                        pw.Container(width: 130, height: 1, color: borderLight),
+                        pw.SizedBox(height: 4),
+                        pw.Text('Exam Incharge Sign', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: textDark)),
+                      ],
+                    ),
+                    pw.Column(
+                      children: [
+                        pw.Container(
+                          height: 38,
+                          child: pw.Stack(
+                            alignment: pw.Alignment.center,
+                            children: [
+                              if (stampImage != null)
+                                pw.Opacity(
+                                  opacity: 0.88,
+                                  child: pw.Image(stampImage, width: 38, height: 38, fit: pw.BoxFit.contain),
+                                ),
+                              if (sigImage != null)
+                                pw.Image(sigImage, width: 100, height: 34, fit: pw.BoxFit.contain),
+                            ],
+                          ),
+                        ),
+                        pw.Container(width: 140, height: 1, color: borderLight),
+                        pw.SizedBox(height: 4),
+                        pw.Text('Principal Sign & Stamp', style: pw.TextStyle(font: ttfBold, fontSize: 9, color: primaryNavy)),
+                      ],
+                    ),
                   ],
-                );
-              }),
-            ],
-          ),
-        ],
-      ),
-    );
+                ),
+                pw.SizedBox(height: 4),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('System Generated Official Record • $schoolName', style: pw.TextStyle(font: ttf, fontSize: 7, color: textMuted)),
+                    pw.Text('Page ${context.pageNumber} of ${context.pagesCount}', style: pw.TextStyle(font: ttf, fontSize: 7, color: textMuted)),
+                  ],
+                ),
+              ],
+            );
+          },
+          build: (context) => [
+            pw.Table(
+              border: pw.TableBorder.all(color: borderLight, width: 0.5),
+              columnWidths: const {
+                0: pw.FixedColumnWidth(26),  // S.N
+                1: pw.FixedColumnWidth(44),  // Roll No
+                2: pw.FixedColumnWidth(64),  // Student ID
+                3: pw.FlexColumnWidth(2.6),  // Student Name
+                4: pw.FlexColumnWidth(2.2),  // Father Name
+                5: pw.FlexColumnWidth(2.2),  // Mother Name
+                6: pw.FixedColumnWidth(55),  // Class
+                7: pw.FixedColumnWidth(36),  // Sec
+                8: pw.FixedColumnWidth(46),  // Max
+                9: pw.FixedColumnWidth(46),  // Obt
+                10: pw.FixedColumnWidth(44), // %
+                11: pw.FixedColumnWidth(42), // Grade
+                12: pw.FixedColumnWidth(52), // Status
+              },
+              children: [
+                // Table Header
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: primaryNavy),
+                  children: [
+                    _buildTableHeaderCell('#', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                    _buildTableHeaderCell('Roll No', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                    _buildTableHeaderCell('Student ID', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                    _buildTableHeaderCell('Student Name', ttfBold, fontSize: 8, hPadding: 4),
+                    _buildTableHeaderCell('Father Name', ttfBold, fontSize: 8, hPadding: 4),
+                    _buildTableHeaderCell('Mother Name', ttfBold, fontSize: 8, hPadding: 4),
+                    _buildTableHeaderCell('Class', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                    _buildTableHeaderCell('Sec', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                    _buildTableHeaderCell('Max', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                    _buildTableHeaderCell('Obt', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                    _buildTableHeaderCell('%', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                    _buildTableHeaderCell('Grade', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                    _buildTableHeaderCell('Status', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                  ],
+                ),
+                // Table Data Rows for this class
+                ...List.generate(groupItems.length, (i) {
+                  final student = groupItems[i].key;
+                  final result = groupItems[i].value;
+                  final isEven = i % 2 == 0;
+                  final status = result.finalResultStatus;
+                  PdfColor statusColor = passText;
+                  if (status == 'FAIL') {
+                    statusColor = failText;
+                  } else if (status == 'PROMOTED') {
+                    statusColor = promotedBorder;
+                  }
+
+                  final stuId = student.studentId.isNotEmpty ? student.studentId : result.studentId;
+                  final roll = student.rollNumber ?? '-';
+                  final father = student.fatherName.isNotEmpty ? student.fatherName : '-';
+                  final mother = student.motherName ?? '-';
+                  final sClass = (student.className != null && student.className!.isNotEmpty) ? student.className : className;
+                  final parsedCls = _parseCleanClassAndSection(sClass, student.section);
+                  final cls = student.studentType == 'school' ? parsedCls['displayClass']! : (student.course ?? parsedCls['pureClass']!);
+                  final sec = student.studentType == 'school' ? parsedCls['section']! : '-';
+
+                  return pw.TableRow(
+                    decoration: pw.BoxDecoration(color: isEven ? PdfColors.white : cardBg),
+                    children: [
+                      _buildTableCell('${i + 1}', ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                      _buildTableCell(roll, ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                      _buildTableCell(stuId, ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                      _buildTableCell(student.name, ttfBold, fontSize: 8.5, hPadding: 4),
+                      _buildTableCell(father, ttf, fontSize: 8, hPadding: 4),
+                      _buildTableCell(mother, ttf, fontSize: 8, hPadding: 4),
+                      _buildTableCell(cls, ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                      _buildTableCell(sec, ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                      _buildTableCell(result.totalMarks.toInt().toString(), ttf, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                      _buildTableCell(result.obtainedMarks.toInt().toString(), ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                      _buildTableCell('${result.overallPercentage.toStringAsFixed(1)}%', ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                      _buildTableCell(result.overallGrade, ttfBold, align: pw.TextAlign.center, fontSize: 8, hPadding: 3),
+                      _buildTableCell(status, ttfBold, align: pw.TextAlign.center, color: statusColor, fontSize: 8, hPadding: 3),
+                    ],
+                  );
+                }),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
     final bytes = await doc.save();
     final cleanClass = className.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');

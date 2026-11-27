@@ -471,6 +471,7 @@ class _LoginScreenState extends State<LoginScreen>
         password: _teacherPasswordCtrl.text,
         teacherId: _selectedTeacher!.teacherId,
         teacherName: _selectedTeacher!.name,
+        schoolEmail: _teacherSchoolEmailCtrl.text.trim(),
       );
       await SessionService.instance.setTeacherSession(
         schoolUid: _resolvedSchoolUid!,

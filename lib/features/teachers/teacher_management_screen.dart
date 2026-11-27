@@ -733,48 +733,66 @@ class _TeacherManagementScreenState extends ConsumerState<TeacherManagementScree
                                   setSheetState(() => saving = true);
 
                                   final salVal = double.tryParse(salaryCtrl.text.trim()) ?? 25000.0;
-                                  final newT = await TeacherService.instance.createTeacher(
-                                    schoolUid: schoolUid,
-                                    schoolEmail: _schoolEmail ?? '',
-                                    name: nameCtrl.text.trim(),
-                                    mobile: phoneCtrl.text.trim(),
-                                    password: passwordCtrl.text.trim(),
-                                    assignedClass: designatedClass.isNotEmpty ? designatedClass : (allowedClasses != 'All Classes' ? allowedClasses : null),
-                                    assignedSection: (designatedClass.isNotEmpty && designatedSection.isNotEmpty) ? designatedSection : null,
-                                    fatherName: fatherCtrl.text.trim().isEmpty ? null : fatherCtrl.text.trim(),
-                                    motherName: motherCtrl.text.trim().isEmpty ? null : motherCtrl.text.trim(),
-                                    dob: selectedDob,
-                                    gender: selectedGender,
-                                    address: addressCtrl.text.trim().isEmpty ? null : addressCtrl.text.trim(),
-                                    alternateMobile: altPhoneCtrl.text.trim().isEmpty ? null : altPhoneCtrl.text.trim(),
-                                    aadhaarNumber: aadhaarCtrl.text.trim().isEmpty ? null : aadhaarCtrl.text.trim(),
-                                    qualification: qualCtrl.text.trim().isEmpty ? null : qualCtrl.text.trim(),
-                                    designation: desigCtrl.text.trim().isEmpty ? null : desigCtrl.text.trim(),
-                                    signatureUrl: signatureUrl,
-                                    subject: subjectCtrl.text.trim().isEmpty ? null : subjectCtrl.text.trim(),
-                                    joiningDate: selectedJoiningDate,
-                                    salary: salVal,
-                                    photoUrl: photoUrl,
-                                    aadhaarDocUrl: aadhaarDocUrl,
-                                  schoolName: settings.instituteName,
-                                );
-
-                                  _teacherSalaries[newT.teacherId] = salVal;
+                                  final syncEmails = <String>{
+                                    if (_schoolEmail != null && _schoolEmail!.trim().isNotEmpty) _schoolEmail!.trim(),
+                                    if (settings.email != null && settings.email!.trim().isNotEmpty) settings.email!.trim(),
+                                  }.toList();
                                   try {
-                                    final prefs = await SharedPreferences.getInstance();
-                                    await prefs.setString('teacher_salaries_map', jsonEncode(_teacherSalaries));
-                                  } catch (_) {}
-
-                                  Navigator.pop(ctx);
-                                  _load(forceRefresh: true);
-
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Teacher ${newT.name} added successfully!'),
-                                        backgroundColor: AppColors.success,
-                                      ),
+                                    final newT = await TeacherService.instance.createTeacher(
+                                      schoolUid: schoolUid,
+                                      schoolEmail: syncEmails.isNotEmpty ? syncEmails.first : '',
+                                      extraSchoolEmails: syncEmails,
+                                      name: nameCtrl.text.trim(),
+                                      mobile: phoneCtrl.text.trim(),
+                                      password: passwordCtrl.text.trim(),
+                                      assignedClass: designatedClass.isNotEmpty ? designatedClass : null,
+                                      assignedSection: (designatedClass.isNotEmpty && designatedSection.isNotEmpty) ? designatedSection : null,
+                                      allowedClasses: allowedClasses,
+                                      fatherName: fatherCtrl.text.trim().isEmpty ? null : fatherCtrl.text.trim(),
+                                      motherName: motherCtrl.text.trim().isEmpty ? null : motherCtrl.text.trim(),
+                                      dob: selectedDob,
+                                      gender: selectedGender,
+                                      address: addressCtrl.text.trim().isEmpty ? null : addressCtrl.text.trim(),
+                                      alternateMobile: altPhoneCtrl.text.trim().isEmpty ? null : altPhoneCtrl.text.trim(),
+                                      aadhaarNumber: aadhaarCtrl.text.trim().isEmpty ? null : aadhaarCtrl.text.trim(),
+                                      qualification: qualCtrl.text.trim().isEmpty ? null : qualCtrl.text.trim(),
+                                      designation: desigCtrl.text.trim().isEmpty ? null : desigCtrl.text.trim(),
+                                      signatureUrl: signatureUrl,
+                                      subject: subjectCtrl.text.trim().isEmpty ? null : subjectCtrl.text.trim(),
+                                      joiningDate: selectedJoiningDate,
+                                      salary: salVal,
+                                      photoUrl: photoUrl,
+                                      aadhaarDocUrl: aadhaarDocUrl,
+                                      schoolName: settings.instituteName,
                                     );
+
+                                    _teacherSalaries[newT.teacherId] = salVal;
+                                    try {
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setString('teacher_salaries_map', jsonEncode(_teacherSalaries));
+                                    } catch (_) {}
+
+                                    if (ctx.mounted) Navigator.pop(ctx);
+                                    _load(forceRefresh: true);
+
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Teacher ${newT.name} added successfully!'),
+                                          backgroundColor: AppColors.success,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (ctx.mounted) setSheetState(() => saving = false);
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to add teacher: $e'),
+                                          backgroundColor: AppColors.error,
+                                        ),
+                                      );
+                                    }
                                   }
                                 },
                           child: saving

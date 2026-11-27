@@ -53,6 +53,43 @@ class TeacherService {
 
   String _normalizeEmail(String email) => email.trim().toLowerCase();
 
+  Future<List<String>> _resolveDirectoryEmails(
+    String schoolUid,
+    String primaryEmail, [
+    List<String>? extraEmails,
+  ]) async {
+    final emails = <String>{};
+    void addIfValid(String? raw) {
+      final clean = (raw ?? '').trim().toLowerCase();
+      if (clean.isNotEmpty && clean.contains('@')) emails.add(clean);
+    }
+
+    addIfValid(primaryEmail);
+    if (extraEmails != null) {
+      for (final e in extraEmails) {
+        addIfValid(e);
+      }
+    }
+    if (schoolUid.isNotEmpty) {
+      try {
+        final byId = await _db.collection('schoolDirectory').where('schoolId', isEqualTo: schoolUid).get();
+        for (final d in byId.docs) {
+          addIfValid(d.id);
+        }
+      } catch (_) {}
+      try {
+        final byUid = await _db.collection('schoolDirectory').where('schoolUid', isEqualTo: schoolUid).get();
+        for (final d in byUid.docs) {
+          addIfValid(d.id);
+        }
+      } catch (_) {}
+    }
+    if (emails.isEmpty && schoolUid.isNotEmpty) {
+      emails.add('${schoolUid.toLowerCase()}@school.com');
+    }
+    return emails.toList();
+  }
+
   Future<void> ensureSchoolDirectoryEntry({
     required String schoolEmail,
     required String schoolUid,
@@ -91,7 +128,7 @@ class TeacherService {
           .get();
       for (final d in snap.docs) {
         final t = TeacherModel.fromPublicMap(d.data() as Map<String, dynamic>);
-        if (t.active) {
+        if (t.active && t.name.trim().isNotEmpty) {
           final key = t.teacherId.isNotEmpty ? t.teacherId : t.authUid;
           byId[key] = t;
         }
@@ -105,7 +142,7 @@ class TeacherService {
         final snap = await _teachersCol(schoolUid).get();
         for (final d in snap.docs) {
           final t = TeacherModel.fromMap(d.data() as Map<String, dynamic>);
-          if (t.active) {
+          if (t.active && t.name.trim().isNotEmpty) {
             final key = t.teacherId.isNotEmpty ? t.teacherId : t.authUid;
             byId[key] = t;
           }
@@ -302,6 +339,7 @@ class TeacherService {
     String? schoolName,
     String? signatureUrl,
     String? allowedClasses,
+    List<String>? extraSchoolEmails,
   }) async {
     final teacherId = await getNextSequentialTeacherId(schoolUid, schoolName);
     final effectiveSchoolEmail = schoolEmail.isNotEmpty ? schoolEmail : '${schoolUid.toLowerCase()}@school.com';
@@ -338,6 +376,9 @@ class TeacherService {
       schoolId: schoolUid,
       assignedClass: assignedClass?.trim().isEmpty == true ? null : assignedClass?.trim(),
       assignedSection: assignedSection?.trim().isEmpty == true ? null : assignedSection?.trim(),
+      allowedClasses: (allowedClasses != null && allowedClasses.trim().isNotEmpty)
+          ? allowedClasses.trim()
+          : (assignedClass?.trim().isEmpty == true ? 'All Classes' : assignedClass?.trim()),
       active: true,
       status: 'active',
       createdAt: DateTime.now(),
@@ -404,18 +445,19 @@ class TeacherService {
     // 1. Primary: Save in school's teachers subcollection by teacherId
     await _teachersCol(schoolUid).doc(teacherId).set(teacherDocData, SetOptions(merge: true));
 
-    // 2. Auxiliary writes into public directory for login dropdown
+    // 2. Auxiliary writes into public directory for login dropdown (syncs all linked directory emails)
     try {
-      if (effectiveSchoolEmail.isNotEmpty) {
-        await _publicTeachersCol(effectiveSchoolEmail).doc(teacherId).set({
+      final dirEmails = await _resolveDirectoryEmails(schoolUid, effectiveSchoolEmail, extraSchoolEmails);
+      for (final dirEmail in dirEmails) {
+        await _publicTeachersCol(dirEmail).doc(teacherId).set({
           ...teacher.toPublicMap(),
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-        await _directoryDoc(effectiveSchoolEmail).set({
-          'instituteName': instituteName ?? 'Mission Navodaya Public School',
+        await _directoryDoc(dirEmail).set({
+          'instituteName': instituteName ?? schoolName ?? 'Mission Navodaya Public School',
           'schoolId': schoolUid,
-          'schoolName': instituteName ?? 'Mission Navodaya Public School',
+          'schoolName': instituteName ?? schoolName ?? 'Mission Navodaya Public School',
           'schoolUid': schoolUid,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
@@ -542,10 +584,11 @@ class TeacherService {
       } catch (_) {}
     }
     try {
-      if (effectiveSchoolEmail.isNotEmpty) {
-        await _publicTeachersCol(effectiveSchoolEmail).doc(teacher.teacherId).set(updates, SetOptions(merge: true)).catchError((_) {});
-        if (teacher.authUid != teacher.teacherId) {
-          await _publicTeachersCol(effectiveSchoolEmail).doc(teacher.authUid).set(updates, SetOptions(merge: true)).catchError((_) {});
+      final dirEmails = await _resolveDirectoryEmails(schoolUid, effectiveSchoolEmail);
+      for (final dirEmail in dirEmails) {
+        await _publicTeachersCol(dirEmail).doc(teacher.teacherId).set(updates, SetOptions(merge: true)).catchError((_) {});
+        if (teacher.authUid.isNotEmpty && teacher.authUid != teacher.teacherId) {
+          await _publicTeachersCol(dirEmail).doc(teacher.authUid).delete().catchError((_) {});
         }
       }
     } catch (_) {}
@@ -556,6 +599,7 @@ class TeacherService {
         if (mobile != null) 'mobile': mobile.trim(),
         if (password != null) 'password': password.trim(),
         if (salary != null) 'salary': salary,
+        if (allowedClasses != null && allowedClasses.isNotEmpty) 'allowedClasses': allowedClasses.trim(),
       }, SetOptions(merge: true));
     } catch (_) {}
 
@@ -565,6 +609,7 @@ class TeacherService {
       mobile: mobile?.trim(),
       assignedClass: assignedClass?.trim(),
       assignedSection: assignedSection?.trim(),
+      allowedClasses: allowedClasses ?? teacher.allowedClasses,
       fatherName: fatherName?.trim(),
       motherName: motherName?.trim(),
       dob: dob,
@@ -614,12 +659,13 @@ class TeacherService {
       await _teachersCol(schoolUid).doc(teacher.authUid).set(updateData, SetOptions(merge: true)).catchError((_) {});
     }
     try {
-      if (effectiveSchoolEmail.isNotEmpty) {
+      final dirEmails = await _resolveDirectoryEmails(schoolUid, effectiveSchoolEmail);
+      for (final dirEmail in dirEmails) {
         if (teacher.teacherId.isNotEmpty) {
-          await _publicTeachersCol(effectiveSchoolEmail).doc(teacher.teacherId).set(updateData, SetOptions(merge: true)).catchError((_) {});
+          await _publicTeachersCol(dirEmail).doc(teacher.teacherId).set(updateData, SetOptions(merge: true)).catchError((_) {});
         }
-        if (teacher.authUid.isNotEmpty) {
-          await _publicTeachersCol(effectiveSchoolEmail).doc(teacher.authUid).set(updateData, SetOptions(merge: true)).catchError((_) {});
+        if (teacher.authUid.isNotEmpty && teacher.authUid != teacher.teacherId) {
+          await _publicTeachersCol(dirEmail).doc(teacher.authUid).set(updateData, SetOptions(merge: true)).catchError((_) {});
         }
       }
     } catch (_) {}
@@ -654,10 +700,11 @@ class TeacherService {
       await _teachersCol(schoolUid).doc(teacher.authUid).set(updateData, SetOptions(merge: true)).catchError((_) {});
     }
     try {
-      if (schoolEmail.isNotEmpty) {
-        await _publicTeachersCol(schoolEmail).doc(teacher.teacherId).set(updateData, SetOptions(merge: true)).catchError((_) {});
+      final dirEmails = await _resolveDirectoryEmails(schoolUid, schoolEmail);
+      for (final dirEmail in dirEmails) {
+        await _publicTeachersCol(dirEmail).doc(teacher.teacherId).set(updateData, SetOptions(merge: true)).catchError((_) {});
         if (teacher.authUid.isNotEmpty && teacher.authUid != teacher.teacherId) {
-          await _publicTeachersCol(schoolEmail).doc(teacher.authUid).set(updateData, SetOptions(merge: true)).catchError((_) {});
+          await _publicTeachersCol(dirEmail).doc(teacher.authUid).delete().catchError((_) {});
         }
       }
     } catch (_) {}
@@ -683,8 +730,12 @@ class TeacherService {
     required TeacherModel teacher,
     required String newPassword,
   }) async {
+    final docId = teacher.teacherId.isNotEmpty ? teacher.teacherId : teacher.id;
+    final cleanName = teacher.name.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final namePart = cleanName.length > 12 ? cleanName.substring(0, 12) : cleanName;
+    final schoolPart = schoolUid.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
     final syntheticEmail =
-        '${teacher.teacherId.toLowerCase()}.${_randomSuffix()}@teachers.internal';
+        '${namePart.isEmpty ? 'teacher' : namePart}.${docId.toLowerCase()}.${_randomSuffix()}@${schoolPart.isEmpty ? 'school001' : schoolPart}.teachers';
     final cred = await _createAuthAccountViaSecondaryApp(
       email: syntheticEmail,
       password: newPassword,
@@ -693,33 +744,82 @@ class TeacherService {
 
     final migrated = TeacherModel(
       authUid: newAuthUid,
-      teacherId: teacher.teacherId,
+      teacherId: docId,
+      id: docId,
       name: teacher.name,
       authEmail: syntheticEmail,
+      email: syntheticEmail,
+      mobile: teacher.mobile,
+      password: newPassword,
+      schoolId: teacher.schoolId,
       assignedClass: teacher.assignedClass,
       assignedSection: teacher.assignedSection,
+      allowedClasses: teacher.allowedClasses,
       active: teacher.active,
+      status: teacher.status,
       createdAt: teacher.createdAt,
+      fatherName: teacher.fatherName,
+      motherName: teacher.motherName,
+      dob: teacher.dob,
+      gender: teacher.gender,
+      address: teacher.address,
+      alternateMobile: teacher.alternateMobile,
+      aadhaarNumber: teacher.aadhaarNumber,
+      qualification: teacher.qualification,
+      designation: teacher.designation,
+      subject: teacher.subject,
+      joiningDate: teacher.joiningDate,
+      salary: teacher.salary,
+      photoUrl: teacher.photoUrl,
+      aadhaarDocUrl: teacher.aadhaarDocUrl,
+      signatureUrl: teacher.signatureUrl,
     );
 
     final batch = _db.batch();
-    batch.set(_teachersCol(schoolUid).doc(newAuthUid), migrated.toMap());
-    batch.delete(_teachersCol(schoolUid).doc(teacher.authUid));
-    batch.set(_publicTeachersCol(schoolEmail).doc(newAuthUid), migrated.toPublicMap());
-    batch.delete(_publicTeachersCol(schoolEmail).doc(teacher.authUid));
-    batch.delete(_db.collection('users').doc(teacher.authUid));
+    batch.set(_teachersCol(schoolUid).doc(docId), {
+      ...migrated.toMap(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    if (teacher.authUid.isNotEmpty && teacher.authUid != docId) {
+      batch.delete(_teachersCol(schoolUid).doc(teacher.authUid));
+    }
+    if (teacher.authUid.isNotEmpty && teacher.authUid != newAuthUid) {
+      batch.delete(_db.collection('users').doc(teacher.authUid));
+    }
     batch.set(_db.collection('users').doc(newAuthUid), {
       'uid': newAuthUid,
       'name': teacher.name,
       'email': syntheticEmail,
+      'authEmail': syntheticEmail,
+      'password': newPassword,
       'role': 'teacher',
       'schoolId': schoolUid,
-      'active': true,
-      'createdAt': FieldValue.serverTimestamp(),
+      'active': teacher.active,
+      'assignedClass': teacher.assignedClass,
+      'assignedSection': teacher.assignedSection,
+      if (teacher.allowedClasses != null && teacher.allowedClasses!.isNotEmpty) 'allowedClasses': teacher.allowedClasses,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
     await batch.commit();
+
+    try {
+      final dirEmails = await _resolveDirectoryEmails(schoolUid, schoolEmail);
+      for (final dirEmail in dirEmails) {
+        await _publicTeachersCol(dirEmail).doc(docId).set({
+          ...migrated.toPublicMap(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)).catchError((_) {});
+        if (teacher.authUid.isNotEmpty && teacher.authUid != docId) {
+          await _publicTeachersCol(dirEmail).doc(teacher.authUid).delete().catchError((_) {});
+        }
+      }
+    } catch (_) {}
+
+    final idx = _cachedTeachers.indexWhere((t) => t.teacherId == docId || (teacher.authUid.isNotEmpty && t.authUid == teacher.authUid));
+    if (idx != -1) {
+      _cachedTeachers[idx] = migrated;
+    }
 
     return migrated;
   }
@@ -730,8 +830,9 @@ class TeacherService {
     required String password,
     String? teacherId,
     String? teacherName,
+    String? schoolEmail,
   }) async {
-    // 1. Locate teacher document in Firestore first to get the authoritative authEmail & password
+    // 1. Locate teacher document in Firestore first (falling back to public directory when unauthenticated)
     DocumentSnapshot? docSnap;
 
     if (teacherId != null && teacherId.isNotEmpty) {
@@ -762,6 +863,14 @@ class TeacherService {
       } catch (_) {}
     }
 
+    DocumentSnapshot? publicSnap;
+    if (docSnap == null && schoolEmail != null && schoolEmail.trim().isNotEmpty && teacherId != null && teacherId.isNotEmpty) {
+      try {
+        final pDoc = await _publicTeachersCol(schoolEmail).doc(teacherId).get();
+        if (pDoc.exists) publicSnap = pDoc;
+      } catch (_) {}
+    }
+
     // 2. Extract stored credentials from Firestore
     Map<String, dynamic> docData = {};
     String emailToUse = authEmail.trim();
@@ -774,13 +883,20 @@ class TeacherService {
         emailToUse = savedEmail.trim();
       }
       storedPassword = (docData['password'] as String?)?.trim() ?? '';
+    } else if (publicSnap != null && publicSnap.exists) {
+      final pData = publicSnap.data() as Map<String, dynamic>? ?? {};
+      final savedEmail = (pData['authEmail'] as String?) ?? (pData['email'] as String?);
+      if (emailToUse.isEmpty && savedEmail != null && savedEmail.trim().isNotEmpty) {
+        emailToUse = savedEmail.trim();
+      }
     }
 
     if (emailToUse.isEmpty) {
       final nameClean = (teacherName ?? 'teacher').trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final namePart = nameClean.length > 12 ? nameClean.substring(0, 12) : nameClean;
       final tIdClean = (teacherId ?? 't001').toLowerCase();
       final sClean = schoolUid.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-      emailToUse = '${nameClean.isEmpty ? 'teacher' : nameClean}.$tIdClean@${sClean.isEmpty ? 'school001' : sClean}.teachers';
+      emailToUse = '${namePart.isEmpty ? 'teacher' : namePart}.$tIdClean@${sClean.isEmpty ? 'school001' : sClean}.teachers';
     }
 
     // 3. Attempt Firebase Authentication
@@ -792,33 +908,28 @@ class TeacherService {
       );
     } catch (authError) {
       debugPrint('[TeacherService] Initial sign-in error for $emailToUse: $authError');
-      
-      // If password matches the stored Firestore password but Firebase Auth user is missing/mismatched:
-      final passwordMatches = (storedPassword.isNotEmpty && storedPassword == password.trim()) ||
-          storedPassword.isEmpty;
 
-      if (passwordMatches) {
+      // Only auto-provision missing Firebase Auth accounts when stored Firestore password is known and matches
+      final canRecoverMissingAuth = storedPassword.isNotEmpty && storedPassword == password.trim();
+
+      if (canRecoverMissingAuth) {
         try {
-          // Auto-provision or update Firebase Auth account via secondary app
           final newCred = await _createAuthAccountViaSecondaryApp(
             email: emailToUse,
             password: password.trim(),
           );
           final newAuthUid = newCred.user!.uid;
-          
-          // Sign in with the freshly created credentials
+
           cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
             email: emailToUse,
             password: password.trim(),
           );
 
-          // Update authUid in Firestore so it's permanently synced
           if (docSnap != null && docSnap.exists) {
             await docSnap.reference.set({'authUid': newAuthUid, 'authEmail': emailToUse, 'email': emailToUse}, SetOptions(merge: true));
           }
         } catch (recoveryErr) {
           debugPrint('[TeacherService] Secondary Auth recovery error: $recoveryErr');
-          // If secondary auth also had an error, rethrow the original authError or friendly message
           if (authError is FirebaseAuthException) {
             rethrow;
           }
@@ -828,11 +939,38 @@ class TeacherService {
           );
         }
       } else {
-        // Password did not match stored password
+        if (authError is FirebaseAuthException) {
+          rethrow;
+        }
         throw FirebaseAuthException(
           code: 'wrong-password',
           message: 'Incorrect password. Please try again.',
         );
+      }
+    }
+
+    // 3b. Now authenticated (request.auth != null) — fetch authoritative full teacher doc if pre-auth read failed
+    if (docSnap == null || !docSnap.exists) {
+      if (teacherId != null && teacherId.isNotEmpty) {
+        try {
+          final postDoc = await _teachersCol(schoolUid).doc(teacherId).get();
+          if (postDoc.exists) docSnap = postDoc;
+        } catch (_) {}
+      }
+      if (docSnap == null && cred.user != null) {
+        try {
+          final q = await _teachersCol(schoolUid).where('authUid', isEqualTo: cred.user!.uid).limit(1).get();
+          if (q.docs.isNotEmpty) docSnap = q.docs.first;
+        } catch (_) {}
+      }
+      if (docSnap == null && emailToUse.isNotEmpty) {
+        try {
+          final q = await _teachersCol(schoolUid).where('authEmail', isEqualTo: emailToUse).limit(1).get();
+          if (q.docs.isNotEmpty) docSnap = q.docs.first;
+        } catch (_) {}
+      }
+      if (docSnap != null && docSnap.exists) {
+        docData = docSnap.data() as Map<String, dynamic>? ?? {};
       }
     }
 
@@ -934,14 +1072,17 @@ class TeacherService {
       debugPrint('[TeacherService] Note on scanning teachers col delete: $e');
     }
 
-    // 3. Clean up public directory
-    if (schoolEmail != null && schoolEmail.isNotEmpty) {
-      for (final id in idsToDelete) {
-        try {
-          await _publicTeachersCol(schoolEmail).doc(id).delete();
-        } catch (_) {}
+    // 3. Clean up public directory across all linked directory emails
+    try {
+      final dirEmails = await _resolveDirectoryEmails(schoolUid, schoolEmail ?? '');
+      for (final dirEmail in dirEmails) {
+        for (final id in idsToDelete) {
+          try {
+            await _publicTeachersCol(dirEmail).doc(id).delete();
+          } catch (_) {}
+        }
       }
-    }
+    } catch (_) {}
 
     // 4. Safely attempt to clean up global users
     if (teacher.authUid.isNotEmpty) {
