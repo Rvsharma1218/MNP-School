@@ -159,6 +159,9 @@ export default function ResultsView() {
   const [resultsExamFilter, setResultsExamFilter] = useState('all');
   const [savedViewMode, setSavedViewMode] = useState('cards'); // 'cards' | 'table'
   const [editingResultData, setEditingResultData] = useState(null);
+  const [pdfClassPickerMode, setPdfClassPickerMode] = useState(null); // null | 'list' | 'bulk'
+  const [pdfSelectedClass, setPdfSelectedClass] = useState('all');
+  const [pdfGenerating, setPdfGenerating] = useState(false);
 
   const handleOpenEditResult = (res) => {
     if (!res) return;
@@ -445,6 +448,87 @@ export default function ResultsView() {
     } catch (e) {
       console.error(e);
       showToast('Error sharing result on WhatsApp', 'error');
+    }
+  };
+
+  // Shared helper for PDF Class Selector: count & sort results by Class Order -> Roll No -> Name
+  const getClassRankForSort = (clsRaw) => {
+    const lower = String(clsRaw || '').trim().toLowerCase();
+    if (!lower) return 999;
+    if (lower.includes('play') || lower.includes('pre-nursery') || lower === 'pg') return 1;
+    if (lower.includes('nursery') || lower === 'nur') return 2;
+    if (lower.includes('lkg') || lower.includes('l.k.g') || lower.includes('lower kg')) return 3;
+    if (lower.includes('ukg') || lower.includes('u.k.g') || lower.includes('upper kg')) return 4;
+    if (lower.includes('kg')) return 5;
+    const m = lower.match(/\d+/);
+    if (m) return 10 + parseInt(m[0], 10);
+    return 100;
+  };
+
+  const getExportResultsForClass = (targetClass) => {
+    const normTarget = normalizeClassStr(targetClass);
+    return scopedResults
+      .filter(r => {
+        if (resultsExamFilter !== 'all' && String(r.examName || '').trim().toLowerCase() !== resultsExamFilter.toLowerCase()) {
+          return false;
+        }
+        if (targetClass === 'all') return true;
+        const student = findStudent(r);
+        const studentClass = student?.className || student?.course || r.className || r.class || '';
+        const normStudentCls = normalizeClassStr(studentClass);
+        return (
+          String(studentClass).trim().toLowerCase() === targetClass.toLowerCase() ||
+          (normStudentCls && normTarget && normStudentCls === normTarget)
+        );
+      })
+      .sort((a, b) => {
+        const sa = findStudent(a);
+        const sb = findStudent(b);
+        const clsA = sa?.className || sa?.course || a.className || a.class || '';
+        const clsB = sb?.className || sb?.course || b.className || b.class || '';
+        const rankDiff = getClassRankForSort(clsA) - getClassRankForSort(clsB);
+        if (rankDiff !== 0) return rankDiff;
+
+        const rA = String(sa?.rollNumber || a.rollNumber || '').trim();
+        const rB = String(sb?.rollNumber || b.rollNumber || '').trim();
+        const nA = parseInt(rA, 10);
+        const nB = parseInt(rB, 10);
+        if (!isNaN(nA) && !isNaN(nB) && nA !== nB) return nA - nB;
+        if (rA && rB && rA !== rB) return rA.localeCompare(rB);
+        if (rA && !rB) return -1;
+        if (!rA && rB) return 1;
+        return (sa?.name || a.studentName || '').localeCompare(sb?.name || b.studentName || '');
+      });
+  };
+
+  const handleConfirmPdfClassExport = async () => {
+    const exportList = getExportResultsForClass(pdfSelectedClass);
+    if (exportList.length === 0) {
+      showToast('No results available for the selected class', 'info');
+      return;
+    }
+    const mode = pdfClassPickerMode;
+    const classLabel = pdfSelectedClass === 'all' ? 'All_Classes' : `Class_${pdfSelectedClass}`;
+    const examLabel = resultsExamFilter !== 'all'
+      ? `${resultsExamFilter}_${classLabel}`
+      : classLabel;
+
+    setPdfGenerating(true);
+    try {
+      if (mode === 'list') {
+        await exportExamResultsPDF(exportList, students, settings);
+        showToast(`Results List PDF downloaded (${exportList.length} students)!`, 'success');
+      } else {
+        showToast(`Generating bulk marksheets for ${exportList.length} students...`, 'info');
+        await exportBulkResultMarksheetsPDF(exportList, students, settings, examLabel);
+        showToast('Bulk marksheets PDF downloaded successfully!', 'success');
+      }
+      setPdfClassPickerMode(null);
+    } catch (e) {
+      console.error(e);
+      showToast('Error generating PDF', 'error');
+    } finally {
+      setPdfGenerating(false);
     }
   };
 
@@ -1140,9 +1224,12 @@ export default function ResultsView() {
 
               {/* PDF 1: Results List (Tabulation Register PDF) */}
               <button
-                onClick={() => exportExamResultsPDF(filteredResults, students, settings, resultsExamFilter !== 'all' ? resultsExamFilter : 'Annual Examination')}
+                onClick={() => {
+                  setPdfSelectedClass(resultsClassFilter);
+                  setPdfClassPickerMode('list');
+                }}
                 className="p-2 sm:px-3 sm:py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold text-xs border border-blue-200 shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-                title="Download Results List (Tabulation Register PDF)"
+                title="Select Class & Download Results List (PDF)"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Results List</span>
@@ -1150,22 +1237,12 @@ export default function ResultsView() {
 
               {/* PDF 2: Bulk All Student Marksheets PDF */}
               <button
-                onClick={async () => {
-                  if (filteredResults.length === 0) {
-                    showToast('No results available to download', 'info');
-                    return;
-                  }
-                  try {
-                    showToast(`Generating bulk marksheets for ${filteredResults.length} students...`, 'info');
-                    await exportBulkResultMarksheetsPDF(filteredResults, students, settings, resultsExamFilter !== 'all' ? resultsExamFilter : 'Annual Examination');
-                    showToast('Bulk marksheets PDF downloaded successfully!', 'success');
-                  } catch (e) {
-                    console.error(e);
-                    showToast('Error downloading bulk marksheets', 'error');
-                  }
+                onClick={() => {
+                  setPdfSelectedClass(resultsClassFilter);
+                  setPdfClassPickerMode('bulk');
                 }}
                 className="p-2 sm:px-3 sm:py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#162a65] text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-                title={`Download all ${filteredResults.length} student marksheets in one combined PDF`}
+                title="Select Class & Download Bulk Marksheets (PDF)"
               >
                 <Printer className="w-3.5 h-3.5 text-amber-300" />
                 <span className="hidden sm:inline">Bulk Marksheets</span>
@@ -2298,6 +2375,104 @@ export default function ResultsView() {
             setEditingResultData(null);
           }}
         />
+      )}
+
+      {/* PDF CLASS SELECTOR MODAL (Results List & Bulk Marksheets) */}
+      {pdfClassPickerMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="px-5 py-4 bg-gradient-to-r from-[#0c2340] to-[#1E3A8A] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                {pdfClassPickerMode === 'list' ? (
+                  <FileText className="w-5 h-5 text-amber-300" />
+                ) : (
+                  <Printer className="w-5 h-5 text-amber-300" />
+                )}
+                <div>
+                  <h3 className="text-sm font-black">
+                    {pdfClassPickerMode === 'list' ? 'Results List (PDF)' : 'Bulk Marksheets (PDF)'}
+                  </h3>
+                  <p className="text-[11px] text-slate-200">
+                    Select All Classes or a specific class to download PDF
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => !pdfGenerating && setPdfClassPickerMode(null)}
+                className="p-1.5 rounded-lg hover:bg-white/15 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto space-y-2 flex-1">
+              {[
+                { value: 'all', label: 'All Classes (Complete School)' },
+                ...availableClasses.map(c => ({ value: c, label: `Class ${c}` }))
+              ].map(opt => {
+                const count = getExportResultsForClass(opt.value).length;
+                const isSelected = pdfSelectedClass === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={count === 0}
+                    onClick={() => setPdfSelectedClass(opt.value)}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      count === 0
+                        ? 'opacity-50 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400'
+                        : isSelected
+                        ? 'bg-indigo-50 border-indigo-600 text-indigo-950 shadow-xs cursor-pointer'
+                        : 'bg-white border-slate-200 hover:border-indigo-300 text-slate-800 cursor-pointer'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        isSelected ? 'border-indigo-700 bg-indigo-700' : 'border-slate-300'
+                      }`}>
+                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                      <span className="text-xs font-bold">{opt.label}</span>
+                    </div>
+                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                      count === 0
+                        ? 'bg-slate-200 text-slate-500'
+                        : isSelected
+                        ? 'bg-indigo-700 text-white'
+                        : 'bg-indigo-100 text-indigo-800'
+                    }`}>
+                      {count} {count === 1 ? 'Result' : 'Results'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={pdfGenerating}
+                onClick={() => setPdfClassPickerMode(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={pdfGenerating || getExportResultsForClass(pdfSelectedClass).length === 0}
+                onClick={handleConfirmPdfClassExport}
+                className="px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#162a65] disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Download className="w-3.5 h-3.5 text-amber-300" />
+                <span>
+                  {pdfGenerating
+                    ? 'Generating...'
+                    : `Download PDF (${getExportResultsForClass(pdfSelectedClass).length})`}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* CREATE / EDIT EXAM MODAL */}

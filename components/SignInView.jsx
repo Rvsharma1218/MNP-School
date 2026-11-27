@@ -2349,18 +2349,18 @@ export default function SignInView() {
                     <div className="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
                       {/* Primary 64-bit APK Download */}
                       <a
-                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build23/app-arm64-v8a-release.apk"
-                        download="MNP_School_v1.0.4_Build23.apk"
+                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build24/app-arm64-v8a-release.apk"
+                        download="MNP_School_v1.0.4_Build24.apk"
                         className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#F4B323] hover:bg-amber-400 text-[#0c2340] font-black text-sm transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-3 cursor-pointer hover:scale-105 active:scale-95"
                       >
                         <Download className="w-5 h-5 text-[#0c2340]" />
-                        <span>{isHi ? 'Android ऐप सीधे डाउनलोड करें (v1.0.4+23)' : 'Direct Download Android App (v1.0.4+23)'}</span>
+                        <span>{isHi ? 'Android ऐप सीधे डाउनलोड करें (v1.0.4+24)' : 'Direct Download Android App (v1.0.4+24)'}</span>
                       </a>
 
                       {/* Fallback 32-bit APK for older phones */}
                       <a
-                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build23/app-armeabi-v7a-release.apk"
-                        download="MNP_School_v1.0.4_v7a_Build23.apk"
+                        href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build24/app-armeabi-v7a-release.apk"
+                        download="MNP_School_v1.0.4_v7a_Build24.apk"
                         className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Smartphone className="w-4 h-4 text-slate-300" />
@@ -2411,8 +2411,8 @@ export default function SignInView() {
 
                         {/* Mock Button */}
                         <a
-                          href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build23/app-arm64-v8a-release.apk"
-                          download="MNP_School_v1.0.4_Build23.apk"
+                          href="https://github.com/Rvsharma1218/MNP-School/releases/download/v1.0.4-build24/app-arm64-v8a-release.apk"
+                          download="MNP_School_v1.0.4_Build24.apk"
                           className="block w-full py-2.5 rounded-xl bg-[#F4B323] text-[#0c2340] font-black text-xs hover:brightness-110 transition-all shadow-md"
                         >
                           {isHi ? 'इंस्टॉल करें' : 'Install APK'}
